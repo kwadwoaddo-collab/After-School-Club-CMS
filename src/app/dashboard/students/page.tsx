@@ -1,3 +1,4 @@
+import { studentLifecycleStatusSql, studentLastContactSql, studentNextContactSql } from '@/features/students/lifecycle-queries';
 import { redirect } from 'next/navigation';
 import { requireAuth } from '@/lib/require-auth';
 import { db } from '@/db';
@@ -134,7 +135,8 @@ export default async function StudentsPage(props: {
         }
 
         showLowAttendance = searchParams.status === 'low-attendance';
-        if (searchParams.status && searchParams.status !== 'all' && !showLowAttendance) {
+        if (searchParams.status === 'follow-ups') conditions.push(sql`${studentLifecycleStatusSql()} IN ('paused', 'stopped')`);
+        if (searchParams.status && searchParams.status !== 'all' && searchParams.status !== 'follow-ups' && !showLowAttendance) {
             conditions.push(eq(children.isRegistered, searchParams.status === 'registered'));
         }
 
@@ -232,6 +234,9 @@ export default async function StudentsPage(props: {
                 lastName: children.lastName,
                 dateOfBirth: children.dateOfBirth,
                 schoolYear: children.schoolYear,
+                enrolmentStatus: studentLifecycleStatusSql(),
+                lastContactAt: studentLastContactSql(),
+                nextContactDate: studentNextContactSql(),
                 isRegistered: children.isRegistered,
                 source: children.source,
                 parentFirstName: parents.firstName,
@@ -268,6 +273,9 @@ export default async function StudentsPage(props: {
                 lastName: student.lastName,
                 dateOfBirth: student.dateOfBirth ? student.dateOfBirth.toISOString() : null,
                 schoolYear: student.schoolYear ?? null,
+                enrolmentStatus: student.enrolmentStatus,
+                lastContactAt: student.lastContactAt ? new Date(student.lastContactAt).toISOString() : null,
+                nextContactDate: student.nextContactDate,
                 isRegistered: !!student.isRegistered,
                 source: student.source,
                 parentId: student.parentId,

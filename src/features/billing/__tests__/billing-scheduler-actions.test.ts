@@ -80,6 +80,26 @@ vi.mock('@/db', () => ({
 const OWNER_SESSION = { user: { id: 'user-owner', organisationId: 'org-1', role: 'ORG_OWNER' } };
 const MANAGER_SESSION = { user: { id: 'user-mgr', organisationId: 'org-1', role: 'MANAGER' } };
 
+describe('restart billing overlap protection', () => {
+    it('refuses a changed anchor overlapping a preserved older issued family invoice', async () => {
+        const { requireTenantSession } = await import('@/lib/session');
+        (requireTenantSession as any).mockResolvedValue(OWNER_SESSION);
+        mockDbQuery.billingConfigs.findFirst.mockResolvedValue({ id: 'config-1', organisationId: 'org-1',
+            parentId: 'parent-1', centreId: 'centre-1', status: 'active', billingAnchorDate: '2026-12-15',
+            agreedMonthlyPence: 190000, children: [{ child: { id: 'child-1', firstName: 'Child', lastName: 'One' } }],
+        });
+        mockDbQuery.billingCycleSkips.findFirst.mockResolvedValue(null);
+        mockDbQuery.billingRuns.findFirst.mockResolvedValue(null);
+        mockDbQuery.invoices.findFirst.mockResolvedValue({ id: 'older-issued', status: 'sent',
+            billingPeriodStart: new Date('2026-12-01'), billingPeriodEnd: new Date('2026-12-31'),
+        });
+        const { generateInvoiceFromConfig } = await import('../actions');
+        await expect(generateInvoiceFromConfig({ configId: 'config-1', periodStartStr: '2026-12-15',
+            periodEndStr: '2027-01-14',
+        })).rejects.toThrow(/overlaps an existing family invoice/);
+    });
+});
+
 describe('Billing Scheduler Actions (§26, §27, B7, B8, B9)', () => {
     beforeEach(() => {
         vi.clearAllMocks();

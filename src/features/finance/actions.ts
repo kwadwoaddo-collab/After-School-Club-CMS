@@ -12,8 +12,9 @@ import { nanoid } from 'nanoid';
 import { emailService } from '@/lib/services/email';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { notifyOwners } from '@/lib/db-notifications';
-import { financeEligibleChildSql, getFinanceEligibleChildIds, assertEligibleBillingCoverage, lockEnrolmentForBilling } from '@/lib/enrolment/finance-eligibility';
+import { financeEligibleChildSql, getFinanceEligibleChildIds, assertEligibleBillingCoverage, lockEnrolmentForBilling, billingServicePeriod, lockBillingConfiguration } from '@/lib/enrolment/finance-eligibility';
 import { assertNotQuarantined } from '@/lib/data-quality/quarantine';
+import { recurringInvoiceOverlapSql } from '@/lib/billing/invoice-overlap';
 import {
     canAcceptStaffPayment,
     isPermittedStaffPaymentMethod,
@@ -312,6 +313,7 @@ export async function createInvoice(data: {
     assertNotQuarantined(data.parentId, 'Invoice creation');
 
     if (data.childIds.length === 0) throw new Error('Select at least one confirmed signed-up student for invoicing');
+    const servicePeriod = billingServicePeriod(data.billingPeriodStart, data.billingPeriodEnd);
 
     // Fetch child names for the description if multiple are selected — org-scoped
     const selectedChildren = data.childIds.length > 0
@@ -322,7 +324,7 @@ export async function createInvoice(data: {
                 eq(children.parentId, data.parentId),
                 eq(children.centreId, data.centreId),
                 isNull(children.deletedAt),
-                financeEligibleChildSql()
+                financeEligibleChildSql(servicePeriod?.startDate, servicePeriod?.endDate)
             )
         )
         : [];
@@ -346,6 +348,7 @@ export async function createInvoice(data: {
 
     // Execute database operations atomically in a transaction
     const newInvoice = await db.transaction(async (tx) => {
+        if (billingConfigId) await lockBillingConfiguration(tx, billingConfigId);
         // If billingPeriodStart is provided, serialize concurrency via advisory lock
         if (data.billingPeriodStart) {
             const periodKey = data.billingPeriodStart.toISOString().split('T')[0];
@@ -353,6 +356,7 @@ export async function createInvoice(data: {
                 ? `billing_config:${billingConfigId}:${periodKey}`
                 : `manual_invoice:${data.centreId}:${data.parentId}:${periodKey}`;
             await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${lockKey}))`);
+            await lockEnrolmentForBilling(tx, data.childIds);
 
             // Check if active invoice already exists for this parent, centre, and period
             const existingActive = await tx.query.invoices.findFirst({
@@ -360,7 +364,8 @@ export async function createInvoice(data: {
                     eq(invoices.organisationId,     orgId),
                     eq(invoices.centreId,           data.centreId),
                     eq(invoices.parentId,           data.parentId),
-                    eq(invoices.billingPeriodStart, data.billingPeriodStart),
+                    or(eq(invoices.billingPeriodStart, data.billingPeriodStart),
+                        data.billingPeriodEnd ? recurringInvoiceOverlapSql(data.childIds, data.billingPeriodStart, data.billingPeriodEnd) : undefined),
                     ne(invoices.status,             'void'),
                 ),
             });
@@ -371,7 +376,7 @@ export async function createInvoice(data: {
         }
 
         await lockEnrolmentForBilling(tx, data.childIds);
-        assertEligibleBillingCoverage(data.childIds, await getFinanceEligibleChildIds(orgId, data.childIds, tx, { parentId: data.parentId, centreId: data.centreId }));
+        assertEligibleBillingCoverage(data.childIds, await getFinanceEligibleChildIds(orgId, data.childIds, tx, { parentId: data.parentId, centreId: data.centreId }, servicePeriod));
         return await insertInvoiceAndLog(tx, session.user.organisationId!, session.user.id, {
             centreId: data.centreId,
             parentId: data.parentId,
@@ -538,6 +543,7 @@ export async function createAdHocInvoice(data: {
     });
     if (!centreRecord) throw new Error('Centre not found');
     let eligibleAdHocChildId: string | undefined;
+    const servicePeriod = billingServicePeriod(data.billingPeriodStart, data.billingPeriodEnd);
     if (data.parentId) {
         const existingParent = await db.query.parents.findFirst({
             where: and(eq(parents.id, data.parentId), eq(parents.organisationId, orgId)),
@@ -545,7 +551,7 @@ export async function createAdHocInvoice(data: {
         });
         if (!existingParent) throw new Error('Parent not found');
         const eligibleChild = await db.query.children.findFirst({
-            where: and(eq(children.parentId, data.parentId), eq(children.organisationId, orgId), eq(children.centreId, data.centreId), isNull(children.deletedAt), financeEligibleChildSql()),
+            where: and(eq(children.parentId, data.parentId), eq(children.organisationId, orgId), eq(children.centreId, data.centreId), isNull(children.deletedAt), financeEligibleChildSql(servicePeriod?.startDate, servicePeriod?.endDate)),
             columns: { id: true },
         });
         if (!eligibleChild) throw new Error('Confirm student enrolment before creating a new invoice for this family');
@@ -556,7 +562,7 @@ export async function createAdHocInvoice(data: {
 
     return await db.transaction(async (tx) => {
         await lockEnrolmentForBilling(tx, [eligibleAdHocChildId!]);
-        assertEligibleBillingCoverage([eligibleAdHocChildId!], await getFinanceEligibleChildIds(orgId, [eligibleAdHocChildId!], tx, { parentId: data.parentId!, centreId: data.centreId }));
+        assertEligibleBillingCoverage([eligibleAdHocChildId!], await getFinanceEligibleChildIds(orgId, [eligibleAdHocChildId!], tx, { parentId: data.parentId!, centreId: data.centreId }, servicePeriod));
         // 1. Resolve parent — either existing or create a minimal new one
         let parentId = data.parentId;
         if (!parentId) {
@@ -1608,22 +1614,33 @@ export async function issueDraftInvoice(invoiceId: string) {
             ? invoice.coveredChildrenJson.flatMap((child: { id?: string }) => typeof child.id === 'string' ? [child.id] : [])
             : [];
         const coveredIds = snapshotIds.length > 0 ? snapshotIds : invoice.childId ? [invoice.childId] : [];
+        const servicePeriod = billingServicePeriod(invoice.billingPeriodStart, invoice.billingPeriodEnd);
+        if (invoice.billingConfigId) await lockBillingConfiguration(tx, invoice.billingConfigId);
         if (coveredIds.length > 0) {
             await lockEnrolmentForBilling(tx, coveredIds);
             const eligibleCovered = await tx.select({ id: children.id }).from(children).where(and(
                 inArray(children.id, coveredIds), eq(children.parentId, invoice.parentId),
                 eq(children.organisationId, orgId), eq(children.centreId, invoice.centreId),
-                isNull(children.deletedAt), financeEligibleChildSql(),
+                isNull(children.deletedAt), financeEligibleChildSql(servicePeriod?.startDate, servicePeriod?.endDate),
             ));
             assertEligibleBillingCoverage(coveredIds, new Set(eligibleCovered.map(child => child.id)));
         } else {
             const eligibleFamily = await tx.select({ id: children.id }).from(children).where(and(
                 eq(children.parentId, invoice.parentId), eq(children.organisationId, orgId),
-                eq(children.centreId, invoice.centreId), isNull(children.deletedAt), financeEligibleChildSql(),
+                eq(children.centreId, invoice.centreId), isNull(children.deletedAt), financeEligibleChildSql(servicePeriod?.startDate, servicePeriod?.endDate),
             )).limit(1);
             if (eligibleFamily.length === 0) throw new Error('Confirm student enrolment before issuing this draft invoice');
             await lockEnrolmentForBilling(tx, [eligibleFamily[0].id]);
-            assertEligibleBillingCoverage([eligibleFamily[0].id], await getFinanceEligibleChildIds(orgId, [eligibleFamily[0].id], tx, { parentId: invoice.parentId, centreId: invoice.centreId }));
+            assertEligibleBillingCoverage([eligibleFamily[0].id], await getFinanceEligibleChildIds(orgId, [eligibleFamily[0].id], tx, { parentId: invoice.parentId, centreId: invoice.centreId }, servicePeriod));
+        }
+
+        if (servicePeriod && (invoice.billingConfigId || coveredIds.length > 0)) {
+            const overlapping = await tx.query.invoices.findFirst({ where: and(
+                eq(invoices.organisationId, orgId), eq(invoices.parentId, invoice.parentId),
+                eq(invoices.centreId, invoice.centreId), ne(invoices.id, invoice.id), ne(invoices.status, 'void'),
+                recurringInvoiceOverlapSql(coveredIds, new Date(servicePeriod.startDate), new Date(servicePeriod.endDate)),
+            ) });
+            if (overlapping && overlapping.id !== invoice.id) throw new Error('This draft overlaps an existing family invoice. Review coverage before issuance; no automatic proration or credit has been applied.');
         }
 
         const [updated] = await tx.update(invoices)

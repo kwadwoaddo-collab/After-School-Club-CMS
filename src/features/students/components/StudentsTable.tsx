@@ -15,6 +15,9 @@ import StudentActions from '@/features/students/components/StudentActions';
 /* ------------------------------------------------------------------ */
 
 export interface StudentRow {
+  enrolmentStatus?: string;
+  lastContactAt?: string | null;
+  nextContactDate?: string | null;
   id: string;
   firstName: string;
   lastName: string;
@@ -148,6 +151,8 @@ export default function StudentsTable({ students, error, hasActiveFilters }: Stu
                             />
                           )}
                         </div>
+                        {(student.enrolmentStatus === 'paused' || student.enrolmentStatus === 'stopped') && <Badge variant="warning">{student.enrolmentStatus === 'paused' ? 'Paused' : 'Stopped'}</Badge>}
+                        {(student.lastContactAt || student.nextContactDate) && <p className="text-xs text-text-muted mt-1">Last contact: {student.lastContactAt ? new Date(student.lastContactAt).toLocaleDateString('en-GB', { timeZone: 'Europe/London' }) : 'Not recorded'}{student.nextContactDate ? ` · Next call: ${student.nextContactDate}` : ''}</p>}
                       </div>
                     </div>
                   </TableCell>

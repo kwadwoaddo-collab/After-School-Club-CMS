@@ -15,8 +15,9 @@ import {
     toUtcDate,
 } from '@/lib/billing/date-engine';
 import { nanoid } from 'nanoid';
-import { getFinanceEligibleChildIds, assertEligibleBillingCoverage, lockEnrolmentForBilling } from '@/lib/enrolment/finance-eligibility';
+import { getFinanceEligibleChildIds, assertEligibleBillingCoverage, lockEnrolmentForBilling, lockBillingConfiguration } from '@/lib/enrolment/finance-eligibility';
 import { isQuarantinedParentId } from '@/lib/data-quality/quarantine';
+import { recurringInvoiceOverlapSql } from '@/lib/billing/invoice-overlap';
 
 /**
  * POST /api/cron/billing
@@ -235,8 +236,10 @@ export async function POST(request: NextRequest) {
 
                     const generatedResult = await db.transaction(async (tx) => {
                         // Advisory lock on config and period to serialize overlapping cron runs
+                        await lockBillingConfiguration(tx, config.id);
                         const lockKey = `billing_config:${config.id}:${periodStartStr}`;
                         await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${lockKey}))`);
+                        await lockEnrolmentForBilling(tx, coveredIds);
 
                         // Recheck period eligibility inside the creation transaction (inclusive UTC date-only semantics)
                         const txToday = toUtcDate(new Date());
@@ -272,7 +275,8 @@ export async function POST(request: NextRequest) {
                                 eq(invoices.organisationId,     config.organisationId),
                                 eq(invoices.centreId,           config.centreId),
                                 eq(invoices.parentId,           config.parentId),
-                                eq(invoices.billingPeriodStart, schedule.periodStart),
+                                or(eq(invoices.billingPeriodStart, schedule.periodStart),
+                                    recurringInvoiceOverlapSql(coveredIds, schedule.periodStart, schedule.periodEnd)),
                                 ne(invoices.status,             'void'),
                             ),
                         });
@@ -280,8 +284,9 @@ export async function POST(request: NextRequest) {
                             return { skipped: true, byManager: false, notEligible: false };
                         }
 
-                        await lockEnrolmentForBilling(tx, coveredIds);
-                        assertEligibleBillingCoverage(coveredIds, await getFinanceEligibleChildIds(config.organisationId, coveredIds, tx, { parentId: config.parentId, centreId: config.centreId }));
+                        assertEligibleBillingCoverage(coveredIds, await getFinanceEligibleChildIds(config.organisationId, coveredIds, tx, { parentId: config.parentId, centreId: config.centreId, billingConfig: config }, {
+                            startDate: periodStartStr, endDate: periodEndStr,
+                        }));
 
                         const invoiceNumber = `INV-${nanoid(6).toUpperCase()}`;
 

@@ -81,6 +81,7 @@ vi.mock('@/db', () => ({
 
 const OWNER_SESSION = { user: { id: 'user-owner', organisationId: 'org-1', role: 'ORG_OWNER' } };
 const FRONT_DESK_SESSION = { user: { id: 'user-fd', organisationId: 'org-1', role: 'FRONT_DESK' } };
+const MANAGER_SESSION = { user: { id: 'user-manager', organisationId: 'org-1', role: 'MANAGER' } };
 
 describe('billing/actions — centre-scoped authorization (Milestone 3G, L2)', () => {
     beforeEach(() => {
@@ -90,11 +91,25 @@ describe('billing/actions — centre-scoped authorization (Milestone 3G, L2)', (
         dbDelete.mockImplementation(() => makeDeleteChain());
         dbTransaction.mockImplementation(async (cb: any) => cb({
             insert: () => makeInsertChain(),
+            execute: vi.fn().mockResolvedValue([]),
+            select: () => ({ from: () => ({ where: () => dbSelectWhere() }) }),
+            update: () => makeUpdateChain(),
+            delete: () => makeDeleteChain(),
         }));
         dbSelectWhere.mockResolvedValue([{ id: 'child-1' }]);
     });
 
     describe('createBillingConfig', () => {
+        it('does not let front desk approve a restart fee even with centre access', async () => {
+            const { auth } = await import('@/lib/auth');
+            (auth as ReturnType<typeof vi.fn>).mockResolvedValue(FRONT_DESK_SESSION);
+            getUserAccessibleCentreIds.mockResolvedValue(['centre-target']);
+            const { createBillingConfig } = await import('./actions');
+            await expect(createBillingConfig({ parentId: 'parent-1', centreId: 'centre-target',
+                agreedMonthlyPence: 10000, billingAnchorDate: '2026-12-01', childIds: ['child-1'],
+            })).rejects.toThrow(/Only an Owner or Manager/);
+            expect(dbTransaction).not.toHaveBeenCalled();
+        });
         it('rejects a non-owner with no access to the target centre', async () => {
             const { auth } = await import('@/lib/auth');
             (auth as ReturnType<typeof vi.fn>).mockResolvedValue(FRONT_DESK_SESSION);
@@ -133,7 +148,7 @@ describe('billing/actions — centre-scoped authorization (Milestone 3G, L2)', (
 
         it('allows a non-owner with access to the target centre', async () => {
             const { auth } = await import('@/lib/auth');
-            (auth as ReturnType<typeof vi.fn>).mockResolvedValue(FRONT_DESK_SESSION);
+            (auth as ReturnType<typeof vi.fn>).mockResolvedValue(MANAGER_SESSION);
             getUserAccessibleCentreIds.mockResolvedValue(['centre-target']);
             billingConfigsFindFirst.mockResolvedValue(null);
 
@@ -198,6 +213,18 @@ describe('billing/actions — centre-scoped authorization (Milestone 3G, L2)', (
         });
     });
 
+    it('requires explicit fee/start review instead of silently removing a paused sibling at the old family fee', async () => {
+        const { auth } = await import('@/lib/auth');
+        (auth as ReturnType<typeof vi.fn>).mockResolvedValue(OWNER_SESSION);
+        billingConfigsFindFirst.mockResolvedValue({ id: 'config-1', centreId: 'centre-target', parentId: 'parent-1',
+            children: [{ childId: 'child-1' }, { childId: 'paused-sibling' }],
+        });
+        const { removeChildFromConfig } = await import('./actions');
+        await expect(removeChildFromConfig('config-1', 'paused-sibling')).rejects.toThrow(/family fee and start date/);
+        expect(dbTransaction).not.toHaveBeenCalled();
+        expect(dbDelete).not.toHaveBeenCalled();
+    });
+
     describe('updateBillingConfig / pauseBillingConfig / resumeBillingConfig / cancelBillingConfig', () => {
         it.each([
             ['updateBillingConfig', (mod: any) => mod.updateBillingConfig('config-1', { agreedMonthlyPence: 5000 })],
@@ -222,7 +249,7 @@ describe('billing/actions — centre-scoped authorization (Milestone 3G, L2)', (
             ['cancelBillingConfig', (mod: any) => mod.cancelBillingConfig('config-1')],
         ])('%s allows a non-owner with access to the config\'s centre', async (_name, invoke) => {
             const { auth } = await import('@/lib/auth');
-            (auth as ReturnType<typeof vi.fn>).mockResolvedValue(FRONT_DESK_SESSION);
+            (auth as ReturnType<typeof vi.fn>).mockResolvedValue(MANAGER_SESSION);
             getUserAccessibleCentreIds.mockResolvedValue(['centre-target']);
             billingConfigsFindFirst.mockResolvedValue({ centreId: 'centre-target' });
 

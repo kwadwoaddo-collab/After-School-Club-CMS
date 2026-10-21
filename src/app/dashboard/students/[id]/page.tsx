@@ -1,11 +1,13 @@
-import { getFinanceEligibleChildIds } from '@/lib/enrolment/finance-eligibility';
+import { enrolmentBusinessDate } from '@/lib/enrolment/business-date';
+import { confirmedEnrolmentChildSql } from '@/lib/enrolment/finance-eligibility';
 import { logger } from '@/lib/logger';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { notFound } from 'next/navigation';
 import { requireAuth } from '@/lib/require-auth';
 import { db } from '@/db';
-import { children, parents, bookings, centres, bookingAttendees, registrationChildren, registrations, registrationParents } from '@/db/schema';
+import { children, parents, bookings, centres, bookingAttendees, registrationChildren, registrations, registrationParents, studentEnrolmentEvents, studentFollowUpContacts } from '@/db/schema';
 import { eq, desc, sql, and, isNull } from 'drizzle-orm';
+import StudentLifecyclePanel from '@/features/students/components/StudentLifecyclePanel';
 import ConfirmExistingEnrolment from '@/features/students/components/ConfirmExistingEnrolment';
 import StudentProfile from '@/features/students/components/StudentProfile';
 import { getStudentNotes } from '@/features/students/notes.actions';
@@ -218,10 +220,15 @@ export default async function StudentProfilePage(
         logger.error('[student-profile] fetchStudentBillingConfig failed:', err);
     }
 
-    const enrolledChildIds = await getFinanceEligibleChildIds(session.user.organisationId, [id]);
+    const [[confirmedEnrolment], enrolmentEvents, followUpContacts] = await Promise.all([
+        db.select({ id: children.id }).from(children).where(and(eq(children.id, id), eq(children.organisationId, session.user.organisationId), confirmedEnrolmentChildSql())).limit(1),
+        db.query.studentEnrolmentEvents.findMany({ where: and(eq(studentEnrolmentEvents.childId, id), eq(studentEnrolmentEvents.organisationId, session.user.organisationId)), orderBy: [desc(studentEnrolmentEvents.effectiveDate), desc(studentEnrolmentEvents.createdAt), desc(studentEnrolmentEvents.id)] }),
+        db.query.studentFollowUpContacts.findMany({ where: and(eq(studentFollowUpContacts.childId, id), eq(studentFollowUpContacts.organisationId, session.user.organisationId)), orderBy: [desc(studentFollowUpContacts.contactedAt), desc(studentFollowUpContacts.id)], limit: 100 }),
+    ]);
     return (
         <>
-        {!student.registrationId && !enrolledChildIds.has(id) && ['ORG_OWNER', 'MANAGER'].includes(userRole ?? '') && <ConfirmExistingEnrolment childId={id} />}
+        {!student.registrationId && !confirmedEnrolment && ['ORG_OWNER', 'MANAGER'].includes(userRole ?? '') && <ConfirmExistingEnrolment childId={id} />}
+        <StudentLifecyclePanel childId={id} today={enrolmentBusinessDate()} canChangeStatus={['ORG_OWNER', 'MANAGER'].includes(userRole ?? '')} confirmed={Boolean(confirmedEnrolment)} events={enrolmentEvents.map(event => ({ ...event, createdAt: event.createdAt.toISOString() }))} contacts={followUpContacts.map(contact => ({ ...contact, contactedAt: contact.contactedAt.toISOString(), createdAt: contact.createdAt.toISOString() }))} />
         <StudentProfile
             student={{
                 ...student,

@@ -38,6 +38,7 @@ export default function StudentsFilters({ centres, resultsCount = 0 }: StudentsF
 
     const statusOptions = [
         { value: 'all', label: 'All statuses' },
+        { value: 'follow-ups', label: 'Follow-ups (paused / stopped)' },
         { value: 'registered', label: 'Registered' },
         { value: 'unregistered', label: 'Leads / unregistered' },
     ];

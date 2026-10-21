@@ -218,6 +218,13 @@
       "when": 1789690000000,
       "tag": "0031_booking_email_outbox",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1792537200000,
+      "tag": "0032_student_enrolment_follow_up",
+      "breakpoints": true
     }
   ]
 }

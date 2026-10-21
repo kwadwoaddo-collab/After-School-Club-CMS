@@ -309,6 +309,39 @@ export const children = pgTable('children', {
   centreIdx: index('children_centre_idx').on(table.centreId),
 }));
 
+// Durable operational lifecycle; registration confirmation remains separate.
+export const studentEnrolmentEvents = pgTable('student_enrolment_events', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  childId: uuid('child_id').references(() => children.id, { onDelete: 'cascade' }).notNull(),
+  organisationId: uuid('organisation_id').references(() => organisations.id, { onDelete: 'cascade' }).notNull(),
+  status: varchar('status', { length: 20 }).$type<'active' | 'paused' | 'stopped'>().notNull(),
+  effectiveDate: date('effective_date').notNull(),
+  reason: text('reason').notNull(),
+  expectedRestartDate: date('expected_restart_date'),
+  nextContactDate: date('next_contact_date'),
+  feeReviewConfirmed: boolean('fee_review_confirmed').default(false).notNull(),
+  billingReviewedFrom: date('billing_reviewed_from'),
+  createdBy: uuid('created_by').references(() => users.id).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  childEffectiveIdx: index('student_enrolment_events_child_effective_idx').on(table.childId, table.effectiveDate, table.createdAt),
+  orgIdx: index('student_enrolment_events_org_idx').on(table.organisationId),
+}));
+
+export const studentFollowUpContacts = pgTable('student_follow_up_contacts', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  childId: uuid('child_id').references(() => children.id, { onDelete: 'cascade' }).notNull(),
+  organisationId: uuid('organisation_id').references(() => organisations.id, { onDelete: 'cascade' }).notNull(),
+  contactedAt: timestamp('contacted_at', { withTimezone: true }).defaultNow().notNull(),
+  notes: text('notes').notNull(),
+  nextContactDate: date('next_contact_date'),
+  createdBy: uuid('created_by').references(() => users.id).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  childContactIdx: index('student_follow_up_contacts_child_contact_idx').on(table.childId, table.contactedAt),
+  orgIdx: index('student_follow_up_contacts_org_idx').on(table.organisationId),
+}));
+
 export const authorisedCollectors = pgTable('authorised_collectors', {
   id: uuid('id').defaultRandom().primaryKey(),
   childId: uuid('child_id').references(() => children.id, { onDelete: 'cascade' }).notNull(),

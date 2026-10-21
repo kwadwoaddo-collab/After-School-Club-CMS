@@ -14,6 +14,7 @@ import FinanceDashboardFilters from '@/features/finance/components/FinanceDashbo
 import BillingCyclesTab from '@/features/billing/components/BillingCyclesTab';
 import { fetchBillingCycles } from '@/features/billing/queries';
 import { logger } from '@/lib/logger';
+import { formerStudentOutstandingSql, activeStudentInvoiceSql, draftLifecycleReviewSql } from '@/features/finance/domain/former-balances';
 
 type OrgCentre = Awaited<ReturnType<typeof getUserAccessibleCentres>>[number];
 
@@ -22,6 +23,7 @@ export default async function FinancePage(props: {
         centre?: string;
         page?: string;
         status?: string;
+        view?: string;
     }>
 }) {
     const searchParams = await props.searchParams;
@@ -43,6 +45,8 @@ export default async function FinancePage(props: {
     const page = Number(searchParams.page) || 1;
     const pageSize = 50;
     const statusFilter = searchParams.status || 'all';
+    const formerBalancesView = searchParams.view === 'former';
+    const invoiceHistoryView = searchParams.view === 'history';
 
     let orgCentres: OrgCentre[] = [];
     let activeCentreId = 'all';
@@ -86,7 +90,8 @@ export default async function FinancePage(props: {
         const combinedFilter = and(
             eq(invoices.organisationId, session.user.organisationId),
             centreFilter,
-            dbStatusFilter
+            dbStatusFilter,
+            formerBalancesView ? formerStudentOutstandingSql() : invoiceHistoryView ? undefined : activeStudentInvoiceSql(),
         );
 
         const [countResult] = await db.select({ count: count() }).from(invoices).where(combinedFilter);
@@ -94,6 +99,7 @@ export default async function FinancePage(props: {
 
         paginatedInvoices = await db.query.invoices.findMany({
             where: combinedFilter,
+            extras: { needsBillingReview: draftLifecycleReviewSql().as('needs_billing_review') },
             limit: pageSize,
             offset: (page - 1) * pageSize,
             orderBy: [desc(invoices.createdAt)],
@@ -136,12 +142,17 @@ export default async function FinancePage(props: {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl sm:text-4xl font-black text-foreground tracking-tight">Finance Ledger</h1>
+                    <h1 className="text-3xl sm:text-4xl font-black text-foreground tracking-tight">{formerBalancesView ? 'Former / Paused Students Outstanding Balances' : invoiceHistoryView ? 'All Invoice History' : 'Active Finance Ledger'}</h1>
                     <p className="text-muted-foreground font-medium mt-1 text-sm sm:text-base">
-                        Manage invoices, payments, and financial health
+                        {formerBalancesView ? 'Follow up issued unpaid invoices without reactivating student billing.' : 'Manage invoices, payments, and financial health'}
                     </p>
                 </div>
                 <div className="flex items-center gap-3 flex-wrap">
+                    <nav aria-label="Finance views" className="flex flex-wrap gap-3 text-sm font-semibold">
+                        <Link href="/dashboard/finance" aria-current={!formerBalancesView && !invoiceHistoryView ? 'page' : undefined} className="text-primary underline underline-offset-4">Active ledger</Link>
+                        <Link href="/dashboard/finance?view=former" aria-current={formerBalancesView ? 'page' : undefined} className="text-primary underline underline-offset-4">Former / paused outstanding</Link>
+                        <Link href="/dashboard/finance?view=history" aria-current={invoiceHistoryView ? 'page' : undefined} className="text-primary underline underline-offset-4">All invoice history</Link>
+                    </nav>
                     <Suspense fallback={<div className="w-[180px] h-[44px] bg-secondary/60 rounded-2xl animate-pulse" />}>
                         <FinanceDashboardFilters centres={orgCentres} />
                     </Suspense>
@@ -171,6 +182,13 @@ export default async function FinancePage(props: {
                 </div>
             )}
 
+            {formerBalancesView && <p className="rounded-2xl border border-border bg-card p-4 text-sm text-muted-foreground">
+                These are existing issued balances, including shared family invoices where a covered student has paused or stopped. Payments and receipts remain available. Pausing a student does not void a debt, create a credit or issue another invoice.
+            </p>}
+            {!formerBalancesView && !invoiceHistoryView && <p className="text-sm text-muted-foreground">
+                Invoices for active students are shown here. A shared family invoice remains here while any covered child is active, and can also appear in former / paused outstanding balances. All original records remain in All invoice history.
+            </p>}
+
             {/* Main Finance Data Grid & KPI Summary */}
             <Suspense fallback={<div className="h-[400px] bg-secondary/20 rounded-3xl animate-pulse border border-border/60" />}>
                 <FinanceDataGridClient 
@@ -184,7 +202,7 @@ export default async function FinancePage(props: {
             </Suspense>
 
             {/* Billing Cycles Section */}
-            <div className="bg-card/80 backdrop-blur-md border border-border/60 shadow-sm rounded-3xl p-6 sm:p-8 animate-in slide-in-from-bottom-4 duration-500 delay-150">
+            {!formerBalancesView && <div className="bg-card/80 backdrop-blur-md border border-border/60 shadow-sm rounded-3xl p-6 sm:p-8 animate-in slide-in-from-bottom-4 duration-500 delay-150">
                 <div className="flex items-center justify-between mb-6">
                     <h2 className="text-xl font-bold text-foreground flex items-center gap-2.5 tracking-tight">
                         <CreditCard className="w-5 h-5 text-primary" />
@@ -195,7 +213,7 @@ export default async function FinancePage(props: {
                     cycles={serializedBillingCycles}
                     centreId={activeCentreId}
                 />
-            </div>
+            </div>}
         </div>
     );
 }
