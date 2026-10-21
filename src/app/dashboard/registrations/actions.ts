@@ -5,7 +5,7 @@ import { logger } from '@/lib/logger';
 
 import { requireTenantSession } from '@/lib/session';
 import { db } from '@/db';
-import { registrations, registrationChildren, registrationParents, parents, children, organisations, centres } from '@/db/schema';
+import { registrations, registrationChildren, registrationParents, parents, children, organisations, centres, auditEvents } from '@/db/schema';
 import { eq, and, inArray, isNull, sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { emailService } from '@/lib/services/email';
@@ -331,7 +331,7 @@ export async function updateRegistrationStatus(
 
     // Verify the registration belongs to this org
     const [existing] = await db
-        .select({ id: registrations.id, organisationId: registrations.organisationId, centreId: registrations.centreId })
+        .select({ id: registrations.id, organisationId: registrations.organisationId, centreId: registrations.centreId, status: registrations.status, startDate: registrations.startDate })
         .from(registrations)
         .where(eq(registrations.id, registrationId))
         .limit(1);
@@ -347,20 +347,24 @@ export async function updateRegistrationStatus(
         }
     }
 
-    await db
+    await db.transaction(async tx => {
+        const enrolmentChildren = await tx.select({ childId: registrationChildren.childId }).from(registrationChildren).where(eq(registrationChildren.registrationId, registrationId));
+        const lockedIds = [...new Set(enrolmentChildren.map(c => c.childId).filter((childId): childId is string => Boolean(childId)))].sort();
+        for (const childId of lockedIds) await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${`enrolment:${childId}`}))`);
+    await tx
         .update(registrations)
         .set({ status: newStatus, updatedAt: new Date() })
         .where(eq(registrations.id, registrationId));
 
     if (newStatus === 'signed_up') {
-        const regChildren = await db
+        const regChildren = await tx
             .select({ childId: registrationChildren.childId })
             .from(registrationChildren)
             .where(eq(registrationChildren.registrationId, registrationId));
 
         const childIds = regChildren.map(c => c.childId).filter((cid): cid is string => Boolean(cid));
         if (childIds.length > 0) {
-            await db
+            await tx
                 .update(children)
                 .set({
                     isRegistered: true,
@@ -371,6 +375,10 @@ export async function updateRegistrationStatus(
         }
     }
 
+        await tx.insert(auditEvents).values({ organisationId: orgId, userId: session.user.id,
+            eventType: 'registration_status_changed', eventData: JSON.stringify({ registrationId, previousStatus: existing.status, status: newStatus, startDate: existing.startDate, confirmedAt: new Date().toISOString() }) });
+    });
+    revalidatePath('/dashboard/finance');
     revalidatePath('/dashboard/registrations');
     revalidatePath(`/dashboard/registrations/${registrationId}`);
     revalidatePath('/dashboard/students');

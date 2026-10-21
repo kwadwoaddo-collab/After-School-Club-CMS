@@ -9,6 +9,8 @@ const mockDbQuery = {
 };
 const mockTransaction = vi.fn();
 const mockInsert = vi.fn();
+const mockEligibleRows = vi.fn();
+const mockSelect = () => ({ from: () => ({ where: mockEligibleRows }) });
 
 function makeTxInsertChain(returnValue: any = [{ id: 'mock-invoice-id', amount: '100.00' }]) {
     const chain: any = {
@@ -23,6 +25,7 @@ function makeTxInsertChain(returnValue: any = [{ id: 'mock-invoice-id', amount: 
 vi.mock('@/db', () => ({
     db: {
         query: mockDbQuery,
+        select: mockSelect,
         transaction: (cb: any) => mockTransaction(cb),
         insert: (...args: any[]) => mockInsert(...args),
     },
@@ -31,6 +34,7 @@ vi.mock('@/db', () => ({
 describe('Cron Billing Route (§9, Phase 11)', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        mockEligibleRows.mockResolvedValue([{ id: 'child-1' }]);
         process.env.CRON_SECRET = 'test-secret';
         mockDbQuery.billingConfigs.findMany.mockResolvedValue([]);
         mockDbQuery.billingCycleSkips.findFirst.mockResolvedValue(null);
@@ -82,7 +86,7 @@ describe('Cron Billing Route (§9, Phase 11)', () => {
                 billingAnchorDate: '2026-09-01',
                 runs: [],
                 skips: [],
-                children: [],
+                children: [{ child: { id: 'child-1', firstName: 'Alice', lastName: 'Smith' } }],
             },
         ]);
 
@@ -111,7 +115,7 @@ describe('Cron Billing Route (§9, Phase 11)', () => {
                 leadTimeValue: 1,
                 runs: [],
                 skips: [],
-                children: [],
+                children: [{ child: { id: 'child-1', firstName: 'Alice', lastName: 'Smith' } }],
             },
         ]);
 
@@ -144,7 +148,7 @@ describe('Cron Billing Route (§9, Phase 11)', () => {
                 leadTimeValue: 1,
                 runs: [],
                 skips: [{ periodStart: currentPeriodStartStr }],
-                children: [],
+                children: [{ child: { id: 'child-1', firstName: 'Alice', lastName: 'Smith' } }],
             },
         ]);
 
@@ -193,6 +197,7 @@ describe('Cron Billing Route (§9, Phase 11)', () => {
 
         mockTransaction.mockImplementation(async (cb: any) => {
             const tx = {
+                select: mockSelect,
                 execute: vi.fn().mockResolvedValue(undefined),
                 query: {
                     billingCycleSkips: { findFirst: vi.fn().mockResolvedValue(null) },
@@ -264,13 +269,14 @@ describe('Cron Billing Route (§9, Phase 11)', () => {
                 leadTimeValue: 0, // Only period whose start <= today is due; period ending today has start ~1 month ago
                 runs: [],
                 skips: [],
-                children: [],
+                children: [{ child: { id: 'child-1', firstName: 'Alice', lastName: 'Smith' } }],
             },
         ]);
 
         const createdPeriodEnds: string[] = [];
         mockTransaction.mockImplementation(async (cb: any) => {
             const tx = {
+                select: mockSelect,
                 execute: vi.fn().mockResolvedValue(undefined),
                 query: {
                     billingCycleSkips: { findFirst: vi.fn().mockResolvedValue(null) },
@@ -318,7 +324,7 @@ describe('Cron Billing Route (§9, Phase 11)', () => {
                 leadTimeValue: 1,
                 runs: [], // config.runs only loads success=true, so discarded run is absent from config.runs!
                 skips: [],
-                children: [],
+                children: [{ child: { id: 'child-1', firstName: 'Alice', lastName: 'Smith' } }],
             },
         ]);
 
@@ -340,5 +346,68 @@ describe('Cron Billing Route (§9, Phase 11)', () => {
         expect(data.generated).toBe(0);
         expect(data.skipped_already_exists).toBeGreaterThanOrEqual(1);
         expect(mockTransaction).not.toHaveBeenCalled();
+    });
+});
+
+
+describe('Confirmed enrolment admission', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        process.env.CRON_SECRET = 'test-secret';
+        mockDbQuery.billingConfigs.findMany.mockResolvedValue([{
+            id: 'cfg-mixed', parentId: 'family', centreId: 'centre', organisationId: 'org',
+            status: 'active', billingAnchorDate: '2026-01-01', agreedMonthlyPence: 190000,
+            children: [
+                { child: { id: 'confirmed', firstName: 'Confirmed', lastName: 'Child' } },
+                { child: { id: 'prospect', firstName: 'Prospect', lastName: 'Child' } },
+            ], runs: [], skips: [],
+        }]);
+    });
+    it('does not bill the full family fee when one covered sibling awaits confirmation', async () => {
+        mockEligibleRows.mockResolvedValue([{ id: 'confirmed' }]);
+        const { POST } = await import('./route');
+        const response = await POST(new NextRequest('http://localhost/api/cron/billing', {
+            headers: { Authorization: 'Bearer test-secret' },
+        }));
+        const result = await response.json();
+        expect(result.generated).toBe(0);
+        expect(result.skipped_unconfirmed).toBe(1);
+        expect(mockTransaction).not.toHaveBeenCalled();
+        expect(mockInsert).not.toHaveBeenCalled();
+    });
+    it('rechecks confirmation inside the locked transaction before writing an invoice', async () => {
+        mockEligibleRows.mockResolvedValueOnce([{ id: 'confirmed' }, { id: 'prospect' }]).mockResolvedValue([]);
+        mockDbQuery.billingCycleSkips.findFirst.mockResolvedValue(null);
+        mockDbQuery.invoices.findFirst.mockResolvedValue(null);
+        mockDbQuery.billingRuns.findFirst.mockResolvedValue(null);
+        const txInsert = vi.fn();
+        const execute = vi.fn().mockResolvedValue(undefined);
+        mockTransaction.mockImplementation(async cb => cb({
+            select: mockSelect, execute, insert: txInsert,
+            query: { billingCycleSkips: { findFirst: vi.fn().mockResolvedValue(null) },
+                billingRuns: { findFirst: vi.fn().mockResolvedValue(null) },
+                invoices: { findFirst: vi.fn().mockResolvedValue(null) } },
+        }));
+        const { POST } = await import('./route');
+        const response = await POST(new NextRequest('http://localhost/api/cron/billing', {
+            headers: { Authorization: 'Bearer test-secret' },
+        }));
+        const result = await response.json();
+        expect(result.generated).toBe(0);
+        expect(result.errors).toBe(1);
+        expect(mockTransaction).toHaveBeenCalled();
+        expect(execute).toHaveBeenCalled();
+        expect(txInsert).not.toHaveBeenCalled();
+    });
+
+    it('retains prospective configurations without creating an invoice or changing their history', async () => {
+        mockEligibleRows.mockResolvedValue([]);
+        const { POST } = await import('./route');
+        const response = await POST(new NextRequest('http://localhost/api/cron/billing', {
+            headers: { Authorization: 'Bearer test-secret' },
+        }));
+        expect((await response.json()).skipped_unconfirmed).toBe(1);
+        expect(mockTransaction).not.toHaveBeenCalled();
+        expect(mockInsert).not.toHaveBeenCalled();
     });
 });

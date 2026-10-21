@@ -15,6 +15,7 @@ import {
     toUtcDate,
 } from '@/lib/billing/date-engine';
 import { nanoid } from 'nanoid';
+import { getFinanceEligibleChildIds, assertEligibleBillingCoverage, lockEnrolmentForBilling } from '@/lib/enrolment/finance-eligibility';
 import { isQuarantinedParentId } from '@/lib/data-quality/quarantine';
 
 /**
@@ -46,6 +47,7 @@ export async function POST(request: NextRequest) {
     const results = {
         processed: 0,
         generated: 0,
+        skipped_unconfirmed: 0,
         skipped_already_exists: 0,
         skipped_not_due: 0,
         skipped_no_amount: 0,
@@ -84,6 +86,13 @@ export async function POST(request: NextRequest) {
                 // DATA-REMEDIATION-1A: Quarantine safety guard
                 if (config.parentId && isQuarantinedParentId(config.parentId)) {
                     results.skipped_quarantined++;
+                    continue;
+                }
+
+                const coveredIds = (config.children ?? []).map(cc => cc.child.id);
+                const eligibleIds = await getFinanceEligibleChildIds(config.organisationId, coveredIds, db, { parentId: config.parentId, centreId: config.centreId });
+                if (coveredIds.length === 0 || coveredIds.some(id => !eligibleIds.has(id))) {
+                    results.skipped_unconfirmed++;
                     continue;
                 }
 
@@ -270,6 +279,9 @@ export async function POST(request: NextRequest) {
                         if (inTxInvoice) {
                             return { skipped: true, byManager: false, notEligible: false };
                         }
+
+                        await lockEnrolmentForBilling(tx, coveredIds);
+                        assertEligibleBillingCoverage(coveredIds, await getFinanceEligibleChildIds(config.organisationId, coveredIds, tx, { parentId: config.parentId, centreId: config.centreId }));
 
                         const invoiceNumber = `INV-${nanoid(6).toUpperCase()}`;
 

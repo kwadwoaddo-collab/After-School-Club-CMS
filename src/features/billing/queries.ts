@@ -15,6 +15,7 @@ import {
     toUtcDate,
     LeadTimeUnit,
 } from '@/lib/billing/date-engine';
+import { financeEligibleChildSql, getFinanceEligibleChildIds } from '@/lib/enrolment/finance-eligibility';
 import { isQuarantinedParentId } from '@/lib/data-quality/quarantine';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -93,7 +94,11 @@ export async function fetchBillingCycles(
     });
 
     // Filter out configs linked to soft-deleted parents
-    const configs = rawConfigs.filter(c => !c.parent?.deletedAt);
+    const eligibleIds = await getFinanceEligibleChildIds(orgId);
+    // Keep mixed configurations visible for review, but never charge their full
+    // agreed family fee after silently removing an unconfirmed sibling.
+    const configs = rawConfigs.filter(c => !c.parent?.deletedAt &&
+        (c.children ?? []).some(cc => eligibleIds.has(cc.child.id)));
     const todayUtc = toUtcDate(new Date());
 
     const enriched = await Promise.all(configs.map(async (config) => {
@@ -147,14 +152,14 @@ export async function fetchBillingCycles(
             periodEndStr       = schedule.periodEnd.toISOString().split('T')[0];
         } catch { /* malformed config */ }
 
-        const coveredChildren: CoveredChild[] = (config.children ?? []).map(cc => ({
+        const coveredChildren: CoveredChild[] = (config.children ?? []).filter(cc => eligibleIds.has(cc.child.id)).map(cc => ({
             childId:   cc.child.id,
             childName: `${cc.child.firstName} ${cc.child.lastName}`,
         }));
 
         // Determine status (§26, B7)
         let cycleStatus: BillingCycleRow['cycleStatus'] = 'needs_setup';
-        if (config.parentId && isQuarantinedParentId(config.parentId)) {
+        if ((config.children ?? []).some(cc => !eligibleIds.has(cc.child.id)) || (config.parentId && isQuarantinedParentId(config.parentId))) {
             cycleStatus = 'data_review_required';
         } else if (config.status === 'paused') {
             cycleStatus = 'paused';
@@ -203,7 +208,7 @@ export async function fetchBillingCycles(
     const registeredKids = await db.query.children.findMany({
         where: and(
             eq(children.organisationId, orgId),
-            eq(children.isRegistered, true),
+            financeEligibleChildSql(),
             isNull(children.deletedAt),
             centreId !== 'all' ? eq(children.centreId, centreId) : undefined,
         ),
@@ -418,7 +423,7 @@ export async function fetchBillingSetupRequired(orgId: string, centreId: string 
     const registeredKids = await db.query.children.findMany({
         where: and(
             eq(children.organisationId, orgId),
-            eq(children.isRegistered, true),
+            financeEligibleChildSql(),
             isNull(children.deletedAt),
             childCentreCond,
         ),

@@ -45,6 +45,9 @@ export default function StudentForm({ accessibleCentres }: StudentFormProps) {
         centreId: accessibleCentres.length === 1 ? accessibleCentres[0].id : '',
     });
 
+    const [existingEnrolled, setExistingEnrolled] = useState(false);
+    const [enrolmentStartDate, setEnrolmentStartDate] = useState('');
+    const [enrolmentReason, setEnrolmentReason] = useState('');
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [serverError, setServerError] = useState<string | null>(null);
@@ -104,7 +107,7 @@ export default function StudentForm({ accessibleCentres }: StudentFormProps) {
             const res = await fetch('/api/students', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData),
+                body: JSON.stringify({ ...formData, existingEnrolled, enrolmentReason, enrolmentStartDate: enrolmentStartDate || undefined }),
             });
 
             if (!res.ok) {
@@ -140,7 +143,7 @@ export default function StudentForm({ accessibleCentres }: StudentFormProps) {
                 </div>
                 <div>
                     <h3 className="text-section-title text-text mb-1">Student added</h3>
-                    <p className="text-small-body text-text-secondary">The student has been successfully registered to your centre.</p>
+                    <p className="text-small-body text-text-secondary">The student record has been saved. Billing eligibility requires confirmed enrolment.</p>
                 </div>
                 <div className="flex items-center gap-3">
                     <Button asChild>
@@ -150,6 +153,7 @@ export default function StudentForm({ accessibleCentres }: StudentFormProps) {
                         variant="secondary"
                         onClick={() => {
                             setCreatedStudentId(null);
+                            setExistingEnrolled(false); setEnrolmentReason(''); setEnrolmentStartDate('');
                             setFormData({
                                 firstName: '',
                                 lastName: '',
@@ -265,7 +269,13 @@ export default function StudentForm({ accessibleCentres }: StudentFormProps) {
                 </div>
             </div>
 
-            <div className="flex items-center justify-end gap-3 pt-5 border-t border-border-subtle">
+            <div className="space-y-2 rounded-xl border border-border bg-card p-4">
+                    <label className="flex items-center gap-2 text-sm text-foreground"><input type="checkbox" checked={existingEnrolled} onChange={e => setExistingEnrolled(e.target.checked)} /> Existing enrolled student (Owner/Manager confirmation)</label>
+                    <p className="text-xs text-muted-foreground">Leave unchecked for prospects. Confirm only a student who has actually joined; billing configuration is still required.</p>
+                    {existingEnrolled && <label className="block text-sm text-foreground">Agreed start date<input type="date" required value={enrolmentStartDate} onChange={e => setEnrolmentStartDate(e.target.value)} className="block rounded border border-border bg-background p-2" /></label>}
+                    {existingEnrolled && <label className="block text-sm text-foreground">Reason for existing enrolment<input value={enrolmentReason} onChange={e => setEnrolmentReason(e.target.value)} minLength={5} maxLength={1000} required className="mt-1 block w-full rounded-lg border border-border bg-background p-2" /></label>}
+            </div>
+            <div className="flex flex-wrap items-center justify-end gap-3 pt-5 border-t border-border-subtle">
                 <Button asChild variant="secondary" type="button">
                     <Link href="/dashboard/students">Cancel</Link>
                 </Button>

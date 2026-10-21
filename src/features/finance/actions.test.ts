@@ -180,6 +180,18 @@ describe('finance/actions — createInvoice authorization (Milestone 3G, L2a)', 
         })).rejects.toThrow(/children not found/);
     });
 
+    it('rejects parent-only invoices that bypass student confirmation', async () => {
+        const { auth } = await import('@/lib/auth');
+        (auth as ReturnType<typeof vi.fn>).mockResolvedValue(OWNER_SESSION);
+        centresFindFirst.mockResolvedValue({ id: 'centre-target' });
+        parentsFindFirst.mockResolvedValue({ id: 'parent-1' });
+        const { createInvoice } = await import('./actions');
+        await expect(createInvoice({ parentId: 'parent-1', childIds: [], amount: '100.00',
+            invoiceDate: new Date(), dueDate: new Date(), centreId: 'centre-target',
+        })).rejects.toThrow(/confirmed signed-up student/);
+        expect(dbTransaction).not.toHaveBeenCalled();
+    });
+
     it('allows ORG_OWNER with a valid centre/parent/children combination', async () => {
         const { auth } = await import('@/lib/auth');
         (auth as ReturnType<typeof vi.fn>).mockResolvedValue(OWNER_SESSION);
@@ -187,6 +199,8 @@ describe('finance/actions — createInvoice authorization (Milestone 3G, L2a)', 
         parentsFindFirst.mockResolvedValue({ id: 'parent-1', firstName: 'Mark', email: 'mark@example.com' });
         dbSelectWhere.mockResolvedValue([{ id: 'child-1', firstName: 'Ava', lastName: 'Brown' }]);
         dbTransaction.mockImplementation(async (cb: any) => cb({
+            execute: vi.fn().mockResolvedValue(undefined),
+            select: () => ({ from: () => ({ where: () => Promise.resolve([{ id: 'child-1' }]) }) }),
             insert: () => ({
                 values: () => ({
                     returning: () => Promise.resolve([{ id: 'inv-1', invoiceNumber: 'INV-ABC123', amount: '100.00', dueDate: new Date() }]),

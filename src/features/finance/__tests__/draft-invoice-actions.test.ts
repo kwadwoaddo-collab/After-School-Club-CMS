@@ -38,6 +38,7 @@ function makeTxSelectChain(returnValue: any = []) {
         from: vi.fn(() => chain),
         where: vi.fn(() => chain),
         for: vi.fn().mockResolvedValue(returnValue),
+        limit: vi.fn().mockResolvedValue(returnValue),
     };
     // Also support when .for is not chained
     chain.then = (resolve: any) => resolve(returnValue);
@@ -80,6 +81,7 @@ vi.mock('@/db', () => ({
             insert: (...args: any[]) => (mockTxInsert as any)(...args),
             delete: (...args: any[]) => (mockTxDelete as any)(...args),
             query: mockDbQuery,
+            execute: vi.fn().mockResolvedValue(undefined),
         }),
     },
 }));
@@ -151,6 +153,19 @@ describe('Draft Invoice Lifecycle Actions (§18, B1, B2, B3)', () => {
             const { issueDraftInvoice } = await import('../actions');
             await expect(issueDraftInvoice('inv-1'))
                 .rejects.toThrow(/Invoice cannot be issued without a valid amount greater than zero/);
+        });
+
+        it('keeps an unconfirmed family draft intact and refuses issuance', async () => {
+            const { requireTenantSession } = await import('@/lib/session');
+            (requireTenantSession as any).mockResolvedValue(OWNER_SESSION);
+            mockTxSelect.mockReturnValueOnce(makeTxSelectChain([{
+                id: 'inv-prospect', parentId: 'prospect-parent', organisationId: 'org-1', centreId: 'centre-1',
+                status: 'draft', amount: '150.00', dueDate: new Date('2026-10-15'),
+            }])).mockReturnValueOnce(makeTxSelectChain([]));
+            const { issueDraftInvoice } = await import('../actions');
+            await expect(issueDraftInvoice('inv-prospect')).rejects.toThrow(/Confirm student enrolment/);
+            expect(mockTxUpdate).not.toHaveBeenCalled();
+            expect(mockTxInsert).not.toHaveBeenCalled();
         });
 
         it('successfully transitions draft to sent and audits', async () => {

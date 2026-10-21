@@ -7,6 +7,7 @@ import { eq } from 'drizzle-orm';
 import Link from 'next/link';
 import { ChevronLeft, Calendar, Clock, MapPin, User, Mail, Phone, CheckCircle2, XCircle, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
+import { requiresAssessmentOutcome } from '@/features/bookings/assessment-outcome';
 import MarkAttendedButton from '@/features/bookings/components/MarkAttendedButton';
 import InternalNotesTimeline from '@/features/students/components/InternalNotesTimeline';
 import { getStudentNotes } from '@/features/students/notes.actions';
@@ -149,6 +150,12 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
                 </div>
             </div>
 
+            {requiresAssessmentOutcome(booking.status, booking.startAt, new Date(), booking.attendees.map(a => a.attendanceStatus)) && (
+                <div role="status" className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-foreground">
+                    <strong>Assessment outcome required</strong>
+                    <p className="text-sm mt-1">The appointment date has passed. Record attendance below or reschedule. Attendance does not confirm enrolment: returned registration forms remain awaiting confirmation until staff confirm signed up.</p>
+                </div>
+            )}
             {/* Booking Lifecycle Timeline */}
             <Card className="p-6">
                 <h3 className="text-label text-text-muted mb-4">Booking Lifecycle</h3>

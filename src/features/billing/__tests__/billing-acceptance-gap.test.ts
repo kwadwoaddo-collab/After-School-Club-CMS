@@ -46,6 +46,7 @@ function makeTxInsertChain(returnValue: any = [{ id: 'mock-invoice-id', amount: 
 vi.mock('@/db', () => ({
     db: {
         query: mockDbQuery,
+        select: (...args: any[]) => (mockTxSelect as any)(...args),
         transaction: async (cb: any) => cb({
             query: mockTxQuery,
             select: (...args: any[]) => (mockTxSelect as any)(...args),
@@ -64,6 +65,7 @@ describe('Category B Acceptance & Gap Verification (Issues D, E, 8, 9)', () => {
         vi.clearAllMocks();
         mockTxInsert.mockImplementation(() => makeTxInsertChain());
         mockTxExecute.mockResolvedValue(undefined);
+        mockTxSelect.mockImplementation(() => ({ from: () => ({ where: () => Promise.resolve([{ id: 'child-1', count: 0 }]) }) }));
     });
 
     describe('Issue E: Copy-Forward Proof (§16, §17, Ticket 7)', () => {
@@ -78,7 +80,7 @@ describe('Category B Acceptance & Gap Verification (Issues D, E, 8, 9)', () => {
                 organisationId: 'org-1',
                 status: 'active',
                 agreedMonthlyPence: 0,
-                children: [],
+                children: [{ child: { id: 'child-1', firstName: 'Child', lastName: 'One' } }],
             });
             mockDbQuery.billingCycleSkips.findFirst.mockResolvedValue(null);
             mockDbQuery.billingRuns.findFirst.mockResolvedValue(null);
@@ -134,7 +136,7 @@ describe('Category B Acceptance & Gap Verification (Issues D, E, 8, 9)', () => {
                 organisationId: 'org-1',
                 status: 'active',
                 agreedMonthlyPence: 0,
-                children: [],
+                children: [{ child: { id: 'child-1', firstName: 'Child', lastName: 'One' } }],
             });
             mockDbQuery.billingCycleSkips.findFirst.mockResolvedValue(null);
             mockDbQuery.billingRuns.findFirst.mockResolvedValue(null);
@@ -186,7 +188,7 @@ describe('Category B Acceptance & Gap Verification (Issues D, E, 8, 9)', () => {
                 organisationId: 'org-1',
                 status: 'active',
                 agreedMonthlyPence: 0,
-                children: [],
+                children: [{ child: { id: 'child-1', firstName: 'Child', lastName: 'One' } }],
             });
             mockDbQuery.billingCycleSkips.findFirst.mockResolvedValue(null);
             mockDbQuery.billingRuns.findFirst.mockResolvedValue(null);
@@ -239,7 +241,7 @@ describe('Category B Acceptance & Gap Verification (Issues D, E, 8, 9)', () => {
                 organisationId: 'org-1',
                 status: 'active',
                 agreedMonthlyPence: 0,
-                children: [],
+                children: [{ child: { id: 'child-1', firstName: 'Child', lastName: 'One' } }],
             });
             mockDbQuery.billingCycleSkips.findFirst.mockResolvedValue(null);
             mockDbQuery.billingRuns.findFirst.mockResolvedValue(null);
@@ -289,7 +291,7 @@ describe('Category B Acceptance & Gap Verification (Issues D, E, 8, 9)', () => {
                 organisationId: 'org-1',
                 status: 'active',
                 agreedMonthlyPence: 20000,
-                children: [],
+                children: [{ child: { id: 'child-1', firstName: 'Child', lastName: 'One' } }],
             });
             mockDbQuery.billingCycleSkips.findFirst.mockResolvedValue(null);
             mockDbQuery.billingRuns.findFirst.mockResolvedValue(null);

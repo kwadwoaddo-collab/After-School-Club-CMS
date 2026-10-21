@@ -1,7 +1,8 @@
+import { isValidEnrolmentStartDate } from '@/lib/enrolment/start-date';
 import { logger } from '@/lib/logger';
 import { requireApiAuth } from '@/lib/require-auth';
 import { db } from '@/db';
-import { parents, children, centres } from '@/db/schema';
+import { parents, children, centres, auditEvents } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
@@ -9,6 +10,9 @@ import { z } from 'zod';
 import * as permissions from '@/lib/permissions';
 
 const schema = z.object({
+    existingEnrolled: z.boolean().default(false),
+    enrolmentStartDate: z.string().refine(isValidEnrolmentStartDate, 'Invalid start date').optional(),
+    enrolmentReason: z.string().trim().max(1000).optional(),
     firstName: z.string().min(2),
     lastName: z.string().min(2),
     dateOfBirth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Must be YYYY-MM-DD'),
@@ -37,6 +41,9 @@ export async function POST(req: Request) {
     try {
         const body = await req.json();
         const data = schema.parse(body);
+        if (data.existingEnrolled && (!['ORG_OWNER', 'MANAGER'].includes(authResult.user.role) || !data.enrolmentStartDate || !data.enrolmentReason || data.enrolmentReason.length < 5)) {
+            return NextResponse.json({ error: 'Owner/Manager confirmation and a reason are required for an existing enrolled student' }, { status: 403 });
+        }
 
         // ── Validate centreId belongs to the session user's org ──────────
         // Prevents a staff member assigning a student to a centre from
@@ -112,8 +119,16 @@ export async function POST(req: Request) {
                 lastName: data.lastName,
                 dateOfBirth: new Date(data.dateOfBirth),
                 schoolYear: data.schoolYear,
+                source: 'registration',
+                isRegistered: data.existingEnrolled,
+                registeredAt: data.existingEnrolled ? new Date() : null,
             }).returning({ id: children.id });
 
+            if (data.existingEnrolled) await tx.insert(auditEvents).values({
+                organisationId: orgId, userId: authResult.user.id,
+                eventType: 'manual_student_enrolment_confirmed',
+                eventData: JSON.stringify({ childId: newChild.id, reason: data.enrolmentReason, startDate: data.enrolmentStartDate, confirmedAt: new Date().toISOString() }),
+            });
             return { childId: newChild.id, parentId: pId };
         });
 

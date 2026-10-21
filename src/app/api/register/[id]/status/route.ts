@@ -3,8 +3,8 @@ import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { getApiSession } from '@/lib/session';
 import { db } from '@/db';
-import { registrations, registrationParents, registrationChildren, organisations, centres, children } from '@/db/schema';
-import { and, eq, inArray } from 'drizzle-orm';
+import { registrations, registrationParents, registrationChildren, organisations, centres, children, auditEvents } from '@/db/schema';
+import { and, eq, inArray, sql } from 'drizzle-orm';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { emailService } from '@/lib/services/email';
 import { revalidatePath } from 'next/cache';
@@ -21,6 +21,8 @@ export async function PATCH(
     if (!session?.user?.organisationId) {
         return NextResponse.json({ error: 'Unauthorised' }, { status: 401 });
     }
+
+    if (!['ORG_OWNER', 'MANAGER', 'FRONT_DESK'].includes(session.user.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
     const { id } = await params;
 
@@ -55,15 +57,18 @@ export async function PATCH(
 
     // ── 4. Centre-level access check for non-ORG_OWNER users ───────────────
     const userRole = (session.user as any).role as string | undefined;
-    if (userRole !== 'ORG_OWNER' && reg.centreId) {
+    if (userRole !== 'ORG_OWNER') {
         const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
-        if (!accessibleCentreIds.includes(reg.centreId)) {
+        if (!reg.centreId || !accessibleCentreIds.includes(reg.centreId)) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
     }
 
+    await db.transaction(async tx => {
+        const lockedIds = [...new Set((reg.registrationChildren ?? []).map(c => c.childId).filter((childId): childId is string => Boolean(childId)))].sort();
+        for (const childId of lockedIds) await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${`enrolment:${childId}`}))`);
     // ── 5. Perform the update ───────────────────────────────────────────────
-    await db
+    await tx
         .update(registrations)
         .set({ status: status as RegistrationStatus, updatedAt: new Date() })
         .where(eq(registrations.id, id));
@@ -74,16 +79,20 @@ export async function PATCH(
             .map(c => c.childId)
             .filter((cid): cid is string => Boolean(cid));
         if (childIds.length > 0) {
-            await db
+            await tx
                 .update(children)
                 .set({
                     isRegistered: true,
                     registeredAt: new Date(),
                     updatedAt: new Date(),
                 })
-                .where(and(inArray(children.id, childIds), eq(children.organisationId, session.user.organisationId)));
+                .where(and(inArray(children.id, childIds), eq(children.organisationId, session.user.organisationId!)));
         }
     }
+
+    await tx.insert(auditEvents).values({ organisationId: session.user.organisationId!, userId: session.user.id,
+        eventType: 'registration_status_changed', eventData: JSON.stringify({ registrationId: id, previousStatus: reg.status, status, startDate: reg.startDate, confirmedAt: new Date().toISOString() }) });
+    });
 
     // ── 6. Fire status change email (non-blocking) ──────────────────────────
     // Only send if status actually changed
@@ -122,6 +131,7 @@ export async function PATCH(
         })();
     }
 
+    revalidatePath('/dashboard/finance');
     revalidatePath('/dashboard/registrations');
     revalidatePath(`/dashboard/registrations/${id}`);
     if (status === 'signed_up') {

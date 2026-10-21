@@ -139,7 +139,7 @@ function FamilyBillingCard({ cycle, onGenerated }: { cycle: BillingCycleRow; onG
                         {cycle.cycleStatus === 'data_review_required' && (
                             <p className="text-xs text-amber-700 dark:text-amber-400 font-medium flex items-start gap-1.5 pt-1">
                                 <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
-                                Imported family details require verification before billing can be set up.
+                                Confirm registration and review which children this fee covers before generating another invoice. The agreed family fee has not been changed.
                             </p>
                         )}
                         {cycle.cycleStatus === 'needs_setup' && (
@@ -309,6 +309,10 @@ export default function BillingCyclesTab({ cycles, centreId }: Props) {
 
     return (
         <div className="space-y-5">
+            <div className="rounded-2xl border border-border bg-card p-4 text-sm text-muted-foreground space-y-2">
+                <p>Billing includes confirmed signed-up students, or existing students explicitly confirmed by an Owner or Manager. Returning a registration form alone does not enable billing.</p>
+                <p>Prospective families stay in <Link href="/dashboard/registrations" className="text-primary underline">Registrations</Link> and <Link href="/dashboard/students" className="text-primary underline">Students</Link> for follow-up. Older or imported records without confirmation need review on the student profile. Existing invoices, payments and receipts remain available.</p>
+            </div>
             {/* Filter pills + Generate All */}
             <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
                 <div className="flex gap-2 flex-wrap">

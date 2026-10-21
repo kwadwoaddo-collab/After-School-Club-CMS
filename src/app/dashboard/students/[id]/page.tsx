@@ -1,3 +1,4 @@
+import { getFinanceEligibleChildIds } from '@/lib/enrolment/finance-eligibility';
 import { logger } from '@/lib/logger';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { notFound } from 'next/navigation';
@@ -5,6 +6,7 @@ import { requireAuth } from '@/lib/require-auth';
 import { db } from '@/db';
 import { children, parents, bookings, centres, bookingAttendees, registrationChildren, registrations, registrationParents } from '@/db/schema';
 import { eq, desc, sql, and, isNull } from 'drizzle-orm';
+import ConfirmExistingEnrolment from '@/features/students/components/ConfirmExistingEnrolment';
 import StudentProfile from '@/features/students/components/StudentProfile';
 import { getStudentNotes } from '@/features/students/notes.actions';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
@@ -216,7 +218,10 @@ export default async function StudentProfilePage(
         logger.error('[student-profile] fetchStudentBillingConfig failed:', err);
     }
 
+    const enrolledChildIds = await getFinanceEligibleChildIds(session.user.organisationId, [id]);
     return (
+        <>
+        {!student.registrationId && !enrolledChildIds.has(id) && ['ORG_OWNER', 'MANAGER'].includes(userRole ?? '') && <ConfirmExistingEnrolment childId={id} />}
         <StudentProfile
             student={{
                 ...student,
@@ -230,5 +235,6 @@ export default async function StudentProfilePage(
             siblings={siblings}
             registrationDetail={registrationDetail}
         />
+        </>
     );
 }
