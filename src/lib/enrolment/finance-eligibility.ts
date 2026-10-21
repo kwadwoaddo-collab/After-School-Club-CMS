@@ -2,20 +2,19 @@ import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { db } from '@/db';
 import { children } from '@/db/schema';
 
-/** Form receipt is not enrolment. A stale isRegistered flag cannot override a
- * linked registration awaiting confirmation. Unlinked, explicitly registered
- * records need a staff confirmation audit as proof of manual enrolment. */
+/** Public form receipt neither grants nor revokes staff-confirmed enrolment.
+ * A current signed-up registration or explicit manual confirmation audit is
+ * required; the legacy isRegistered flag alone is never sufficient. */
 export function financeEligibleChildSql() {
     return sql`(
-        (SELECT r.status FROM registration_children rc
+        EXISTS (SELECT 1 FROM registration_children rc
             JOIN registrations r ON r.id = rc.registration_id
             WHERE rc.child_id = ${children.id}
               AND r.organisation_id = ${children.organisationId}
               AND (r.centre_id IS NULL OR r.centre_id = ${children.centreId})
-            ORDER BY r.created_at DESC, r.id DESC LIMIT 1) = 'signed_up'
+              AND r.status = 'signed_up')
         OR (
             ${children.isRegistered} = true
-            AND NOT EXISTS (SELECT 1 FROM registration_children rc WHERE rc.child_id = ${children.id})
             AND EXISTS (
                 SELECT 1 FROM audit_events ae
                 WHERE ae.organisation_id = ${children.organisationId}
