@@ -19,7 +19,7 @@ import {
     ShieldAlert,
     Wallet
 } from 'lucide-react';
-import { format } from 'date-fns';
+import { formatInvoiceDate, formatInvoicePeriod, invoiceBalanceLabel } from '../domain/invoice-display';
 import { useToast } from '@/components/ui/ToastProvider';
 import { recordPayment } from '@/features/finance/actions';
 import { parseStoredDecimalToPence, formatPenceToDecimal } from '../domain/payment-eligibility';
@@ -53,6 +53,8 @@ export interface FinanceInvoice {
     needsBillingReview?: boolean;
     invoiceDate: string | Date;
     dueDate: string | Date;
+    billingPeriodStart?: string | Date | null;
+    billingPeriodEnd?: string | Date | null;
     createdAt?: string | Date;
     updatedAt?: string | Date;
     centre?: { id: string; name: string } | null;
@@ -70,17 +72,6 @@ export interface FinanceDataGridClientProps {
     statusFilter?: string;
     centres?: { id: string; name: string }[];
 }
-
-const formatDateSafe = (dateVal: string | Date | null | undefined, formatStr = 'MMM d, yyyy'): string => {
-    if (!dateVal) return '-';
-    try {
-        const d = new Date(dateVal);
-        if (isNaN(d.getTime())) return '-';
-        return format(d, formatStr);
-    } catch {
-        return '-';
-    }
-};
 
 export default function FinanceDataGridClient({ invoices = [], totalCount = 0, page = 1, pageSize = 50, statusFilter = 'all', centres = [] }: FinanceDataGridClientProps) {
     const router = useRouter();
@@ -281,6 +272,7 @@ export default function FinanceDataGridClient({ invoices = [], totalCount = 0, p
                 </div>
             </div>
 
+            <h2 id="invoice-list" className="scroll-mt-24 text-xl font-bold text-foreground">Invoice list</h2>
             {/* Segmented Toolbar */}
             <div className="flex flex-col sm:flex-row justify-between items-center bg-card/80 backdrop-blur-md p-3.5 rounded-3xl border border-border/60 shadow-sm gap-4">
                 <div className="flex bg-secondary/50 p-1.5 rounded-2xl w-full sm:w-auto border border-border/40 gap-1">
@@ -327,7 +319,7 @@ export default function FinanceDataGridClient({ invoices = [], totalCount = 0, p
 
             {/* Data Grid Table */}
             <div className="bg-card/90 backdrop-blur-md border border-border/60 rounded-3xl overflow-hidden shadow-sm transition-all duration-300">
-                <p className="px-4 py-2 text-xs text-muted-foreground border-b border-border">Scroll horizontally when needed. Actions stay on the right.</p>
+                <p className="px-4 py-2 text-xs text-muted-foreground border-b border-border">Each row is one invoice. Billing period is the service covered; Created is when the record was made. Scroll for actions.</p>
                 <div role="region" aria-label="Invoices table, scroll for more columns" tabIndex={0} className="overflow-x-auto focus-visible:outline-2 focus-visible:outline-primary">
                     <table className="w-full min-w-[760px] text-left border-collapse">
                         <thead>
@@ -343,9 +335,9 @@ export default function FinanceDataGridClient({ invoices = [], totalCount = 0, p
                                 </th>
                                 <th className="p-4 font-bold tracking-wider">Invoice #</th>
                                 <th className="p-4 font-bold tracking-wider">Client / Student</th>
-                                <th className="p-4 font-bold tracking-wider">Date / Due</th>
+                                <th className="p-4 font-bold tracking-wider">Billing period / Due</th>
                                 <th className="p-4 font-bold tracking-wider">Status</th>
-                                <th className="p-4 font-bold tracking-wider text-right">Amount</th>
+                                <th className="p-4 font-bold tracking-wider text-right">Total / Remaining</th>
                                 <th className="p-4 font-bold tracking-wider text-right sticky right-0 z-10 bg-card">Actions</th>
                             </tr>
                         </thead>
@@ -369,10 +361,7 @@ export default function FinanceDataGridClient({ invoices = [], totalCount = 0, p
                                     !!dueDateObj &&
                                     !isNaN(dueDateObj.getTime()) &&
                                     dueDateObj < todayMidnightUtc;
-                                const payments = invoice.payments || [];
-                                const outstanding = Number(invoice.amount) - payments
-                                    .filter((p: InvoicePayment) => !p.status || p.status === 'verified')
-                                    .reduce((sum: number, p: InvoicePayment) => sum + Number(p.amount), 0);
+                                const balanceLabel = invoiceBalanceLabel(invoice);
 
                                 return (
                                     <tr 
@@ -390,15 +379,11 @@ export default function FinanceDataGridClient({ invoices = [], totalCount = 0, p
                                             />
                                         </td>
                                         <td className="p-4 font-bold text-primary">
-                                            <span 
-                                                onClick={(e) => { e.stopPropagation(); router.push('/dashboard/finance/invoices/' + invoice.id); }}
-                                                className="hover:underline hover:text-primary/80 transition-colors cursor-pointer"
-                                            >
-                                                {invoice.invoiceNumber}
-                                            </span>
+                                            <Link href={`/dashboard/finance/invoices/${invoice.id}`} onClick={event => event.stopPropagation()} className="hover:underline hover:text-primary/80 transition-colors whitespace-nowrap">{invoice.invoiceNumber}</Link>
+                                            <p className="text-xs font-normal text-muted-foreground whitespace-nowrap">{invoice.createdAt ? 'Created' : 'Invoice date'} {formatInvoiceDate(invoice.createdAt || invoice.invoiceDate)}</p>
                                         </td>
                                         <td className="p-4">
-                                            <div className="font-bold text-foreground">
+                                            <div className="font-bold text-foreground whitespace-nowrap">
                                                 {invoice.parent ? (
                                                     <Link href={`/dashboard/parents/${invoice.parent.id}`} className="hover:underline hover:text-primary transition-colors" onClick={(e) => e.stopPropagation()}>
                                                         {invoice.parent.firstName} {invoice.parent.lastName}
@@ -406,7 +391,7 @@ export default function FinanceDataGridClient({ invoices = [], totalCount = 0, p
                                                 ) : null}
                                             </div>
                                             {invoice.child && (
-                                                <div className="text-xs text-muted-foreground font-medium">
+                                                <div className="text-xs text-muted-foreground font-medium whitespace-nowrap">
                                                     <Link href={`/dashboard/students/${invoice.child.id}`} className="hover:underline hover:text-primary transition-colors" onClick={(e) => e.stopPropagation()}>
                                                         {invoice.child.firstName} {invoice.child.lastName}
                                                     </Link>
@@ -414,9 +399,9 @@ export default function FinanceDataGridClient({ invoices = [], totalCount = 0, p
                                             )}
                                         </td>
                                         <td className="p-4">
-                                            <div className="font-medium text-foreground">{formatDateSafe(invoice.invoiceDate)}</div>
-                                            <div className={`text-xs ${isOverdue ? 'text-rose-500 font-bold' : 'text-muted-foreground'}`}>
-                                                Due: {formatDateSafe(invoice.dueDate)}
+                                            <div className="font-medium text-foreground whitespace-nowrap">{formatInvoicePeriod(invoice.billingPeriodStart, invoice.billingPeriodEnd)}</div>
+                                            <div className={`text-xs whitespace-nowrap ${isOverdue ? 'text-rose-500 font-bold' : 'text-muted-foreground'}`}>
+                                                Due {formatInvoiceDate(invoice.dueDate)}
                                             </div>
                                         </td>
                                         <td className="p-4">
@@ -441,27 +426,24 @@ export default function FinanceDataGridClient({ invoices = [], totalCount = 0, p
                                                 </span>
                                             ) : (
                                                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20 text-xs font-bold">
-                                                    <Clock className="w-3.5 h-3.5" /> {invoice.status?.replace('_', ' ')}
+                                                    <Clock className="w-3.5 h-3.5" /> {invoice.status === 'sent' ? 'Issued' : invoice.status === 'partially_paid' ? 'Part-paid' : invoice.status?.replace('_', ' ')}
                                                 </span>
                                             )}
                                         </td>
                                         <td className="p-4 text-right">
-                                            <div className="font-bold text-foreground tabular-nums text-base">£{Number(invoice.amount).toFixed(2)}</div>
-                                            {invoice.status !== 'paid' && invoice.status !== 'draft' && invoice.status !== 'void' && outstanding < Number(invoice.amount) && (
-                                                <div className="text-xs text-muted-foreground tabular-nums font-semibold">Bal: £{outstanding.toFixed(2)}</div>
-                                            )}
+                                            <div className="font-bold text-foreground tabular-nums text-base leading-5">£{Number(invoice.amount).toFixed(2)}</div>
+                                            <div className="text-xs text-muted-foreground tabular-nums font-semibold whitespace-nowrap">{balanceLabel}</div>
                                         </td>
                                         <td className="p-4 text-right sticky right-0 z-10 bg-card" onClick={(e) => e.stopPropagation()}>
-                                            <button 
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    router.push('/dashboard/finance/invoices/' + invoice.id);
-                                                }}
-                                                className="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-xl bg-secondary/80 text-foreground text-xs font-bold hover:bg-secondary hover:gap-2 transition-all border border-border/50 shadow-sm"
+                                            <Link
+                                                href={`/dashboard/finance/invoices/${invoice.id}`}
+                                                aria-label={`${invoice.status === 'draft' ? 'Review and issue' : 'View'} invoice ${invoice.invoiceNumber}`}
+                                                onClick={event => event.stopPropagation()}
+                                                className="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-xl bg-secondary/80 text-foreground text-xs font-bold hover:bg-secondary transition-all border border-border/50 shadow-sm whitespace-nowrap"
                                             >
-                                                Details
+                                                {invoice.status === 'draft' ? 'Review & issue' : 'View invoice'}
                                                 <ChevronRight className="w-3.5 h-3.5" />
-                                            </button>
+                                            </Link>
                                         </td>
                                     </tr>
                                 );
