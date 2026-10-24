@@ -4,19 +4,23 @@ import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import { CreditCard, AlertCircle, ArrowRight, RefreshCw, Settings2, Users, Loader2 } from 'lucide-react';
 import GenerateInvoiceModal from './GenerateInvoiceModal';
+import FamilyBillingSummary from './FamilyBillingSummary';
 import BulkInvoiceConfirmModal from './BulkInvoiceConfirmModal';
 import { useRouter } from 'next/navigation';
-import { generateInvoiceFromConfig, skipBillingCycle, unskipBillingCycle } from '@/features/billing/actions';
+import { generateEligibleDraftFromConfig, skipBillingCycle, unskipBillingCycle } from '@/features/billing/actions';
 import type { BillingCycleRow } from '@/features/billing/queries';
 
 // ─── Status pill ──────────────────────────────────────────────────────────────
 
 function StatusPill({ status }: { status: BillingCycleRow['cycleStatus'] }) {
     const map = {
-        ready:        { label: 'Ready',        cls: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20' },
+        ready:    { label: 'Draft preparation due',        cls: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20' },
+        draft_due: { label: 'Draft preparation due', cls: 'bg-primary/10 text-primary border-primary/20' },
+        draft_review: { label: 'Draft awaiting review', cls: 'bg-primary/10 text-primary border-primary/20' },
+        scheduled: { label: 'Scheduled — no action yet', cls: 'bg-secondary/60 text-muted-foreground border-border/50' },
         needs_setup:          { label: 'Needs Setup',          cls: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20' },
         data_review_required: { label: 'Data Review Required', cls: 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30' },
-        invoice_sent:         { label: 'Invoice Sent',         cls: 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20' },
+        invoice_sent:         { label: 'Invoice issued',         cls: 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20' },
         paused:       { label: 'Paused',       cls: 'bg-secondary/60 text-muted-foreground border-border/50' },
         skipped:      { label: 'Skipped',      cls: 'bg-muted/60 text-muted-foreground border-border/50' },
     };
@@ -37,7 +41,7 @@ function FamilyBillingCard({ cycle, onGenerated }: { cycle: BillingCycleRow; onG
     const [skipReason, setSkipReason] = useState('');
     const [isSkipping, setIsSkipping] = useState(false);
 
-    const canGenerate = cycle.cycleStatus === 'ready' && cycle.config.agreedMonthlyPence > 0;
+    const canGenerate = cycle.cycleStatus === 'draft_due' && cycle.config.agreedMonthlyPence > 0;
 
     const invoiceDateStr = cycle.nextInvoiceDateStr
         ? cycle.nextInvoiceDateStr.split('T')[0]
@@ -47,10 +51,6 @@ function FamilyBillingCard({ cycle, onGenerated }: { cycle: BillingCycleRow; onG
         : new Date().toISOString().split('T')[0];
 
     const periodStartForSkip = cycle.currentPeriodStart || dueDateStr;
-
-    const lastRunDisplay = cycle.lastRunAt
-        ? new Date(cycle.lastRunAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
-        : null;
 
     const handleUnskip = async () => {
         setIsSkipping(true);
@@ -120,22 +120,10 @@ function FamilyBillingCard({ cycle, onGenerated }: { cycle: BillingCycleRow; onG
 
                     {/* Card body */}
                     <div className="px-5 py-3.5 space-y-2 text-sm">
-                        {cycle.periodLabel && (
-                            <div className="flex justify-between items-center text-xs">
-                                <span className="text-muted-foreground font-medium">Next period</span>
-                                <span className="font-bold text-foreground">{cycle.periodLabel}</span>
-                            </div>
-                        )}
                         <div className="flex justify-between items-center text-sm">
                             <span className="text-muted-foreground font-medium">Monthly fee</span>
                             <span className="font-black text-foreground text-lg tracking-tight tabular-nums">{cycle.amountDisplay}</span>
                         </div>
-                        {lastRunDisplay && (
-                            <div className="flex justify-between items-center text-xs">
-                                <span className="text-muted-foreground font-medium">Last invoice</span>
-                                <span className="text-muted-foreground font-semibold">{lastRunDisplay}</span>
-                            </div>
-                        )}
                         {cycle.cycleStatus === 'data_review_required' && (
                             <p className="text-xs text-amber-700 dark:text-amber-400 font-medium flex items-start gap-1.5 pt-1">
                                 <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
@@ -149,6 +137,19 @@ function FamilyBillingCard({ cycle, onGenerated }: { cycle: BillingCycleRow; onG
                             </p>
                         )}
                     </div>
+                </div>
+
+                {cycle.familySummary && <FamilyBillingSummary summary={cycle.familySummary} />}
+                <div className="px-5 py-3 space-y-2 border-t border-border/50">
+                        {cycle.periodLabel && (
+                            <div className="flex justify-between items-center text-xs">
+                                <span className="text-muted-foreground font-medium">Next billing schedule</span>
+                                <span className="font-bold text-foreground">{cycle.periodLabel}</span>
+                            </div>
+                        )}
+                        {(cycle.cycleStatus === 'scheduled' || cycle.cycleStatus === 'draft_review') && cycle.nextInvoiceDateStr && <p className="text-sm text-muted-foreground">Draft preparation date for this schedule: {new Date(invoiceDateStr + 'T12:00:00Z').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })}. This is a preparation date, not an invoice issuance deadline.</p>}
+                        {cycle.cycleStatus === 'scheduled' && <p className="text-sm text-muted-foreground">No action is needed for this future cycle.</p>}
+                        {cycle.cycleStatus === 'draft_review' && <p className="text-sm text-muted-foreground">A draft already exists. Review it before issuing; preparation does not send an invoice or request payment.</p>}
                 </div>
 
                 {/* Actions */}
@@ -174,7 +175,7 @@ function FamilyBillingCard({ cycle, onGenerated }: { cycle: BillingCycleRow; onG
                         </button>
                     ) : (
                         <>
-                            {cycle.cycleStatus === 'ready' && (
+                            {cycle.cycleStatus === 'draft_due' && (
                                 <button
                                     disabled={isSkipping}
                                     onClick={() => setShowSkipModal(true)}
@@ -184,7 +185,7 @@ function FamilyBillingCard({ cycle, onGenerated }: { cycle: BillingCycleRow; onG
                                     Skip
                                 </button>
                             )}
-                            <button
+                            {cycle.cycleStatus === 'draft_review' && cycle.familySummary?.drafts[0] ? <Link href={`/dashboard/finance/invoices/${cycle.familySummary.drafts[0].id}`} className="flex-1 h-10 rounded-xl text-xs font-bold flex items-center justify-center bg-primary text-primary-foreground hover:bg-primary/90">Review draft</Link> : <button
                                 disabled={!canGenerate}
                                 onClick={() => setShowModal(true)}
                                 className={`flex-1 h-10 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 active:scale-95 ${
@@ -193,9 +194,9 @@ function FamilyBillingCard({ cycle, onGenerated }: { cycle: BillingCycleRow; onG
                                         : 'bg-secondary/60 text-muted-foreground cursor-not-allowed'
                                 }`}
                             >
-                                Invoice
+                                Prepare draft
                                 {canGenerate && <ArrowRight className="w-3.5 h-3.5" />}
-                            </button>
+                            </button>}
                         </>
                     )}
                 </div>
@@ -270,7 +271,7 @@ interface Props {
 export default function BillingCyclesTab({ cycles, centreId }: Props) {
     const router = useRouter();
     const [isPending, startTransition] = useTransition();
-    const [filter, setFilter] = useState<'all' | 'ready' | 'needs_setup' | 'invoice_sent' | 'skipped'>('all');
+    const [filter, setFilter] = useState<'all' | 'draft_due' | 'draft_review' | 'scheduled' | 'needs_setup' | 'invoice_sent' | 'skipped' | 'data_review_required' | 'paused'>('all');
     const [isGeneratingAll, setIsGeneratingAll] = useState(false);
     const [showBulkConfirm, setShowBulkConfirm] = useState(false);
 
@@ -279,12 +280,12 @@ export default function BillingCyclesTab({ cycles, centreId }: Props) {
     const handleGenerateAll = async () => {
         setIsGeneratingAll(true);
         try {
-            const readyCycles = cycles.filter(c => c.cycleStatus === 'ready');
+            const readyCycles = cycles.filter(c => c.cycleStatus === 'draft_due');
             for (const cycle of readyCycles) {
                 const periodStart = cycle.periodStartStr || cycle.currentPeriodStart || (cycle.dueDateStr ? cycle.dueDateStr.split('T')[0] : new Date().toISOString().split('T')[0]);
                 const periodEnd = cycle.periodEndStr || periodStart;
 
-                await generateInvoiceFromConfig({
+                await generateEligibleDraftFromConfig({
                     configId: cycle.config.id,
                     periodStartStr: periodStart,
                     periodEndStr: periodEnd,
@@ -301,10 +302,14 @@ export default function BillingCyclesTab({ cycles, centreId }: Props) {
 
     const counts = {
         all:          cycles.length,
-        ready:        cycles.filter(c => c.cycleStatus === 'ready').length,
+        draft_due:    cycles.filter(c => c.cycleStatus === 'draft_due').length,
+        draft_review: cycles.filter(c => c.cycleStatus === 'draft_review').length,
+        scheduled: cycles.filter(c => c.cycleStatus === 'scheduled').length,
         needs_setup:  cycles.filter(c => c.cycleStatus === 'needs_setup').length,
         invoice_sent: cycles.filter(c => c.cycleStatus === 'invoice_sent').length,
         skipped:      cycles.filter(c => c.cycleStatus === 'skipped').length,
+        data_review_required: cycles.filter(c => c.cycleStatus === 'data_review_required').length,
+        paused: cycles.filter(c => c.cycleStatus === 'paused').length,
     };
 
     return (
@@ -313,10 +318,11 @@ export default function BillingCyclesTab({ cycles, centreId }: Props) {
                 <p>Billing includes confirmed signed-up students, or existing students explicitly confirmed by an Owner or Manager. Returning a registration form alone does not enable billing.</p>
                 <p>Prospective families stay in <Link href="/dashboard/registrations" className="text-primary underline">Registrations</Link> and <Link href="/dashboard/students" className="text-primary underline">Students</Link> for follow-up. Older or imported records without confirmation need review on the student profile. Existing invoices, payments and receipts remain available.</p>
             </div>
-            {/* Filter pills + Generate All */}
+            <p className="text-sm text-muted-foreground">One card per family billing arrangement. Drafts are unissued invoices; outstanding totals include issued invoices only. Preparing drafts and issuing them are separate actions.</p>
+            {/* Family filters and draft preparation */}
             <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
                 <div className="flex gap-2 flex-wrap">
-                    {(['all', 'ready', 'needs_setup', 'invoice_sent', 'skipped'] as const).map(f => (
+                    {(['all', 'draft_due', 'draft_review', 'scheduled', 'needs_setup', 'invoice_sent', 'skipped', 'data_review_required', 'paused'] as const).filter(f => !['data_review_required', 'paused'].includes(f) || counts[f] > 0).map(f => (
                         <button
                             key={f}
                             onClick={() => setFilter(f)}
@@ -326,20 +332,20 @@ export default function BillingCyclesTab({ cycles, centreId }: Props) {
                                     : 'bg-card text-muted-foreground border-border hover:border-primary/30 hover:text-primary'
                             }`}
                         >
-                            {f === 'all' ? 'All' : f === 'needs_setup' ? 'Needs Setup' : f === 'invoice_sent' ? 'Sent' : f === 'skipped' ? 'Skipped' : 'Ready'}
+                            {{ all: 'All families', draft_due: 'Draft preparation due', draft_review: 'Drafts awaiting review', scheduled: 'Scheduled', needs_setup: 'Needs setup', invoice_sent: 'Invoice issued', skipped: 'Skipped', data_review_required: 'Needs review', paused: 'Paused' }[f]}
                             {' '}<span className="opacity-70">({counts[f]})</span>
                         </button>
                     ))}
                 </div>
 
-                {counts.ready > 1 && (
+                {counts.draft_due > 0 && (
                     <button 
                         disabled={isGeneratingAll}
                         onClick={() => setShowBulkConfirm(true)}
                         className="flex items-center gap-2 h-10 px-4 rounded-xl bg-primary text-white text-xs font-black hover:bg-primary/90 transition-all shadow-sm shadow-primary/20 active:scale-[0.97] disabled:opacity-50"
                     >
                         {isGeneratingAll ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
-                        Generate All ({counts.ready} ready)
+                        Prepare eligible drafts ({counts.draft_due})
                     </button>
                 )}
             </div>
@@ -354,7 +360,7 @@ export default function BillingCyclesTab({ cycles, centreId }: Props) {
                     <p className="text-sm text-muted-foreground mt-1">Set up billing on each family's student profile to see them here.</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 items-start">
                     {filtered.map(cycle => (
                         <FamilyBillingCard
                             key={cycle.config.id}
@@ -372,7 +378,7 @@ export default function BillingCyclesTab({ cycles, centreId }: Props) {
                     onConfirm={async () => {
                         await handleGenerateAll();
                     }}
-                    cycles={cycles.filter(c => c.cycleStatus === 'ready')}
+                    cycles={cycles.filter(c => c.cycleStatus === 'draft_due')}
                 />
             )}
 

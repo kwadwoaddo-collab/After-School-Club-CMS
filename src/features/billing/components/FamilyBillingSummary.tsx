@@ -1,0 +1,48 @@
+import Link from 'next/link';
+import type { FamilyInvoiceSummary, FamilyBillingSummary as Summary } from '@/features/billing/queries';
+
+const money = (pence: number) => new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP' }).format(pence / 100);
+const date = (value: string | null) => value ? new Date(`${value.slice(0, 10)}T12:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }) : 'Not recorded';
+
+function invoiceLabel(invoice: FamilyInvoiceSummary) {
+    return invoice.paymentStatus === 'needs_review' ? 'Needs review' : invoice.paymentStatus === 'void' ? 'Void' : invoice.paymentStatus === 'not_issued' ? 'Draft — not issued' : invoice.overdue ? 'Overdue' : invoice.paymentStatus === 'paid' ? 'Paid' : invoice.paymentStatus === 'partially_paid' ? 'Part-paid' : 'Issued — unpaid';
+}
+
+function Invoice({ invoice }: { invoice: FamilyInvoiceSummary }) {
+    return <div className="space-y-1 py-2 text-sm">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+            <Link href={`/dashboard/finance/invoices/${invoice.id}`} className="font-semibold text-primary underline underline-offset-2">{invoice.invoiceNumber}</Link>
+            <span className="font-medium text-foreground">{invoiceLabel(invoice)}</span>
+        </div>
+        <p className="text-foreground">{date(invoice.periodStart)} – {date(invoice.periodEnd)}</p>
+        {invoice.paymentStatus === 'needs_review' ? <p className="text-muted-foreground">Invoice amounts or payment records need review.</p> : <p className="text-muted-foreground tabular-nums">Billed {money(invoice.amountPence)} · Paid {money(invoice.paidPence)}{invoice.paymentStatus !== 'not_issued' && invoice.paymentStatus !== 'void' ? ` · Remaining ${money(invoice.balancePence)}` : ''}</p>}
+        {invoice.status === 'draft' && invoice.historical && <p className="text-sm font-medium text-foreground">Historical billing period — review before issuing.</p>}
+        <p className="text-xs text-muted-foreground">Due {date(invoice.dueDate)}{invoice.needsReview ? ' · Details need review' : ''}</p>
+    </div>;
+}
+
+export default function FamilyBillingSummary({ summary }: { summary: Summary }) {
+    // An upcoming issued invoice and a later draft are separate obligations.
+    const upcoming = [summary.nextInvoice, ...summary.drafts].filter((i): i is FamilyInvoiceSummary => !!i).filter((i, index, all) => all.findIndex(other => other.id === i.id) === index);
+    return <section aria-label="Family invoice summary" className="border-t border-border/50 px-5 py-3 space-y-3">
+        <div>
+            <h4 className="font-semibold text-sm text-foreground">Current billing period</h4>
+            {summary.currentPeriodStart && summary.currentPeriodEnd && !summary.currentInvoices.some(invoice => invoice.periodStart === summary.currentPeriodStart && invoice.periodEnd === summary.currentPeriodEnd) && <p className="text-sm text-muted-foreground mt-1">{date(summary.currentPeriodStart)} – {date(summary.currentPeriodEnd)}</p>}
+            {summary.currentPeriodState === 'skipped' && <p className="text-sm text-foreground mt-1">This billing period was skipped. Its history is preserved.</p>}
+            {summary.currentPeriodState === 'paused' && <p className="text-sm text-foreground mt-1">Billing is paused. Existing invoices and balances remain available.</p>}
+            {summary.currentPeriodState === 'no_invoice' && <p className="text-sm text-muted-foreground mt-1">No active invoice is recorded for this period.</p>}
+            {summary.currentInvoices.map(invoice => <Invoice key={invoice.id} invoice={invoice} />)}
+        </div>
+        {summary.previousInvoice && <details className="text-sm"><summary className="cursor-pointer font-medium text-primary py-2">Previous billed period: {date(summary.previousInvoice.periodStart)} – {date(summary.previousInvoice.periodEnd)} · {invoiceLabel(summary.previousInvoice)}</summary><Invoice invoice={summary.previousInvoice} /></details>}
+        {upcoming.length > 0 && <div><h4 className="font-semibold text-sm text-foreground">Next invoice and unissued drafts</h4>{upcoming.map(invoice => <Invoice key={invoice.id} invoice={invoice} />)}</div>}
+        {summary.outstandingReliable ? <p className="text-sm font-semibold text-foreground tabular-nums">Total outstanding: {money(summary.outstandingPence)} <span className="font-normal text-muted-foreground">across {summary.outstandingInvoices.length} issued invoice{summary.outstandingInvoices.length === 1 ? '' : 's'}. Drafts excluded.</span></p> : <p className="text-sm font-semibold text-foreground">Outstanding total needs review. Open the invoice history to check amounts and payments.</p>}
+        {summary.outstandingInvoices.length > 0 && <details className="text-sm"><summary className="cursor-pointer font-medium text-primary py-2">All outstanding invoices ({summary.outstandingInvoices.length})</summary>{summary.outstandingInvoices.map(invoice => <Invoice key={invoice.id} invoice={invoice} />)}</details>}
+        {summary.needsReview && <p className="text-sm text-foreground">Billing details need review: {summary.reviewReasons.join(' ')}</p>}
+        <details className="text-sm">
+            <summary className="cursor-pointer font-medium text-primary py-2">Invoice history and payment details ({summary.history.length})</summary>
+            <p className="text-xs text-muted-foreground pb-1">Open an invoice to see its payment ledger, receipts and reversals. Records are preserved.</p>
+            <div className="divide-y divide-border/50">{summary.history.map(invoice => <Invoice key={invoice.id} invoice={invoice} />)}</div>
+            {!summary.history.length && <p className="text-muted-foreground">No invoices recorded.</p>}
+        </details>
+    </section>;
+}

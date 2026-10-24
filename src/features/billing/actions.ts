@@ -13,6 +13,9 @@ import { revalidatePath } from 'next/cache';
 import { computeNextBillingPeriod, penceToPounds } from '@/lib/billing';
 import {
     computeExpectedPaymentDate,
+    computeAutomatedBillingScheduleForIndex,
+    getBillingPeriodForDate,
+    isEligibleAutomatedBillingSchedule,
     isHistoricalBillingPeriod,
     validateBillingPeriodSelection,
     LeadTimeUnit,
@@ -655,6 +658,28 @@ export interface GenerateInvoiceInput {
  * - Never triggers automatic catch-up across other periods and never sends parent email.
  */
 export async function generateInvoiceFromConfig(input: GenerateInvoiceInput) {
+    return generateInvoiceFromConfigInternal(input, false);
+}
+
+/** Prepare only a period whose canonical preparation window has opened.
+ * Deliberately separate from explicit manual historical/future generation. */
+export async function generateEligibleDraftFromConfig(input: GenerateInvoiceInput) {
+    return generateInvoiceFromConfigInternal(input, true);
+}
+
+function assertEligibleDraftWindow(config: typeof billingConfigs.$inferSelect, input: GenerateInvoiceInput) {
+    const selection = validateBillingPeriodSelection(input.periodStartStr, input.periodEndStr, config.billingAnchorDate);
+    if (!selection.valid) throw new Error(selection.error || 'Invalid billing period selection');
+    const { periodIndex } = getBillingPeriodForDate(config.billingAnchorDate, input.periodStartStr);
+    const schedule = computeAutomatedBillingScheduleForIndex(config, periodIndex);
+    if (schedule.periodStart.toISOString().slice(0, 10) !== input.periodStartStr ||
+        schedule.periodEnd.toISOString().slice(0, 10) !== input.periodEndStr ||
+        !isEligibleAutomatedBillingSchedule(schedule, new Date())) {
+        throw new Error('This billing period is not eligible for draft preparation today. Review the preparation date; use explicit manual generation for a deliberately selected period.');
+    }
+}
+
+async function generateInvoiceFromConfigInternal(input: GenerateInvoiceInput, eligibleOnly: boolean) {
     const { orgId, session } = await getOrgIdAndSession();
 
     const config = await db.query.billingConfigs.findFirst({
@@ -688,6 +713,8 @@ export async function generateInvoiceFromConfig(input: GenerateInvoiceInput) {
     if (!periodValidation.valid) {
         throw new Error(periodValidation.error || 'Invalid billing period selection');
     }
+
+    if (eligibleOnly) assertEligibleDraftWindow(config, input);
 
     // Pre-check: Skip cycle check
     const existingSkip = await db.query.billingCycleSkips.findFirst({
@@ -800,6 +827,15 @@ export async function generateInvoiceFromConfig(input: GenerateInvoiceInput) {
         const lockKey = `billing_config:${input.configId}:${input.periodStartStr}`;
         await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${lockKey}))`);
         await lockEnrolmentForBilling(tx, coveredIds);
+
+        // A settings change while waiting for the lock must not admit an early draft.
+        if (eligibleOnly) {
+            const lockedConfig = await tx.query.billingConfigs.findFirst({
+                where: and(eq(billingConfigs.id, input.configId), eq(billingConfigs.organisationId, orgId)),
+            });
+            if (!lockedConfig || lockedConfig.status !== 'active') throw new Error('Billing config is not active');
+            assertEligibleDraftWindow(lockedConfig, input);
+        }
 
         // Re-check inside locked transaction: skip cycle
         const inTxSkip = await tx.query.billingCycleSkips.findFirst({

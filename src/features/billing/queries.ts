@@ -16,6 +16,8 @@ import {
     LeadTimeUnit,
 } from '@/lib/billing/date-engine';
 import { financeEligibleChildSql, getFinanceEligibleChildIds } from '@/lib/enrolment/finance-eligibility';
+import { buildFamilyBillingSummary, type FamilyBillingSummary } from './family-summary';
+export type { FamilyBillingSummary, FamilyInvoiceSummary } from './family-summary';
 import { isQuarantinedParentId } from '@/lib/data-quality/quarantine';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -49,7 +51,8 @@ export interface BillingCycleRow {
     dueDateStr:         string | null;
     lastRunAt:          string | null;
     lastRunPeriodStart: string | null;
-    cycleStatus:    'ready' | 'needs_setup' | 'invoice_sent' | 'paused' | 'skipped' | 'data_review_required';
+    familySummary?: FamilyBillingSummary;
+    cycleStatus:    'draft_due' | 'scheduled' | 'draft_review' | 'ready' | 'needs_setup' | 'invoice_sent' | 'paused' | 'skipped' | 'data_review_required';
     currentPeriodStart?: string | null;
     periodStartStr?:     string | null;
     periodEndStr?:       string | null;
@@ -81,11 +84,12 @@ export async function fetchBillingCycles(
                 },
             },
             runs: {
-                orderBy: [desc(billingRuns.runAt)],
+                where: eq(billingRuns.success, true),
+                orderBy: [desc(billingRuns.periodStart)],
                 limit: 1,
             },
             skips: {
-                orderBy: [desc(billingCycleSkips.skippedAt)],
+                orderBy: [desc(billingCycleSkips.periodStart)],
                 limit: 1,
             },
             parent: { columns: { firstName: true, lastName: true, email: true, deletedAt: true } },
@@ -100,6 +104,18 @@ export async function fetchBillingCycles(
     const configs = rawConfigs.filter(c => !c.parent?.deletedAt &&
         (c.children ?? []).some(cc => eligibleIds.has(cc.child.id)));
     const todayUtc = toUtcDate(new Date());
+    // A tenant/centre-scoped batch also includes legacy/manual invoices without a config link.
+    const familyInvoices = configs.length ? await db.query.invoices.findMany({
+        where: and(eq(invoices.organisationId, orgId),
+            inArray(invoices.parentId, [...new Set(configs.map(config => config.parentId))]),
+            inArray(invoices.centreId, [...new Set(configs.map(config => config.centreId))])),
+        with: { payments: { columns: { amount: true, status: true } } },
+    }) : [];
+
+    const familySkips = configs.length ? await db.query.billingCycleSkips.findMany({
+        where: inArray(billingCycleSkips.billingConfigId, configs.map(config => config.id)),
+        columns: { billingConfigId: true, periodStart: true },
+    }) : [];
 
     const enriched = await Promise.all(configs.map(async (config) => {
         const parent = config.parent;
@@ -120,8 +136,13 @@ export async function fetchBillingCycles(
         let currentPeriodStr   = '';
         let periodStartStr     = '';
         let periodEndStr       = '';
+        let anchoredCurrentStart: string | null = null;
+        let anchoredCurrentEnd: string | null = null;
 
         try {
+            const currentAnchoredPeriod = getBillingPeriodForDate(config.billingAnchorDate, todayUtc);
+            anchoredCurrentStart = currentAnchoredPeriod.periodStart.toISOString().slice(0, 10);
+            anchoredCurrentEnd = currentAnchoredPeriod.periodEnd.toISOString().slice(0, 10);
             let schedule = computeBillingSchedule({
                 id: config.id,
                 billingAnchorDate: config.billingAnchorDate,
@@ -173,7 +194,16 @@ export async function fetchBillingCycles(
             cycleStatus = 'ready';
         }
 
+        const familySummary = buildFamilyBillingSummary({
+            organisationId: orgId, centreId: config.centreId, parentId: config.parentId,
+            billingConfigId: config.id, invoices: familyInvoices, now: todayUtc,
+            scheduleStart: periodStartStr || null, draftCreationDate: nextInvoiceDateStr,
+            baseStatus: cycleStatus,
+            currentPeriodStart: anchoredCurrentStart, currentPeriodEnd: anchoredCurrentEnd,
+            currentPeriodSkipped: familySkips.some(skip => skip.billingConfigId === config.id && skip.periodStart === anchoredCurrentStart),
+        });
         return {
+            familySummary,
             config: {
                 id:                 config.id,
                 parentId:           config.parentId,
@@ -197,7 +227,7 @@ export async function fetchBillingCycles(
             dueDateStr,
             lastRunAt:          lastRun ? (lastRun.runAt instanceof Date ? lastRun.runAt.toISOString() : String(lastRun.runAt)) : null,
             lastRunPeriodStart: lastRun?.periodStart ?? null,
-            cycleStatus,
+            cycleStatus: familySummary.action,
             currentPeriodStart: currentPeriodStr || null,
             periodStartStr:     periodStartStr || null,
             periodEndStr:       periodEndStr || null,
