@@ -189,6 +189,13 @@ export default async function FinancePage(props: {
                 Invoices for active students are shown here. A shared family invoice remains here while any covered child is active, and can also appear in former / paused outstanding balances. All original records remain in All invoice history.
             </p>}
 
+            <nav aria-label="Finance workflow" className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
+                {!formerBalancesView && <a href="#family-billing-overview" className="font-semibold text-primary underline underline-offset-4">Family overview</a>}
+                <a href="#invoice-list" className="font-semibold text-primary underline underline-offset-4">Invoice list</a>
+                {!formerBalancesView && <Link href={`/dashboard/finance?${new URLSearchParams({...(activeCentreId !== 'all' ? {centre:activeCentreId} : {}),...(formerBalancesView ? {view:'former'} : invoiceHistoryView ? {view:'history'} : {}),status:'draft',page:'1'}).toString()}#invoice-list`} className="font-semibold text-primary underline underline-offset-4">Review drafts</Link>}
+                <span className="text-muted-foreground">Open a draft, check its period and amount, then choose Issue Invoice.</span>
+            </nav>
+
             {/* Main Finance Data Grid & KPI Summary */}
             <Suspense fallback={<div className="h-[400px] bg-secondary/20 rounded-3xl animate-pulse border border-border/60" />}>
                 <FinanceDataGridClient 
@@ -202,11 +209,11 @@ export default async function FinancePage(props: {
             </Suspense>
 
             {/* Billing Cycles Section */}
-            {!formerBalancesView && <div className="bg-card/80 backdrop-blur-md border border-border/60 shadow-sm rounded-3xl p-6 sm:p-8 animate-in slide-in-from-bottom-4 duration-500 delay-150">
+            {!formerBalancesView && <div id="family-billing-overview" className="scroll-mt-24 bg-card/80 backdrop-blur-md border border-border/60 shadow-sm rounded-3xl p-6 sm:p-8 animate-in slide-in-from-bottom-4 duration-500 delay-150">
                 <div className="flex items-center justify-between mb-6">
                     <h2 className="text-xl font-bold text-foreground flex items-center gap-2.5 tracking-tight">
                         <CreditCard className="w-5 h-5 text-primary" />
-                        Billing Cycles
+                        Family overview
                     </h2>
                 </div>
                 <BillingCyclesTab
