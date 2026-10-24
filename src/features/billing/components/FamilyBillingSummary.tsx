@@ -26,8 +26,9 @@ export default function FamilyBillingSummary({ summary }: { summary: Summary }) 
     const upcoming = [summary.nextInvoice, ...summary.drafts].filter((i): i is FamilyInvoiceSummary => !!i).filter((i, index, all) => all.findIndex(other => other.id === i.id) === index);
     return <section aria-label="Family invoice summary" className="border-t border-border/50 px-5 py-3 space-y-3">
         <div>
-            <h4 className="font-semibold text-sm text-foreground">Current billing period</h4>
+            <h4 className="font-semibold text-sm text-foreground">{summary.currentPeriodState === 'not_started' ? 'First scheduled billing period' : 'Current billing period'}</h4>
             {summary.currentPeriodStart && summary.currentPeriodEnd && !summary.currentInvoices.some(invoice => invoice.periodStart === summary.currentPeriodStart && invoice.periodEnd === summary.currentPeriodEnd) && <p className="text-sm text-muted-foreground mt-1">{date(summary.currentPeriodStart)} – {date(summary.currentPeriodEnd)}</p>}
+            {summary.currentPeriodState === 'not_started' && <p className="text-sm text-muted-foreground mt-1">Recurring billing has not started yet. Any prepared invoices and drafts are listed below.</p>}
             {summary.currentPeriodState === 'skipped' && <p className="text-sm text-foreground mt-1">This billing period was skipped. Its history is preserved.</p>}
             {summary.currentPeriodState === 'paused' && <p className="text-sm text-foreground mt-1">Billing is paused. Existing invoices and balances remain available.</p>}
             {summary.currentPeriodState === 'no_invoice' && <p className="text-sm text-muted-foreground mt-1">No active invoice is recorded for this period.</p>}

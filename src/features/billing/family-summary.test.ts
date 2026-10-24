@@ -20,6 +20,12 @@ describe('family billing clarity', () => {
         expect(result.outstandingPence).toBe(190000);
         expect(result.action).toBe('draft_review');
     });
+    it('does not label a future first configured period as current coverage', () => {
+        const result = summary([invoice('future', '2026-11-01', '2026-11-30', 'draft')], {currentPeriodStart:'2026-11-01', currentPeriodEnd:'2026-11-30'});
+        expect(result.currentPeriodState).toBe('not_started');
+        expect(result.currentInvoices).toEqual([]);
+        expect(result.nextInvoice?.id).toBe('future');
+    });
     it('orders previous invoice by coverage, never recent creation of a historical invoice', () => {
         const result = summary([invoice('old', '2025-01-06', '2025-02-05', 'sent', { createdAt: '2026-10-24' }), invoice('recent', '2026-09-06', '2026-10-05')]);
         expect(result.previousInvoice?.id).toBe('recent');

@@ -16,7 +16,7 @@ export type FamilyBillingAction = 'draft_review' | 'draft_due' | 'scheduled' | '
 export interface FamilyBillingSummary {
     currentPeriodStart: string | null;
     currentPeriodEnd: string | null;
-    currentPeriodState: 'invoiced' | 'skipped' | 'no_invoice' | 'paused';
+    currentPeriodState: 'invoiced' | 'skipped' | 'no_invoice' | 'paused' | 'not_started';
     previousInvoice: FamilyInvoiceSummary | null;
     currentInvoices: FamilyInvoiceSummary[];
     nextInvoice: FamilyInvoiceSummary | null;
@@ -103,7 +103,7 @@ export function buildFamilyBillingSummary(input: {
     else action = input.draftCreationDate.slice(0, 10) <= today ? 'draft_due' : 'scheduled';
     const currentPeriodStart = isoDay(input.currentPeriodStart);
     const currentPeriodEnd = isoDay(input.currentPeriodEnd);
-    const currentPeriodState = input.baseStatus === 'paused' ? 'paused' : currentInvoices.some(invoice => invoice.status !== 'void') ? 'invoiced' : input.currentPeriodSkipped ? 'skipped' : 'no_invoice';
+    const currentPeriodState = input.baseStatus === 'paused' ? 'paused' : currentInvoices.some(invoice => invoice.status !== 'void') ? 'invoiced' : currentPeriodStart && currentPeriodStart > today ? 'not_started' : input.currentPeriodSkipped ? 'skipped' : 'no_invoice';
     let outstandingPence = 0;
     let outstandingReliable = !history.some(invoice => invoice.paymentStatus === 'needs_review');
     for (const invoice of outstandingInvoices) {
