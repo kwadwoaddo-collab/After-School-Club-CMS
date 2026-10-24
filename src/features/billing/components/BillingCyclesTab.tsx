@@ -86,7 +86,7 @@ function FamilyBillingCard({ cycle, onGenerated }: { cycle: BillingCycleRow; onG
             }`}>
                 <div>
                     {/* Card header */}
-                    <div className="px-5 pt-5 pb-3 flex items-start justify-between gap-2">
+                    <div className="px-5 pt-4 pb-3 flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
                             <Link
                                 href={`/dashboard/parents/${cycle.config.parentId}`}
@@ -103,27 +103,9 @@ function FamilyBillingCard({ cycle, onGenerated }: { cycle: BillingCycleRow; onG
 
                     <div className="mx-5 border-t border-border/50" />
 
-                    {/* Children list */}
-                    {cycle.coveredChildren.length > 0 && (
-                        <div className="px-5 pt-3 flex flex-wrap gap-1.5">
-                            {cycle.coveredChildren.map(c => (
-                                <Link
-                                    key={c.childId}
-                                    href={`/dashboard/students/${c.childId}`}
-                                    className="px-2.5 py-1 bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20 rounded-xl text-[10px] font-bold transition-colors"
-                                >
-                                    {c.childName}
-                                </Link>
-                            ))}
-                        </div>
-                    )}
-
                     {/* Card body */}
-                    <div className="px-5 py-3.5 space-y-2 text-sm">
-                        <div className="flex justify-between items-center text-sm">
-                            <span className="text-muted-foreground font-medium">Monthly fee</span>
-                            <span className="font-black text-foreground text-lg tracking-tight tabular-nums">{cycle.amountDisplay}</span>
-                        </div>
+                    <div className="px-5 pb-2 space-y-2 text-sm">
+                        {!cycle.familySummary && <p className="text-sm text-muted-foreground">Monthly fee: {cycle.amountDisplay}</p>}
                         {cycle.cycleStatus === 'data_review_required' && (
                             <p className="text-xs text-amber-700 dark:text-amber-400 font-medium flex items-start gap-1.5 pt-1">
                                 <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
@@ -139,7 +121,23 @@ function FamilyBillingCard({ cycle, onGenerated }: { cycle: BillingCycleRow; onG
                     </div>
                 </div>
 
-                {cycle.familySummary && <FamilyBillingSummary summary={cycle.familySummary} />}
+                {cycle.familySummary ? <FamilyBillingSummary summary={cycle.familySummary} nextPeriod={cycle.periodLabel} preparationDate={cycle.nextInvoiceDateStr}>
+                    {/* Children list */}
+                    {cycle.coveredChildren.length > 0 && (
+                        <div className="px-5 pt-3 flex flex-wrap gap-1.5">
+                            {cycle.coveredChildren.map(c => (
+                                <Link
+                                    key={c.childId}
+                                    href={`/dashboard/students/${c.childId}`}
+                                    className="px-2.5 py-1 bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20 rounded-xl text-[10px] font-bold transition-colors"
+                                >
+                                    {c.childName}
+                                </Link>
+                            ))}
+                        </div>
+                    )}
+
+                    <p className="px-5 py-2 text-sm text-muted-foreground">Configured monthly fee: {cycle.amountDisplay}</p>
                 <div className="px-5 py-3 space-y-2 border-t border-border/50">
                         {cycle.periodLabel && (
                             <div className="flex justify-between items-center text-xs">
@@ -152,8 +150,38 @@ function FamilyBillingCard({ cycle, onGenerated }: { cycle: BillingCycleRow; onG
                         {cycle.cycleStatus === 'draft_review' && <p className="text-sm text-muted-foreground">A draft already exists. Review it before issuing; preparation does not send an invoice or request payment.</p>}
                 </div>
 
+                </FamilyBillingSummary> : <details className="mx-5 mb-3 text-sm"><summary className="cursor-pointer py-2 font-medium text-primary">Show billing details</summary>
+                    {/* Children list */}
+                    {cycle.coveredChildren.length > 0 && (
+                        <div className="px-5 pt-3 flex flex-wrap gap-1.5">
+                            {cycle.coveredChildren.map(c => (
+                                <Link
+                                    key={c.childId}
+                                    href={`/dashboard/students/${c.childId}`}
+                                    className="px-2.5 py-1 bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20 rounded-xl text-[10px] font-bold transition-colors"
+                                >
+                                    {c.childName}
+                                </Link>
+                            ))}
+                        </div>
+                    )}
+
+                <div className="px-5 py-3 space-y-2 border-t border-border/50">
+                        {cycle.periodLabel && (
+                            <div className="flex justify-between items-center text-xs">
+                                <span className="text-muted-foreground font-medium">Next billing schedule</span>
+                                <span className="font-bold text-foreground">{cycle.periodLabel}</span>
+                            </div>
+                        )}
+                        {(cycle.cycleStatus === 'scheduled' || cycle.cycleStatus === 'draft_review') && cycle.nextInvoiceDateStr && <p className="text-sm text-muted-foreground">Draft preparation date for this schedule: {new Date(invoiceDateStr + 'T12:00:00Z').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })}. This is a preparation date, not an invoice issuance deadline.</p>}
+                        {cycle.cycleStatus === 'scheduled' && <p className="text-sm text-muted-foreground">No action is needed for this future cycle.</p>}
+                        {cycle.cycleStatus === 'draft_review' && <p className="text-sm text-muted-foreground">A draft already exists. Review it before issuing; preparation does not send an invoice or request payment.</p>}
+                </div>
+
+                </details>}
+
                 {/* Actions */}
-                <div className="px-5 pb-5 pt-2 flex gap-2">
+                <div className="px-5 pb-4 pt-1 flex gap-2">
                     <button
                         onClick={() => cycle.coveredChildren[0]
                             ? router.push(`/dashboard/students/${cycle.coveredChildren[0].childId}`)

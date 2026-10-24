@@ -25,6 +25,15 @@ describe('family invoice summary', () => {
         expect(html).toContain('/dashboard/finance/invoices/dec');
         expect(html).toContain('payment ledger, receipts and reversals');
     });
+    it('collapses supporting records by default while keeping balances and overdue warnings outside the disclosure', () => {
+        const overdue={...next,overdue:true};
+        const html=renderToStaticMarkup(<FamilyBillingSummary summary={{...summary,outstandingInvoices:[overdue]}}><p>Supporting children and schedule</p></FamilyBillingSummary>);
+        const disclosure=html.indexOf('Show billing details');
+        expect(html.indexOf('Outstanding: £1,900.00')).toBeLessThan(disclosure);
+        expect(html.indexOf('1 overdue invoice')).toBeLessThan(disclosure);
+        expect(html.indexOf('Supporting children and schedule')).toBeGreaterThan(disclosure);
+        expect(html).not.toMatch(/<details[^>]*\sopen/);
+    });
     it('warns about historical drafts without calling them upcoming', () => {
         const historical = invoice('historical', {status:'draft', paymentStatus:'not_issued', historical:true});
         const html = renderToStaticMarkup(<FamilyBillingSummary summary={{...summary, drafts:[historical]}} />);
