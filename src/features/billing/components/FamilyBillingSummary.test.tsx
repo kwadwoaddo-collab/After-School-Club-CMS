@@ -32,6 +32,13 @@ describe('family invoice summary', () => {
         expect(html).toContain('Next invoice and unissued drafts');
         expect(html).not.toContain('Upcoming invoices');
     });
+    it('describes future initial coverage as scheduled, not current or missing', () => {
+        const html=renderToStaticMarkup(<FamilyBillingSummary summary={{...summary, currentPeriodState:'not_started', currentInvoices:[],currentPeriodStart:'2026-11-01',currentPeriodEnd:'2026-11-30'}}/>);
+        expect(html).toContain('First scheduled billing period');
+        expect(html).toContain('Recurring billing has not started yet.');
+        expect(html).not.toContain('Current billing period');
+        expect(html).not.toContain('No active invoice is recorded');
+    });
     it('keeps several outstanding periods accessible, including older part-paid debt', () => {
         const older = invoice('older', { periodStart: '2026-08-06', periodEnd: '2026-09-05', paidPence: 100000, balancePence: 90000, paymentStatus: 'partially_paid', overdue: true });
         const html = renderToStaticMarkup(<FamilyBillingSummary summary={{ ...summary, outstandingInvoices: [older, next], outstandingPence: 280000, history: [older, ...summary.history] }} />);
