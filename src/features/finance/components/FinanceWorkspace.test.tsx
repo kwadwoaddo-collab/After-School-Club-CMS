@@ -4,12 +4,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import Workspace from './FinanceWorkspace';
 import type { WorkspaceInvoice } from '../domain/finance-workspace';
-const mocks=vi.hoisted(()=>({replace:vi.fn(),refresh:vi.fn()}));
-vi.mock('next/navigation',()=>({useRouter:()=>mocks,useSearchParams:()=>new URLSearchParams('centre=centre')}));
+const mocks=vi.hoisted(()=>({replace:vi.fn(),refresh:vi.fn(),search:'centre=centre'}));
+vi.mock('next/navigation',()=>({useRouter:()=>mocks,useSearchParams:()=>new URLSearchParams(mocks.search)}));
 vi.mock('next/link',()=>({default:({children,...props}:React.PropsWithChildren<React.AnchorHTMLAttributes<HTMLAnchorElement>>)=><a {...props}>{children}</a>}));
 vi.mock('./RecordPaymentModal',()=>({default:({invoiceNumber,remainingBalance}:{invoiceNumber:string;remainingBalance:number})=><div role="dialog">{invoiceNumber} payment {remainingBalance}</div>}));
 const bill=(id:string,status:string,start='2026-11-06',end='2026-12-05'):WorkspaceInvoice=>({id,invoiceNumber:`INV-${id}`,organisationId:'org',centreId:'centre',parentId:'parent',parent:{id:'parent',firstName:'Demo',lastName:'Family'},amount:'1900',status,invoiceDate:'2026-10-16',billingPeriodStart:start,billingPeriodEnd:end,dueDate:start,payments:[]});
-afterEach(()=>{cleanup();vi.clearAllMocks();});
+afterEach(()=>{cleanup();vi.clearAllMocks();mocks.search='centre=centre';});
 describe('daily finance workflow',()=>{
  it('keeps upcoming drafts distinct and reveals prior invoice context before the issue route',()=>{
   render(<Workspace invoices={[bill('nov','sent'),bill('dec','draft','2026-12-06','2027-01-05')]} cycles={[]} today="2026-10-25" invoiceError={false} cycleError={false}/>);
@@ -54,5 +54,24 @@ describe('daily finance workflow',()=>{
   expect(screen.queryByRole('button',{name:'Record payment for INV-nov'})).toBeNull();
   fireEvent.click(screen.getByRole('button',{name:/Drafts to review/}));fireEvent.click(screen.getByRole('button',{name:/Awaiting payment/}));
   expect(screen.getByRole('button',{name:'Record payment for INV-nov'})).toBeTruthy();
+ });
+ it('preserves a search typed during tab navigation and synchronizes browser back',()=>{
+  const props={invoices:[bill('nov','sent')],cycles:[],today:'2026-10-25',invoiceError:false,cycleError:false};
+  const {rerender}=render(<Workspace {...props}/>);
+  fireEvent.click(screen.getByRole('button',{name:/Awaiting payment/}));
+  fireEvent.change(screen.getByRole('searchbox'),{target:{value:'Demo'}});
+  mocks.search='centre=centre&task=payments';rerender(<Workspace {...props}/>);
+  expect((screen.getByRole('searchbox') as HTMLInputElement).value).toBe('Demo');
+  expect(screen.getByRole('heading',{name:'Record money received'})).toBeTruthy();
+  mocks.search='centre=centre';rerender(<Workspace {...props}/>);
+  expect(screen.getByRole('heading',{name:'Review before issuing'})).toBeTruthy();
+ });
+ it('preserves an overdue filter selected before the task URL finishes updating',()=>{
+  const props={invoices:[bill('nov','sent')],cycles:[],today:'2026-10-25',invoiceError:false,cycleError:false};
+  const {rerender}=render(<Workspace {...props}/>);
+  fireEvent.click(screen.getByRole('button',{name:/Awaiting payment/}));
+  fireEvent.click(screen.getByRole('checkbox',{name:'Overdue only'}));
+  mocks.search='centre=centre&task=payments';rerender(<Workspace {...props}/>);
+  expect((screen.getByRole('checkbox',{name:'Overdue only'}) as HTMLInputElement).checked).toBe(true);
  });
 });

@@ -34,6 +34,16 @@ export default function FinanceWorkspace({ invoices, cycles, today, invoiceError
     const [requestedUpcomingPage, setUpcomingPage] = useState(1);
     const [payment, setPayment] = useState<Item | null>(null);
     const [overdueOnly, setOverdueOnly] = useState(params.get('status') === 'overdue');
+    const routeKey = `${initial}:${params.get('status') === 'overdue'}`;
+    const [confirmedRoute, setConfirmedRoute] = useState(routeKey);
+    // Acknowledge URL changes without remounting or discarding a search typed during navigation.
+    // Back/forward still synchronizes the task and overdue filter.
+    if (confirmedRoute !== routeKey) {
+        setConfirmedRoute(routeKey);
+        setTab(initial);
+        if (tab !== initial || confirmedRoute.split(':')[0] === initial) setOverdueOnly(params.get('status') === 'overdue');
+        if (tab !== initial) { setPage(1); setUpcomingPage(1); }
+    }
     const queues = buildFinanceQueues(invoices, today);
     const problems = cycles.filter(cycle => ['needs_setup', 'data_review_required', 'draft_due', 'ready'].includes(cycle.cycleStatus));
     const centre = params.get('centre');
