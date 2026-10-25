@@ -11,7 +11,7 @@ import Link from 'next/link';
 import FinanceDataGridClient from '@/features/finance/components/FinanceDataGridClient';
 import type { FinanceInvoice } from '@/features/finance/components/FinanceDataGridClient';
 import FinanceWorkspace from '@/features/finance/components/FinanceWorkspace';
-import type { WorkspaceInvoice } from '@/features/finance/domain/finance-workspace';
+import { isFinanceWorkspaceView, type WorkspaceInvoice } from '@/features/finance/domain/finance-workspace';
 import FinanceDashboardFilters from '@/features/finance/components/FinanceDashboardFilters';
 import BillingCyclesTab from '@/features/billing/components/BillingCyclesTab';
 import { fetchBillingCycles } from '@/features/billing/queries';
@@ -28,6 +28,7 @@ export default async function FinancePage(props: {
         view?: string;
         family?: string;
         task?: string;
+        create?: string;
     }>
 }) {
     const searchParams = await props.searchParams;
@@ -52,7 +53,7 @@ export default async function FinancePage(props: {
     const formerBalancesView = searchParams.view === 'former';
     const invoiceHistoryView = searchParams.view === 'history';
     const familyView = searchParams.view === 'families';
-    const workspaceView = !formerBalancesView && !invoiceHistoryView && !familyView && searchParams.status !== 'paid';
+    const workspaceView = isFinanceWorkspaceView(searchParams);
     let workspaceInvoices: WorkspaceInvoice[] = [];
 
     let orgCentres: OrgCentre[] = [];

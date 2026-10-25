@@ -8,6 +8,9 @@ function parseStrictDecimalToPence(value: string): number {
 }
 
 export type WorkspaceInvoice = Omit<FinanceInvoice, 'payments'> & { billingConfigId?: string | null; payments?: (NonNullable<FinanceInvoice['payments']>[number] & { reversedAt?: string | Date | null })[] };
+export function isFinanceWorkspaceView(params: {view?: string; status?: string; create?: string}) {
+    return !['former','history','families'].includes(params.view ?? '') && params.status !== 'paid' && !['1','true'].includes(params.create ?? '');
+}
 export function day(value: string | Date | null | undefined): string | null {
     if (!value) return null;
     const date = new Date(value);

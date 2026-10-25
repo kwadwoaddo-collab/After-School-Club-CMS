@@ -1,8 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { adjacentInvoices, buildFinanceQueues, inspectInvoice, type WorkspaceInvoice } from './finance-workspace';
+import { adjacentInvoices, buildFinanceQueues, inspectInvoice, isFinanceWorkspaceView, type WorkspaceInvoice } from './finance-workspace';
 const today = '2026-10-25';
 export const invoice = (id: string, overrides: Partial<WorkspaceInvoice> = {}): WorkspaceInvoice => ({id,invoiceNumber:`INV-${id}`,organisationId:'org',centreId:'centre',parentId:'parent',billingConfigId:'config',amount:'1900.00',status:'sent',invoiceDate:'2026-10-16',dueDate:'2026-11-06',billingPeriodStart:'2026-11-06',billingPeriodEnd:'2026-12-05',payments:[],...overrides});
 describe('finance work queues', () => {
+    it('preserves existing manual create links and secondary records views',()=>{
+        expect(isFinanceWorkspaceView({})).toBe(true);
+        expect(isFinanceWorkspaceView({status:'draft'})).toBe(true);
+        expect(isFinanceWorkspaceView({create:'1'})).toBe(false);
+        expect(isFinanceWorkspaceView({create:'true'})).toBe(false);
+        expect(isFinanceWorkspaceView({view:'history'})).toBe(false);
+        expect(isFinanceWorkspaceView({view:'families'})).toBe(false);
+    });
     it('keeps paid October, unpaid November and upcoming December distinct', () => {
         const oct = invoice('oct',{status:'paid',billingPeriodStart:'2026-10-06',billingPeriodEnd:'2026-11-05',payments:[{id:'p',amount:'1900',status:'verified',recordedAt:today}]});
         const nov = invoice('nov');
