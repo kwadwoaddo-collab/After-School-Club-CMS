@@ -208,7 +208,7 @@ export default async function FinancePage(props: {
             {formerBalancesView && <p className="rounded-2xl border border-border bg-card p-4 text-sm text-muted-foreground">
                 These are existing issued balances, including shared family invoices where a covered student has paused or stopped. Payments and receipts remain available. Pausing a student does not void a debt, create a credit or issue another invoice.
             </p>}
-            {workspaceView && <FinanceWorkspace key={`${activeCentreId}:${searchParams.task ?? ''}:${searchParams.status ?? ''}`} invoices={serialize(workspaceInvoices)} cycles={serializedBillingCycles} today={new Intl.DateTimeFormat('en-CA', {timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date())} invoiceError={hasFetchError} cycleError={cycleFetchError}/>}
+            {workspaceView && <FinanceWorkspace key={activeCentreId} invoices={serialize(workspaceInvoices)} cycles={serializedBillingCycles} today={new Intl.DateTimeFormat('en-CA', {timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date())} invoiceError={hasFetchError} cycleError={cycleFetchError}/>}
 
             {/* Main Finance Data Grid & KPI Summary */}
             {!workspaceView && !familyView && <Suspense fallback={<div className="h-[400px] bg-secondary/20 rounded-3xl animate-pulse border border-border/60" />}>
