@@ -1,8 +1,28 @@
 import { describe, expect, it } from 'vitest';
-import { adjacentInvoices, buildFinanceQueues, inspectInvoice, isFinanceWorkspaceView, type WorkspaceInvoice } from './finance-workspace';
+import { adjacentInvoices, buildFinanceQueues, inspectInvoice, isFinanceWorkspaceView, splitDraftPeriods, type WorkspaceInvoice } from './finance-workspace';
 const today = '2026-10-25';
 export const invoice = (id: string, overrides: Partial<WorkspaceInvoice> = {}): WorkspaceInvoice => ({id,invoiceNumber:`INV-${id}`,organisationId:'org',centreId:'centre',parentId:'parent',billingConfigId:'config',amount:'1900.00',status:'sent',invoiceDate:'2026-10-16',dueDate:'2026-11-06',billingPeriodStart:'2026-11-06',billingPeriodEnd:'2026-12-05',payments:[],...overrides});
 describe('finance work queues', () => {
+    it('classifies completed historical drafts separately while preserving explicit manual history',()=>{
+        const old=invoice('old',{status:'draft',billingPeriodStart:'2025-05-22',billingPeriodEnd:'2025-06-21'});
+        const active=invoice('active',{status:'draft',billingPeriodStart:'2026-10-06',billingPeriodEnd:'2026-11-05'});
+        const future=invoice('future',{status:'draft'});
+        const missing=invoice('missing',{status:'draft',billingPeriodStart:null,billingPeriodEnd:null});
+        const queues=buildFinanceQueues([old,active,future,missing],today);
+        const periods=splitDraftPeriods(queues.drafts);
+        expect(periods.current.map(item=>item.invoice.id)).toEqual(['active']);
+        expect(periods.historical.map(item=>item.invoice.id)).toEqual(['old']);
+        expect(periods.upcoming.map(item=>item.invoice.id)).toEqual(['future']);
+        expect(periods.needsChecking.map(item=>item.invoice.id)).toEqual(['missing']);
+        expect(queues.attention.map(item=>item.invoice.id)).toContain('missing');
+        expect(queues.drafts).toHaveLength(4);
+    });
+    it('puts reversed dates in one checking group rather than both future and history',()=>{
+        const queues=buildFinanceQueues([invoice('reversed',{status:'draft',billingPeriodStart:'2026-12-01',billingPeriodEnd:'2026-09-01'})],today);
+        const periods=splitDraftPeriods(queues.drafts);
+        expect(periods.current).toHaveLength(0);expect(periods.upcoming).toHaveLength(0);expect(periods.historical).toHaveLength(0);
+        expect(periods.needsChecking).toHaveLength(1);
+    });
     it('preserves existing manual create links and secondary records views',()=>{
         expect(isFinanceWorkspaceView({})).toBe(true);
         expect(isFinanceWorkspaceView({status:'draft'})).toBe(true);

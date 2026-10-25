@@ -11,11 +11,32 @@ vi.mock('./RecordPaymentModal',()=>({default:({invoiceNumber,remainingBalance}:{
 const bill=(id:string,status:string,start='2026-11-06',end='2026-12-05'):WorkspaceInvoice=>({id,invoiceNumber:`INV-${id}`,organisationId:'org',centreId:'centre',parentId:'parent',parent:{id:'parent',firstName:'Demo',lastName:'Family'},amount:'1900',status,invoiceDate:'2026-10-16',billingPeriodStart:start,billingPeriodEnd:end,dueDate:start,payments:[]});
 afterEach(()=>{cleanup();vi.clearAllMocks();mocks.search='centre=centre';});
 describe('daily finance workflow',()=>{
+ it('keeps historical and upcoming drafts out of the current work count without deleting them',()=>{
+  render(<Workspace invoices={[bill('old','draft','2025-05-22','2025-06-21'),bill('future','draft'),bill('current','draft','2026-10-06','2026-11-05')]} cycles={[]} today="2026-10-25" invoiceError={false} cycleError={false}/>);
+  expect(screen.getByRole('button',{name:'Drafts to review 1'})).toBeTruthy();
+  expect(within(screen.getByRole('table',{name:'Current draft invoices'})).getByRole('button',{name:'Review invoice INV-current'})).toBeTruthy();
+  expect(within(screen.getByRole('table',{name:'Current draft invoices'})).queryByRole('button',{name:'Review invoice INV-old'})).toBeNull();
+  expect(screen.getByText('Historical drafts to check · 1').closest('details')?.hasAttribute('open')).toBe(false);
+  fireEvent.click(screen.getByText('Historical drafts to check · 1'));
+  expect(screen.getByRole('button',{name:'Review invoice INV-old'})).toBeTruthy();
+ });
+ it('uses aligned columns and expands review with the invoice’s recorded covered students',()=>{
+  const current={...bill('current','draft','2026-10-06','2026-11-05'),coveredChildrenJson:[{id:'child',name:'Recorded Student'}]};
+  render(<Workspace invoices={[current]} cycles={[]} today="2026-10-25" invoiceError={false} cycleError={false}/>);
+  const table=screen.getByRole('table',{name:'Current draft invoices'});
+  expect(within(table).getAllByRole('columnheader')).toHaveLength(6);
+  fireEvent.click(screen.getByRole('button',{name:'Review invoice INV-current'}));
+  expect(screen.getByRole('link',{name:'Recorded Student'}).getAttribute('href')).toBe('/dashboard/students/child');
+  fireEvent.click(screen.getByRole('button',{name:'Close review'}));
+  expect(screen.queryByRole('region',{name:'Invoice review INV-current'})).toBeNull();
+ });
  it('keeps upcoming drafts distinct and reveals prior invoice context before the issue route',()=>{
   render(<Workspace invoices={[bill('nov','sent'),bill('dec','draft','2026-12-06','2027-01-05')]} cycles={[]} today="2026-10-25" invoiceError={false} cycleError={false}/>);
   expect(screen.getByText('Upcoming periods · 1 draft invoice')).toBeTruthy();
-  const review=screen.getByText('Review invoice',{exact:false}).closest('details')!;
-  expect(within(review).getByText('Previous billed period')).toBeTruthy();
+  fireEvent.click(screen.getByText('Upcoming periods · 1 draft invoice'));
+  fireEvent.click(screen.getByRole('button',{name:'Review invoice INV-dec'}));
+  const review=screen.getByRole('region',{name:'Invoice review INV-dec'});
+  expect(within(review).getByText('Previous invoice')).toBeTruthy();
   expect(within(review).getByRole('link',{name:'INV-nov'}).getAttribute('href')).toBe('/dashboard/finance/invoices/nov');
   expect(screen.getByRole('link',{name:'Open draft to issue'}).getAttribute('href')).toBe('/dashboard/finance/invoices/dec');
   expect(screen.queryByRole('button',{name:'Issue invoice'})).toBeNull();
@@ -30,7 +51,7 @@ describe('daily finance workflow',()=>{
  it('shows unavailable rather than all clear on a failed load',()=>{
   render(<Workspace invoices={[]} cycles={[]} today="2026-10-25" invoiceError={true} cycleError={false}/>);
   expect(screen.getByRole('alert').textContent).toContain('No complete task count');
-  expect(screen.queryByText(/No current or historical drafts/)).toBeNull();
+  expect(screen.queryByText(/No current-period drafts/)).toBeNull();
  });
  it('keeps invoice counts across pagination and resets page on search',()=>{
   render(<Workspace invoices={Array.from({length:30},(_,i)=>bill(String(i),'sent'))} cycles={[]} today="2026-10-25" invoiceError={false} cycleError={false}/>);
