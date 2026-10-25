@@ -156,6 +156,25 @@ export default function FinanceWorkspace({ invoices, cycles, today, invoiceError
         </div>;
     }
     return <section aria-label="Finance daily tasks" className="min-w-0 space-y-5">
+        <details className="group rounded-lg border border-border bg-card px-4">
+            <summary className={`flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 text-sm font-medium text-foreground [&::-webkit-details-marker]:hidden ${focus}`}>
+                How to use Finance
+                <ChevronDown aria-hidden="true" className="h-4 w-4 shrink-0 group-open:rotate-180"/>
+            </summary>
+            <div className="space-y-4 pb-5 text-sm text-foreground">
+                <p className="max-w-prose text-muted-foreground">Start with current drafts, record payments you have received, then resolve anything that needs attention. Unpaid invoices can remain here while you wait for parents to pay.</p>
+                <ol className="max-w-prose list-decimal space-y-3 pl-5 marker:font-medium">
+                    <li><strong>Drafts to review: check, then issue.</strong> Select <strong>Review invoice</strong> to compare the previous invoice and its payment state, the selected draft, and the next invoice or scheduled cycle. Check the children, billing period and amount. When correct, select <strong>Open draft to issue</strong> and confirm issuance on the invoice page. Download the issued invoice to send to the parent. A draft has not been issued and is not yet a request for payment.</li>
+                    <li><strong>Awaiting payment: record money received.</strong> Match the family, invoice number and billing period to the payment, then select <strong>Record payment</strong>. Check the remaining balance and enter the payment details. Two invoices can have the same amount but cover different months: always check the period. Record payment only after confirming receipt.</li>
+                    <li><strong>Needs attention: resolve exceptions.</strong> Check missing billing information, overlapping periods and other warnings before issuing the affected invoices. Use <strong>Family accounts</strong> for the family’s billing setup and invoice history.</li>
+                </ol>
+                <div className="max-w-prose space-y-2 border-t border-border pt-3 text-muted-foreground">
+                    <p><strong className="text-foreground">Upcoming periods</strong> contains drafts for future periods. Review their timing before issuing.</p>
+                    <p><strong className="text-foreground">Historical drafts to check</strong> contains drafts for completed periods. They are preserved separately and excluded from the current-draft count. Check existing invoices and payments before issuing; do not issue an old draft simply to clear the list.</p>
+                    <p><strong className="text-foreground">Where to find records:</strong> use <strong>All invoices</strong> to browse invoice history, <strong>Family accounts</strong> for billing setup, and <strong>Receipts</strong> for payment receipts. Issuing and recording payment are separate actions.</p>
+                </div>
+            </div>
+        </details>
         <nav aria-label="Finance tasks" className="grid grid-cols-3 gap-1 border-b border-border md:flex md:gap-2">
             {([['drafts', 'Drafts to review', periods.current.length], ['payments', 'Awaiting payment', queues.payments.length], ['attention', 'Needs attention', queues.attention.length + problems.length]] as const).map(([value,label,total]) => <button key={value} aria-current={tab === value ? 'page' : undefined} onClick={() => changeTab(value)} className={`inline-flex min-h-12 min-w-0 items-center justify-center gap-1.5 border-b-2 px-1 py-3 text-xs font-medium sm:px-2 sm:text-sm md:justify-start md:whitespace-nowrap ${focus} ${tab === value ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}>{label}{' '}<span className={`rounded-full px-2 py-0.5 text-xs tabular-nums ${tab === value ? 'bg-primary/10 text-primary' : 'bg-secondary text-foreground'}`}>{invoiceError || (value === 'attention' && cycleError) ? 'Unavailable' : total}</span></button>)}
         </nav>
