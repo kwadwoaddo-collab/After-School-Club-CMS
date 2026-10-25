@@ -2,7 +2,7 @@ import { requireTenantSession } from '@/lib/session';
 import { redirect } from 'next/navigation';
 import { db } from '@/db';
 import { invoices } from '@/db/schema';
-import { eq, desc, and, count, ne, lt, inArray } from 'drizzle-orm';
+import { eq, desc, and, count, lt, inArray } from 'drizzle-orm';
 import { Download, CreditCard, Receipt } from 'lucide-react';
 import { resolveActiveCentreId } from '@/lib/centre-filter';
 import { getUserAccessibleCentres } from '@/lib/permissions';
@@ -10,6 +10,8 @@ import { Suspense } from 'react';
 import Link from 'next/link';
 import FinanceDataGridClient from '@/features/finance/components/FinanceDataGridClient';
 import type { FinanceInvoice } from '@/features/finance/components/FinanceDataGridClient';
+import FinanceWorkspace from '@/features/finance/components/FinanceWorkspace';
+import type { WorkspaceInvoice } from '@/features/finance/domain/finance-workspace';
 import FinanceDashboardFilters from '@/features/finance/components/FinanceDashboardFilters';
 import BillingCyclesTab from '@/features/billing/components/BillingCyclesTab';
 import { fetchBillingCycles } from '@/features/billing/queries';
@@ -24,6 +26,8 @@ export default async function FinancePage(props: {
         page?: string;
         status?: string;
         view?: string;
+        family?: string;
+        task?: string;
     }>
 }) {
     const searchParams = await props.searchParams;
@@ -47,6 +51,9 @@ export default async function FinancePage(props: {
     const statusFilter = searchParams.status || 'all';
     const formerBalancesView = searchParams.view === 'former';
     const invoiceHistoryView = searchParams.view === 'history';
+    const familyView = searchParams.view === 'families';
+    const workspaceView = !formerBalancesView && !invoiceHistoryView && !familyView && searchParams.status !== 'paid';
+    let workspaceInvoices: WorkspaceInvoice[] = [];
 
     let orgCentres: OrgCentre[] = [];
     let activeCentreId = 'all';
@@ -58,8 +65,8 @@ export default async function FinancePage(props: {
         let orgCentresRaw: OrgCentre[] = [];
         try {
             orgCentresRaw = await getUserAccessibleCentres(session.user.id);
-        } catch (e) {
-            orgCentresRaw = [];
+        } catch (error) {
+            throw error;
         }
         orgCentres = serialize(orgCentresRaw);
 
@@ -70,7 +77,7 @@ export default async function FinancePage(props: {
             ? eq(invoices.centreId, activeCentreId)
             : validCentreIds.length > 0
                 ? inArray(invoices.centreId, validCentreIds)
-                : eq(invoices.centreId, 'unauthorized_centre_id');
+                : inArray(invoices.centreId, []);
 
         const todayMidnightUtc = new Date();
         todayMidnightUtc.setUTCHours(0, 0, 0, 0);
@@ -94,6 +101,20 @@ export default async function FinancePage(props: {
             formerBalancesView ? formerStudentOutstandingSql() : invoiceHistoryView ? undefined : activeStudentInvoiceSql(),
         );
 
+        if (workspaceView) {
+            // Read-only action projection: lifecycle-independent so paused/stopped and legacy debts remain visible.
+            // Fetch a thin full-centre set before deriving counts; pagination never changes queue totals.
+            workspaceInvoices = await db.query.invoices.findMany({
+                where: and(eq(invoices.organisationId, session.user.organisationId), centreFilter),
+                columns: { id:true, invoiceNumber:true, organisationId:true, centreId:true, parentId:true, childId:true, billingConfigId:true, amount:true, status:true, invoiceDate:true, dueDate:true, billingPeriodStart:true, billingPeriodEnd:true, createdAt:true },
+                extras: { needsBillingReview: draftLifecycleReviewSql().as('needs_billing_review') },
+                with: {
+                    centre: { columns: { id:true, name:true } },
+                    parent: { columns: { id:true, firstName:true, lastName:true } },
+                    payments: { columns: { id:true, amount:true, status:true, reversedAt:true, recordedAt:true } },
+                },
+            });
+        } else if (!familyView) {
         const [countResult] = await db.select({ count: count() }).from(invoices).where(combinedFilter);
         totalInvoices = Number(countResult?.count || 0);
 
@@ -111,6 +132,7 @@ export default async function FinancePage(props: {
                 lineItems: true
             }
         });
+        }
     } catch (err) {
         logger.error('[finance] fetchInvoices failed:', err);
         hasFetchError = true;
@@ -119,15 +141,17 @@ export default async function FinancePage(props: {
     const serializedInvoices = serialize(paginatedInvoices);
 
     // Fetch billing cycles for the Billing Cycles tab — wrapped in try-catch for resilience
+    let cycleFetchError = false;
     let billingCycles: import('@/features/billing/queries').BillingCycleRow[] = [];
     try {
         billingCycles = await fetchBillingCycles(session.user.organisationId, activeCentreId);
-        if (userRole !== 'ORG_OWNER') {
+        {
             const accessibleIds = orgCentres.map((c: { id: string }) => c.id);
             billingCycles = billingCycles.filter(c => accessibleIds.includes(c.config.centreId));
         }
     } catch (err) {
         logger.error('[finance] fetchBillingCycles failed:', err);
+        cycleFetchError = true;
     }
     const serializedBillingCycles = serialize(billingCycles);
 
@@ -142,16 +166,14 @@ export default async function FinancePage(props: {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl sm:text-4xl font-black text-foreground tracking-tight">{formerBalancesView ? 'Former / Paused Students Outstanding Balances' : invoiceHistoryView ? 'All Invoice History' : 'Active Finance Ledger'}</h1>
+                    <h1 className="text-3xl sm:text-4xl font-black text-foreground tracking-tight">{formerBalancesView ? 'Former / Paused Students Outstanding Balances' : invoiceHistoryView ? 'All Invoice History' : familyView ? 'Family accounts' : 'Finance'}</h1>
                     <p className="text-muted-foreground font-medium mt-1 text-sm sm:text-base">
-                        {formerBalancesView ? 'Follow up issued unpaid invoices without reactivating student billing.' : 'Manage invoices, payments, and financial health'}
+                        {formerBalancesView ? 'Follow up issued unpaid invoices without reactivating student billing.' : 'Review invoices and record money received.'}
                     </p>
                 </div>
                 <div className="flex items-center gap-3 flex-wrap">
                     <nav aria-label="Finance views" className="flex flex-wrap gap-3 text-sm font-semibold">
-                        <Link href="/dashboard/finance" aria-current={!formerBalancesView && !invoiceHistoryView ? 'page' : undefined} className="text-primary underline underline-offset-4">Active ledger</Link>
-                        <Link href="/dashboard/finance?view=former" aria-current={formerBalancesView ? 'page' : undefined} className="text-primary underline underline-offset-4">Former / paused outstanding</Link>
-                        <Link href="/dashboard/finance?view=history" aria-current={invoiceHistoryView ? 'page' : undefined} className="text-primary underline underline-offset-4">All invoice history</Link>
+                        {[['', 'Daily tasks'], ['history', 'All invoices'], ['families', 'Family accounts'], ['former', 'Paused / stopped balances']].map(([view,label]) => <Link key={view} href={`/dashboard/finance?${new URLSearchParams({ ...(activeCentreId !== 'all' ? {centre:activeCentreId} : {}), ...(view ? {view} : {}) })}`} aria-current={(view === '' ? workspaceView : searchParams.view === view) ? 'page' : undefined} className="text-primary underline underline-offset-4">{label}</Link>)}
                     </nav>
                     <Suspense fallback={<div className="w-[180px] h-[44px] bg-secondary/60 rounded-2xl animate-pulse" />}>
                         <FinanceDashboardFilters centres={orgCentres} />
@@ -185,19 +207,10 @@ export default async function FinancePage(props: {
             {formerBalancesView && <p className="rounded-2xl border border-border bg-card p-4 text-sm text-muted-foreground">
                 These are existing issued balances, including shared family invoices where a covered student has paused or stopped. Payments and receipts remain available. Pausing a student does not void a debt, create a credit or issue another invoice.
             </p>}
-            {!formerBalancesView && !invoiceHistoryView && <p className="text-sm text-muted-foreground">
-                Invoices for active students are shown here. A shared family invoice remains here while any covered child is active, and can also appear in former / paused outstanding balances. All original records remain in All invoice history.
-            </p>}
-
-            <nav aria-label="Finance workflow" className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
-                {!formerBalancesView && <a href="#family-billing-overview" className="font-semibold text-primary underline underline-offset-4">Family overview</a>}
-                <a href="#invoice-list" className="font-semibold text-primary underline underline-offset-4">Invoice list</a>
-                {!formerBalancesView && <Link href={`/dashboard/finance?${new URLSearchParams({...(activeCentreId !== 'all' ? {centre:activeCentreId} : {}),...(formerBalancesView ? {view:'former'} : invoiceHistoryView ? {view:'history'} : {}),status:'draft',page:'1'}).toString()}#invoice-list`} className="font-semibold text-primary underline underline-offset-4">Review drafts</Link>}
-                <span className="text-muted-foreground">Open a draft, check its period and amount, then choose Issue Invoice.</span>
-            </nav>
+            {workspaceView && <FinanceWorkspace key={`${activeCentreId}:${searchParams.task ?? ''}:${searchParams.status ?? ''}`} invoices={serialize(workspaceInvoices)} cycles={serializedBillingCycles} today={new Intl.DateTimeFormat('en-CA', {timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date())} invoiceError={hasFetchError} cycleError={cycleFetchError}/>}
 
             {/* Main Finance Data Grid & KPI Summary */}
-            <Suspense fallback={<div className="h-[400px] bg-secondary/20 rounded-3xl animate-pulse border border-border/60" />}>
+            {!workspaceView && !familyView && <Suspense fallback={<div className="h-[400px] bg-secondary/20 rounded-3xl animate-pulse border border-border/60" />}>
                 <FinanceDataGridClient 
                     invoices={serializedInvoices}
                     totalCount={totalInvoices}
@@ -206,20 +219,21 @@ export default async function FinancePage(props: {
                     statusFilter={statusFilter}
                     centres={orgCentres}
                 />
-            </Suspense>
+            </Suspense>}
 
             {/* Billing Cycles Section */}
-            {!formerBalancesView && <div id="family-billing-overview" className="scroll-mt-24 bg-card/80 backdrop-blur-md border border-border/60 shadow-sm rounded-3xl p-6 sm:p-8 animate-in slide-in-from-bottom-4 duration-500 delay-150">
+            {familyView && <div id="family-billing-overview" className="scroll-mt-24 bg-card/80 backdrop-blur-md border border-border/60 shadow-sm rounded-3xl p-6 sm:p-8 animate-in slide-in-from-bottom-4 duration-500 delay-150">
                 <div className="flex items-center justify-between mb-6">
                     <h2 className="text-xl font-bold text-foreground flex items-center gap-2.5 tracking-tight">
                         <CreditCard className="w-5 h-5 text-primary" />
-                        Family overview
+                        Family accounts
                     </h2>
                 </div>
-                <BillingCyclesTab
-                    cycles={serializedBillingCycles}
+                <Link className="mb-4 inline-block text-sm text-primary underline" href={`/dashboard/finance?${new URLSearchParams({...(activeCentreId !== 'all' ? {centre:activeCentreId} : {})})}`}>Back to daily tasks</Link>
+                {cycleFetchError ? <p role="alert" className="text-sm text-destructive">Couldn’t load billing schedules. Refresh to try again.</p> : <BillingCyclesTab
+                    cycles={searchParams.family ? serializedBillingCycles.filter(cycle => cycle.config.parentId === searchParams.family) : serializedBillingCycles}
                     centreId={activeCentreId}
-                />
+                />}
             </div>}
         </div>
     );
