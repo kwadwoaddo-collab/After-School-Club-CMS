@@ -17,6 +17,7 @@ export default function FinanceDashboardFilters({ centres }: FinanceDashboardFil
             {/* Centre Filter */}
             <div className="relative min-w-[180px]">
                 <select
+                    aria-label="Active finance centre"
                     value={selectedCentreId}
                     onChange={(e) => setSelectedCentreId(e.target.value)}
                     className="w-full px-4 py-2.5 pr-10 rounded-2xl text-sm font-semibold

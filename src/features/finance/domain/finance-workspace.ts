@@ -7,7 +7,7 @@ function parseStrictDecimalToPence(value: string): number {
     return amount;
 }
 
-export type WorkspaceInvoice = Omit<FinanceInvoice, 'payments'> & { billingConfigId?: string | null; payments?: (NonNullable<FinanceInvoice['payments']>[number] & { reversedAt?: string | Date | null })[] };
+export type WorkspaceInvoice = Omit<FinanceInvoice, 'payments'> & { billingConfigId?: string | null; coveredChildrenJson?: unknown; payments?: (NonNullable<FinanceInvoice['payments']>[number] & { reversedAt?: string | Date | null })[] };
 export function isFinanceWorkspaceView(params: {view?: string; status?: string; create?: string}) {
     return !['former','history','families'].includes(params.view ?? '') && params.status !== 'paid' && !['1','true'].includes(params.create ?? '');
 }
@@ -63,5 +63,16 @@ export function adjacentInvoices(selected: WorkspaceInvoice, invoices: Workspace
     return {
         previous: related.filter(invoice => start && day(invoice.billingPeriodEnd) && day(invoice.billingPeriodEnd)! < start).sort((a,b) => day(b.billingPeriodEnd)!.localeCompare(day(a.billingPeriodEnd)!))[0],
         next: related.filter(invoice => end && day(invoice.billingPeriodStart) && day(invoice.billingPeriodStart)! > end).sort((a,b) => day(a.billingPeriodStart)!.localeCompare(day(b.billingPeriodStart)!))[0],
+    };
+}
+
+/** A presentation grouping, not an issuance or automatic-preparation eligibility rule. */
+export function splitDraftPeriods(drafts: ReturnType<typeof buildFinanceQueues>['drafts']) {
+    const valid = drafts.filter(item => item.start && item.end && item.end >= item.start);
+    return {
+        current: valid.filter(item => !item.historical && !item.upcoming),
+        upcoming: valid.filter(item => item.upcoming),
+        historical: valid.filter(item => item.historical),
+        needsChecking: drafts.filter(item => !item.start || !item.end || item.end < item.start),
     };
 }

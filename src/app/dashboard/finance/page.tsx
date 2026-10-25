@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { db } from '@/db';
 import { invoices } from '@/db/schema';
 import { eq, desc, and, count, lt, inArray } from 'drizzle-orm';
-import { Download, CreditCard, Receipt } from 'lucide-react';
+import { Download, CreditCard } from 'lucide-react';
 import { resolveActiveCentreId } from '@/lib/centre-filter';
 import { getUserAccessibleCentres } from '@/lib/permissions';
 import { Suspense } from 'react';
@@ -107,10 +107,11 @@ export default async function FinancePage(props: {
             // Fetch a thin full-centre set before deriving counts; pagination never changes queue totals.
             workspaceInvoices = await db.query.invoices.findMany({
                 where: and(eq(invoices.organisationId, session.user.organisationId), centreFilter),
-                columns: { id:true, invoiceNumber:true, organisationId:true, centreId:true, parentId:true, childId:true, billingConfigId:true, amount:true, status:true, invoiceDate:true, dueDate:true, billingPeriodStart:true, billingPeriodEnd:true, createdAt:true },
+                columns: { id:true, invoiceNumber:true, organisationId:true, centreId:true, parentId:true, childId:true, billingConfigId:true, amount:true, status:true, invoiceDate:true, dueDate:true, billingPeriodStart:true, billingPeriodEnd:true, createdAt:true, coveredChildrenJson:true },
                 extras: { needsBillingReview: draftLifecycleReviewSql().as('needs_billing_review') },
                 with: {
                     centre: { columns: { id:true, name:true } },
+                    child: { columns: { id:true, firstName:true, lastName:true } },
                     parent: { columns: { id:true, firstName:true, lastName:true } },
                     payments: { columns: { id:true, amount:true, status:true, reversedAt:true, recordedAt:true } },
                 },
@@ -163,30 +164,26 @@ export default async function FinancePage(props: {
     const todayStr = today.toISOString().split('T')[0];
 
     return (
-        <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
+        <div className="max-w-7xl mx-auto space-y-6">
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl sm:text-4xl font-black text-foreground tracking-tight">{formerBalancesView ? 'Former / Paused Students Outstanding Balances' : invoiceHistoryView ? 'All Invoice History' : familyView ? 'Family accounts' : 'Finance'}</h1>
-                    <p className="text-muted-foreground font-medium mt-1 text-sm sm:text-base">
+                    <h1 className="text-3xl font-semibold text-foreground tracking-tight">{formerBalancesView ? 'Former / Paused Students Outstanding Balances' : invoiceHistoryView ? 'All Invoice History' : familyView ? 'Family accounts' : 'Finance'}</h1>
+                    <p className="text-muted-foreground mt-1 text-sm">
                         {formerBalancesView ? 'Follow up issued unpaid invoices without reactivating student billing.' : 'Review invoices and record money received.'}
                     </p>
                 </div>
                 <div className="flex items-center gap-3 flex-wrap">
-                    <nav aria-label="Finance views" className="flex flex-wrap gap-3 text-sm font-semibold">
-                        {[['', 'Daily tasks'], ['history', 'All invoices'], ['families', 'Family accounts'], ['former', 'Paused / stopped balances']].map(([view,label]) => <Link key={view} href={`/dashboard/finance?${new URLSearchParams({ ...(activeCentreId !== 'all' ? {centre:activeCentreId} : {}), ...(view ? {view} : {}) })}`} aria-current={(view === '' ? workspaceView : searchParams.view === view) ? 'page' : undefined} className="text-primary underline underline-offset-4">{label}</Link>)}
+                    <nav aria-label="Finance views" className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+                        {!workspaceView && <Link href={`/dashboard/finance?${new URLSearchParams({...(activeCentreId !== 'all' ? {centre:activeCentreId} : {})})}`} className="inline-flex min-h-10 items-center font-medium text-primary hover:underline">Daily tasks</Link>}
+                        {[['history', 'All invoices'], ['families', 'Family accounts']].map(([view,label]) => <Link key={view} href={`/dashboard/finance?${new URLSearchParams({ ...(activeCentreId !== 'all' ? {centre:activeCentreId} : {}), view })}`} aria-current={searchParams.view === view ? 'page' : undefined} className="inline-flex min-h-10 items-center font-medium text-primary hover:underline">{label}</Link>)}
+                        <Link href="/dashboard/finance/receipt" className="inline-flex min-h-10 items-center font-medium text-primary hover:underline">Receipts</Link>
+                        <details className="relative"><summary className="flex min-h-10 cursor-pointer items-center text-muted-foreground">More</summary><div className="absolute right-0 top-10 z-20 w-64 rounded-lg border border-border bg-card p-3 shadow-lg"><Link href={`/dashboard/finance?${new URLSearchParams({ ...(activeCentreId !== 'all' ? {centre:activeCentreId} : {}), view:'former' })}`} className="block py-2 text-primary hover:underline">Paused / stopped balances</Link></div></details>
                     </nav>
                     <Suspense fallback={<div className="w-[180px] h-[44px] bg-secondary/60 rounded-2xl animate-pulse" />}>
                         <FinanceDashboardFilters centres={orgCentres} />
                     </Suspense>
-                    <Link
-                        href="/dashboard/finance/receipt"
-                        className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 text-xs font-bold hover:bg-blue-500/20 shadow-sm transition-all active:scale-95 duration-150"
-                    >
-                        <Receipt className="w-4 h-4" />
-                        Receipts
-                    </Link>
-                    <a
+                    {!workspaceView && <a
                         href={`/api/export/finance?from=${monthStart}&to=${todayStr}`}
                         download={`finance-${monthStart}-to-${todayStr}.csv`}
                         className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-bold hover:bg-emerald-500/20 shadow-sm transition-all active:scale-95 duration-150"
@@ -194,7 +191,7 @@ export default async function FinancePage(props: {
                     >
                         <Download className="w-4 h-4" />
                         Export CSV
-                    </a>
+                    </a>}
                 </div>
             </div>
 
