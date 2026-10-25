@@ -12,6 +12,7 @@ interface RecordPaymentModalProps {
     invoiceId: string;
     invoiceNumber: string;
     remainingBalance: number;
+    billingContext?: { parentId: string; familyName: string; period: string };
     onClose: () => void;
     onSuccess: () => void;
 }
@@ -19,7 +20,8 @@ interface RecordPaymentModalProps {
 export default function RecordPaymentModal({ 
     invoiceId, 
     invoiceNumber, 
-    remainingBalance, 
+    remainingBalance,
+    billingContext,
     onClose, 
     onSuccess 
 }: RecordPaymentModalProps) {
@@ -95,15 +97,17 @@ export default function RecordPaymentModal({
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4 animate-in fade-in duration-300">
-            <div className="bg-secondary/80 border border-border rounded-[32px] w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+            <div role="dialog" aria-modal="true" aria-labelledby="record-payment-title" className="bg-secondary/80 border border-border rounded-[32px] w-full max-w-lg max-h-[90dvh] shadow-2xl overflow-y-auto animate-in zoom-in-95 duration-300">
                 {/* Header */}
                 <div className="px-8 py-6 border-b border-border flex items-center justify-between bg-card/50">
                     <div>
-                        <h2 className="text-2xl font-black text-foreground tracking-tight">Record Payment</h2>
-                        <p className="text-muted-foreground text-sm font-medium">Reconcile payment for {invoiceNumber}</p>
+                        <h2 id="record-payment-title" className="text-2xl font-black text-foreground tracking-tight">Record Payment</h2>
+                        <p className="text-muted-foreground text-sm font-medium">Record money received for {invoiceNumber}</p>
+                        {billingContext && <p className="mt-2 text-sm text-foreground"><a href={`/dashboard/parents/${billingContext.parentId}`} className="text-primary underline">{billingContext.familyName}</a><br />{billingContext.period}</p>}
                     </div>
                     <button 
                         onClick={onClose}
+                        aria-label="Close payment form"
                         className="p-2 hover:bg-secondary/60 rounded-xl transition-colors text-muted-foreground hover:text-foreground"
                     >
                         <X className="w-6 h-6" />
