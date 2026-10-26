@@ -45,6 +45,8 @@ export default async function ReconciliationPage(props: {
   const pendingInvoices = await db.select({
     id: invoices.id,
     invoiceNumber: invoices.invoiceNumber,
+    billingPeriodStart: invoices.billingPeriodStart,
+    billingPeriodEnd: invoices.billingPeriodEnd,
     amount: invoices.amount,
     status: invoices.status,
     parentId: invoices.parentId,
