@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { revalidatePath } from 'next/cache';
 import { importStudentsAction } from './import-actions';
 
 const mockRequireApiAuth = vi.fn();
@@ -143,4 +144,38 @@ describe('DATA-REMEDIATION-1A — importStudentsAction Server Guards (Phase 8)',
     // Verified by mock architecture — db calls are completely virtualized
     expect(mockRequireApiAuth).toBeDefined();
   });
+  const safeRow = { studentFirstName: 'Alice', studentLastName: 'Smith', studentSchoolYear: 'Year 3', parentFirstName: 'Bob', parentLastName: 'Smith', parentEmail: 'bob@example.com' };
+  it('keeps confirmed rows counted but hides unexpected error details on another row', async () => {
+    mockDbTransaction.mockImplementationOnce(async cb => cb(mockTx)).mockRejectedValueOnce(new Error('Failed query: private_table internal credentials'));
+    const result = await importStudentsAction([safeRow, { ...safeRow, studentFirstName: 'Ben' }], 'centre-1');
+    expect(result.stats.createdStudents).toBe(1);
+    expect(result.stats.createdParents).toBe(1);
+    expect(result.errors[0].row).toBe(2);
+    expect(result.errors[0].message).not.toContain('private_table');
+    expect(result.errors[0].message).toContain('Check the Students and Parents lists');
+    expect(result.outcomeUnconfirmed).toBe(true);
+  });
+  it('does not count rolled-back inserts when a later step fails', async () => {
+    mockDbTransaction.mockImplementationOnce(async cb => { await cb(mockTx); throw new Error('commit failed'); });
+    const result = await importStudentsAction([safeRow], 'centre-1');
+    expect(result.stats.createdStudents).toBe(0);
+    expect(result.stats.createdParents).toBe(0);
+    expect(result.outcomeUnconfirmed).toBe(true);
+  });
+  it('preserves original data-row numbers after blank and duplicate rows', async () => {
+    const result = await importStudentsAction([safeRow, safeRow, { ...safeRow, studentFirstName: '' }], 'centre-1');
+    expect(result.errors[0].row).toBe(3);
+    expect(result.errors[0].message).toContain('First Name');
+  });
+
+  it('retains acknowledged counts if only refreshing the lists fails', async () => {
+    vi.mocked(revalidatePath).mockImplementationOnce(() => { throw new Error('framework cache internal'); });
+    const result = await importStudentsAction([safeRow], 'centre-1');
+    expect(result.stats.createdStudents).toBe(1);
+    expect(result.stats.createdParents).toBe(1);
+    expect(result.errors[0].row).toBe(0);
+    expect(result.errors[0].message).toContain('confirmed import results');
+    expect(result.errors[0].message).not.toContain('framework cache');
+  });
+
 });

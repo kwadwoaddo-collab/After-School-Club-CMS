@@ -8,6 +8,7 @@ import { eq, and, or, ilike } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { validateImportMappings, validateImportRow, validateAndNormalizeSchoolYear } from './import-validation';
 import { isQuarantinedParentId } from '@/lib/data-quality/quarantine';
+import { ImportFamilyReviewError, safeImportRowError } from './import-errors';
 import * as permissions from '@/lib/permissions';
 
 export interface StudentImportRow {
@@ -24,6 +25,8 @@ export interface StudentImportRow {
 
 export interface ImportResult {
   success: boolean;
+  outcomeUnconfirmed?: boolean;
+  countsUnavailable?: boolean;
   stats: {
     totalRows: number;
     createdParents: number;
@@ -105,9 +108,10 @@ export async function importStudentsAction(
 
   // ─── Deduplicate Rows in Memory ───
   const uniqueRows: StudentImportRow[] = [];
+  const sourceRowNumbers: number[] = [];
   const seenKeys = new Set<string>();
 
-  for (const row of rows) {
+  for (const [sourceIndex, row] of rows.entries()) {
     const sFirst = (row.studentFirstName || '').trim().toLowerCase().replace(/\s+/g, ' ');
     const sLast = (row.studentLastName || '').trim().toLowerCase().replace(/\s+/g, ' ');
     const pFirst = (row.parentFirstName || '').trim().toLowerCase().replace(/\s+/g, ' ');
@@ -123,6 +127,7 @@ export async function importStudentsAction(
     if (!seenKeys.has(key)) {
       seenKeys.add(key);
       uniqueRows.push(row);
+      sourceRowNumbers.push(sourceIndex + 1);
     }
   }
 
@@ -134,10 +139,12 @@ export async function importStudentsAction(
     skippedStudents: 0,
   };
   const errors: ImportResult['errors'] = [];
+  let outcomeUnconfirmed = false;
 
   for (let i = 0; i < uniqueRows.length; i++) {
     const row = uniqueRows[i];
-    const rowNumber = i + 1;
+    const rowNumber = sourceRowNumbers[i];
+    const rowStats = { createdParents: 0, matchedParents: 0, createdStudents: 0, skippedStudents: 0 };
 
     try {
       // ─── Row-level validation ───
@@ -219,11 +226,11 @@ export async function importStudentsAction(
         if (existingParent) {
           // Guard: do not link students to quarantined families in data review
           if (isQuarantinedParentId(existingParent.id)) {
-            throw new Error(`Cannot link student to existing family (${existingParent.firstName} ${existingParent.lastName}) in data review status.`);
+            throw new ImportFamilyReviewError('Family review required');
           }
 
           parentId = existingParent.id;
-          stats.matchedParents++;
+          rowStats.matchedParents++;
 
           const updateData: Partial<typeof parents.$inferInsert> = {};
           // Update parent's phone number if not set
@@ -247,7 +254,7 @@ export async function importStudentsAction(
             })
             .returning({ id: parents.id });
           parentId = newParent.id;
-          stats.createdParents++;
+          rowStats.createdParents++;
         }
 
         // 2. Resolve Child (Student)
@@ -261,7 +268,7 @@ export async function importStudentsAction(
         });
 
         if (existingChild) {
-          stats.skippedStudents++;
+          rowStats.skippedStudents++;
           // Append notes if provided
           if (row.studentNotes?.trim()) {
             await tx.insert(studentNotes).values({
@@ -290,7 +297,7 @@ export async function importStudentsAction(
             })
             .returning({ id: children.id });
 
-          stats.createdStudents++;
+          rowStats.createdStudents++;
 
           // Insert notes if provided
           if (row.studentNotes?.trim()) {
@@ -305,27 +312,36 @@ export async function importStudentsAction(
           }
         }
       });
+      // Count only acknowledged commits, never work rolled back later in the row.
+      stats.createdParents += rowStats.createdParents;
+      stats.matchedParents += rowStats.matchedParents;
+      stats.createdStudents += rowStats.createdStudents;
+      stats.skippedStudents += rowStats.skippedStudents;
 
     } catch (err) {
       logger.error(`Error importing row ${rowNumber}:`, err);
-      const message = err instanceof Error ? err.message : undefined;
+      if (!(err instanceof ImportFamilyReviewError)) outcomeUnconfirmed = true;
       errors.push({
         row: rowNumber,
         email: row.parentEmail,
         name: `${row.studentFirstName} ${row.studentLastName}`,
-        message: message || 'Database error occurred.',
+        message: safeImportRowError(err),
       });
     }
   }
 
-  revalidatePath('/dashboard/students');
-  revalidatePath('/dashboard/parents');
-  if (defaultCentreId) {
-    revalidatePath(`/dashboard/centres/${defaultCentreId}`);
+  try {
+    revalidatePath('/dashboard/students');
+    revalidatePath('/dashboard/parents');
+    if (defaultCentreId) revalidatePath(`/dashboard/centres/${defaultCentreId}`);
+  } catch (error) {
+    logger.error('Import completed but refresh failed', error);
+    errors.push({ row: 0, message: 'The confirmed import results are shown below, but the lists could not refresh. Reload the Students and Parents lists to check the saved records before importing again.' });
   }
 
   return {
     success: errors.length === 0,
+    outcomeUnconfirmed,
     stats,
     errors,
   };
