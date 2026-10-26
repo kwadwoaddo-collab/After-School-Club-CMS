@@ -22,7 +22,7 @@ import { Button } from '@/components/ui/Button';
 
 const STATUS_LABELS: Record<string, string> = {
     confirmed: 'Booked',
-    signed_up: 'Signed-up',
+    signed_up: 'Joining requested',
     completed: 'Attended',
     pending: 'Pending',
     cancelled: 'Cancelled',

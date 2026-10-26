@@ -1,3 +1,4 @@
+import TodayWork from './_components/TodayWork';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { requireTenantSession } from '@/lib/session';
 import { redirect } from 'next/navigation';
@@ -116,6 +117,10 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
             {/* U-4 (Milestone 3M): Onboarding checklist gated to ORG_OWNER only.
                 MANAGER/FRONT_DESK/TUTOR cannot complete onboarding steps. */}
             {isOwner && !onboardingAllDone && <OnboardingChecklist steps={onboardingSteps} completedCount={completedCount} />}
+
+            <Suspense fallback={<p role="status" className="text-sm text-muted-foreground">Checking today’s work…</p>}>
+                <TodayWork orgId={org.id} centreIds={accessibleCentreIds} centreId={activeCentreId} role={userRole}/>
+            </Suspense>
 
             <Suspense fallback={<OverviewSkeleton />}>
                 <DashboardKpisWidget 

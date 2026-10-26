@@ -1,4 +1,6 @@
-import { studentLifecycleStatusSql, studentLastContactSql, studentNextContactSql } from '@/features/students/lifecycle-queries';
+import { enrolmentBusinessDate } from '@/lib/enrolment/business-date';
+import { normalizeFollowUpFilter } from '@/features/students/follow-up-queue';
+import { studentLifecycleStatusSql, studentLastContactSql, studentNextContactSql, studentFollowUpFilterSql, studentFollowUpOrderSql, studentRestartBillingReviewSql } from '@/features/students/lifecycle-queries';
 import { redirect } from 'next/navigation';
 import { requireAuth } from '@/lib/require-auth';
 import { db } from '@/db';
@@ -33,6 +35,7 @@ export default async function StudentsPage(props: {
         year?: string;
         status?: string;
         page?: string;
+        followUp?: string;
     }>
 }) {
     const searchParams = await props.searchParams;
@@ -40,6 +43,9 @@ export default async function StudentsPage(props: {
     // "Dashboard authorisation enforcement pattern", and security-p6.test.ts)
     const { session } = await requireAuth({ roles: ['ORG_OWNER', 'MANAGER', 'FRONT_DESK'] });
 
+    const today = enrolmentBusinessDate();
+    const showFollowUps = searchParams.status === 'follow-ups';
+    const followUpFilter = normalizeFollowUpFilter(searchParams.followUp);
     let hasError = false;
     let org: InferSelectModel<typeof organisations> | null = null;
     let accessibleCentreIds: string[] = [];
@@ -135,8 +141,12 @@ export default async function StudentsPage(props: {
         }
 
         showLowAttendance = searchParams.status === 'low-attendance';
-        if (searchParams.status === 'follow-ups') conditions.push(sql`${studentLifecycleStatusSql()} IN ('paused', 'stopped')`);
-        if (searchParams.status && searchParams.status !== 'all' && searchParams.status !== 'follow-ups' && !showLowAttendance) {
+        if (showFollowUps) {
+            conditions.push(sql`${studentLifecycleStatusSql(today)} IN ('paused', 'stopped')`);
+            conditions.push(studentFollowUpFilterSql(followUpFilter, today));
+        }
+        if (searchParams.status === 'billing-review') conditions.push(studentRestartBillingReviewSql(today));
+        if (searchParams.status && searchParams.status !== 'billing-review' && searchParams.status !== 'all' && searchParams.status !== 'follow-ups' && !showLowAttendance) {
             conditions.push(eq(children.isRegistered, searchParams.status === 'registered'));
         }
 
@@ -254,7 +264,7 @@ export default async function StudentsPage(props: {
             .from(children)
             .innerJoin(parents, eq(children.parentId, parents.id))
             .where(and(...conditions))
-            .orderBy(asc(children.lastName), asc(children.firstName))
+            .orderBy(...(showFollowUps ? [studentFollowUpOrderSql(), sql`${studentLastContactSql()} ASC NULLS FIRST`] : []), asc(children.lastName), asc(children.firstName), asc(children.id))
             .limit(PAGE_SIZE)
             .offset(offset);
 
@@ -326,6 +336,10 @@ export default async function StudentsPage(props: {
                 </Button>
             </HeaderPortal>
 
+            <div className="flex flex-wrap items-center justify-between gap-3">
+                <p className="text-sm text-muted-foreground">{showFollowUps ? 'Call paused or stopped families in due-date order. Open a student to record the outcome and next call. No messages are sent automatically.' : searchParams.status === 'billing-review' ? 'These reactivated students need a separate fee and billing-start review. Open their profile to check the restart; billing does not resume automatically.' : 'Student records include leads and confirmed members. Registration confirmation and attendance status are separate.'}</p>
+                <Link href={showFollowUps ? '/dashboard/students' : '/dashboard/students?status=follow-ups'} className="text-sm font-medium text-primary underline underline-offset-4">{showFollowUps ? 'All students' : 'Open follow-up calls'}</Link>
+            </div>
             {/* KPI stat cards */}
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                 <Card>
@@ -400,7 +414,7 @@ export default async function StudentsPage(props: {
             </div>
 
             <div>
-                <StudentsTable students={enrichedStudents} error={hasError} hasActiveFilters={hasActiveFilters} />
+                <StudentsTable students={enrichedStudents} error={hasError} hasActiveFilters={hasActiveFilters} followUpMode={showFollowUps} today={today} />
 
                 {totalPages > 1 && (
                     <div className="mt-4">

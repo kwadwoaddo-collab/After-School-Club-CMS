@@ -1,3 +1,4 @@
+import JoiningJourneyGuide from '@/features/students/components/JoiningJourneyGuide';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { requireTenantSession } from '@/lib/session';
 import { redirect, notFound } from 'next/navigation';
@@ -26,8 +27,8 @@ const STATUS_BADGE: Record<string, string> = {
 };
 
 const STATUS_LABEL: Record<string, string> = {
-    awaiting_confirmation: 'Awaiting Confirmation',
-    signed_up: 'Signed Up',
+    awaiting_confirmation: 'Form received — awaiting confirmation',
+    signed_up: 'Joining confirmed',
     not_interested: 'Not Interested',
 };
 
@@ -89,6 +90,7 @@ export default async function RegistrationDetailPage({ params }: { params: Promi
 
     return (
         <div className="p-4 sm:p-6 max-w-4xl mx-auto">
+            <JoiningJourneyGuide />
             {/* Back link */}
             <BackButton />
 

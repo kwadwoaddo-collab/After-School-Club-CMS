@@ -59,6 +59,8 @@ vi.mock('next/navigation', () => ({
     }),
 }));
 
+vi.mock('@/lib/permissions', () => ({ getUserAccessibleCentreIds: vi.fn().mockResolvedValue(['centre-1']), getUserAccessibleCentres: vi.fn().mockResolvedValue([{ id: 'centre-1', name: 'Dagenham' }]) }));
+
 vi.mock('next/headers', () => ({
     cookies: vi.fn().mockResolvedValue({ get: () => undefined }),
 }));

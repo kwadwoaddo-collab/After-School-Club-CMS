@@ -9,8 +9,20 @@
  */
 
 import { db } from '@/db';
-import { users, centres, centreMemberships, children } from '@/db/schema';
+import { users, centres, centreMemberships, children, orgMemberships } from '@/db/schema';
 import { eq, and, inArray, or, sql } from 'drizzle-orm';
+
+/** Match auth(): the active organisation must have a live membership.
+ * users.role is a legacy field and cannot preserve owner access after demotion. */
+async function activeOrganisationUser(userId: string) {
+    const user = await db.query.users.findFirst({ where: eq(users.id, userId) });
+    if (!user?.organisationId) return null;
+    const membership = await db.query.orgMemberships.findFirst({
+        where: and(eq(orgMemberships.userId, userId), eq(orgMemberships.organisationId, user.organisationId)),
+    });
+    if (!membership) return null;
+    return { ...user, role: membership.role, organisationId: user.organisationId };
+}
 
 /**
  * Get all centres a user has access to
@@ -19,38 +31,19 @@ import { eq, and, inArray, or, sql } from 'drizzle-orm';
  * Other roles: Returns only assigned centres
  */
 export async function getUserAccessibleCentres(userId: string) {
-    const user = await db.query.users.findFirst({
-        where: eq(users.id, userId),
-        with: {
-            memberships: {
-                with: {
-                    centre: true,
-                },
-            },
-        },
-    });
-
-    if (!user) {
-        return [];
-    }
-
-    // ORG_OWNER has access to all centres in the organization
-    if (user.role === 'ORG_OWNER' && user.organisationId) {
-        const orgCentres = await db.query.centres.findMany({
+    const user = await activeOrganisationUser(userId);
+    if (!user) return [];
+    if (user.role === 'ORG_OWNER') {
+        return db.query.centres.findMany({
             where: eq(centres.organisationId, user.organisationId),
             orderBy: (centres, { asc }) => [asc(centres.name)],
         });
-        return orgCentres;
     }
-
-    // Other roles: return only assigned centres belonging to the user's active organisation
-    return user.memberships
-        .map((m) => m.centre)
-        .filter(
-            (c) =>
-                Boolean(c) &&
-                (!c.organisationId || (Boolean(user.organisationId) && c.organisationId === user.organisationId))
-        );
+    const memberships = await db.query.centreMemberships.findMany({
+        where: eq(centreMemberships.userId, userId), with: { centre: true },
+    });
+    return memberships.map(membership => membership.centre)
+        .filter(centre => Boolean(centre) && centre.organisationId === user.organisationId);
 }
 
 /**
@@ -65,55 +58,19 @@ export async function getUserAccessibleCentreIds(userId: string): Promise<string
 /**
  * Check if a user can access a specific centre
  */
-export async function canUserAccessCentre(
-    userId: string,
-    centreId: string
-): Promise<boolean> {
-    const user = await db.query.users.findFirst({
-        where: eq(users.id, userId),
-    });
-
-    if (!user) {
-        return false;
-    }
-
-    // ORG_OWNER can access all centres in their org
+export async function canUserAccessCentre(userId: string, centreId: string): Promise<boolean> {
+    const user = await activeOrganisationUser(userId);
+    if (!user) return false;
     if (user.role === 'ORG_OWNER') {
-        if (!user.organisationId) {
-            return false;
-        }
-        const centre = await db.query.centres.findFirst({
-            where: and(
-                eq(centres.id, centreId),
-                eq(centres.organisationId, user.organisationId)
-            ),
-        });
-        return !!centre;
+        return !!(await db.query.centres.findFirst({
+            where: and(eq(centres.id, centreId), eq(centres.organisationId, user.organisationId)),
+        }));
     }
-
-    // Check if user has membership to this centre
     const membership = await db.query.centreMemberships.findFirst({
-        where: and(
-            eq(centreMemberships.userId, userId),
-            eq(centreMemberships.centreId, centreId)
-        ),
-        with: {
-            centre: true,
-        },
+        where: and(eq(centreMemberships.userId, userId), eq(centreMemberships.centreId, centreId)),
+        with: { centre: true },
     });
-
-    if (!membership) {
-        return false;
-    }
-
-    const membershipCentre = (membership as { centre?: { organisationId?: string } }).centre;
-    if (membershipCentre?.organisationId) {
-        if (!user.organisationId || membershipCentre.organisationId !== user.organisationId) {
-            return false;
-        }
-    }
-
-    return true;
+    return !!membership?.centre && membership.centre.organisationId === user.organisationId;
 }
 
 /**
@@ -131,42 +88,27 @@ export async function canUserAccessSafeguardingRecords(
  * Check if user is an organization owner
  */
 export async function isOrgOwner(userId: string): Promise<boolean> {
-    const user = await db.query.users.findFirst({
-        where: eq(users.id, userId),
-    });
-    return user?.role === 'ORG_OWNER';
+    return (await activeOrganisationUser(userId))?.role === 'ORG_OWNER';
 }
 
 /**
  * Get user's role for a specific centre
  * Returns the role from centreMemberships, or user's org-level role if ORG_OWNER
  */
-export async function getUserRoleForCentre(
-    userId: string,
-    centreId: string
-): Promise<string | null> {
-    const user = await db.query.users.findFirst({
-        where: eq(users.id, userId),
-    });
-
-    if (!user) {
-        return null;
-    }
-
-    // ORG_OWNER keeps their role
+export async function getUserRoleForCentre(userId: string, centreId: string): Promise<string | null> {
+    const user = await activeOrganisationUser(userId);
+    if (!user) return null;
     if (user.role === 'ORG_OWNER') {
-        return user.role;
+        const centre = await db.query.centres.findFirst({
+            where: and(eq(centres.id, centreId), eq(centres.organisationId, user.organisationId)),
+        });
+        return centre ? 'ORG_OWNER' : null;
     }
-
-    // Get role from centre membership
     const membership = await db.query.centreMemberships.findFirst({
-        where: and(
-            eq(centreMemberships.userId, userId),
-            eq(centreMemberships.centreId, centreId)
-        ),
+        where: and(eq(centreMemberships.userId, userId), eq(centreMemberships.centreId, centreId)),
+        with: { centre: true },
     });
-
-    return membership?.role || null;
+    return membership?.centre?.organisationId === user.organisationId ? membership.role : null;
 }
 
 /**
@@ -285,14 +227,9 @@ export async function getVisibleChildIds(
     userId: string,
     orgId: string
 ): Promise<string[] | null> {
-    // Avoid an extra DB call for ORG_OWNER — they see all children in the org.
-    const user = await db.query.users.findFirst({
-        where: eq(users.id, userId),
-        columns: { role: true },
-    });
-
-    if (!user) return [];
-    if (user.role === 'ORG_OWNER') return null; // null = "no restriction"
+    const user = await activeOrganisationUser(userId);
+    if (!user || user.organisationId !== orgId) return [];
+    if (user.role === 'ORG_OWNER') return null; // only within the verified active organisation
 
     const accessibleCentreIds = await getUserAccessibleCentreIds(userId);
     if (accessibleCentreIds.length === 0) return [];

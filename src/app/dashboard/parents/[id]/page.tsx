@@ -10,6 +10,10 @@ import { ChevronLeft } from 'lucide-react';
 import DeleteParentButton from '@/features/parents/components/DeleteParentButton';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
+import { buildFamilyActivity } from '@/features/parents/domain/family-activity';
+import { getFamilyActivityRecords } from '@/features/parents/family-activity-query';
+import { FamilyActivityHistory } from '@/features/parents/components/FamilyActivityHistory';
+import { logger } from '@/lib/logger';
 
 interface ParentPageProps {
     params: Promise<{ id: string }>;
@@ -50,6 +54,17 @@ export default async function ParentProfilePage({ params }: ParentPageProps) {
             child: true
         }
     });
+
+    // Supplemental read-only history must not hide the existing ledger on failure.
+    let activityRecords: Awaited<ReturnType<typeof getFamilyActivityRecords>> = {bookings:[],registrations:[],lifecycle:[],contacts:[],audit:[]};
+    let activityUnavailable = false;
+    try {
+        activityRecords = await getFamilyActivityRecords(organisationId, id, parent.children.map(child=>child.id), familyInvoices.map(invoice=>invoice.id));
+    } catch (error) {
+        activityUnavailable = true;
+        logger.error('[parent] Supplemental family activity unavailable', error);
+    }
+    const activity = buildFamilyActivity({children:parent.children,invoices:familyInvoices,...activityRecords});
 
     // 3. Calculate Ledger Stats
     // Void and draft invoices are excluded from billing liabilities.
@@ -120,6 +135,8 @@ export default async function ParentProfilePage({ params }: ParentPageProps) {
                     </div>
                 </div>
             </Card>
+
+            <FamilyActivityHistory events={activity} unavailable={activityUnavailable} />
 
             {/* ── Tabs & tab content ──────────────────────────────────────── */}
             <ParentProfileClient

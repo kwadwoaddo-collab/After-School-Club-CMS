@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { format, startOfWeek, endOfWeek, subWeeks } from 'date-fns';
 import {
     Loader2, Download, Calendar, Users, BookOpen,
     CalendarCheck, Clock, AlertTriangle, BarChart3, FileText,
 } from 'lucide-react';
 import { getWeeklyReport, type WeeklyReportData } from '@/features/reports/weekly-report.action';
+import Link from 'next/link';
 import { generateCEOReportPDF } from '@/lib/pdf-report';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -312,7 +313,7 @@ function PendingActionsSection({ rows }: { rows: WeeklyReportData['pendingAction
                                     {PENDING_TYPE_LABELS[p.type]}
                                 </span>
                             </td>
-                            <td className="px-4 py-3 font-semibold text-foreground whitespace-nowrap">{p.name}</td>
+                            <td className="px-4 py-3 font-semibold text-foreground whitespace-nowrap">{p.href ? <Link href={p.href} className="text-primary underline underline-offset-2">{p.name}</Link> : p.name}</td>
                             <td className="px-4 py-3 text-muted-foreground text-xs">{p.description}</td>
                             <td className="px-4 py-3 text-foreground/80 whitespace-nowrap">{p.date}</td>
                             <td className="px-4 py-3">
@@ -336,6 +337,9 @@ function PendingActionsSection({ rows }: { rows: WeeklyReportData['pendingAction
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function WeeklyReportTab() {
+    const [centreId, setCentreId] = useState('all');
+    const [centreOptions, setCentreOptions] = useState<{id: string; name: string}[]>([]);
+    const requestId = useRef(0);
     const [rangeMode, setRangeMode] = useState<RangeMode>('this_week');
     const [customStart, setCustomStart] = useState('');
     const [customEnd, setCustomEnd] = useState('');
@@ -359,21 +363,24 @@ export default function WeeklyReportTab() {
         if (!range) { setError('Please select both a start and end date.'); return; }
         if (range.end < range.start) { setError('End date must be after start date.'); return; }
 
+        const request = ++requestId.current;
         setError(null);
         setPdfError(null);
         setReportData(null);
         setIsLoading(true);
 
         try {
-            const data = await getWeeklyReport(range.start, range.end);
+            const data = await getWeeklyReport(range.start, range.end, centreId);
+            if (request !== requestId.current) return;
             setReportData(data);
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to generate report. Please try again.');
+            setCentreOptions(data.scope?.centres ?? []);
+        } catch {
+            if (request === requestId.current) setError('We couldn’t load this report. Check the selected dates and centre, then refresh the report. No records were changed.');
         } finally {
-            setIsLoading(false);
+            if (request === requestId.current) setIsLoading(false);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [rangeMode, customStart, customEnd]);
+    }, [rangeMode, customStart, customEnd, centreId]);
 
     useEffect(() => {
         handlePreview();
@@ -406,11 +413,17 @@ export default function WeeklyReportTab() {
                     <div>
                         <h2 className="font-bold text-foreground text-xl leading-tight">Activity Report</h2>
                         <p className="text-sm text-muted-foreground mt-0.5">Preview and download an executive summary for the selected period</p>
-                        <p className="text-sm text-muted-foreground mt-1">Scope: all centres you have access to, regardless of the active centre.</p>
+                        <p className="text-sm text-muted-foreground mt-1">Scope: {reportData?.scope?.label ?? (centreId === 'all' ? 'All accessible centres' : centreOptions.find(centre => centre.id === centreId)?.name ?? 'Selected centre')}. The report selector controls this report; it is separate from the active centre in the sidebar.</p>
                     </div>
                 </div>
 
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap items-end gap-2">
+                    <label className="text-sm text-foreground">Report centre
+                        <select aria-label="Report centre" value={centreId} onChange={event => { setCentreId(event.target.value); setReportData(null); }} className="ml-2 min-h-11 rounded-lg border border-border bg-card px-3 text-foreground">
+                            <option value="all">All accessible centres</option>
+                            {centreOptions.map(centre => <option key={centre.id} value={centre.id}>{centre.name}</option>)}
+                        </select>
+                    </label>
                     {(['this_week', 'last_week', 'custom'] as const).map((mode) => {
                         const label = mode === 'this_week' ? 'Week to Date' : mode === 'last_week' ? 'Last Full Week' : 'Custom Range';
                         return (
@@ -538,6 +551,17 @@ export default function WeeklyReportTab() {
 
                     <hr className="border-border" />
 
+                    {reportData.finance && <section aria-label="Financial activity" className="rounded-2xl border border-border bg-card p-5 space-y-4">
+                        <h3 className="text-base font-semibold">Financial activity · {reportData.scope?.label ?? 'All accessible centres'}</h3>
+                        <div className="grid gap-4 sm:grid-cols-3">{[
+                            ['Cash collected', reportData.finance.cashCollected, 'Verified, unreversed payment allocations recorded in the selected period against currently issued, non-void invoices.'],
+                            ['Invoiced', reportData.finance.invoiced, 'Currently issued, non-void invoices dated in the selected period. This is not money received.'],
+                            ['Drafts prepared', reportData.finance.draftsPrepared, 'Invoices created in the selected period that are still drafts. These have not been issued and are not income.'],
+                        ].map(([label,value,description]) => <div key={label}><p className="text-sm font-medium">{label}</p><p className="mt-1 text-xl font-semibold tabular-nums">{new Intl.NumberFormat('en-GB', {style:'currency',currency:'GBP'}).format(Number(value))}</p><p className="mt-1 text-xs text-muted-foreground">{description}</p></div>)}</div>
+                        <p className="text-xs text-muted-foreground">Current record status is used, so later verification, reversal or invoice changes can change a past report. Payment recording date is not the bank settlement date. This is not a historical accounting statement.</p>
+                        <p className="text-sm text-muted-foreground">Debt ageing is not included. <Link className="text-primary underline" href={`/dashboard/finance?${new URLSearchParams({...((reportData.scope?.centreId && reportData.scope.centreId !== 'all') ? {centre:reportData.scope.centreId} : {centre:'all'}), task:'payments'})}`}>Review outstanding invoices and due dates</Link>.</p>
+                    </section>}
+                    <p className="text-sm text-muted-foreground">Pending actions use the same centre scope. Overdue registrations include the full backlog; missing attendance covers the last 30 days, regardless of the activity period.</p>
                     {/* 5. Pending Actions */}
                     <PendingActionsSection rows={reportData.pendingActions} />
                 </div>

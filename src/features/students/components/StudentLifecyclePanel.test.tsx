@@ -9,11 +9,11 @@ const render = (events = [paused], confirmed = true, canChangeStatus = true) => 
 describe('operator lifecycle visibility', () => {
     it('explains a reviewed billing date that is later than operational restart', () => {
         const html = renderToStaticMarkup(<StudentLifecyclePanel childId="child" events={[{ ...paused, status: 'active', feeReviewConfirmed: true, billingReviewedFrom: '2026-11-01' }]} contacts={[]} today="2026-10-21" canChangeStatus confirmed />);
-        expect(html).toContain('Active / signed up');
+        expect(html).toContain('Active attendance');
         expect(html).toContain('The reviewed billing start is 2026-11-01');
         expect(html).toContain('earlier restart-period invoices remain blocked');
     });
     it('keeps a paused student paused after their expected restart reminder date passes', () => { const html = render(); expect(html).toContain('Paused'); expect(html).toContain('reminder only'); expect(html).toContain('2026-10-12'); expect(html).toContain('Due'); });
-    it('shows future status separately rather than applying it early', () => { const html = render([{ ...paused, effectiveDate: '2026-11-01' }]); expect(html).toContain('Active / signed up'); expect(html).toContain('Scheduled: paused from 2026-11-01'); });
-    it('does not show a prospect as active or expose status controls to front desk', () => { const html = render([], false, false); expect(html).toContain('Awaiting enrolment confirmation'); expect(html).not.toContain('Change enrolment status'); expect(html).toContain('Log contacted / next call'); });
+    it('shows future status separately rather than applying it early', () => { const html = render([{ ...paused, effectiveDate: '2026-11-01' }]); expect(html).toContain('Active attendance'); expect(html).toContain('Scheduled: paused from 2026-11-01'); });
+    it('does not show a prospect as active or expose status controls to front desk', () => { const html = render([], false, false); expect(html).toContain('Joining not yet confirmed'); expect(html).not.toContain('Change enrolment status'); expect(html).toContain('Log contacted / next call'); });
 });

@@ -35,7 +35,7 @@ type SortDirection = 'asc' | 'desc';
 
 const STATUS_LABELS: Record<string, string> = {
     confirmed: 'Booked',
-    signed_up: 'Signed-up',
+    signed_up: 'Joining requested',
     completed: 'Attended',
     pending: 'Pending',
     cancelled: 'Cancelled',
@@ -757,7 +757,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                                             className="flex items-center gap-3 px-4 py-2 hover:bg-page text-sm text-text transition-colors w-full text-left disabled:opacity-50"
                                                         >
                                                             <CheckCircle className="w-4 h-4" />
-                                                            Mark as Signed-up
+                                                            Mark joining requested
                                                         </button>
                                                         <button
                                                             onClick={(e) => { e.stopPropagation(); handleQuickStatus(booking.id, 'completed'); }}
@@ -890,7 +890,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                                     className="flex items-center gap-3 px-4 py-2 hover:bg-page text-sm text-text transition-colors w-full text-left disabled:opacity-50"
                                                 >
                                                     <CheckCircle className="w-4 h-4" />
-                                                    Mark as Signed-up
+                                                    Mark joining requested
                                                 </button>
                                                 <button
                                                     onClick={(e) => { e.stopPropagation(); handleQuickStatus(booking.id, 'completed'); }}
@@ -1001,7 +1001,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                 disabled={isProcessingBulk}
                             >
                                 {isProcessingBulk ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
-                                <span className="hidden sm:inline">Mark</span> Signed-up
+                                <span className="hidden sm:inline">Mark</span> Joining requested
                             </Button>
                         </div>
                     </div>

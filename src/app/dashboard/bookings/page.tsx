@@ -1,3 +1,5 @@
+import { assessmentOutcomeRequiredSql } from '@/features/bookings/assessment-outcome-query';
+import JoiningJourneyGuide from '@/features/students/components/JoiningJourneyGuide';
 import { logger } from '@/lib/logger';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { requireTenantSession } from '@/lib/session';
@@ -31,12 +33,14 @@ export default async function BookingsPage(props: {
         to?: string;
         today?: string;
         page?: string;
+        outcome?: string;
     }>
 }) {
     const rawSearchParams = await props.searchParams;
     const session = await requireTenantSession();
 
     const searchParams = {
+        outcome: Array.isArray(rawSearchParams.outcome) ? rawSearchParams.outcome[0] : rawSearchParams.outcome,
         view:   Array.isArray(rawSearchParams.view)   ? rawSearchParams.view[0]   : rawSearchParams.view,
         status: Array.isArray(rawSearchParams.status) ? rawSearchParams.status[0] : rawSearchParams.status,
         centre: Array.isArray(rawSearchParams.centre) ? rawSearchParams.centre[0] : rawSearchParams.centre,
@@ -178,6 +182,12 @@ export default async function BookingsPage(props: {
         }
     }
 
+    if (searchParams.outcome === 'required') {
+        const outcomeCondition = assessmentOutcomeRequiredSql();
+        conds.push(outcomeCondition);
+        aggConds.push(outcomeCondition);
+    }
+
     if (effectiveFrom) {
         const fromDate = new Date(effectiveFrom);
         if (!isNaN(fromDate.getTime())) {
@@ -259,6 +269,7 @@ export default async function BookingsPage(props: {
     }
 
     const isFiltered = !!(
+        searchParams.outcome === 'required' ||
         searchParams.search ||
         (searchParams.status && searchParams.status !== 'all') ||
         effectiveFrom ||
@@ -290,6 +301,7 @@ export default async function BookingsPage(props: {
 
     return (
         <div className="space-y-6">
+            <JoiningJourneyGuide />
             {/* Header Portals — Fuses page header into the global header bar */}
             <HeaderPortal targetId="header-left">
                 <div className="flex items-center gap-2">

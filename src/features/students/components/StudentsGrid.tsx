@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { followUpBucket, FOLLOW_UP_LABELS } from '../follow-up-queue';
 import { AlertTriangle, Shield, Mail, Phone, Calendar } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import type { StudentRow } from './StudentsTable';
@@ -13,9 +14,11 @@ import type { StudentRow } from './StudentsTable';
 /* ------------------------------------------------------------------ */
 interface StudentsGridProps {
     students: StudentRow[];
+    followUpMode?: boolean;
+    today?: string;
 }
 
-export default function StudentsGrid({ students }: StudentsGridProps) {
+export default function StudentsGrid({ students, followUpMode = false, today = '' }: StudentsGridProps) {
     return (
         <div className="flex flex-col gap-3">
             {students.map((student) => {
@@ -27,7 +30,7 @@ export default function StudentsGrid({ students }: StudentsGridProps) {
                 return (
                     <Link
                         key={student.id}
-                        href={`/dashboard/students/${student.id}`}
+                        href={`/dashboard/students/${student.id}${followUpMode ? '#enrolment-follow-up' : ''}`}
                         className="block rounded-lg border border-border bg-surface p-4 active:bg-page/60 transition-colors"
                     >
                         <div className="flex items-start gap-3">
@@ -45,6 +48,7 @@ export default function StudentsGrid({ students }: StudentsGridProps) {
                                 </div>
                                 {(student.enrolmentStatus === 'paused' || student.enrolmentStatus === 'stopped') && <Badge variant="warning">{student.enrolmentStatus === 'paused' ? 'Paused' : 'Stopped'}</Badge>}
                                 {(student.lastContactAt || student.nextContactDate) && <p className="text-xs text-text-muted mt-1">Last contact: {student.lastContactAt ? new Date(student.lastContactAt).toLocaleDateString('en-GB', { timeZone: 'Europe/London' }) : 'Not recorded'}{student.nextContactDate ? ` · Next call: ${student.nextContactDate}` : ''}</p>}
+                                {followUpMode && <p className="mt-2 text-sm text-text"><Badge variant={['overdue', 'today'].includes(followUpBucket(student.nextContactDate, today)) ? 'warning' : 'default'}>{FOLLOW_UP_LABELS[followUpBucket(student.nextContactDate, today)]}</Badge><span className="ml-2 text-primary">Record call / next date →</span></p>}
                                 <div className="flex items-center gap-2 mt-1 flex-wrap">
                                     {student.schoolYear && (
                                         <span className="inline-flex items-center px-2 py-0.5 rounded-sm border border-border-subtle bg-page text-text-secondary text-xs font-medium">

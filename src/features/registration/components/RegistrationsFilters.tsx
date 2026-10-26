@@ -22,8 +22,8 @@ export default function RegistrationsFilters({ centres, resultsCount = 0 }: Regi
 
     const statusOptions = [
         { value: 'all', label: 'All Statuses' },
-        { value: 'awaiting_confirmation', label: 'Awaiting Confirmation' },
-        { value: 'signed_up', label: 'Signed Up' },
+        { value: 'awaiting_confirmation', label: 'Form received — awaiting confirmation' },
+        { value: 'signed_up', label: 'Joining confirmed' },
         { value: 'not_interested', label: 'Not Interested' },
     ];
 

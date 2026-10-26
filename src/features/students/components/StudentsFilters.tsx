@@ -1,5 +1,6 @@
 'use client';
 
+import { FOLLOW_UP_FILTERS, FOLLOW_UP_LABELS, normalizeFollowUpFilter } from '../follow-up-queue';
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { Search, Filter, X, ChevronDown, Check } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -25,6 +26,10 @@ export default function StudentsFilters({ centres, resultsCount = 0 }: StudentsF
     const [isYearDropdownOpen, setIsYearDropdownOpen] = useState(false);
 
     const [status, setStatus] = useState(searchParams.get('status') || 'all');
+    const [followUp, setFollowUp] = useState(normalizeFollowUpFilter(searchParams.get('followUp') || undefined));
+    const urlStatus = searchParams.get('status') || 'all';
+    const urlFollowUp = normalizeFollowUpFilter(searchParams.get('followUp') || undefined);
+    useEffect(() => { setStatus(urlStatus); setFollowUp(urlFollowUp); }, [urlStatus, urlFollowUp]);
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -39,6 +44,7 @@ export default function StudentsFilters({ centres, resultsCount = 0 }: StudentsF
     const statusOptions = [
         { value: 'all', label: 'All statuses' },
         { value: 'follow-ups', label: 'Follow-ups (paused / stopped)' },
+        { value: 'billing-review', label: 'Restart billing review' },
         { value: 'registered', label: 'Registered' },
         { value: 'unregistered', label: 'Leads / unregistered' },
     ];
@@ -54,11 +60,12 @@ export default function StudentsFilters({ centres, resultsCount = 0 }: StudentsF
         setSearch('');
         setSelectedYears([]);
         setStatus('all');
+        setFollowUp('all');
         setSelectedCentreId('all');
         router.push('/dashboard/students');
     };
 
-    const applyFilters = useCallback((overrides?: { newSearch?: string; newYears?: string[]; newStatus?: string }) => {
+    const applyFilters = useCallback((overrides?: { newSearch?: string; newYears?: string[]; newStatus?: string; newFollowUp?: string }) => {
         const params = new URLSearchParams();
 
         const currentSearch = overrides?.newSearch !== undefined ? overrides.newSearch : search;
@@ -71,12 +78,16 @@ export default function StudentsFilters({ centres, resultsCount = 0 }: StudentsF
 
         const currentStatus = overrides?.newStatus !== undefined ? overrides.newStatus : status;
         if (currentStatus !== 'all') params.set('status', currentStatus);
+        if (currentStatus === 'follow-ups') {
+            const nextFollowUp = overrides?.newFollowUp ?? followUp;
+            if (nextFollowUp !== 'all') params.set('followUp', nextFollowUp);
+        }
 
         if (selectedCentreId !== 'all') params.set('centre', selectedCentreId);
 
         const queryString = params.toString();
         router.push(`/dashboard/students${queryString ? `?${queryString}` : ''}`);
-    }, [search, selectedYears, status, selectedCentreId, router]);
+    }, [search, selectedYears, status, followUp, selectedCentreId, router]);
 
     const handleSearchChange = useCallback((value: string) => {
         setSearch(value);
@@ -206,6 +217,11 @@ export default function StudentsFilters({ centres, resultsCount = 0 }: StudentsF
                     <Filter className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-muted pointer-events-none" />
                 </div>
 
+                {status === 'follow-ups' && <label className="flex items-center gap-2 text-sm text-text">Calls
+                    <select aria-label="Filter follow-up calls" value={followUp} onChange={event => { const value = normalizeFollowUpFilter(event.target.value); setFollowUp(value); applyFilters({ newFollowUp: value }); }} className="h-9 rounded-sm border border-border bg-surface px-3 text-text">
+                        {FOLLOW_UP_FILTERS.map(value => <option key={value} value={value}>{FOLLOW_UP_LABELS[value]}</option>)}
+                    </select>
+                </label>}
                 {/* Clear filters */}
                 {hasActiveFilters && (
                     <Button variant="ghost" size="sm" onClick={handleClearFilters}>

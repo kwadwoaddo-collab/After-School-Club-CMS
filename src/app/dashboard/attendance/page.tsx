@@ -1,3 +1,6 @@
+import { studentLifecycleStatusSql } from '@/features/students/lifecycle-queries';
+import { expectedRosterIds } from '@/features/students/expected-roster';
+import { enrolmentBusinessDate } from '@/lib/enrolment/business-date';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { requireTenantSession } from '@/lib/session';
 import { redirect } from 'next/navigation';
@@ -34,7 +37,7 @@ export default async function AttendancePage(props: {
     const prevDay = format(subDays(targetDate, 1), 'yyyy-MM-dd');
     const nextDay = format(addDays(targetDate, 1), 'yyyy-MM-dd');
     const todayStr = format(new Date(), 'yyyy-MM-dd');
-    const targetStr = format(targetDate, 'yyyy-MM-dd');
+    const targetStr = enrolmentBusinessDate(targetDate);
     const isToday = targetStr === todayStr;
 
     let hasError = false;
@@ -64,6 +67,7 @@ export default async function AttendancePage(props: {
         allChildrenAtCentre = await db.query.children.findMany({
             where: and(centreChildrenCondition, eq(children.isRegistered, true), isNull(children.deletedAt)),
             with: { parent: true, centre: true },
+            extras: { effectiveEnrolmentStatus: studentLifecycleStatusSql(targetStr).as('effective_enrolment_status') },
         });
 
         dayBookings = await db.query.bookings.findMany({
@@ -78,6 +82,7 @@ export default async function AttendancePage(props: {
     const sortedSlots = compileDailyRegisterSlots({
         targetDate,
         allChildrenAtCentre,
+        expectedChildIds: expectedRosterIds(allChildrenAtCentre),
         dayBookings,
     });
 

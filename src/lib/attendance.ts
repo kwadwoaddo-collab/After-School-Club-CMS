@@ -196,11 +196,13 @@ export function compileDailyRegisterSlots(params: {
   targetDate: Date;
   allChildrenAtCentre: RegisterChild[];
   dayBookings: RegisterBooking[];
+  expectedChildIds?: ReadonlySet<string>;
 }): CompiledSlot[] {
-  const { targetDate, allChildrenAtCentre, dayBookings } = params;
+  const { targetDate, allChildrenAtCentre, dayBookings, expectedChildIds } = params;
   const targetDayName = format(targetDate, 'EEEE'); // e.g. "Monday"
 
   const regularAttendees = allChildrenAtCentre.filter(child => {
+    if (expectedChildIds && !expectedChildIds.has(child.id)) return false;
     if (!child.registeredSessions || child.registeredSessions.length === 0) return false;
     return child.registeredSessions.some((session: string) => session.startsWith(targetDayName));
   });
@@ -333,7 +335,7 @@ export function compileDailyRegisterSlots(params: {
 
     for (const att of booking.attendees) {
       // A child is a catchup if they don't have today's slot in their weekly registeredSessions
-      const isRegular = att.child.registeredSessions?.some((s: string) => {
+      const isRegular = (!expectedChildIds || expectedChildIds.has(att.childId)) && att.child.registeredSessions?.some((s: string) => {
         if (!s.startsWith(targetDayName)) return false;
         const timePart = s.substring(targetDayName.length).trim();
         const parsedTime = normalizeTimeToHHMM(timePart);

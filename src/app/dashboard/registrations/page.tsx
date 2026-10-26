@@ -1,3 +1,4 @@
+import JoiningJourneyGuide from '@/features/students/components/JoiningJourneyGuide';
 import { logger } from '@/lib/logger';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { requireAuth } from '@/lib/require-auth';
@@ -22,8 +23,8 @@ const STATUS_BADGE: Record<string, string> = {
 };
 
 const STATUS_LABEL: Record<string, string> = {
-    awaiting_confirmation: 'Awaiting Confirmation',
-    signed_up: 'Signed Up',
+    awaiting_confirmation: 'Form received — awaiting confirmation',
+    signed_up: 'Joining confirmed',
     not_interested: 'Not Interested',
 };
 
@@ -177,6 +178,7 @@ export default async function RegistrationsPage(props: {
 
     return (
         <div className="space-y-4 animate-in fade-in duration-700">
+            <JoiningJourneyGuide />
             {/* Header Portals — Fuses page header into the global header bar */}
             <HeaderPortal targetId="header-left">
                 <div className="flex items-center gap-2">
@@ -192,8 +194,8 @@ export default async function RegistrationsPage(props: {
                 <div className="flex bg-secondary/60 p-1 rounded-2xl border border-border self-start overflow-x-auto max-w-full scrollbar-none gap-1">
                     {[
                         { value: 'all', label: 'All', count: totalCount },
-                        { value: 'awaiting_confirmation', label: 'Awaiting Conf.', count: awaitingConfirmationCount, color: 'text-warning bg-warning/10' },
-                        { value: 'signed_up', label: 'Signed Up', count: signedUpCount, color: 'text-success bg-success/10' },
+                        { value: 'awaiting_confirmation', label: 'Awaiting confirmation', count: awaitingConfirmationCount, color: 'text-warning bg-warning/10' },
+                        { value: 'signed_up', label: 'Joining confirmed', count: signedUpCount, color: 'text-success bg-success/10' },
                         { value: 'not_interested', label: 'Not Interested', count: notInterestedCount, color: 'text-destructive bg-destructive/10' },
                     ].map((tab) => {
                         const isActive = (searchParams.status || 'all') === tab.value;

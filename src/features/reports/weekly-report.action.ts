@@ -11,6 +11,8 @@ import {
 import { eq, and, gte, lte, lt, asc, sql, inArray, count, countDistinct } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
+import { reportCentreIds } from './report-scope';
+import { getReportFinanceSummary, type ReportFinanceSummary } from './finance-summary';
 import { startOfDay, endOfDay, differenceInDays } from 'date-fns';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -18,6 +20,8 @@ import { startOfDay, endOfDay, differenceInDays } from 'date-fns';
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface WeeklyReportData {
+    scope?: { centreId: string; label: string; centres: { id: string; name: string }[] };
+    finance?: ReportFinanceSummary;
     periodLabel: string;
     startDate: string;
     endDate: string;
@@ -66,6 +70,7 @@ export interface WeeklyReportData {
     }[];
 
     pendingActions: {
+        href?: string;
         type: 'overdue_registration' | 'missed_attendance';
         description: string;
         name: string;
@@ -100,6 +105,7 @@ const STATUS_LABELS: Record<string, string> = {
 export async function getWeeklyReport(
     startIso: string,
     endIso: string,
+    requestedCentreId = 'all',
 ): Promise<WeeklyReportData> {
 
     // ── Auth ─────────────────────────────────────────────────────────────────
@@ -131,8 +137,11 @@ export async function getWeeklyReport(
     const overdueCutoff = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
 
     // ── Fetch accessible centres ──────────────────────────────────────────────
-    const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
-    if (accessibleCentreIds.length === 0) throw new Error('No accessible centres');
+    const allAccessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
+    const accessibleCentreIds = reportCentreIds(allAccessibleCentreIds, requestedCentreId);
+    const reportCentres = await db.select({ id: centres.id, name: centres.name }).from(centres)
+        .where(and(eq(centres.organisationId, orgId), inArray(centres.id, allAccessibleCentreIds))).orderBy(asc(centres.name));
+    const scopeLabel = requestedCentreId === 'all' ? 'All accessible centres' : reportCentres.find(centre => centre.id === requestedCentreId)?.name ?? 'Selected centre';
 
     // ── Fetch org info ────────────────────────────────────────────────────────
     const [org] = await db
@@ -151,6 +160,7 @@ export async function getWeeklyReport(
         pendingRegsRaw,
         missedAttendanceRaw,
         summaryPending,
+        finance,
     ] = await Promise.all([
 
         // ── 1. New registrations — grouped by registration, children aggregated
@@ -323,6 +333,7 @@ export async function getWeeklyReport(
             gte(registrations.createdAt, periodStart),
             lte(registrations.createdAt, periodEnd),
         )),
+        getReportFinanceSummary(orgId, accessibleCentreIds, periodStart, periodEnd),
     ]);
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -450,6 +461,7 @@ export async function getWeeklyReport(
 
     // Aggregate pending registrations by regId — show all children, not just first
     const pendingRegMap = new Map<string, {
+        id: string;
         childNames: string[];
         centreName: string;
         createdAt: Date;
@@ -461,6 +473,7 @@ export async function getWeeklyReport(
             pendingRegMap.get(r.regId)!.childNames.push(childName);
         } else {
             pendingRegMap.set(r.regId, {
+                id: r.regId,
                 childNames: [childName],
                 centreName: r.centreName ?? 'Unknown centre',
                 createdAt: new Date(r.createdAt),
@@ -471,6 +484,7 @@ export async function getWeeklyReport(
 
     const pendingActions: WeeklyReportData['pendingActions'] = [
         ...Array.from(pendingRegMap.values()).map(r => ({
+            href: `/dashboard/registrations/${r.id}`,
             type: 'overdue_registration' as const,
             description: `Registration at ${r.centreName} — awaiting staff review`,
             name: r.childNames.join(', '),
@@ -480,13 +494,14 @@ export async function getWeeklyReport(
         // Deduplicate missed attendance by bookingId — group booking with 3 children
         // should appear once in the list, not 3 times
         ...(() => {
-            const missedMap = new Map<string, { childNames: string[]; centreName: string; startAt: Date }>();
+            const missedMap = new Map<string, { id: string; childNames: string[]; centreName: string; startAt: Date }>();
             for (const b of missedAttendanceRaw) {
                 const name = `${b.childFirst} ${b.childLast}`.trim();
                 if (missedMap.has(b.bookingId)) {
                     missedMap.get(b.bookingId)!.childNames.push(name);
                 } else {
                     missedMap.set(b.bookingId, {
+                        id: b.bookingId,
                         childNames: [name],
                         centreName: b.centreName,
                         startAt: new Date(b.startAt),
@@ -494,6 +509,7 @@ export async function getWeeklyReport(
                 }
             }
             return Array.from(missedMap.values()).map(b => ({
+                href: `/dashboard/bookings/${b.id}`,
                 type: 'missed_attendance' as const,
                 description: `Session at ${b.centreName} — no attendance recorded`,
                 name: b.childNames.join(', '),
@@ -522,6 +538,8 @@ export async function getWeeklyReport(
     };
 
     return {
+        scope: { centreId: requestedCentreId, label: scopeLabel, centres: reportCentres },
+        finance,
         periodLabel: `${start.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })} – ${end.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`,
         startDate: startIso,
         endDate: endIso,
