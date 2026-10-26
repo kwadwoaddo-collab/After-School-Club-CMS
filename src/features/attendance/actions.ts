@@ -26,6 +26,7 @@ export interface UpdateAttendanceParams {
     dateStr: string;
     absenceReason?: 'illness' | 'holiday' | 'family' | 'other' | null;
     attendanceNote?: string | null;
+    clearAttendance?: boolean; // Explicit Undo; ordinary partial time updates retain their existing semantics.
     sessionTime: string; // slot time e.g. "15:45"
 }
 
@@ -52,6 +53,8 @@ export async function updateAttendanceTimelog(params: UpdateAttendanceParams) {
         throw new Error('Attendance record not found or unauthorized');
     }
 
+    if (params.clearAttendance && (checkInTime || checkOutTime || absenceReason)) throw new Error('Cannot clear attendance while times or an absence reason are set');
+
     // Determine attendance status from the time log
     let attendanceStatus: 'present' | 'absent' | 'late' | null = null;
     let lateMinutes: number | null = null;
@@ -72,7 +75,7 @@ export async function updateAttendanceTimelog(params: UpdateAttendanceParams) {
             checkOutAt,
             absenceReason: absenceReason ?? null,
             attendanceNote: attendanceNote ?? null,
-            attendanceStatus: attendanceStatus ?? undefined,
+            attendanceStatus: params.clearAttendance ? null : attendanceStatus ?? undefined,
             lateMinutes: lateMinutes ?? null,
             attendanceMarkedAt: new Date(),
             attendanceMarkedBy: session.user.id as string,

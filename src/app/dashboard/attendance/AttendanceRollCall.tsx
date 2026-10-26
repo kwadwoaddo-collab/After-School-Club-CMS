@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition, useOptimistic } from 'react';
+import { useState, useTransition, useOptimistic, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getAvatarGradient } from '@/components/ui/utils';
 import Link from 'next/link';
@@ -88,7 +88,7 @@ const ABSENCE_REASONS = [
 ] as const;
 
 // ─── AttendeeCard ─────────────────────────────────────────────────────────────
-function AttendeeCard({
+export function AttendeeCard({
     attendee,
     dateStr,
     sessionTime,
@@ -103,13 +103,12 @@ function AttendeeCard({
     onToast: ReturnType<typeof useToast>['toast'];
     onStatusChange?: (id: string, patch: { checkedIn?: boolean; checkedOut?: boolean; absent?: boolean }) => void;
 }) {
-    const [curBookingId, setCurBookingId] = useState<string | null>(attendee.bookingId);
-    const [curAttendeeId, setCurAttendeeId] = useState<string | null>(attendee.id);
+    const savedIds = useRef({ bookingId: attendee.bookingId, attendeeId: attendee.id });
 
     const [checkIn,  setCheckIn]  = useState<string>(attendee.checkInTime  ?? '');
     const [checkOut, setCheckOut] = useState<string>(attendee.checkOutTime ?? '');
     const [isAbsent, setIsAbsent] = useState<boolean>(attendee.attendanceStatus === 'absent');
-    const [absenceReason, setAbsenceReason] = useState<string>('');
+    const [absenceReason, setAbsenceReason] = useState<string>(attendee.attendanceStatus === 'absent' ? attendee.attendanceNote || 'other' : '');
     const [note, setNote] = useState<string>(attendee.attendanceNote ?? '');
     const [showAbsenceSheet, setShowAbsenceSheet] = useState(false);
     const [saved, setSaved]   = useState(false);
@@ -121,105 +120,69 @@ function AttendeeCard({
     const isExtra = attendee.sessionType === 'extra';
 
     const ensureBooking = async (): Promise<{ bookingId: string; attendeeId: string }> => {
-        if (curBookingId && !curBookingId.startsWith('temp-') && curAttendeeId && !curAttendeeId.startsWith('temp-')) {
-            return { bookingId: curBookingId, attendeeId: curAttendeeId };
+        const { bookingId, attendeeId } = savedIds.current;
+        if (bookingId && !bookingId.startsWith('temp-') && attendeeId && !attendeeId.startsWith('temp-')) {
+            return { bookingId, attendeeId };
         }
         const res = await markAttendeeAttendance({
-            bookingId: curBookingId, attendeeId: curAttendeeId,
-            status: 'present', note: null, lateMinutes: null,
+            bookingId, attendeeId,
+            status: null, note: null, lateMinutes: null,
             childId: attendee.childId, dateStr, sessionTime, centreId,
         });
-        if (res) {
-            setCurBookingId(res.bookingId);
-            setCurAttendeeId(res.attendeeId ?? null);
-            return { bookingId: res.bookingId, attendeeId: res.attendeeId! };
+        if (res?.bookingId && res.attendeeId) {
+            savedIds.current = { bookingId: res.bookingId, attendeeId: res.attendeeId };
+            return { bookingId: res.bookingId, attendeeId: res.attendeeId };
         }
         throw new Error('Could not create booking record');
     };
 
+    const confirmed = useRef({ checkIn, checkOut, isAbsent, absenceReason });
+    const saving = useRef(false);
+    const [saveError, setSaveError] = useState(false);
+    const retry = useRef<(() => void) | null>(null);
+    useEffect(() => {
+        const next = { checkIn: attendee.checkInTime ?? '', checkOut: attendee.checkOutTime ?? '', isAbsent: attendee.attendanceStatus === 'absent', absenceReason: '' };
+        confirmed.current = next;
+        setCheckIn(next.checkIn); setCheckOut(next.checkOut); setIsAbsent(next.isAbsent); setAbsenceReason('');
+    }, [attendee.checkInTime, attendee.checkOutTime, attendee.attendanceStatus]);
     const flashSaved = () => { setSaved(true); setTimeout(() => setSaved(false), 2000); };
-
+    type Snapshot = typeof confirmed.current;
+    const applyState = (state: Snapshot) => {
+        setCheckIn(state.checkIn); setCheckOut(state.checkOut);
+        setIsAbsent(state.isAbsent); setAbsenceReason(state.absenceReason);
+    };
+    const persist = (next: Snapshot) => {
+        if (saving.current) return;
+        saving.current = true; setSaved(false); setSaveError(false);
+        setShowAbsenceSheet(false);
+        retry.current = () => persist(next);
+        startTransition(async () => {
+            try {
+                // Keep a returned attendee ID even if the second write fails, so retry
+                // updates that record instead of creating another booking.
+                const { attendeeId } = await ensureBooking();
+                await updateAttendanceTimelog({ attendeeId, checkInTime: next.checkIn || null,
+                    checkOutTime: next.checkOut || null, dateStr,
+                    absenceReason: next.isAbsent ? next.absenceReason as 'illness' | 'holiday' | 'family' | 'other' : null,
+                    attendanceNote: note || null, sessionTime, clearAttendance: !next.checkIn && !next.checkOut && !next.isAbsent });
+                confirmed.current = next; applyState(next);
+                onStatusChange?.(attendee.id, { checkedIn: !!next.checkIn, checkedOut: !!next.checkOut, absent: next.isAbsent });
+                retry.current = null; flashSaved();
+            } catch {
+                applyState(confirmed.current);
+                setSaveError(true);
+                onToast({ title: 'Attendance save not confirmed', message: 'Check the warning on this student before continuing.', variant: 'error' });
+            } finally { saving.current = false; }
+        });
+    };
     const saveTimeBlur = (type: 'in' | 'out', val: string) => {
-        if (!val) return;
-        startTransition(async () => {
-            try {
-                const { attendeeId } = await ensureBooking();
-                const payload = {
-                    attendeeId,
-                    checkInTime: type === 'in' ? val : (checkIn || null),
-                    checkOutTime: type === 'out' ? val : (checkOut || null),
-                    dateStr, absenceReason: null, attendanceNote: note || null, sessionTime
-                };
-                await updateAttendanceTimelog(payload);
-                flashSaved();
-            } catch {
-                onToast({ title: 'Could not update time', message: 'Please try again.', variant: 'error' });
-            }
-        });
+        if (!val) { applyState(confirmed.current); return; }
+        persist({ ...confirmed.current, [type === 'in' ? 'checkIn' : 'checkOut']: val, isAbsent: false, absenceReason: '' });
     };
-
-    const handleCheckIn = () => {
-        const time = nowHHmm();
-        setShowAbsenceSheet(false);
-        onStatusChange?.(attendee.id, { checkedIn: true, absent: false });
-        startTransition(async () => {
-            setCheckIn(time);
-            setIsAbsent(false);
-            try {
-                const { attendeeId } = await ensureBooking();
-                await updateAttendanceTimelog({ attendeeId, checkInTime: time, checkOutTime: checkOut || null, dateStr, absenceReason: null, attendanceNote: note || null, sessionTime });
-                flashSaved();
-            } catch {
-                onToast({ title: 'Could not record check-in', message: 'Please try again.', variant: 'error' });
-                onStatusChange?.(attendee.id, { checkedIn: false });
-            }
-        });
-    };
-
-    const handleCheckOut = () => {
-        const time = nowHHmm();
-        onStatusChange?.(attendee.id, { checkedOut: true });
-        startTransition(async () => {
-            setCheckOut(time);
-            try {
-                const { attendeeId } = await ensureBooking();
-                await updateAttendanceTimelog({ attendeeId, checkInTime: checkIn || null, checkOutTime: time, dateStr, absenceReason: null, attendanceNote: note || null, sessionTime });
-                flashSaved();
-            } catch {
-                onToast({ title: 'Could not record check-out', message: 'Please try again.', variant: 'error' });
-                onStatusChange?.(attendee.id, { checkedOut: false });
-            }
-        });
-    };
-
-    const handleMarkAbsent = (reason: typeof ABSENCE_REASONS[number]['key']) => {
-        setAbsenceReason(reason);
-        setShowAbsenceSheet(false);
-        onStatusChange?.(attendee.id, { absent: true, checkedIn: false, checkedOut: false });
-        startTransition(async () => {
-            setIsAbsent(true);
-            setCheckIn('');
-            setCheckOut('');
-            try {
-                const res = await markAttendeeAttendance({
-                    bookingId: curBookingId, attendeeId: curAttendeeId,
-                    status: 'absent', note: reason, lateMinutes: null,
-                    childId: attendee.childId, dateStr, sessionTime, centreId,
-                });
-                if (res && (!curBookingId || curBookingId.startsWith('temp-'))) {
-                    setCurBookingId(res.bookingId);
-                    setCurAttendeeId(res.attendeeId ?? null);
-                }
-                if (res?.attendeeId) {
-                    await updateAttendanceTimelog({ attendeeId: res.attendeeId, checkInTime: null, checkOutTime: null, dateStr, absenceReason: reason, attendanceNote: null, sessionTime });
-                }
-                flashSaved();
-            } catch {
-                onToast({ title: 'Could not mark absent', message: 'Please try again.', variant: 'error' });
-                onStatusChange?.(attendee.id, { absent: false });
-            }
-        });
-    };
+    const handleCheckIn = () => persist({ ...confirmed.current, checkIn: nowHHmm(), isAbsent: false, absenceReason: '' });
+    const handleCheckOut = () => persist({ ...confirmed.current, checkOut: nowHHmm() });
+    const handleMarkAbsent = (reason: typeof ABSENCE_REASONS[number]['key']) => persist({ checkIn: '', checkOut: '', isAbsent: true, absenceReason: reason });
+    const handleUndoAbsent = () => persist({ checkIn: '', checkOut: '', isAbsent: false, absenceReason: '' });
 
     const initials = `${(attendee.firstName || '')[0] || ''}${(attendee.lastName || '')[0] || ''}`.toUpperCase() || '??';
 
@@ -263,11 +226,16 @@ function AttendeeCard({
                 </div>
             </div>
 
+            <div className="flex flex-col gap-2">
+                {saveError && <div role="alert" className="max-w-md text-sm text-destructive">
+                    <p>Save not confirmed. Showing the last confirmed values. Some changes may have reached the server.</p>
+                    <div className="mt-1 flex gap-2"><Button size="sm" variant="outline" disabled={isPending} onClick={() => retry.current?.()}>Retry save</Button><Button size="sm" variant="ghost" onClick={() => window.location.reload()}>Reload saved register</Button></div>
+                </div>}
             <div className="flex items-center gap-2 flex-wrap xl:flex-nowrap">
                 {isAbsent ? (
                     <div className="flex items-center gap-2 w-full xl:w-auto justify-end">
                         <span className="text-xs font-semibold text-danger mr-2">Absent{absenceReason ? ` — ${absenceReason}` : ''}</span>
-                        <Button size="sm" variant="outline" onClick={() => { setIsAbsent(false); setAbsenceReason(''); }}>Undo</Button>
+                        <Button size="sm" variant="outline" onClick={handleUndoAbsent} disabled={isPending}>Undo</Button>
                     </div>
                 ) : (
                     <div className="flex items-center gap-3 w-full xl:w-auto justify-between xl:justify-end">
@@ -284,6 +252,7 @@ function AttendeeCard({
                             {isIn && (
                                 <input
                                     type="time"
+                                    aria-label={`Check-in time for ${attendee.firstName} ${attendee.lastName}`}
                                     value={checkIn}
                                     onChange={e => setCheckIn(e.target.value)}
                                     onBlur={e => saveTimeBlur('in', e.target.value)}
@@ -306,6 +275,7 @@ function AttendeeCard({
                             {isOut && (
                                 <input
                                     type="time"
+                                    aria-label={`Check-out time for ${attendee.firstName} ${attendee.lastName}`}
                                     value={checkOut}
                                     onChange={e => setCheckOut(e.target.value)}
                                     onBlur={e => saveTimeBlur('out', e.target.value)}
@@ -317,7 +287,7 @@ function AttendeeCard({
 
                         {!isIn && (
                             <div className="relative">
-                                <Button size="sm" variant="outline" onClick={() => setShowAbsenceSheet(v => !v)} className="hover:text-danger hover:border-danger/30">
+                                <Button size="sm" variant="outline" onClick={() => setShowAbsenceSheet(v => !v)} disabled={isPending} className="hover:text-danger hover:border-danger/30">
                                     Mark Absent
                                 </Button>
                                 {showAbsenceSheet && (
@@ -335,9 +305,10 @@ function AttendeeCard({
                     </div>
                 )}
                 <div className="w-5 shrink-0 flex justify-center">
-                    {isPending && <Loader2 className="w-4 h-4 text-text-muted animate-spin" />}
+                    {isPending && <span role="status" aria-label="Saving attendance"><Loader2 className="w-4 h-4 text-text-muted animate-spin" /></span>}
                     {saved && <span className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold">✓</span>}
                 </div>
+            </div>
             </div>
         </div>
     );
@@ -366,6 +337,7 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
     const [showWalkIn, setShowWalkIn] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [bulkPendingSlot, setBulkPendingSlot] = useState<string | null>(null);
+    const [bulkError, setBulkError] = useState('');
 
     const [markedStatus, setMarkedStatus] = useState<Record<string, AttendeeStatus>>(() => {
         const map: Record<string, AttendeeStatus> = {};
@@ -395,25 +367,28 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
             toast({ title: 'All students already marked', message: 'No unmarked students in this slot.', variant: 'warning' });
             return;
         }
+        setBulkError('');
         setBulkPendingSlot(slot.time);
         try {
-            await Promise.all(
+            const results = await Promise.all(
                 unmarked.map(async (a) => {
                     try {
-                        await markAttendeeAttendance({
+                        const result = await markAttendeeAttendance({
                             bookingId: a.bookingId, attendeeId: a.id,
                             status: 'present', note: null, lateMinutes: null,
                             childId: a.childId, dateStr, sessionTime: slot.time, centreId,
                         });
+                        if (!result?.attendeeId) throw new Error('Attendance record missing');
+                        await updateAttendanceTimelog({ attendeeId: result.attendeeId, checkInTime: nowHHmm(), checkOutTime: null, dateStr, sessionTime: slot.time });
                         updateMarkedStatus(a.id, { checkedIn: true, absent: false });
-                    } catch { /* individual failure — continue */ }
+                        return true;
+                    } catch { return false; }
                 })
             );
-            toast({
-                title: `${unmarked.length} student${unmarked.length > 1 ? 's' : ''} marked In`,
-                message: `All unmarked students in the ${slot.timeLabel} slot have been checked in.`,
-                variant: 'success',
-            });
+            const succeeded = results.filter(Boolean).length;
+            if (succeeded !== unmarked.length) setBulkError(`${succeeded} of ${unmarked.length} check-ins confirmed. Some changes may have reached the server. Reload the saved register before retrying.`);
+            toast({ title: `${succeeded} of ${unmarked.length} check-ins confirmed`, message: succeeded === unmarked.length ? 'Saved successfully. Reload to see updated times.' : 'Check the warning above the register.', variant: succeeded === unmarked.length ? 'success' : 'error' });
+            if (succeeded === unmarked.length) router.refresh();
         } catch {
             toast({ title: 'Bulk mark failed', message: 'Some students could not be marked. Refresh and retry.', variant: 'error' });
         } finally {
@@ -435,9 +410,10 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
             return;
         }
 
+        setBulkError('');
         setBulkPendingSlot(`out-${slot.time}`);
         try {
-            await Promise.all(
+            const results = await Promise.all(
                 inButNotOut.map(async (a) => {
                     try {
                         let bkId = a.bookingId;
@@ -460,14 +436,14 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
                         });
 
                         updateMarkedStatus(a.id, { checkedOut: true });
-                    } catch { /* individual failure */ }
+                        return true;
+                    } catch { return false; }
                 })
             );
-            toast({
-                title: `${inButNotOut.length} checked out`,
-                message: `Marked remaining students out at ${time}.`,
-                variant: 'success',
-            });
+            const succeeded = results.filter(Boolean).length;
+            if (succeeded !== inButNotOut.length) setBulkError(`${succeeded} of ${inButNotOut.length} check-outs confirmed. Some changes may have reached the server. Reload the saved register before retrying.`);
+            toast({ title: `${succeeded} of ${inButNotOut.length} check-outs confirmed`, message: succeeded === inButNotOut.length ? 'Saved successfully. Reload to see updated times.' : 'Check the warning above the register.', variant: succeeded === inButNotOut.length ? 'success' : 'error' });
+            if (succeeded === inButNotOut.length) router.refresh();
         } catch {
             toast({ title: 'Bulk mark out failed', message: 'Refresh and try again.', variant: 'error' });
         } finally {
@@ -557,6 +533,7 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
 
     return (
         <div className="space-y-5">
+            {bulkError && <div role="alert" className="rounded-md border border-destructive p-3 text-sm text-destructive"><p>{bulkError}</p><Button variant="outline" size="sm" onClick={() => window.location.reload()}>Reload saved register</Button></div>}
 
             {/* ── Sticky action bar ─────────────────────────────────────────── */}
             <div className="sticky top-16 sm:top-20 z-20 -mx-4 sm:-mx-8 px-4 sm:px-8 py-3 bg-page/90 backdrop-blur-sm border-b border-border-subtle flex flex-col sm:flex-row items-stretch gap-2.5">
@@ -654,7 +631,7 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
                                         {!allMarked && (
                                             <button
                                                 onClick={() => handleMarkAllIn(slot)}
-                                                disabled={bulkPendingSlot === slot.time}
+                                                disabled={bulkPendingSlot !== null || !!bulkError}
                                                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors disabled:opacity-60 bg-success-soft text-emerald-700 dark:text-emerald-400 border-transparent hover:opacity-80"
                                             >
                                                 {bulkPendingSlot === slot.time
@@ -667,7 +644,7 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
                                         {missingOut > 0 && (
                                             <button
                                                 onClick={() => handleMarkAllOut(slot)}
-                                                disabled={bulkPendingSlot === `out-${slot.time}`}
+                                                disabled={bulkPendingSlot !== null || !!bulkError}
                                                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors disabled:opacity-60 bg-warning-soft text-amber-700 dark:text-amber-400 border-transparent hover:opacity-80"
                                             >
                                                 {bulkPendingSlot === `out-${slot.time}`
@@ -714,7 +691,7 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
                                         <div className="flex flex-col gap-1.5">
                                             {slot.regulars.map(child => (
                                                 <AttendeeCard
-                                                    key={child.id}
+                                                    key={`${dateStr}-${child.id}`}
                                                     attendee={child}
                                                     dateStr={dateStr}
                                                     sessionTime={slot.time}
@@ -749,7 +726,7 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
                                         <div className="flex flex-col gap-1.5">
                                             {slot.catchups.map(child => (
                                                 <AttendeeCard
-                                                    key={child.id}
+                                                    key={`${dateStr}-${child.id}`}
                                                     attendee={child}
                                                     dateStr={dateStr}
                                                     sessionTime={slot.time}
