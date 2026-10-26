@@ -12,6 +12,7 @@ interface RecordPaymentModalProps {
     invoiceId: string;
     invoiceNumber: string;
     remainingBalance: number;
+    invoiceTotal?: number;
     billingContext?: { parentId: string; familyName: string; period: string };
     onClose: () => void;
     onSuccess: () => void;
@@ -21,6 +22,7 @@ export default function RecordPaymentModal({
     invoiceId, 
     invoiceNumber, 
     remainingBalance,
+    invoiceTotal,
     billingContext,
     onClose, 
     onSuccess 
@@ -155,6 +157,7 @@ export default function RecordPaymentModal({
                             onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
                             className="w-full bg-secondary/40 border border-border rounded-2xl px-5 py-4 text-3xl font-black text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
                         />
+                        {invoiceTotal !== undefined && <p className="text-xs text-muted-foreground font-medium">Invoice Total: £{invoiceTotal.toFixed(2)}</p>}
                         <p className="text-xs text-muted-foreground font-medium">Remaining Balance: £{remainingBalance.toFixed(2)}</p>
                     </div>
 

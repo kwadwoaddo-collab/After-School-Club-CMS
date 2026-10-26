@@ -26,6 +26,8 @@ vi.mock('@/lib/db-notifications', () => ({
 const mockDbQuery = {
     invoices: { findFirst: vi.fn() },
     children: { findMany: vi.fn() },
+    parents: { findFirst: vi.fn() },
+    centres: { findFirst: vi.fn() },
 };
 
 const mockTxSelect = vi.fn();
@@ -75,6 +77,7 @@ function makeTxInsertChain() {
 vi.mock('@/db', () => ({
     db: {
         query: mockDbQuery,
+        insert: (...args: any[]) => (mockTxInsert as any)(...args),
         transaction: async (cb: any) => cb({
             select: (...args: any[]) => (mockTxSelect as any)(...args),
             update: (...args: any[]) => (mockTxUpdate as any)(...args),
@@ -97,6 +100,8 @@ describe('Draft Invoice Lifecycle Actions (§18, B1, B2, B3)', () => {
         mockTxUpdate.mockImplementation(() => makeTxUpdateChain());
         mockTxInsert.mockImplementation(() => makeTxInsertChain());
         mockTxDelete.mockImplementation(() => makeTxDeleteChain());
+        mockDbQuery.parents.findFirst.mockResolvedValue({ firstName: 'Sample', email: 'dummy@example.test' });
+        mockDbQuery.centres.findFirst.mockResolvedValue({ name: 'Dummy centre' });
     });
 
     describe('issueDraftInvoice (B1)', () => {
@@ -117,6 +122,23 @@ describe('Draft Invoice Lifecycle Actions (§18, B1, B2, B3)', () => {
             const res = await issueDraftInvoice('inv-1');
             expect(res.success).toBe(true);
             expect(res.alreadyIssued).toBe(true);
+        });
+
+        it('keeps issuance committed when email outcome is unknown and does not automatically re-send on replay', async () => {
+            const { requireTenantSession } = await import('@/lib/session');
+            const { emailService } = await import('@/lib/services/email');
+            (requireTenantSession as any).mockResolvedValue(OWNER_SESSION);
+            const row = { id: 'inv-1', parentId: 'parent', organisationId: 'org-1', centreId: 'centre-1', status: 'draft', amount: '150.00', dueDate: new Date('2026-10-15'), invoiceNumber: 'INV-100' };
+            mockTxSelect.mockReturnValue(makeTxSelectChain([row]));
+            mockTxUpdate.mockReturnValue(makeTxUpdateChain([{ ...row, status: 'sent' }]));
+            vi.mocked(emailService.sendInvoiceCreated).mockResolvedValueOnce({ success: false, error: 'connection lost' });
+            const { issueDraftInvoice } = await import('../actions');
+            const result = await issueDraftInvoice('inv-1');
+            expect(result).toMatchObject({ success: true, alreadyIssued: false, emailStatus: { status: 'unknown' } });
+            expect(emailService.sendInvoiceCreated).toHaveBeenCalledTimes(1);
+            mockTxSelect.mockReturnValue(makeTxSelectChain([{ ...row, status: 'sent' }]));
+            expect(await issueDraftInvoice('inv-1')).toMatchObject({ success: true, alreadyIssued: true });
+            expect(emailService.sendInvoiceCreated).toHaveBeenCalledTimes(1);
         });
 
         it('rejects if invoice is void', async () => {

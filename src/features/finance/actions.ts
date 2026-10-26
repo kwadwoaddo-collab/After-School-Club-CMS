@@ -10,6 +10,7 @@ import { requireTenantSession } from '@/lib/session';
 import { revalidatePath } from 'next/cache';
 import { nanoid } from 'nanoid';
 import { emailService } from '@/lib/services/email';
+import { readInvoiceEmailStatus, sendAuditedInvoiceEmail, type InvoiceEmailStatus } from './invoice-email-status';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { notifyOwners } from '@/lib/db-notifications';
 import { financeEligibleChildSql, getFinanceEligibleChildIds, assertEligibleBillingCoverage, lockEnrolmentForBilling, billingServicePeriod, lockBillingConfiguration } from '@/lib/enrolment/finance-eligibility';
@@ -658,7 +659,7 @@ export async function getInvoiceDetails(invoiceId: string) {
         if (match) childDisplayName = match[1].trim();
     }
 
-    return { ...result, childDisplayName };
+    return { ...result, childDisplayName, emailStatus: await readInvoiceEmailStatus(invoiceId, orgId) };
 }
 
 export interface RecordPaymentParams {
@@ -1501,7 +1502,7 @@ export async function reversePayment(
  * Manually resend the invoice notification email to the parent.
  * Only allowed for invoices that are not already paid or voided.
  */
-export async function resendInvoiceEmail(invoiceId: string): Promise<{ success: boolean; error?: string }> {
+export async function resendInvoiceEmail(invoiceId: string): Promise<{ success: boolean; error?: string; emailStatus?: InvoiceEmailStatus }> {
     const session = await requireTenantSession();
     if (!session?.user?.organisationId) return { success: false, error: 'Unauthorized' };
     const userRole = (session.user as any).role;
@@ -1540,21 +1541,15 @@ export async function resendInvoiceEmail(invoiceId: string): Promise<{ success: 
         return { success: false, error: 'No email address on file for this parent.' };
     }
 
-    const result = await emailService.sendInvoiceCreated({
-        parentFirstName: parentName,
-        parentEmail,
-        invoiceNumber: invoice.invoiceNumber,
-        amount: Number(invoice.amount),
-        dueDate: invoice.dueDate ?? new Date(),
-        centreName,
-        portalUrl,
+    const emailStatus = await sendAuditedInvoiceEmail({
+        invoiceId, organisationId: session.user.organisationId, userId: session.user.id,
+        parentFirstName: parentName, parentEmail, invoiceNumber: invoice.invoiceNumber,
+        amount: Number(invoice.amount), dueDate: invoice.dueDate ?? new Date(), centreName, portalUrl,
     });
-
-    if (!result.success) {
-        return { success: false, error: result.error ?? 'Email could not be sent. Check RESEND_API_KEY.' };
-    }
-
-    return { success: true };
+    revalidatePath(`/dashboard/finance/invoices/${invoiceId}`);
+    return emailStatus.status === 'accepted'
+        ? { success: true, emailStatus }
+        : { success: false, emailStatus, error: 'Invoice remains issued. Email was not confirmed as accepted; check its status before retrying.' };
 }
 
 // ─── Category B: Draft Invoice Lifecycle Actions ─────────────────────────────
@@ -1663,31 +1658,26 @@ export async function issueDraftInvoice(invoiceId: string) {
         return { alreadyIssued: false, invoice: updated };
     });
 
+    let emailStatus: InvoiceEmailStatus | null = null;
     if (!result.alreadyIssued) {
-        // Fire-and-forget email notification
+        // Issuance is already committed. Delivery has a separate, durable outcome.
         try {
             const parent = await db.query.parents.findFirst({
-                where: eq(parents.id, result.invoice.parentId),
-                columns: { firstName: true, email: true },
+                where: eq(parents.id, result.invoice.parentId), columns: { firstName: true, email: true },
             });
             const centre = await db.query.centres.findFirst({
-                where: eq(centres.id, result.invoice.centreId),
-                columns: { name: true },
+                where: eq(centres.id, result.invoice.centreId), columns: { name: true },
             });
-
-            if (parent?.email) {
-                emailService.sendInvoiceCreated({
-                    parentFirstName: parent.firstName,
-                    parentEmail: parent.email,
-                    invoiceNumber: result.invoice.invoiceNumber,
-                    amount: Number(result.invoice.amount),
-                    dueDate: result.invoice.dueDate,
-                    centreName: centre?.name || 'the centre',
-                    portalUrl: `${process.env.NEXTAUTH_URL || ''}/portal/billing`,
-                }).catch(e => logger.error('[Email] Failed to send issued invoice email:', e));
-            }
-        } catch (err) {
-            logger.error('[issueDraftInvoice] Email dispatch failed:', err);
+            emailStatus = await sendAuditedInvoiceEmail({
+                invoiceId, organisationId: orgId, userId: session.user.id,
+                parentFirstName: parent?.firstName || 'Parent', parentEmail: parent?.email,
+                invoiceNumber: result.invoice.invoiceNumber, amount: Number(result.invoice.amount),
+                dueDate: result.invoice.dueDate, centreName: centre?.name || 'the centre',
+                portalUrl: `${process.env.NEXTAUTH_URL || ''}/portal/billing`,
+            });
+        } catch (error) {
+            logger.error('[issueDraftInvoice] Email outcome unavailable; invoice is issued', error);
+            emailStatus = { status: 'unknown', attemptedAt: new Date().toISOString() };
         }
 
         // Fire-and-forget portal notification
@@ -1708,7 +1698,7 @@ export async function issueDraftInvoice(invoiceId: string) {
     revalidatePath(`/dashboard/finance/invoices/${invoiceId}`);
     revalidatePath('/dashboard/finance');
     revalidatePath('/dashboard/finance/invoices');
-    return { success: true, alreadyIssued: result.alreadyIssued, invoiceId: result.invoice.id };
+    return { success: true, alreadyIssued: result.alreadyIssued, invoiceId: result.invoice.id, emailStatus };
 }
 
 export interface UpdateDraftInvoiceData {

@@ -203,7 +203,7 @@ export default function FinanceWorkspace({ invoices, cycles, today, invoiceError
                 {!matchingAttention.length && !matchingProblems.length && <li className="py-6 text-sm text-muted-foreground">{search.trim() ? 'No billing problems match your search.' : 'No billing problems found in this centre.'}</li>}
             </ul></>}
         </>}
-        {payment && <RecordPaymentModal invoiceId={payment.invoice.id} invoiceNumber={payment.invoice.invoiceNumber} remainingBalance={payment.remaining/100} billingContext={{parentId:payment.invoice.parentId,familyName:payment.invoice.parent ? `${payment.invoice.parent.firstName} ${payment.invoice.parent.lastName}` : 'Family account',period:formatInvoicePeriod(payment.invoice.billingPeriodStart,payment.invoice.billingPeriodEnd)}} onClose={() => setPayment(null)} onSuccess={() => {setPayment(null);router.refresh();}}/>}
+        {payment && <RecordPaymentModal invoiceId={payment.invoice.id} invoiceNumber={payment.invoice.invoiceNumber} remainingBalance={payment.remaining/100} invoiceTotal={payment.amount/100} billingContext={{parentId:payment.invoice.parentId,familyName:payment.invoice.parent ? `${payment.invoice.parent.firstName} ${payment.invoice.parent.lastName}` : 'Family account',period:formatInvoicePeriod(payment.invoice.billingPeriodStart,payment.invoice.billingPeriodEnd)}} onClose={() => setPayment(null)} onSuccess={() => {setPayment(null);router.refresh();}}/>}
     </section>;
 }
 
