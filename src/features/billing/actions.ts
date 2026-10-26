@@ -21,6 +21,8 @@ import {
     LeadTimeUnit,
 } from '@/lib/billing/date-engine';
 import { nanoid } from 'nanoid';
+import { logger } from '@/lib/logger';
+import { captureBillingResult } from './billing-problem';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { financeEligibleChildSql, getFinanceEligibleChildIds, assertEligibleBillingCoverage, lockEnrolmentForBilling, confirmedEnrolmentChildSql, lifecycleEligibleChildSql, lockBillingConfiguration } from '@/lib/enrolment/finance-eligibility';
 import { assertNotQuarantined } from '@/lib/data-quality/quarantine';
@@ -958,4 +960,31 @@ async function generateInvoiceFromConfigInternal(input: GenerateInvoiceInput, el
         revalidatePath(`/dashboard/students/${cc.child.id}`);
     }
     return { success: true, invoiceId: result.id, alreadyGenerated: result.alreadyGenerated };
+}
+
+
+// UI-facing wrappers return approved text rather than relying on production-redacted exceptions.
+// The original actions retain all validation, tenant checks and transactional behavior.
+export async function saveFamilyBillingSettings(input: { configId?: string; data: BillingConfigData }) {
+    return captureBillingResult(async () => {
+        if (input.configId) return updateBillingConfig(input.configId, input.data);
+        return createBillingConfig(input.data);
+    }, error => {
+        const reference = `BILL-${nanoid(10)}`;
+        logger.error(`[${reference}] Billing settings save not confirmed`, error);
+        return reference;
+    });
+}
+
+export async function changeFamilyBillingStatus(configId: string, action: 'pause' | 'resume' | 'cancel') {
+    return captureBillingResult(async () => {
+        if (action === 'pause') return pauseBillingConfig(configId);
+        if (action === 'resume') return resumeBillingConfig(configId);
+        if (action === 'cancel') return cancelBillingConfig(configId);
+        throw new Error('Invalid billing status action');
+    }, error => {
+        const reference = `BILL-${nanoid(10)}`;
+        logger.error(`[${reference}] Billing status change not confirmed`, error);
+        return reference;
+    });
 }

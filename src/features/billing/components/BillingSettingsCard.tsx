@@ -7,13 +7,8 @@ import { penceToPounds, poundsToPence } from '@/lib/billing';
 import { previewBillingPeriods, formatDisplayDate, LeadTimeUnit } from '@/lib/billing/date-engine';
 import { cn } from '@/components/ui/utils';
 import { Button } from '@/components/ui/Button';
-import {
-    createBillingConfig,
-    updateBillingConfig,
-    pauseBillingConfig,
-    resumeBillingConfig,
-    cancelBillingConfig,
-} from '@/features/billing/actions';
+import { saveFamilyBillingSettings, changeFamilyBillingStatus } from '@/features/billing/actions';
+import { billingProblem, type BillingProblem } from '../billing-problem';
 import type { StudentBillingConfig, CoveredChild } from '@/features/billing/queries';
 import { isQuarantinedParentId } from '@/lib/data-quality/quarantine';
 
@@ -158,6 +153,7 @@ function EditForm({
     );
 
     const [error, setError]   = useState('');
+    const [problem, setProblem] = useState<BillingProblem | null>(null);
     const [isPending, start]  = useTransition();
 
     // Live period preview
@@ -179,6 +175,7 @@ function EditForm({
 
     const handleSave = () => {
         setError('');
+        setProblem(null);
         const amountPence = poundsToPence(fee);
         if (!amountPence || amountPence <= 0) { setError('Please enter a valid monthly fee'); return; }
         if (!anchorDate) { setError('Please select a billing start date'); return; }
@@ -190,34 +187,17 @@ function EditForm({
 
         start(async () => {
             try {
-                if (isNew) {
-                    await createBillingConfig({
-                        parentId,
-                        centreId,
-                        agreedMonthlyPence: amountPence,
-                        billingAnchorDate:  anchorDate,
-                        invoiceLeadDays:    leadDays,
-                        leadTimeUnit,
-                        leadTimeValue,
-                        notes:              notes || undefined,
-                        childIds:           [...selectedChildIds],
-                    });
-                } else {
-                    // Update the fee / dates
-                    await updateBillingConfig(existingConfig!.id, {
-                        agreedMonthlyPence: amountPence,
-                        billingAnchorDate:  anchorDate,
-                        invoiceLeadDays:    leadDays,
-                        leadTimeUnit,
-                        leadTimeValue,
-                        notes:              notes || undefined,
-                        childIds:           [...selectedChildIds],
-                    });
-                }
+                const result = await saveFamilyBillingSettings({
+                    configId: existingConfig?.id,
+                    data: { parentId, centreId, agreedMonthlyPence: amountPence,
+                        billingAnchorDate: anchorDate, invoiceLeadDays: leadDays,
+                        leadTimeUnit, leadTimeValue, notes: notes || undefined,
+                        childIds: [...selectedChildIds] },
+                });
+                if (!result.ok) { setProblem(result.problem); return; }
                 onSaved();
-            } catch (e) {
-                const message = e instanceof Error ? e.message : String(e);
-                setError(message ?? 'Something went wrong. Please try again.');
+            } catch {
+                setProblem(billingProblem(null));
             }
         });
     };
@@ -374,12 +354,10 @@ function EditForm({
                 />
             </div>
 
-            {error && (
-                <div className="flex items-start gap-2 p-3 bg-danger-soft rounded-sm">
-                    <AlertTriangle className="w-4 h-4 text-danger flex-shrink-0 mt-0.5" />
-                    <p className="text-metadata text-danger">{error}</p>
-                </div>
-            )}
+            {(error || problem) && <div role="alert" className="flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-3 text-sm text-foreground">
+                <AlertTriangle aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0"/>
+                <div>{problem ? <><p className="font-semibold">{problem.title}</p><p className="mt-1">{problem.message}</p>{problem.reviewEnrolment && <a href="#main-content" className="mt-2 inline-flex min-h-10 items-center font-medium text-primary underline">Review enrolment at top of profile</a>}{problem.reference && <p className="mt-2 text-xs text-muted-foreground">Support reference: {problem.reference}</p>}</> : <p>{error}</p>}</div>
+            </div>}
 
             {/* Actions */}
             <div className="flex gap-2">
@@ -403,24 +381,25 @@ function EditForm({
 function StatusControls({ config, onDone }: { config: StudentBillingConfig; onDone: () => void }) {
     const [isPending, start] = useTransition();
 
-    const handlePause = () => start(async () => {
-        await pauseBillingConfig(config.id);
-        onDone();
-    });
-    const handleResume = () => start(async () => {
-        await resumeBillingConfig(config.id);
-        onDone();
-    });
-    const handleCancel = () => {
-        if (!confirm('Cancel billing for this family? This cannot be undone easily.')) return;
-        start(async () => {
-            await cancelBillingConfig(config.id);
+    const [problem, setProblem] = useState<BillingProblem | null>(null);
+    const changeStatus = (action: 'pause' | 'resume' | 'cancel') => start(async () => {
+        setProblem(null);
+        try {
+            const result = await changeFamilyBillingStatus(config.id, action);
+            if (!result.ok) { setProblem(result.problem); return; }
             onDone();
-        });
+        } catch { setProblem(billingProblem(null)); }
+    });
+    const handlePause = () => changeStatus('pause');
+    const handleResume = () => changeStatus('resume');
+    const handleCancel = () => {
+        if (confirm('Cancel billing for this family? This cannot be undone easily.')) changeStatus('cancel');
     };
 
     return (
-        <div className="flex gap-2 pt-2">
+        <div className="space-y-2 pt-2">
+            {problem && <div role="alert" className="text-sm text-foreground"><p className="font-semibold">{problem.title}</p><p>{problem.message}</p>{problem.reference && <p>Support reference: {problem.reference}</p>}</div>}
+            <div className="flex gap-2">
             {config.status === 'active' ? (
                 <button
                     onClick={handlePause}
@@ -450,6 +429,7 @@ function StatusControls({ config, onDone }: { config: StudentBillingConfig; onDo
                     Cancel
                 </button>
             )}
+            </div>
         </div>
     );
 }

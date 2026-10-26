@@ -1,10 +1,16 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { Send, Users, History, AlertCircle, Loader2, X, MessageSquare, CheckCircle, Clock } from 'lucide-react';
 import { sendBroadcast, getBroadcasts, getParentsForCentre, getClassesForCentre, getBroadcastDeliveryStats } from '@/features/communications/actions';
-import { logger } from '@/lib/logger';
+
+const sendMessages: Record<string, string> = {
+    'Unauthorized': 'Your access could not be confirmed. Sign in again before sending.',
+    'Unauthorized: only Owner/Manager may send broadcasts': 'Only an owner or manager can send broadcasts. Ask your manager for help.',
+    'Unauthorized: No access to this centre': 'You do not have access to send for this centre. Ask your manager to check your centre access.',
+    'No eligible recipients with communications consent and valid email address found': 'No parents in this selection have both permission to receive messages and a usable email address. Check the recipient selection and parent records.',
+};
 
 type Broadcast = Awaited<ReturnType<typeof getBroadcasts>>[number];
 type Parent = Awaited<ReturnType<typeof getParentsForCentre>>[number];
@@ -47,7 +53,7 @@ function getStatusBadge(b: Broadcast) {
         default:
             return (
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-secondary text-muted-foreground">
-                    {status}
+                    Status unavailable
                 </span>
             );
     }
@@ -63,6 +69,12 @@ export default function CommunicationsClient({ centreId }: { centreId: string })
     const [deliveryDetails, setDeliveryDetails] = useState<DeliveryDetails | null>(null);
     const [isLoadingDetails, setIsLoadingDetails] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
+    const [loadError, setLoadError] = useState(false);
+    const [detailsError, setDetailsError] = useState(false);
+    const [sendUnknown, setSendUnknown] = useState(false);
+    const sendInFlight = useRef(false);
+    const loadRequest = useRef(0);
+    const detailsRequest = useRef(0);
 
     const [subject, setSubject] = useState('');
     const [message, setMessage] = useState('');
@@ -70,20 +82,23 @@ export default function CommunicationsClient({ centreId }: { centreId: string })
     const [sendResult, setSendResult] = useState<{ success: boolean; count: number; sent: number; failed: number; status?: string; error?: string } | null>(null);
 
     const loadData = useCallback(async () => {
+        const request = ++loadRequest.current;
         setIsLoading(true);
+        setLoadError(false);
         try {
             const [bData, pData, cData] = await Promise.all([
                 getBroadcasts(centreId),
                 getParentsForCentre(centreId, selectedClassId),
                 getClassesForCentre(centreId)
             ]);
-            setBroadcasts(bData.reverse());
+            if (request !== loadRequest.current) return;
+            setBroadcasts([...bData].reverse());
             setParents(pData);
             setClasses(cData);
-        } catch (error) {
-            logger.error('Failed to load data', error);
+        } catch {
+            if (request === loadRequest.current) setLoadError(true);
         } finally {
-            setIsLoading(false);
+            if (request === loadRequest.current) setIsLoading(false);
         }
     }, [centreId, selectedClassId]);
 
@@ -92,26 +107,31 @@ export default function CommunicationsClient({ centreId }: { centreId: string })
     }, [loadData]);
 
     const handleSelectBroadcast = async (b: Broadcast) => {
+        const request = ++detailsRequest.current;
         setSelectedBroadcast(b);
+        setDetailsError(false);
         setDeliveryDetails(null);
         setIsLoadingDetails(true);
         try {
             const details = await getBroadcastDeliveryStats(b.id);
+            if (request !== detailsRequest.current) return;
             setDeliveryDetails(details);
-        } catch (err) {
-            logger.error('Failed to fetch delivery details', err);
+            setDetailsError(!details);
+        } catch {
+            if (request === detailsRequest.current) setDetailsError(true);
         } finally {
-            setIsLoadingDetails(false);
+            if (request === detailsRequest.current) setIsLoadingDetails(false);
         }
     };
 
     const handleSend = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!subject || !message) return;
+        if (!subject || !message || sendInFlight.current || sendUnknown || isLoading || loadError) return;
 
         const audienceParentIds = parents.filter(p => p.communicationsConsent).map(p => p.id);
         if (audienceParentIds.length === 0) return;
 
+        sendInFlight.current = true;
         setIsSending(true);
         setSendResult(null);
         try {
@@ -122,14 +142,16 @@ export default function CommunicationsClient({ centreId }: { centreId: string })
                 message
             });
             setSendResult(result);
+            if (!result.success && !Object.hasOwn(sendMessages, result.error || '')) setSendUnknown(true);
             if (result.success) {
                 setSubject('');
                 setMessage('');
                 loadData();
             }
-        } catch (error) {
-            logger.error('Failed to send broadcast', error);
+        } catch {
+            setSendUnknown(true);
         } finally {
+            sendInFlight.current = false;
             setIsSending(false);
         }
     };
@@ -159,6 +181,15 @@ export default function CommunicationsClient({ centreId }: { centreId: string })
                 </button>
             </div>
 
+            {loadError && <div role="alert" className="rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
+                <p>We couldn’t load recipients and message history. Sending is paused until these details can be checked. Your draft is still here.</p>
+                <button type="button" onClick={() => void loadData()} className="mt-2 min-h-10 font-semibold underline">Try loading again</button>
+            </div>}
+            {sendUnknown && <div role="alert" className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-foreground">
+                <p>The send outcome could not be confirmed. Your message may already be queued. Do not send it again until you have checked History &amp; Audit Log. If it is still unclear, ask your manager to check delivery before retrying.</p>
+                <button type="button" onClick={() => { setActiveTab('history'); void loadData(); }} className="mt-2 min-h-10 font-semibold underline">Check message history</button>
+            </div>}
+
             {activeTab === 'compose' && (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div className="lg:col-span-2 bg-card border border-border rounded-3xl p-6 md:p-8 shadow-sm">
@@ -169,10 +200,10 @@ export default function CommunicationsClient({ centreId }: { centreId: string })
                                 Successfully queued message to {sendResult.count} parents. Delivery is being processed securely in the background.
                             </div>
                         )}
-                        {sendResult && !sendResult.success && (
-                            <div className="mb-6 p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm font-medium flex items-center gap-2">
+                        {sendResult && !sendResult.success && !sendUnknown && (
+                            <div role="alert" className="mb-6 p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm font-medium flex items-center gap-2">
                                 <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                                {sendResult.error || 'Could not send this broadcast.'}
+                                {sendMessages[sendResult.error || ''] || 'Check message history before sending again.'}
                             </div>
                         )}
 
@@ -202,7 +233,7 @@ export default function CommunicationsClient({ centreId }: { centreId: string })
                             <div className="flex justify-end pt-4 border-t border-border">
                                 <button
                                     type="submit"
-                                    disabled={isSending || isLoading || consentedCount === 0}
+                                    disabled={isSending || isLoading || loadError || sendUnknown || consentedCount === 0}
                                     className="px-6 py-3 bg-primary text-primary-foreground font-bold rounded-xl hover:bg-primary/90 transition-all shadow-sm flex items-center gap-2 disabled:opacity-50"
                                 >
                                     {isSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
@@ -242,7 +273,7 @@ export default function CommunicationsClient({ centreId }: { centreId: string })
 
                             <div className="p-4 bg-secondary/30 rounded-xl border border-border/50">
                                 <div className="text-3xl font-black text-foreground mb-1">
-                                    {isLoading ? '-' : consentedCount} <span className="text-sm font-semibold text-muted-foreground">recipients</span>
+                                    {isLoading || loadError ? '—' : consentedCount} <span className="text-sm font-semibold text-muted-foreground">recipients</span>
                                 </div>
                                 {parents.length - consentedCount > 0 && (
                                     <p className="text-xs text-muted-foreground flex gap-1.5 mt-3 pt-3 border-t border-border/50">
@@ -274,6 +305,8 @@ export default function CommunicationsClient({ centreId }: { centreId: string })
                                 <tr>
                                     <td colSpan={6} className="px-6 py-8 text-center text-muted-foreground">Loading history...</td>
                                 </tr>
+                            ) : loadError ? (
+                                <tr><td colSpan={6} className="px-6 py-8 text-center text-muted-foreground">Message history could not be loaded. Use Try loading again above.</td></tr>
                             ) : broadcasts.length === 0 ? (
                                 <tr>
                                     <td colSpan={6} className="p-6">
@@ -379,6 +412,11 @@ export default function CommunicationsClient({ centreId }: { centreId: string })
                                 <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Delivery Ledger</label>
                                 {isLoadingDetails ? (
                                     <div className="p-4 text-center text-xs text-muted-foreground">Loading delivery status...</div>
+                                ) : detailsError ? (
+                                    <div role="alert" className="rounded-xl border border-destructive/30 p-4 text-sm text-destructive">
+                                        <p>We couldn’t load delivery details. This does not mean the message failed to send.</p>
+                                        <button type="button" onClick={() => void handleSelectBroadcast(selectedBroadcast)} className="mt-2 min-h-10 font-semibold underline">Try loading delivery details again</button>
+                                    </div>
                                 ) : deliveryDetails && deliveryDetails.deliveries.length > 0 ? (
                                     <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
                                         {deliveryDetails.deliveries.map((d) => (
@@ -405,9 +443,7 @@ export default function CommunicationsClient({ centreId }: { centreId: string })
                                                         {d.status}
                                                     </span>
                                                     {d.lastError && (
-                                                        <div className="text-[10px] text-destructive max-w-[120px] truncate mt-0.5" title={d.lastError}>
-                                                            {d.lastError}
-                                                        </div>
+                                                        <p className="mt-1 max-w-[200px] text-xs text-destructive">Delivery needs checking. Review the parent’s email address and ask your manager to check delivery before sending again.</p>
                                                     )}
                                                 </div>
                                             </div>

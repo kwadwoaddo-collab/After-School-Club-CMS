@@ -112,6 +112,21 @@ describe('updateAttendanceTimelog', () => {
         expect(db.update).not.toHaveBeenCalled();
     });
 
+    it('persists an explicit Undo as unmarked and keeps actor metadata', async () => {
+        (auth as any).mockResolvedValueOnce(mockSession);
+        (db.query.bookingAttendees.findFirst as any).mockResolvedValueOnce({ id: 'attendee-1', booking: { centre: { id: 'centre-1', organisationId: 'org-456' } } });
+        const set = vi.fn().mockReturnThis();
+        (db.update as any).mockReturnValue({ set, where: vi.fn().mockResolvedValue({ rowCount: 1 }) });
+        await updateAttendanceTimelog({ ...baseParams, checkInTime: null, checkOutTime: null, absenceReason: null, clearAttendance: true });
+        expect(set).toHaveBeenCalledWith(expect.objectContaining({ attendanceStatus: null, checkInAt: null, checkOutAt: null, absenceReason: null, attendanceMarkedBy: 'user-123' }));
+    });
+    it('rejects clearing attendance with conflicting times before any update', async () => {
+        (auth as any).mockResolvedValueOnce(mockSession);
+        (db.query.bookingAttendees.findFirst as any).mockResolvedValueOnce({ id: 'attendee-1', booking: { centre: { id: 'centre-1', organisationId: 'org-456' } } });
+        await expect(updateAttendanceTimelog({ ...baseParams, clearAttendance: true })).rejects.toThrow('Cannot clear attendance');
+        expect(db.update).not.toHaveBeenCalled();
+    });
+
     it('updates the attendance record when ownership checks pass', async () => {
         (auth as any).mockResolvedValueOnce(mockSession);
         (db.query.bookingAttendees.findFirst as any).mockResolvedValueOnce({

@@ -6,11 +6,14 @@ import { useRouter } from 'next/navigation';
 import { reconcilePayment } from '@/features/billing/actions/reconcile-payment';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/ToastProvider';
+import { formatInvoicePeriod } from '@/features/finance/domain/invoice-display';
 import { CheckCircle2, Landmark, Ticket, Wallet } from 'lucide-react';
 
 type InvoiceDto = {
   id: string;
   invoiceNumber: string;
+  billingPeriodStart?: string | Date | null;
+  billingPeriodEnd?: string | Date | null;
   totalAmount: number;
   remainingBalance: number;
   status: string;
@@ -47,28 +50,32 @@ export function ReconciliationClient({
   const [method, setMethod] = useState<'tax_free_childcare' | 'voucher' | 'bank_transfer'>('tax_free_childcare');
   const [reference, setReference] = useState<string>('');
 
+  const [confirmed, setConfirmed] = useState(false);
+
   const handleReconcile = () => {
-    if (!selectedInvoice) { toast('Please select an invoice', 'error'); return; }
+    if (isPending || !confirmed) return;
+    if (!selectedInvoice || !invoices.some(item => item.id === selectedInvoice)) { toast('Please select an invoice', 'error'); return; }
     const parsedAmount = parseFloat(amount);
     if (isNaN(parsedAmount) || parsedAmount <= 0) { toast('Invalid amount', 'error'); return; }
     if (!reference) { toast('Reference is required', 'error'); return; }
 
+    const allocation = { invoiceId: selectedInvoice, amount: parsedAmount, method, reference };
     startTransition(async () => {
-      const res = await reconcilePayment({
-        invoiceId: selectedInvoice,
-        amount: parsedAmount,
-        method,
-        reference
-      });
+      try {
+        const res = await reconcilePayment(allocation);
 
-      if (res.success) {
-        toast('Payment reconciled successfully', 'success');
-        setSelectedInvoice(null);
-        setAmount('');
-        setReference('');
-        router.refresh();
-      } else {
-        toast(res.error || 'Failed to reconcile payment', 'error');
+        if (res.success) {
+          toast('Payment reconciled successfully', 'success');
+          setSelectedInvoice(null);
+          setAmount('');
+          setReference('');
+          setConfirmed(false);
+          router.refresh();
+        } else {
+          toast(res.error || 'Failed to reconcile payment', 'error');
+        }
+      } catch {
+        toast('Payment could not be confirmed. Check the invoice payment history before retrying.', 'error');
       }
     });
   };
@@ -84,7 +91,9 @@ export function ReconciliationClient({
             <button
               key={inv.id}
               type="button"
-              onClick={() => setSelectedInvoice(inv.id)}
+              disabled={isPending}
+              aria-pressed={selectedInvoice === inv.id}
+              onClick={() => { setSelectedInvoice(inv.id); setAmount(''); setReference(''); setConfirmed(false); }}
               className={`text-left p-4 border rounded-2xl transition-all ${
                 selectedInvoice === inv.id
                   ? 'border-primary bg-primary/5 ring-1 ring-primary'
@@ -99,13 +108,14 @@ export function ReconciliationClient({
                   <div className="text-sm text-muted-foreground">
                     {inv.invoiceNumber}
                   </div>
+                  <p className="mt-1 text-sm text-muted-foreground">{formatInvoicePeriod(inv.billingPeriodStart, inv.billingPeriodEnd)}</p>
                 </div>
                 <div className="text-right shrink-0">
                   <div className="font-black text-foreground tabular-nums">
-                    £{inv.remainingBalance.toFixed(2)}
+                    Remaining £{inv.remainingBalance.toFixed(2)}
                   </div>
                   <div className="text-xs text-muted-foreground tabular-nums">
-                    of £{inv.totalAmount.toFixed(2)}
+                    Total £{inv.totalAmount.toFixed(2)}
                   </div>
                 </div>
               </div>
@@ -143,6 +153,8 @@ export function ReconciliationClient({
                   )}{' '}
                   ({invoice?.invoiceNumber})
                 </div>
+                <p className="mt-2 text-sm text-foreground">Billing period: {formatInvoicePeriod(invoice?.billingPeriodStart, invoice?.billingPeriodEnd)}</p>
+                <p className="mt-1 text-sm text-muted-foreground tabular-nums">Invoice total £{invoice?.totalAmount.toFixed(2)} · Remaining £{invoice?.remainingBalance.toFixed(2)}</p>
               </div>
 
               <div className="space-y-2">
@@ -152,7 +164,9 @@ export function ReconciliationClient({
                     <button
                       key={m.id}
                       type="button"
-                      onClick={() => setMethod(m.id)}
+                      disabled={isPending}
+                      aria-pressed={method === m.id}
+                      onClick={() => { setMethod(m.id); setConfirmed(false); }}
                       className={`flex items-center gap-3 p-3 rounded-2xl border transition-all text-left ${
                         method === m.id
                           ? 'bg-primary/10 border-primary ring-1 ring-primary'
@@ -169,25 +183,29 @@ export function ReconciliationClient({
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-black text-muted-foreground uppercase tracking-widest">Amount (£)</label>
+                <label htmlFor="reconcile-amount" className="text-xs font-black text-muted-foreground uppercase tracking-widest">Amount (£)</label>
                 <input
+                  id="reconcile-amount"
+                  disabled={isPending}
                   type="number"
                   step="0.01"
                   min="0.01"
                   max={invoice?.remainingBalance}
                   value={amount}
-                  onChange={e => setAmount(e.target.value)}
+                  onChange={e => { setAmount(e.target.value); setConfirmed(false); }}
                   placeholder={`Max: ${invoice?.remainingBalance.toFixed(2)}`}
                   className="w-full p-3 rounded-2xl border border-border bg-secondary/40 text-foreground font-bold focus:outline-none focus:ring-2 focus:ring-primary/40"
                 />
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-black text-muted-foreground uppercase tracking-widest">Payment Reference</label>
+                <label htmlFor="reconcile-reference" className="text-xs font-black text-muted-foreground uppercase tracking-widest">Payment Reference</label>
                 <input
+                  id="reconcile-reference"
+                  disabled={isPending}
                   type="text"
                   value={reference}
-                  onChange={e => setReference(e.target.value)}
+                  onChange={e => { setReference(e.target.value); setConfirmed(false); }}
                   placeholder="e.g. JSMIT12345TFC"
                   className="w-full p-3 rounded-2xl border border-border bg-secondary/40 text-foreground font-medium focus:outline-none focus:ring-2 focus:ring-primary/40"
                 />
@@ -196,9 +214,13 @@ export function ReconciliationClient({
                 </p>
               </div>
 
+              <label className="flex items-start gap-3 text-sm text-foreground">
+                <input type="checkbox" className="mt-1" checked={confirmed} disabled={isPending} onChange={event => setConfirmed(event.target.checked)} />
+                <span>I have received this payment and checked that it belongs to {invoice?.invoiceNumber}, covering {formatInvoicePeriod(invoice?.billingPeriodStart, invoice?.billingPeriodEnd)}. This records a payment; it does not charge the parent.</span>
+              </label>
               <Button
                 onClick={handleReconcile}
-                disabled={isPending || !amount || !reference}
+                disabled={isPending || !invoice || !amount || !reference || !confirmed}
                 className="w-full mt-2"
               >
                 {isPending ? 'Reconciling...' : 'Reconcile Payment'}

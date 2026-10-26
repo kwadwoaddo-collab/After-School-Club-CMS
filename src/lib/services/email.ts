@@ -1232,8 +1232,8 @@ export class EmailService {
     dueDate: Date;
     centreName: string;
     portalUrl: string;
-  }): Promise<EmailResult> {
-    if (!resend) return { success: false, error: 'Email service not configured' };
+  }): Promise<EmailResult & { outcome?: 'not_sent' | 'unknown' }> {
+    if (!resend) return { success: false, error: 'Email service not configured', outcome: 'not_sent' };
 
     const formattedDue = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }).format(data.dueDate);
 
@@ -1271,10 +1271,10 @@ export class EmailService {
         subject: `New Invoice ${data.invoiceNumber} — £${data.amount.toFixed(2)} due ${formattedDue}`,
         html,
       });
-      if (error) return { success: false, error: error.message };
+      if (error) return { success: false, error: error.message, outcome: 'unknown' };
       return { success: true, messageId: result?.id };
     } catch (err) {
-      return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
+      return { success: false, error: err instanceof Error ? err.message : 'Unknown error', outcome: 'unknown' };
     }
   }
 

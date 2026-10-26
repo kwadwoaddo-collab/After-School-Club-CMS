@@ -63,6 +63,7 @@ vi.mock('@/db', () => ({
                 where: (...args: unknown[]) => dbSelectWhere(...args),
             })),
         })),
+        insert: vi.fn(() => ({ values: vi.fn().mockResolvedValue(undefined) })),
         transaction: (...args: unknown[]) => dbTransaction(...args),
     },
 }));

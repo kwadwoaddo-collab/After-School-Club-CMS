@@ -5,6 +5,7 @@ import { Upload, ArrowRight, Download, CheckCircle2, AlertCircle, RefreshCw, Che
 import Link from 'next/link';
 import { cn } from '@/components/ui/utils';
 import { Button } from '@/components/ui/Button';
+import { unconfirmedImportResult } from '@/features/students/import-errors';
 import { importStudentsAction, StudentImportRow, ImportResult } from '@/features/students/import-actions';
 
 interface Centre {
@@ -187,13 +188,8 @@ export default function ImportStudentsClient({ centres }: { centres: Centre[] })
     try {
       const res = await importStudentsAction(importRows, centreId || null, mappings);
       setResult(res);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : undefined;
-      setResult({
-        success: false,
-        stats: { totalRows: csvRows.length, createdParents: 0, matchedParents: 0, createdStudents: 0, skippedStudents: 0 },
-        errors: [{ row: 0, message: message || 'An unexpected error occurred.' }],
-      });
+    } catch {
+      setResult(unconfirmedImportResult(csvRows.length));
     } finally {
       setIsImporting(false);
     }
@@ -485,14 +481,14 @@ export default function ImportStudentsClient({ centres }: { centres: Centre[] })
                 <div className="flex items-start gap-3 p-3.5 bg-danger-soft rounded-md">
                   <AlertCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-small-body font-semibold text-danger">Import completed with warnings</p>
-                    <p className="text-metadata mt-0.5">Some records could not be created. See the error log below.</p>
+                    <p className="text-small-body font-semibold text-danger">{result?.outcomeUnconfirmed ? 'Import result needs checking' : 'Import completed with warnings'}</p>
+                    <p className="text-metadata mt-0.5">{result?.outcomeUnconfirmed ? 'Some outcomes could not be confirmed. Check the Students and Parents lists before importing again. Any counts shown below include confirmed results only.' : 'Check the rows listed below before importing again.'}</p>
                   </div>
                 </div>
               )}
 
               {/* Stats */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {!result?.countsUnavailable && <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {[
                   { value: result?.stats.totalRows || 0,      label: 'Rows Processed',  color: 'text-text' },
                   { value: result?.stats.createdStudents || 0, label: 'Students Created', color: 'text-emerald-700 dark:text-emerald-400' },
@@ -504,7 +500,7 @@ export default function ImportStudentsClient({ centres }: { centres: Centre[] })
                     <p className="text-label text-text-muted mt-1">{lbl}</p>
                   </div>
                 ))}
-              </div>
+              </div>}
 
               {/* Skipped */}
               {(result?.stats.skippedStudents ?? 0) > 0 && (
@@ -517,12 +513,12 @@ export default function ImportStudentsClient({ centres }: { centres: Centre[] })
               {/* Errors */}
               {result?.errors && result.errors.length > 0 && (
                 <div>
-                  <p className="text-label text-danger mb-2">Error Log ({result.errors.length})</p>
+                  <p className="text-label text-danger mb-2">Rows to check ({result.errors.length})</p>
                   <div className="max-h-60 overflow-y-auto rounded-md border border-danger/20 divide-y divide-danger/10 bg-danger-soft">
                     {result.errors.map((err, i) => (
                       <div key={i} className="p-3 text-xs flex justify-between items-start gap-4">
                         <div>
-                          <span className="px-1.5 py-0.5 rounded-sm bg-danger/10 text-danger text-[10px] font-semibold">Row {err.row}</span>
+                          <span className="px-1.5 py-0.5 rounded-sm bg-danger/10 text-danger text-[10px] font-semibold">{err.row > 0 ? `Row ${err.row}` : 'Import'}</span>
                           {err.name && <span className="text-text font-semibold ml-2">{err.name}</span>}
                           <p className="text-text-secondary mt-1">{err.message}</p>
                         </div>

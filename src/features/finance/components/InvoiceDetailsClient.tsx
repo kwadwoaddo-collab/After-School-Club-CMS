@@ -16,6 +16,9 @@ import PDFPreviewModal from './PDFPreviewModal';
 import ConfirmActionModal from './ConfirmActionModal';
 import { deleteInvoice, voidInvoice, updateInvoiceDate, updateInvoiceNotes, resendInvoiceEmail, issueDraftInvoice, updateDraftInvoice, discardDraftInvoice } from '../actions';
 import { canOfferRecordPayment, parseStoredDecimalToPence } from '../domain/payment-eligibility';
+import { formatInvoicePeriod } from '../domain/invoice-display';
+import IssueInvoiceConfirmation from './IssueInvoiceConfirmation';
+import type { InvoiceEmailStatus } from '../invoice-email-status';
 import { useToast } from '@/components/ui/ToastProvider';
 
 interface InvoiceDetailsClientProps {
@@ -38,6 +41,8 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
     const { toast } = useToast();
 
     const [isIssuingDraft, setIsIssuingDraft] = useState(false);
+    const [confirmIssue, setConfirmIssue] = useState(false);
+    const [emailStatus, setEmailStatus] = useState<InvoiceEmailStatus | null>(invoice.emailStatus || null);
     const [isDiscardingDraft, setIsDiscardingDraft] = useState(false);
     const [isEditingAmount, setIsEditingAmount] = useState(false);
     const [newAmountValue, setNewAmountValue] = useState(Number(invoice.amount).toFixed(2));
@@ -46,15 +51,19 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
     const [newDueDateValue, setNewDueDateValue] = useState(invoice.dueDate ? new Date(invoice.dueDate).toISOString().split('T')[0] : '');
     const [isUpdatingDueDate, setIsUpdatingDueDate] = useState(false);
 
+    useEffect(() => { setEmailStatus(invoice.emailStatus || null); }, [invoice.emailStatus]);
+
     const handleIssueDraft = async () => {
         setIsIssuingDraft(true);
         try {
-            await issueDraftInvoice(invoice.id);
-            toast({ title: 'Invoice issued', message: 'Draft invoice has been issued and sent to parent.', variant: 'success' });
+            const result = await issueDraftInvoice(invoice.id);
+            if (result.emailStatus) setEmailStatus(result.emailStatus);
+            setConfirmIssue(false);
+            toast({ title: result.alreadyIssued ? 'Invoice was already issued' : 'Invoice issued', message: result.emailStatus?.status === 'accepted' ? 'Email accepted by the sending service. Inbox delivery is not confirmed.' : 'Email delivery is not confirmed. Check email status before retrying; do not issue again.', variant: 'success' });
             router.refresh();
         } catch (err) {
             const message = err instanceof Error ? err.message : String(err);
-            toast({ title: 'Issuance failed', message: message || 'Failed to issue invoice', variant: 'error' });
+            toast({ title: 'Could not confirm issuance', message: `${message || 'Request interrupted'}. Refresh and check invoice status before trying again.`, variant: 'error' });
         } finally {
             setIsIssuingDraft(false);
         }
@@ -170,7 +179,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
             case 'partially_paid':
                 return <span className="flex items-center gap-1.5 px-3 py-1 bg-amber-500/10 text-amber-600 rounded-full text-xs font-bold ring-1 ring-amber-500/20"><Clock className="w-3.5 h-3.5" /> PARTIALLY PAID</span>;
             case 'sent':
-                return <span className="flex items-center gap-1.5 px-3 py-1 bg-blue-500/10 text-blue-400 rounded-full text-xs font-bold ring-1 ring-blue-500/20"><Send className="w-3.5 h-3.5" /> SENT</span>;
+                return <span className="flex items-center gap-1.5 px-3 py-1 bg-blue-500/10 text-blue-400 rounded-full text-xs font-bold ring-1 ring-blue-500/20"><Send className="w-3.5 h-3.5" /> ISSUED</span>;
             case 'void':
                 return <span className="flex items-center gap-1.5 px-3 py-1 bg-neutral-500/10 text-neutral-400 rounded-full text-xs font-bold ring-1 ring-neutral-500/20 line-through"><Ban className="w-3.5 h-3.5" /> VOID</span>;
             default:
@@ -260,7 +269,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                             <button
                                 type="button"
                                 disabled={isPending || isIssuingDraft || Number(invoice.amount) <= 0}
-                                onClick={handleIssueDraft}
+                                onClick={() => setConfirmIssue(true)}
                                 className="flex items-center gap-2 px-6 py-2.5 bg-primary rounded-xl text-sm font-bold text-white hover:bg-primary/90 transition-all shadow-lg shadow-primary/30 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                                 title={Number(invoice.amount) <= 0 ? "Amount must be greater than £0.00 to issue" : "Issue invoice to parent"}
                             >
@@ -297,11 +306,16 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                                         setIsSendingEmail(true);
                                         try {
                                             const result = await resendInvoiceEmail(invoice.id);
+                                            if (result.emailStatus) setEmailStatus(result.emailStatus);
+                                            router.refresh();
                                             if (result.success) {
-                                                toast({ title: 'Email sent', message: 'Invoice email sent to parent.', variant: 'success' });
+                                                toast({ title: 'Email accepted', message: 'Accepted by the sending service; inbox delivery is not confirmed.', variant: 'success' });
                                             } else {
-                                                toast({ title: 'Email failed', message: result.error || 'Could not send email.', variant: 'error' });
+                                                toast({ title: 'Email outcome not confirmed', message: result.error || 'Refresh and check status before retrying.', variant: 'error' });
                                             }
+                                        } catch {
+                                            setEmailStatus({ status: 'unknown', attemptedAt: new Date().toISOString() });
+                                            toast({ title: 'Email outcome not confirmed', message: 'The response was interrupted. Refresh and check status before retrying; the email may have been accepted.', variant: 'error' });
                                         } finally {
                                             setIsSendingEmail(false);
                                         }
@@ -309,7 +323,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                                     className="flex items-center gap-2 px-5 py-2.5 bg-blue-500/10 border border-blue-500/20 rounded-xl text-sm font-bold text-blue-600 hover:bg-blue-500/20 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     {isSendingEmail ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                                    {isSendingEmail ? 'Sending…' : 'Send to Parent'}
+                                    {isSendingEmail ? 'Sending…' : 'Resend email'}
                                 </button>
                             )}
                             {userRole === 'ORG_OWNER' && invoice.status !== 'void' && (
@@ -635,6 +649,13 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                         </div>
                     </div>
 
+                    {invoice.status !== 'draft' && <section aria-label="Invoice email status" className="rounded-xl border border-border bg-card p-4 text-sm">
+                        <h3 className="font-semibold">Invoice email status</h3>
+                        <p role="status" className="mt-1">{emailStatus?.status === 'accepted' ? 'Accepted by email service — inbox delivery not confirmed.' : emailStatus?.status === 'failed' ? 'Email was not sent because the sending service is not configured. The invoice remains issued.' : emailStatus?.status === 'no_address' ? 'Not sent — no parent email address recorded.' : emailStatus?.status === 'sending' ? 'Sending attempt recorded — outcome not confirmed. Check before retrying.' : 'Email outcome not confirmed. Check communication history before retrying.'}</p>
+                        {emailStatus?.attemptedAt && <p className="mt-1 text-muted-foreground">Last attempt: {new Date(emailStatus.attemptedAt).toLocaleString('en-GB', { timeZone: 'Europe/London' })} (UK time)</p>}
+                        <p className="mt-2 text-muted-foreground">Use Resend email for a deliberate new attempt, or download the PDF to share manually. Sending again does not create another invoice.</p>
+                    </section>}
+
                     {/* Payment History Section */}
                     <div className="space-y-4">
                         <h3 className="text-xl font-bold text-foreground px-2">Payment Reconciliation Ledger</h3>
@@ -710,6 +731,8 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                     invoiceId={invoice.id}
                     invoiceNumber={invoice.invoiceNumber}
                     remainingBalance={remainingBalance}
+                    invoiceTotal={Number(invoice.amount)}
+                    billingContext={invoice.parent ? { parentId: invoice.parent.id, familyName: `${invoice.parent.firstName} ${invoice.parent.lastName}`, period: formatInvoicePeriod(invoice.billingPeriodStart, invoice.billingPeriodEnd) } : undefined}
                     onClose={() => setIsPaymentModalOpen(false)}
                     onSuccess={() => {
                         startTransition(() => {
@@ -719,6 +742,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                 />
             )}
 
+            {confirmIssue && <IssueInvoiceConfirmation invoice={invoice} pending={isIssuingDraft} onClose={() => setConfirmIssue(false)} onConfirm={handleIssueDraft}/>}
             <ConfirmActionModal
                 isOpen={confirmAction !== null}
                 onClose={() => setConfirmAction(null)}
