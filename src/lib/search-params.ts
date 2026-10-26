@@ -38,3 +38,11 @@ export function normalizeDate(param: string | string[] | undefined): string | un
     }
     return undefined;
 }
+
+/** Reject non-finite, fractional and oversized offsets before they reach SQL. */
+export function normalizePage(param: string | string[] | undefined, pageSize = 50): number {
+    const value = normalizeString(param);
+    if (!value || !/^[1-9]\d*$/.test(value)) return 1;
+    const page = Number(value);
+    return Number.isSafeInteger(page) && Number.isSafeInteger((page - 1) * pageSize) && (page - 1) * pageSize <= 2_147_483_647 ? page : 1;
+}

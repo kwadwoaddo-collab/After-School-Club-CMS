@@ -1,6 +1,9 @@
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import * as schema from './schema';
+import { assertTestDatabaseIsolation } from '@/lib/test-database-isolation';
+
+assertTestDatabaseIsolation(process.env);
 
 const connectionString = process.env.DATABASE_URL!;
 

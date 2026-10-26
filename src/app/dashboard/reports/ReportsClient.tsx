@@ -237,6 +237,7 @@ export default function ReportsClient() {
             {/* ── Data Exports Tab ─────────────────────────────────────────── */}
             {activeTab === 'exports' && (
                 <div role="tabpanel" id="exports-panel" className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <p className="md:col-span-2 text-sm text-muted-foreground">CSV exports keep their existing access scope and date options. The Activity Report centre selector does not filter these exports.</p>
 
                     {/* ── Booking Export Card ───────────────────────────────── */}
                     <div className="bg-card border border-border rounded-3xl p-8 flex flex-col gap-6 shadow-sm hover:shadow-md transition-shadow duration-300">

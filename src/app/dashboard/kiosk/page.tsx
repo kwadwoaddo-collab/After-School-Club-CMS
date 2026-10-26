@@ -1,3 +1,6 @@
+import { studentLifecycleStatusSql } from '@/features/students/lifecycle-queries';
+import { expectedRosterIds } from '@/features/students/expected-roster';
+import { enrolmentBusinessDate } from '@/lib/enrolment/business-date';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { requireTenantSession } from '@/lib/session';
 import { redirect } from 'next/navigation';
@@ -52,6 +55,7 @@ export default async function KioskPage(props: {
             allChildrenAtCentre = await db.query.children.findMany({
                 where: and(centreChildrenCondition, eq(children.isRegistered, true), isNull(children.deletedAt)),
                 with: { parent: true, centre: true },
+                extras: { effectiveEnrolmentStatus: studentLifecycleStatusSql(enrolmentBusinessDate(now)).as('effective_enrolment_status') },
             });
 
             todayBookings = await db.query.bookings.findMany({
@@ -75,6 +79,7 @@ export default async function KioskPage(props: {
     const sortedSlots = compileDailyRegisterSlots({
         targetDate: now,
         allChildrenAtCentre,
+        expectedChildIds: expectedRosterIds(allChildrenAtCentre),
         dayBookings: todayBookings,
     });
 

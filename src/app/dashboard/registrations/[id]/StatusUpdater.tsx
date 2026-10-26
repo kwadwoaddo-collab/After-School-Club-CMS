@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation';
 type Status = 'awaiting_confirmation' | 'signed_up' | 'not_interested';
 
 const OPTIONS: { value: Status; label: string; cls: string }[] = [
-    { value: 'awaiting_confirmation', label: 'Awaiting Confirmation', cls: 'text-amber-400 hover:bg-amber-500/10' },
-    { value: 'signed_up', label: 'Confirm Signed Up', cls: 'text-emerald-400 hover:bg-emerald-500/10' },
+    { value: 'awaiting_confirmation', label: 'Form received — awaiting confirmation', cls: 'text-amber-400 hover:bg-amber-500/10' },
+    { value: 'signed_up', label: 'Confirm joining', cls: 'text-emerald-400 hover:bg-emerald-500/10' },
     { value: 'not_interested', label: 'Not Interested', cls: 'text-slate-400 hover:bg-card' },
 ];
 
@@ -68,7 +68,7 @@ export default function RegistrationStatusUpdater({
                 aria-expanded={open}
                 className="px-4 py-2 rounded-lg bg-secondary/40 text-foreground text-sm font-medium hover:bg-card transition-colors disabled:opacity-50 border border-outline-variant/10"
             >
-                {saving ? 'Saving…' : 'Update Enrolment Status ▾'}
+                {saving ? 'Saving…' : 'Update joining status ▾'}
             </button>
             {error && (
                 <p className="absolute right-0 top-full mt-1 whitespace-nowrap text-xs font-semibold text-destructive bg-background border border-destructive/20 rounded-lg px-3 py-1.5 shadow-lg">

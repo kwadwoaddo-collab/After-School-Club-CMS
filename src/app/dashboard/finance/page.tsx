@@ -1,3 +1,4 @@
+import { normalizePage } from '@/lib/search-params';
 import { requireTenantSession } from '@/lib/session';
 import { redirect } from 'next/navigation';
 import { db } from '@/db';
@@ -47,7 +48,7 @@ export default async function FinancePage(props: {
         return JSON.parse(JSON.stringify(obj, (key, value) => typeof value === 'bigint' ? Number(value) : value));
     }
 
-    const page = Number(searchParams.page) || 1;
+    const page = normalizePage(searchParams.page);
     const pageSize = 50;
     const statusFilter = searchParams.status || 'all';
     const formerBalancesView = searchParams.view === 'former';

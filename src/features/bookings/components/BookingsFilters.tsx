@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Search, Filter, Calendar, X, SlidersHorizontal } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCentreFilter } from '@/components/dashboard/CentreFilterContext';
@@ -23,13 +23,15 @@ export default function BookingsFilters({ centres, resultsCount = 0, statusCount
     const [fromDate, setFromDate] = useState(searchParams.get('from') || '');
     const [toDate, setToDate] = useState(searchParams.get('to') || '');
     const [isMobileSheetOpen, setIsMobileSheetOpen] = useState(false);
+    const urlStatus = searchParams.get('status') || 'all';
+    useEffect(() => { setStatus(urlStatus); }, [urlStatus]);
 
     const isToday = searchParams.get('today') === 'true';
 
     const statusOptionsWithCounts = [
         { value: 'all', label: 'All', count: totalAggCount },
         { value: 'confirmed', label: 'Booked', count: statusCounts?.confirmed || 0 },
-        { value: 'signed_up', label: 'Signed-up', count: statusCounts?.signed_up || 0 },
+        { value: 'signed_up', label: 'Joining requested', count: statusCounts?.signed_up || 0 },
         { value: 'pending', label: 'Pending', count: statusCounts?.pending || 0 },
         { value: 'completed', label: 'Attended', count: statusCounts?.completed || 0 },
         { value: 'cancelled', label: 'Cancelled', count: statusCounts?.cancelled || 0 },
@@ -42,6 +44,7 @@ export default function BookingsFilters({ centres, resultsCount = 0, statusCount
         fromDate ||
         toDate ||
         searchParams.get('today') ||
+        searchParams.get('outcome') === 'required' ||
         selectedCentreId !== 'all'
     );
 
@@ -59,8 +62,15 @@ export default function BookingsFilters({ centres, resultsCount = 0, statusCount
         applyFilters();
     };
 
-    const applyFilters = (overrides?: { newSearch?: string; newStatus?: string; newFrom?: string; newTo?: string; newToday?: string }) => {
+    const applyFilters = (overrides?: { newSearch?: string; newStatus?: string; newFrom?: string; newTo?: string; newToday?: string; newOutcome?: string }) => {
         const params = new URLSearchParams();
+        for (const key of ['summaryFrom', 'summaryTo']) {
+            const value = searchParams.get(key);
+            if (value) params.set(key, value);
+        }
+        if (selectedCentreId !== 'all') params.set('centre', selectedCentreId);
+        const outcome = overrides?.newOutcome !== undefined ? overrides.newOutcome : searchParams.get('outcome');
+        if (outcome === 'required') params.set('outcome', 'required');
 
         const currentSearch = overrides?.newSearch !== undefined ? overrides.newSearch : search;
         if (currentSearch) params.set('search', currentSearch);
@@ -83,6 +93,7 @@ export default function BookingsFilters({ centres, resultsCount = 0, statusCount
 
     return (
         <div className="space-y-3">
+            <button type="button" aria-pressed={searchParams.get('outcome') === 'required'} onClick={() => { setStatus('all'); setFromDate(''); setToDate(''); applyFilters({ newOutcome: searchParams.get('outcome') === 'required' ? '' : 'required', newStatus: 'all', newToday: '', newFrom: '', newTo: '' }); }} className="rounded-md border border-border px-3 py-2 text-sm text-foreground hover:bg-secondary focus-visible:outline-2 focus-visible:outline-primary">{searchParams.get('outcome') === 'required' ? 'Showing assessments needing an outcome — show all' : 'Outcomes to record'}</button>
             {/* Desktop toolbar */}
             <div className="hidden lg:flex items-center justify-between gap-3 flex-wrap">
                 <div className="flex bg-page p-1 rounded-md border border-border-subtle overflow-x-auto max-w-full scrollbar-none gap-1">

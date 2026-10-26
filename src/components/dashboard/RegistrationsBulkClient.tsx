@@ -383,7 +383,7 @@ export default function RegistrationsBulkClient({ rows, statusBadge, statusLabel
                         className="flex items-center gap-2 px-4 py-2 bg-success/10 border border-success/20 text-success hover:bg-success/20 rounded-xl text-sm font-semibold transition-all disabled:opacity-50"
                     >
                         {bulkLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
-                        Confirm all
+                        Confirm joining for selected
                     </button>
 
                     <button

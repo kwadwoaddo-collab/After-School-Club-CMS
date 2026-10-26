@@ -47,10 +47,19 @@ export function inspectInvoice(invoice: WorkspaceInvoice, today: string) {
 export function buildFinanceQueues(invoices: WorkspaceInvoice[], today: string) {
     const unique = [...new Map(invoices.map(invoice => [invoice.id, invoice])).values()];
     const inspected = unique.filter(invoice => invoice.status !== 'void').map(invoice => ({ invoice, ...inspectInvoice(invoice, today) }));
-    // Multiple invoices for different children can be legitimate. Flag only a shared billing configuration.
+    // Compare within the exact configuration/family/centre only. Preserve every
+    // historical/manual row; pagination must not hide overlaps or outstanding debt.
+    const groups = new Map<string, typeof inspected>();
+    const key = (item: typeof inspected[number]) => JSON.stringify([item.invoice.billingConfigId, item.invoice.centreId, item.invoice.parentId]);
+    for (const item of inspected) {
+        if (!item.invoice.billingConfigId || !item.start || !item.end) continue;
+        const groupKey = key(item);
+        const group = groups.get(groupKey) ?? [];
+        group.push(item); groups.set(groupKey, group);
+    }
     for (const item of inspected) {
         if (item.invoice.status !== 'draft' || !item.invoice.billingConfigId || !item.start || !item.end) continue;
-        if (inspected.some(other => other.invoice.id !== item.invoice.id && other.invoice.billingConfigId === item.invoice.billingConfigId && other.invoice.centreId === item.invoice.centreId && other.invoice.parentId === item.invoice.parentId && other.start && other.end && other.start <= item.end! && other.end >= item.start!)) item.reasons.push('Another invoice overlaps this billing period.');
+        if (groups.get(key(item))?.some(other => other.invoice.id !== item.invoice.id && other.start! <= item.end! && other.end! >= item.start!)) item.reasons.push('Another invoice overlaps this billing period.');
     }
     const drafts = inspected.filter(item => item.invoice.status === 'draft').sort((a,b) => (a.start ?? '').localeCompare(b.start ?? '') || a.invoice.id.localeCompare(b.invoice.id));
     const payments = inspected.filter(item => ['sent','partially_paid'].includes(item.invoice.status) && item.remaining > 0 && item.financialReliable).sort((a,b) => (a.due ?? '9999').localeCompare(b.due ?? '9999') || a.invoice.id.localeCompare(b.invoice.id));

@@ -1,6 +1,6 @@
 'use client';
 
-import { Fragment, useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ChevronDown, Download, Search, SlidersHorizontal, X } from 'lucide-react';
@@ -64,8 +64,8 @@ export default function FinanceWorkspace({ invoices, cycles, today, invoiceError
         if (tab !== initial || confirmedRoute.split(':')[0] === initial) setOverdueOnly(params.get('status') === 'overdue');
         if (tab !== initial) { setPage(1); setUpcomingPage(1); setHistoricalPage(1); setExpanded(null); }
     }
-    const queues = buildFinanceQueues(invoices, today);
-    const periods = splitDraftPeriods(queues.drafts);
+    const queues = useMemo(() => buildFinanceQueues(invoices, today), [invoices, today]);
+    const periods = useMemo(() => splitDraftPeriods(queues.drafts), [queues.drafts]);
     const problems = cycles.filter(cycle => ['needs_setup', 'data_review_required', 'draft_due', 'ready'].includes(cycle.cycleStatus));
     const centre = params.get('centre');
     const href = (view: string, parent?: string) => `/dashboard/finance?${new URLSearchParams({ ...(centre ? { centre } : {}), view, ...(parent ? { family: parent } : {}) })}`;

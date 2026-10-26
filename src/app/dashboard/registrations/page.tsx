@@ -1,3 +1,6 @@
+import { parseSummaryRange, summaryRangeSql } from '@/features/dashboard/summary-links';
+import SummaryRangeNotice from '@/features/dashboard/SummaryRangeNotice';
+import JoiningJourneyGuide from '@/features/students/components/JoiningJourneyGuide';
 import { logger } from '@/lib/logger';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { requireAuth } from '@/lib/require-auth';
@@ -22,19 +25,22 @@ const STATUS_BADGE: Record<string, string> = {
 };
 
 const STATUS_LABEL: Record<string, string> = {
-    awaiting_confirmation: 'Awaiting Confirmation',
-    signed_up: 'Signed Up',
+    awaiting_confirmation: 'Form received — awaiting confirmation',
+    signed_up: 'Joining confirmed',
     not_interested: 'Not Interested',
 };
 
 export default async function RegistrationsPage(props: {
     searchParams: Promise<{
         centre?: string;
+        summaryFrom?: string;
+        summaryTo?: string;
         search?: string;
         status?: string;
     }>
 }) {
     const rawSearchParams = await props.searchParams;
+    const summaryRange = parseSummaryRange(rawSearchParams.summaryFrom, rawSearchParams.summaryTo);
     const searchParams = {
         centre: Array.isArray(rawSearchParams.centre) ? rawSearchParams.centre[0] : rawSearchParams.centre,
         search: Array.isArray(rawSearchParams.search) ? rawSearchParams.search[0] : rawSearchParams.search,
@@ -80,6 +86,7 @@ export default async function RegistrationsPage(props: {
         // Fetch status counts via aggregation
         const aggWhere = and(
             eq(registrations.organisationId, orgId),
+            summaryRangeSql(registrations.createdAt, summaryRange),
             activeCentreId !== 'all'
                 ? eq(registrations.centreId, activeCentreId)
                 : centreIds.length > 0
@@ -133,6 +140,8 @@ export default async function RegistrationsPage(props: {
 
         if (!searchActiveAndNoResults) {
             const conditions = [eq(registrations.organisationId, orgId)];
+            const periodCondition = summaryRangeSql(registrations.createdAt, summaryRange);
+            if (periodCondition) conditions.push(periodCondition);
 
             if (activeCentreId !== 'all') {
                 conditions.push(eq(registrations.centreId, activeCentreId));
@@ -177,6 +186,7 @@ export default async function RegistrationsPage(props: {
 
     return (
         <div className="space-y-4 animate-in fade-in duration-700">
+            <JoiningJourneyGuide />
             {/* Header Portals — Fuses page header into the global header bar */}
             <HeaderPortal targetId="header-left">
                 <div className="flex items-center gap-2">
@@ -192,8 +202,8 @@ export default async function RegistrationsPage(props: {
                 <div className="flex bg-secondary/60 p-1 rounded-2xl border border-border self-start overflow-x-auto max-w-full scrollbar-none gap-1">
                     {[
                         { value: 'all', label: 'All', count: totalCount },
-                        { value: 'awaiting_confirmation', label: 'Awaiting Conf.', count: awaitingConfirmationCount, color: 'text-warning bg-warning/10' },
-                        { value: 'signed_up', label: 'Signed Up', count: signedUpCount, color: 'text-success bg-success/10' },
+                        { value: 'awaiting_confirmation', label: 'Awaiting confirmation', count: awaitingConfirmationCount, color: 'text-warning bg-warning/10' },
+                        { value: 'signed_up', label: 'Joining confirmed', count: signedUpCount, color: 'text-success bg-success/10' },
                         { value: 'not_interested', label: 'Not Interested', count: notInterestedCount, color: 'text-destructive bg-destructive/10' },
                     ].map((tab) => {
                         const isActive = (searchParams.status || 'all') === tab.value;
@@ -251,7 +261,8 @@ export default async function RegistrationsPage(props: {
 
             {/* Filters — sticky */}
             <div className="sticky top-16 sm:top-20 z-20 -mx-4 sm:-mx-8 px-4 sm:px-8 py-3 bg-background/80 backdrop-blur-xl border-b border-border">
-                <Suspense fallback={<div className="h-10 animate-pulse bg-slate-800/50 rounded-xl w-full" />}>
+                <SummaryRangeNotice range={summaryRange} basis="Registration forms received" clearHref={`/dashboard/registrations?${new URLSearchParams(Object.entries(searchParams).filter(([key,value]) => typeof value === 'string') as [string,string][])}`}/>
+            <Suspense fallback={<div className="h-10 animate-pulse bg-slate-800/50 rounded-xl w-full" />}>
                     <RegistrationsFilters centres={orgCentres} resultsCount={rows.length} />
                 </Suspense>
             </div>

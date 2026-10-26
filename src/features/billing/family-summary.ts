@@ -43,6 +43,8 @@ export function buildFamilyBillingSummary(input: {
 }): FamilyBillingSummary {
     const today = isoDay(input.now)!;
     const reviewReasons: string[] = [];
+    const sourceById = new Map<string, FamilyInvoiceInput>();
+    for (const invoice of input.invoices) if (!sourceById.has(invoice.id)) sourceById.set(invoice.id, invoice);
     const history = input.invoices.filter(invoice => invoice.organisationId === input.organisationId &&
         invoice.centreId === input.centreId && invoice.parentId === input.parentId &&
         (!invoice.billingConfigId || invoice.billingConfigId === input.billingConfigId)).map(invoice => {
@@ -75,8 +77,8 @@ export function buildFamilyBillingSummary(input: {
     const valid = history.filter(invoice => invoice.periodStart && invoice.periodEnd && invoice.periodEnd >= invoice.periodStart);
     const active = valid.filter(invoice => invoice.status !== 'void');
     for (let i = 0; i < active.length; i++) for (let j = i + 1; j < active.length; j++) {
-        if (input.invoices.find(invoice => invoice.id === active[i].id)?.billingConfigId === input.billingConfigId &&
-            input.invoices.find(invoice => invoice.id === active[j].id)?.billingConfigId === input.billingConfigId &&
+        if (sourceById.get(active[i].id)?.billingConfigId === input.billingConfigId &&
+            sourceById.get(active[j].id)?.billingConfigId === input.billingConfigId &&
             active[i].periodStart! <= active[j].periodEnd! && active[j].periodStart! <= active[i].periodEnd!) {
             active[i].needsReview = active[j].needsReview = true;
             reviewReasons.push(`${active[i].invoiceNumber} and ${active[j].invoiceNumber}: overlapping billing periods.`);

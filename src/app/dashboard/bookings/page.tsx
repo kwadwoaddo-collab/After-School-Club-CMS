@@ -1,3 +1,7 @@
+import { parseSummaryRange, summaryRangeSql } from '@/features/dashboard/summary-links';
+import SummaryRangeNotice from '@/features/dashboard/SummaryRangeNotice';
+import { assessmentOutcomeRequiredSql } from '@/features/bookings/assessment-outcome-query';
+import JoiningJourneyGuide from '@/features/students/components/JoiningJourneyGuide';
 import { logger } from '@/lib/logger';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { requireTenantSession } from '@/lib/session';
@@ -26,17 +30,22 @@ export default async function BookingsPage(props: {
         view?: string;
         status?: string;
         centre?: string;
+        summaryFrom?: string;
+        summaryTo?: string;
         search?: string;
         from?: string;
         to?: string;
         today?: string;
         page?: string;
+        outcome?: string;
     }>
 }) {
     const rawSearchParams = await props.searchParams;
     const session = await requireTenantSession();
 
+    const summaryRange = parseSummaryRange(rawSearchParams.summaryFrom, rawSearchParams.summaryTo);
     const searchParams = {
+        outcome: Array.isArray(rawSearchParams.outcome) ? rawSearchParams.outcome[0] : rawSearchParams.outcome,
         view:   Array.isArray(rawSearchParams.view)   ? rawSearchParams.view[0]   : rawSearchParams.view,
         status: Array.isArray(rawSearchParams.status) ? rawSearchParams.status[0] : rawSearchParams.status,
         centre: Array.isArray(rawSearchParams.centre) ? rawSearchParams.centre[0] : rawSearchParams.centre,
@@ -162,6 +171,8 @@ export default async function BookingsPage(props: {
     // Build conditions for Bookings list query and aggregation query
     const conds = [];
     const aggConds = [];
+    const periodCondition = summaryRangeSql(bookings.startAt, summaryRange);
+    if (periodCondition) { conds.push(periodCondition); aggConds.push(periodCondition); }
 
     if (activeCentreId !== 'all') {
         conds.push(eq(bookings.centreId, activeCentreId));
@@ -176,6 +187,12 @@ export default async function BookingsPage(props: {
         if (VALID_BOOKING_STATUSES.includes(val as any)) {
             conds.push(eq(bookings.status, val as any));
         }
+    }
+
+    if (searchParams.outcome === 'required') {
+        const outcomeCondition = assessmentOutcomeRequiredSql();
+        conds.push(outcomeCondition);
+        aggConds.push(outcomeCondition);
     }
 
     if (effectiveFrom) {
@@ -259,6 +276,7 @@ export default async function BookingsPage(props: {
     }
 
     const isFiltered = !!(
+        searchParams.outcome === 'required' ||
         searchParams.search ||
         (searchParams.status && searchParams.status !== 'all') ||
         effectiveFrom ||
@@ -290,6 +308,7 @@ export default async function BookingsPage(props: {
 
     return (
         <div className="space-y-6">
+            <JoiningJourneyGuide />
             {/* Header Portals — Fuses page header into the global header bar */}
             <HeaderPortal targetId="header-left">
                 <div className="flex items-center gap-2">
@@ -319,7 +338,8 @@ export default async function BookingsPage(props: {
 
             {/* Toolbar — sticky */}
             <div className="sticky top-16 sm:top-20 z-20 -mx-4 sm:-mx-8 px-4 sm:px-8 py-3 bg-page/90 backdrop-blur-sm border-b border-border-subtle">
-                <Suspense fallback={<div className="h-10 animate-pulse bg-page rounded-sm w-full" />}>
+                <SummaryRangeNotice range={summaryRange} basis="Bookings scheduled" clearHref={`/dashboard/bookings?${new URLSearchParams(Object.entries(searchParams).filter(([key,value]) => key !== 'page' && typeof value === 'string') as [string,string][])}`}/>
+            <Suspense fallback={<div className="h-10 animate-pulse bg-page rounded-sm w-full" />}>
                     <BookingsFilters
                         centres={orgCentres}
                         resultsCount={totalRecords}

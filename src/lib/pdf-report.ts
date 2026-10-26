@@ -288,6 +288,7 @@ function buildReportHTML(data: WeeklyReportData): string {
   <h1>CEO Weekly Activity Report</h1>
   <div class="org">${esc(data.orgName)}</div>
   <div class="meta">
+    Scope: <strong>${esc(data.scope?.label ?? 'All accessible centres')}</strong><br/>
     Period: <strong>${esc(data.periodLabel)}</strong>
     &nbsp;&nbsp;|&nbsp;&nbsp;
     Generated: ${esc(data.generatedAt)}
@@ -298,6 +299,7 @@ function buildReportHTML(data: WeeklyReportData): string {
   </div>
 </div>
 
+${data.finance ? `<div class="section-heading">Financial activity</div><p>Cash collected: £${esc(Number(data.finance.cashCollected).toFixed(2))} · Invoiced: £${esc(Number(data.finance.invoiced).toFixed(2))} · Drafts prepared: £${esc(Number(data.finance.draftsPrepared).toFixed(2))}</p><p>Cash collected means verified, unreversed payment allocations recorded in the period against currently issued non-void invoices. Invoiced uses invoice dates; drafts prepared uses creation dates and current draft status. Later record changes can restate a past report. This is not bank settlement or a historical accounting statement. Debt ageing is not included.</p>` : ''}
 <div class="section-heading">📊 Summary</div>
 ${summaryHTML}
 

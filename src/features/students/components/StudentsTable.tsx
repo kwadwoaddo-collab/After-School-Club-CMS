@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { followUpBucket, FOLLOW_UP_LABELS } from '../follow-up-queue';
 import { useRouter } from 'next/navigation';
 import { ShieldAlert, Mail, Phone, Users, Plus, TrendingDown, AlertTriangle, Search } from 'lucide-react';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/Table';
@@ -79,9 +80,11 @@ interface StudentsTableProps {
   error?: boolean;
   /** True when a search/filter is active — used to pick the right empty state. */
   hasActiveFilters?: boolean;
+  followUpMode?: boolean;
+  today?: string;
 }
 
-export default function StudentsTable({ students, error, hasActiveFilters }: StudentsTableProps) {
+export default function StudentsTable({ students, error, hasActiveFilters, followUpMode = false, today = '' }: StudentsTableProps) {
   const router = useRouter();
 
   if (error) {
@@ -109,8 +112,8 @@ export default function StudentsTable({ students, error, hasActiveFilters }: Stu
           <TableHeader>
             <TableRow>
               <TableHead>Student</TableHead>
-              <TableHead>DOB</TableHead>
-              <TableHead>Year group</TableHead>
+              <TableHead>{followUpMode ? 'Last contact' : 'DOB'}</TableHead>
+              <TableHead>{followUpMode ? 'Next call' : 'Year group'}</TableHead>
               <TableHead>Parent contact</TableHead>
               <TableHead align="center">Bookings</TableHead>
               <TableHead>Next booking</TableHead>
@@ -152,15 +155,15 @@ export default function StudentsTable({ students, error, hasActiveFilters }: Stu
                           )}
                         </div>
                         {(student.enrolmentStatus === 'paused' || student.enrolmentStatus === 'stopped') && <Badge variant="warning">{student.enrolmentStatus === 'paused' ? 'Paused' : 'Stopped'}</Badge>}
-                        {(student.lastContactAt || student.nextContactDate) && <p className="text-xs text-text-muted mt-1">Last contact: {student.lastContactAt ? new Date(student.lastContactAt).toLocaleDateString('en-GB', { timeZone: 'Europe/London' }) : 'Not recorded'}{student.nextContactDate ? ` · Next call: ${student.nextContactDate}` : ''}</p>}
+                        {!followUpMode && (student.lastContactAt || student.nextContactDate) && <p className="text-xs text-text-muted mt-1">Last contact: {student.lastContactAt ? new Date(student.lastContactAt).toLocaleDateString('en-GB', { timeZone: 'Europe/London' }) : 'Not recorded'}{student.nextContactDate ? ` · Next call: ${student.nextContactDate}` : ''}</p>}
                       </div>
                     </div>
                   </TableCell>
                   <TableCell className="text-text-secondary">
-                    {student.dateOfBirth ? new Date(student.dateOfBirth).toLocaleDateString() : '—'}
+                    {followUpMode ? (student.lastContactAt ? new Date(student.lastContactAt).toLocaleDateString('en-GB', { timeZone: 'Europe/London' }) : 'Not recorded') : student.dateOfBirth ? new Date(student.dateOfBirth).toLocaleDateString('en-GB') : '—'}
                   </TableCell>
                   <TableCell>
-                    {student.schoolYear ? (
+                    {followUpMode ? <div className="space-y-1"><p className="text-sm">{student.nextContactDate || 'Not scheduled'}</p><Badge variant={['overdue', 'today'].includes(followUpBucket(student.nextContactDate, today)) ? 'warning' : 'default'}>{FOLLOW_UP_LABELS[followUpBucket(student.nextContactDate, today)]}</Badge></div> : student.schoolYear ? (
                       <span className="inline-flex items-center px-2 py-0.5 rounded-sm border border-border-subtle bg-page text-text-secondary text-xs font-medium">
                         {student.schoolYear}
                       </span>
@@ -234,10 +237,10 @@ export default function StudentsTable({ students, error, hasActiveFilters }: Stu
                     </div>
                   </TableCell>
                   <TableCell align="right" className="sticky right-0 z-10 bg-surface">
-                    <StudentActions
+                    {followUpMode ? <Link href={`/dashboard/students/${student.id}#enrolment-follow-up`} onClick={event => event.stopPropagation()} className="text-primary underline underline-offset-4 text-sm">Record call / next date</Link> : <StudentActions
                       studentId={student.id}
                       studentName={`${student.firstName} ${student.lastName}`}
-                    />
+                    />}
                   </TableCell>
                 </TableRow>
               );
@@ -248,7 +251,7 @@ export default function StudentsTable({ students, error, hasActiveFilters }: Stu
 
       {/* Mobile — stacked record cards, not a horizontally-scrolled table. */}
       <div className="xl:hidden">
-        <StudentsGrid students={students} />
+        <StudentsGrid students={students} followUpMode={followUpMode} today={today} />
       </div>
     </>
   );

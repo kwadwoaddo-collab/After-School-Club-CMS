@@ -112,6 +112,14 @@ export async function fetchBillingCycles(
         with: { payments: { columns: { amount: true, status: true } } },
     }) : [];
 
+    const invoiceGroups = new Map<string, typeof familyInvoices>();
+    const familyKey = (org: string, centre: string, parent: string) => JSON.stringify([org, centre, parent]);
+    for (const invoice of familyInvoices) {
+        const key = familyKey(invoice.organisationId, invoice.centreId, invoice.parentId);
+        const group = invoiceGroups.get(key) ?? [];
+        group.push(invoice); invoiceGroups.set(key, group);
+    }
+
     const familySkips = configs.length ? await db.query.billingCycleSkips.findMany({
         where: inArray(billingCycleSkips.billingConfigId, configs.map(config => config.id)),
         columns: { billingConfigId: true, periodStart: true },
@@ -196,7 +204,7 @@ export async function fetchBillingCycles(
 
         const familySummary = buildFamilyBillingSummary({
             organisationId: orgId, centreId: config.centreId, parentId: config.parentId,
-            billingConfigId: config.id, invoices: familyInvoices, now: todayUtc,
+            billingConfigId: config.id, invoices: invoiceGroups.get(familyKey(orgId, config.centreId, config.parentId)) ?? [], now: todayUtc,
             scheduleStart: periodStartStr || null, draftCreationDate: nextInvoiceDateStr,
             baseStatus: cycleStatus,
             currentPeriodStart: anchoredCurrentStart, currentPeriodEnd: anchoredCurrentEnd,
