@@ -32,4 +32,14 @@ describe('operational queue controls', () => {
         expect((screen.getByLabelText('Filter follow-up calls') as HTMLSelectElement).value).toBe('overdue');
     });
 
+    it('retains the exact dashboard period when narrowing students by follow-up due date', () => {
+        mocks.params = 'status=follow-ups&centre=centre-1&summaryFrom=2026-10-04T23%3A00%3A00.000Z&summaryTo=2026-10-11T22%3A59%3A59.999Z&page=2';
+        render(<StudentsFilters centres={[{id:'centre-1',name:'Dummy centre'}]}/>);
+        fireEvent.change(screen.getByLabelText('Filter follow-up calls'),{target:{value:'today'}});
+        const url = new URL(mocks.push.mock.calls[0][0],'https://example.test');
+        expect(url.searchParams.get('summaryFrom')).toBe('2026-10-04T23:00:00.000Z');
+        expect(url.searchParams.get('summaryTo')).toBe('2026-10-11T22:59:59.999Z');
+        expect(url.searchParams.get('page')).toBeNull();
+    });
+
 });

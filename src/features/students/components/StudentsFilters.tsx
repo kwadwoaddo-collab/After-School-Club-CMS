@@ -67,6 +67,10 @@ export default function StudentsFilters({ centres, resultsCount = 0 }: StudentsF
 
     const applyFilters = useCallback((overrides?: { newSearch?: string; newYears?: string[]; newStatus?: string; newFollowUp?: string }) => {
         const params = new URLSearchParams();
+        for (const key of ['summaryFrom', 'summaryTo']) {
+            const value = searchParams.get(key);
+            if (value) params.set(key, value);
+        }
 
         const currentSearch = overrides?.newSearch !== undefined ? overrides.newSearch : search;
         if (currentSearch) params.set('search', currentSearch);
@@ -87,7 +91,7 @@ export default function StudentsFilters({ centres, resultsCount = 0 }: StudentsF
 
         const queryString = params.toString();
         router.push(`/dashboard/students${queryString ? `?${queryString}` : ''}`);
-    }, [search, selectedYears, status, followUp, selectedCentreId, router]);
+    }, [search, selectedYears, status, followUp, selectedCentreId, router, searchParams]);
 
     const handleSearchChange = useCallback((value: string) => {
         setSearch(value);

@@ -37,6 +37,10 @@ export default function RegistrationsFilters({ centres, resultsCount = 0 }: Regi
     const buildUrl = useCallback(
         (overrides?: { newSearch?: string; newStatus?: string; newCentre?: string }) => {
             const params = new URLSearchParams();
+        for (const key of ['summaryFrom', 'summaryTo']) {
+            const value = searchParams.get(key);
+            if (value) params.set(key, value);
+        }
 
             const s = overrides?.newSearch !== undefined ? overrides.newSearch : search;
             if (s) params.set('search', s);
@@ -50,7 +54,7 @@ export default function RegistrationsFilters({ centres, resultsCount = 0 }: Regi
             const qs = params.toString();
             return `/dashboard/registrations${qs ? `?${qs}` : ''}`;
         },
-        [search, status, selectedCentreId],
+        [search, status, selectedCentreId, searchParams],
     );
 
     const handleClearFilters = () => {

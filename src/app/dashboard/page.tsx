@@ -123,7 +123,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
             </Suspense>
 
             <Suspense fallback={<OverviewSkeleton />}>
-                <DashboardKpisWidget 
+                <DashboardKpisWidget activeCentreId={activeCentreId} userRole={userRole}
                     orgId={org.id} 
                     childrenCentreCondition={childrenCentreCondition}
                     bookingsCentreCondition={bookingsCentreCondition}

@@ -1,3 +1,5 @@
+import { parseSummaryRange, summaryRangeSql } from '@/features/dashboard/summary-links';
+import SummaryRangeNotice from '@/features/dashboard/SummaryRangeNotice';
 import JoiningJourneyGuide from '@/features/students/components/JoiningJourneyGuide';
 import { logger } from '@/lib/logger';
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -31,11 +33,14 @@ const STATUS_LABEL: Record<string, string> = {
 export default async function RegistrationsPage(props: {
     searchParams: Promise<{
         centre?: string;
+        summaryFrom?: string;
+        summaryTo?: string;
         search?: string;
         status?: string;
     }>
 }) {
     const rawSearchParams = await props.searchParams;
+    const summaryRange = parseSummaryRange(rawSearchParams.summaryFrom, rawSearchParams.summaryTo);
     const searchParams = {
         centre: Array.isArray(rawSearchParams.centre) ? rawSearchParams.centre[0] : rawSearchParams.centre,
         search: Array.isArray(rawSearchParams.search) ? rawSearchParams.search[0] : rawSearchParams.search,
@@ -81,6 +86,7 @@ export default async function RegistrationsPage(props: {
         // Fetch status counts via aggregation
         const aggWhere = and(
             eq(registrations.organisationId, orgId),
+            summaryRangeSql(registrations.createdAt, summaryRange),
             activeCentreId !== 'all'
                 ? eq(registrations.centreId, activeCentreId)
                 : centreIds.length > 0
@@ -134,6 +140,8 @@ export default async function RegistrationsPage(props: {
 
         if (!searchActiveAndNoResults) {
             const conditions = [eq(registrations.organisationId, orgId)];
+            const periodCondition = summaryRangeSql(registrations.createdAt, summaryRange);
+            if (periodCondition) conditions.push(periodCondition);
 
             if (activeCentreId !== 'all') {
                 conditions.push(eq(registrations.centreId, activeCentreId));
@@ -253,7 +261,8 @@ export default async function RegistrationsPage(props: {
 
             {/* Filters — sticky */}
             <div className="sticky top-16 sm:top-20 z-20 -mx-4 sm:-mx-8 px-4 sm:px-8 py-3 bg-background/80 backdrop-blur-xl border-b border-border">
-                <Suspense fallback={<div className="h-10 animate-pulse bg-slate-800/50 rounded-xl w-full" />}>
+                <SummaryRangeNotice range={summaryRange} basis="Registration forms received" clearHref={`/dashboard/registrations?${new URLSearchParams(Object.entries(searchParams).filter(([key,value]) => typeof value === 'string') as [string,string][])}`}/>
+            <Suspense fallback={<div className="h-10 animate-pulse bg-slate-800/50 rounded-xl w-full" />}>
                     <RegistrationsFilters centres={orgCentres} resultsCount={rows.length} />
                 </Suspense>
             </div>

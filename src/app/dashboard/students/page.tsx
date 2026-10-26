@@ -1,3 +1,5 @@
+import { parseSummaryRange, summaryRangeSql } from '@/features/dashboard/summary-links';
+import SummaryRangeNotice from '@/features/dashboard/SummaryRangeNotice';
 import { enrolmentBusinessDate } from '@/lib/enrolment/business-date';
 import { normalizeFollowUpFilter } from '@/features/students/follow-up-queue';
 import { studentLifecycleStatusSql, studentLastContactSql, studentNextContactSql, studentFollowUpFilterSql, studentFollowUpOrderSql, studentRestartBillingReviewSql } from '@/features/students/lifecycle-queries';
@@ -31,6 +33,8 @@ type StudentsStats = {
 export default async function StudentsPage(props: {
     searchParams: Promise<{
         centre?: string;
+        summaryFrom?: string;
+        summaryTo?: string;
         search?: string;
         year?: string;
         status?: string;
@@ -39,6 +43,7 @@ export default async function StudentsPage(props: {
     }>
 }) {
     const searchParams = await props.searchParams;
+    const summaryRange = parseSummaryRange(searchParams.summaryFrom, searchParams.summaryTo);
     // Student data — TUTOR cannot access (see architecture-decisions.md,
     // "Dashboard authorisation enforcement pattern", and security-p6.test.ts)
     const { session } = await requireAuth({ roles: ['ORG_OWNER', 'MANAGER', 'FRONT_DESK'] });
@@ -92,7 +97,7 @@ export default async function StudentsPage(props: {
         accessibleCentres = await getUserAccessibleCentres(session.user.id);
 
         hasActiveFilters = !!(
-            searchParams.search ||
+            summaryRange || searchParams.search ||
             (searchParams.year && searchParams.year !== 'all') ||
             (searchParams.status && searchParams.status !== 'all') ||
             activeCentreId !== 'all'
@@ -103,6 +108,9 @@ export default async function StudentsPage(props: {
             isNull(children.deletedAt),
             isNull(parents.deletedAt)
         ];
+
+        const periodCondition = summaryRangeSql(children.createdAt, summaryRange);
+        if (periodCondition) conditions.push(periodCondition);
 
         if (activeCentreId !== 'all') {
             conditions.push(eq(children.centreId, activeCentreId));
@@ -406,6 +414,8 @@ export default async function StudentsPage(props: {
             </div>
 
             {/* Toolbar — sticky */}
+            <SummaryRangeNotice range={summaryRange} basis="Student records created" clearHref={`/dashboard/students?${new URLSearchParams(Object.entries(searchParams).filter(([key,value]) => !['summaryFrom','summaryTo','page'].includes(key) && typeof value === 'string') as [string,string][])}`}/>
+
             <div className="sticky top-16 sm:top-20 z-20 -mx-4 sm:-mx-8 px-4 sm:px-8 py-3 bg-page/90 backdrop-blur-sm border-b border-border-subtle">
                 <StudentsFilters
                     centres={accessibleCentres}

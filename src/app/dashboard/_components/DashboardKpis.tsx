@@ -1,11 +1,11 @@
+import { summaryLinks } from '@/features/dashboard/summary-links';
 import { logger } from '@/lib/logger';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { KpiGrid } from '@/components/dashboard/KpiGrid';
-import { getStudentKpis, getBookingKpis, getRegistrationKpis, getWeeklyRegistrations } from '@/lib/dashboard-queries';
-import { subDays, eachWeekOfInterval, isSameDay } from 'date-fns';
+import { getStudentKpis, getBookingKpis, getRegistrationKpis } from '@/lib/dashboard-queries';
 
 export default async function DashboardKpisWidget({
-    orgId,
+    orgId, activeCentreId, userRole,
     childrenCentreCondition,
     bookingsCentreCondition,
     registrationsCentreCondition,
@@ -13,16 +13,14 @@ export default async function DashboardKpisWidget({
     activeStartDate, activeEndDate,
     prevStartDate, prevEndDate,
     targetMonthStart, targetMonthEnd,
-    targetWeekStart, targetWeekEnd,
-    now
+    targetWeekStart, targetWeekEnd
 }: any) {
     let data;
     try {
         data = await Promise.all([
             getStudentKpis(orgId, childrenCentreCondition, activeStartDate.toISOString(), activeEndDate.toISOString(), prevStartDate.toISOString(), prevEndDate.toISOString()),
             getBookingKpis(hasCentres, bookingsCentreCondition, activeStartDate.toISOString(), activeEndDate.toISOString(), prevStartDate.toISOString(), prevEndDate.toISOString(), targetMonthStart.toISOString(), targetMonthEnd.toISOString(), targetWeekStart.toISOString(), targetWeekEnd.toISOString()),
-            getRegistrationKpis(orgId, registrationsCentreCondition, activeStartDate.toISOString(), activeEndDate.toISOString(), prevStartDate.toISOString(), prevEndDate.toISOString(), targetMonthStart.toISOString(), targetMonthEnd.toISOString(), targetWeekStart.toISOString(), targetWeekEnd.toISOString()),
-            getWeeklyRegistrations(orgId, registrationsCentreCondition, now)
+            getRegistrationKpis(orgId, registrationsCentreCondition, activeStartDate.toISOString(), activeEndDate.toISOString(), prevStartDate.toISOString(), prevEndDate.toISOString(), targetMonthStart.toISOString(), targetMonthEnd.toISOString(), targetWeekStart.toISOString(), targetWeekEnd.toISOString())
         ]);
     } catch (e) {
         logger.error('Failed to load KPIs:', e);
@@ -32,8 +30,7 @@ export default async function DashboardKpisWidget({
     const [
         [studentKpis],
         [bookingKpis],
-        [registrationKpis],
-        weeklyRegistrations
+        [registrationKpis]
     ] = data;
 
         const calculateTrend = (curr: any, prev: any) => {
@@ -54,14 +51,10 @@ export default async function DashboardKpisWidget({
         const bookingsTrend = calculateTrend(bookingKpis?.activePeriod, bookingKpis?.prevPeriod);
         const registrationsTrend = calculateTrend(registrationKpis?.activePeriod, registrationKpis?.prevPeriod);
 
-        const weeks = eachWeekOfInterval({ start: subDays(now, 49), end: now }, { weekStartsOn: 1 });
-        const growthStats = weeks.map(w => {
-            const match = weeklyRegistrations.find((d: any) => isSameDay(new Date(d.weekStart), w));
-            return Number(match?.count || 0);
-        });
-
         return (
             <KpiGrid
+                links={summaryLinks(activeCentreId, activeStartDate, activeEndDate)}
+                canOpenPeople={['ORG_OWNER','MANAGER','FRONT_DESK'].includes(userRole)}
                 studentsActive={Number(studentKpis?.activePeriod || 0)}
                 studentsTotal={Number(studentKpis?.total || 0)}
                 bookingsActive={Number(bookingKpis?.activePeriod || 0)}
@@ -72,7 +65,6 @@ export default async function DashboardKpisWidget({
                 studentsTrend={studentsTrend}
                 bookingsTrend={bookingsTrend}
                 registrationsTrend={registrationsTrend}
-                growthStats={growthStats}
             />
         );
 }

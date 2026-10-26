@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import type { summaryLinks } from '@/features/dashboard/summary-links';
 import { GrowthSparkline } from '@/components/dashboard/GrowthSparkline';
 import {
   Users, CalendarCheck, ClipboardList, Clock,
@@ -40,7 +41,9 @@ interface KpiGridProps {
   studentsTrend: Trend;
   bookingsTrend: Trend;
   registrationsTrend: Trend;
-  growthStats: number[];
+  growthStats?: number[];
+  links?: ReturnType<typeof summaryLinks>;
+  canOpenPeople?: boolean;
 }
 
 function formatNumber(n: number): string {
@@ -80,20 +83,20 @@ export function KpiGrid({
   studentsTrend,
   bookingsTrend,
   registrationsTrend,
-  growthStats,
+  links,
+  canOpenPeople = true,
 }: KpiGridProps) {
   const stats: KpiStat[] = [
     {
-      label: 'New Students',
+      label: 'New student records',
       value: studentsActive,
-      subtext: `${formatNumber(studentsTotal)} total enrolled`,
+      subtext: `${formatNumber(studentsTotal)} total student records`,
       icon: Users,
       iconBg: 'bg-accent-soft',
       iconColor: 'text-accent',
       trend: studentsTrend,
-      sparkline: growthStats,
       sparklineColor: 'stroke-accent',
-      href: '/dashboard/students',
+      href: links?.students ?? '/dashboard/students',
     },
     {
       label: 'Bookings',
@@ -108,37 +111,35 @@ export function KpiGrid({
       iconBg: 'bg-page border border-border',
       iconColor: 'text-text-secondary',
       trend: bookingsTrend,
-      sparkline: growthStats,
       sparklineColor: 'stroke-text-muted',
-      href: '/dashboard/bookings',
+      href: links?.bookings ?? '/dashboard/bookings',
     },
     {
-      label: 'New Registrations',
+      label: 'New registration forms',
       value: registrationsActive,
       subtext: `${formatNumber(registrationsTotal)} total registrations`,
       icon: ClipboardList,
       iconBg: 'bg-success-soft',
       iconColor: 'text-success',
       trend: registrationsTrend,
-      sparkline: growthStats,
       sparklineColor: 'stroke-emerald-500',
-      href: '/dashboard/registrations',
+      href: links?.registrations ?? '/dashboard/registrations',
     },
     {
-      label: 'Pending Approval',
+      label: 'Joining confirmations',
       value: pendingRegistrations,
-      subtext: 'Awaiting coordinator review',
+      subtext: 'Awaiting confirmation · all dates',
       icon: Clock,
       iconBg: 'bg-warning-soft',
       iconColor: 'text-warning',
-      href: '/dashboard/registrations?status=awaiting_confirmation',
+      href: links?.pending ?? '/dashboard/registrations?status=awaiting_confirmation',
     },
   ];
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      {stats.map(stat => (
-        <Link key={stat.label} href={stat.href} className="block h-full">
+      {stats.filter(stat => canOpenPeople || stat.label === 'Bookings').map(stat => (
+        <Link key={stat.label} href={stat.href} className="block h-full rounded-xl focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary">
           <Card className="h-full transition-colors hover:border-accent/40">
             <div className="relative p-5 flex flex-col justify-between min-h-[140px]">
               {/* Sparkline watermark */}
@@ -158,7 +159,7 @@ export function KpiGrid({
 
                 <p className="text-metadata flex items-center gap-1.5">
                   {stat.label}
-                  {stat.label === 'Pending Approval' && stat.value > 0 && (
+                  {stat.label === 'Joining confirmations' && stat.value > 0 && (
                     <span className="relative flex h-1.5 w-1.5">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-500 opacity-75"></span>
                       <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-500"></span>
@@ -167,10 +168,12 @@ export function KpiGrid({
                 </p>
 
                 <h3 className="text-financial-total text-text mt-1">{formatNumber(stat.value ?? 0)}</h3>
+                <p className="mt-1 text-xs text-text-muted">{stat.label === 'Joining confirmations' ? 'All dates' : 'Selected dashboard period'}</p>
               </div>
 
               <div className="relative z-10 pt-3 mt-3 border-t border-border-subtle text-xs text-text-muted">
                 {stat.subtext}
+                <span className="mt-1 block text-primary">View matching records →</span>
               </div>
             </div>
           </Card>

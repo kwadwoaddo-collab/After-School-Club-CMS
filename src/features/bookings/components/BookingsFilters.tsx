@@ -64,6 +64,10 @@ export default function BookingsFilters({ centres, resultsCount = 0, statusCount
 
     const applyFilters = (overrides?: { newSearch?: string; newStatus?: string; newFrom?: string; newTo?: string; newToday?: string; newOutcome?: string }) => {
         const params = new URLSearchParams();
+        for (const key of ['summaryFrom', 'summaryTo']) {
+            const value = searchParams.get(key);
+            if (value) params.set(key, value);
+        }
         if (selectedCentreId !== 'all') params.set('centre', selectedCentreId);
         const outcome = overrides?.newOutcome !== undefined ? overrides.newOutcome : searchParams.get('outcome');
         if (outcome === 'required') params.set('outcome', 'required');
