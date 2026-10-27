@@ -14,15 +14,16 @@ describe('daily finance workflow',()=>{
  it('keeps historical and upcoming drafts out of the current work count without deleting them',()=>{
   render(<Workspace invoices={[bill('old','draft','2025-05-22','2025-06-21'),bill('future','draft'),bill('current','draft','2026-10-06','2026-11-05')]} cycles={[]} today="2026-10-25" invoiceError={false} cycleError={false}/>);
   expect(screen.getByRole('button',{name:'Drafts to review 1'})).toBeTruthy();
-  expect(within(screen.getByRole('table',{name:'Current draft invoices'})).getByRole('button',{name:'Review invoice INV-current'})).toBeTruthy();
-  expect(within(screen.getByRole('table',{name:'Current draft invoices'})).queryByRole('button',{name:'Review invoice INV-old'})).toBeNull();
+  expect(within(screen.getByRole('list',{name:'Current draft invoices'})).getByRole('button',{name:'Review invoice INV-current'})).toBeTruthy();
+  expect(within(screen.getByRole('list',{name:'Current draft invoices'})).queryByRole('button',{name:'Review invoice INV-old'})).toBeNull();
   expect(screen.getByText('Historical drafts to check · 1').closest('details')?.hasAttribute('open')).toBe(false);
   fireEvent.click(screen.getByText('Historical drafts to check · 1'));
   expect(screen.getByRole('button',{name:'Review invoice INV-old'})).toBeTruthy();
  });
- it('uses aligned columns and expands review with the invoice’s recorded covered students',()=>{
+ it('retains the optional table and expands review with the invoice’s recorded covered students',()=>{
   const current={...bill('current','draft','2026-10-06','2026-11-05'),coveredChildrenJson:[{id:'child',name:'Recorded Student'}]};
   render(<Workspace invoices={[current]} cycles={[]} today="2026-10-25" invoiceError={false} cycleError={false}/>);
+  fireEvent.click(screen.getByRole('button',{name:'Table'}));
   const table=screen.getByRole('table',{name:'Current draft invoices'});
   expect(within(table).getAllByRole('columnheader')).toHaveLength(6);
   fireEvent.click(screen.getByRole('button',{name:'Review invoice INV-current'}));
@@ -95,4 +96,45 @@ describe('daily finance workflow',()=>{
   mocks.search='centre=centre&task=payments';rerender(<Workspace {...props}/>);
   expect((screen.getByRole('checkbox',{name:'Overdue only'}) as HTMLInputElement).checked).toBe(true);
  });
+ it('defaults to cards, keeps the selected draft prominent and shows older debt separately from a paid previous period',()=>{
+  const previous={...bill('previous','paid','2026-09-06','2026-10-05'),payments:[{id:'paid',amount:'1900',status:'verified',recordedAt:'2026-09-07'}]};
+  const old={...bill('older','sent','2026-08-06','2026-09-05'),amount:'120',payments:[{id:'part',amount:'60',status:'verified',recordedAt:'2026-08-07'}]};
+  const current=bill('current','draft','2026-10-06','2026-11-05');
+  render(<Workspace invoices={[previous,old,current,bill('future','draft','2026-11-06','2026-12-05')]} cycles={[]} today="2026-10-25" invoiceError={false} cycleError={false}/>);
+  expect(screen.getByRole('button',{name:'Cards'}).getAttribute('aria-pressed')).toBe('true');
+  const card=screen.getByRole('article',{name:'INV-current billing card'});
+  expect(within(card).getByText(/Paid in full/)).toBeTruthy();
+  expect(within(card).getByText('£60.00')).toBeTruthy();
+  expect(within(card).getByRole('button',{name:'Review invoice INV-current'})).toBeTruthy();
+  expect(within(card).queryByText('INV-future')).toBeNull();
+  expect(within(card).getByRole('link',{name:'View family invoices'}).getAttribute('href')).toBe('/dashboard/parents/parent');
+  expect(screen.queryByRole('button',{name:'Issue invoice'})).toBeNull();
+ });
+ it('does not reassure that other balances are clear when an issued invoice cannot be reconciled',()=>{
+  const bad={...bill('bad','paid','2026-08-06','2026-09-05'),payments:[]};
+  render(<Workspace invoices={[bill('current','draft','2026-10-06','2026-11-05'),bad]} cycles={[]} today="2026-10-25" invoiceError={false} cycleError={false}/>);
+  expect(within(screen.getByRole('article',{name:'INV-current billing card'})).getByText('Other issued balances need checking.')).toBeTruthy();
+ });
+ it('uses verified unreversed money for remaining balance and warns about pending payment',()=>{
+  const invoice={...bill('pay','sent','2026-10-06','2026-11-05'),payments:[{id:'verified',amount:'100',status:'verified',recordedAt:'2026-10-07'},{id:'reversed',amount:'200',status:'verified',reversedAt:'2026-10-08',recordedAt:'2026-10-07'},{id:'pending',amount:'50',status:'pending',recordedAt:'2026-10-07'}]};
+  mocks.search='centre=centre&task=payments';
+  render(<Workspace invoices={[invoice]} cycles={[]} today="2026-10-25" invoiceError={false} cycleError={false}/>);
+  const card=screen.getByRole('article',{name:'INV-pay billing card'});
+  expect(within(card).getByText('£1,800.00')).toBeTruthy();
+  expect(within(card).getByText(/Payment awaiting verification/)).toBeTruthy();
+  fireEvent.click(within(card).getByRole('button',{name:'Record payment for INV-pay'}));
+  expect(screen.getByRole('dialog').textContent).toContain('1800');
+ });
+ it('puts overlap reasons on attention cards and offers review rather than issuance',()=>{
+  const first={...bill('first','draft','2026-10-06','2026-11-05'),billingConfigId:'config'};
+  const second={...bill('second','sent','2026-10-06','2026-11-05'),billingConfigId:'config'};
+  mocks.search='centre=centre&task=attention';
+  render(<Workspace invoices={[first,second]} cycles={[]} today="2026-10-25" invoiceError={false} cycleError={false}/>);
+  const card=screen.getByRole('article',{name:'INV-first billing card'});
+  expect(within(card).getByText('Another invoice overlaps this billing period.')).toBeTruthy();
+  fireEvent.click(within(card).getByRole('button',{name:'Review problem INV-first'}));
+  expect(screen.getByRole('link',{name:'Open draft to check details'})).toBeTruthy();
+  expect(screen.queryByRole('link',{name:'Open draft to issue'})).toBeNull();
+ });
+
 });
