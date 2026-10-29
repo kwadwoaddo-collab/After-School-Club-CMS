@@ -12,7 +12,7 @@ Centre owners, managers and authorised staff operate the After School Club CMS.
 Manage the daily administration of after school centres, including families, students, attendance and finance.
 
 ## Capabilities and Constraints
-Centre-specific Documents lets staff find and download a small collection of PDF files. Owners and managers manage files; other authorised centre staff view and download them. Preserve centre and organisation isolation. Financial communications require a separate deliberate Send action. Existing billing and attendance workflows remain outside this feature.
+Centre-specific Documents lets staff organise a small collection of PDF files in nested subfolders and download them. Owners and managers manage files; other authorised centre staff view and download them. Preserve centre and organisation isolation. Financial communications require a separate deliberate Send action. Existing billing and attendance workflows remain outside this feature.
 
 ## Product Principles
 - Make common staff tasks easy to find and complete.

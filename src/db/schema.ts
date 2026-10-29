@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, text, timestamp, pgEnum, boolean, integer, unique, numeric, index, date, uniqueIndex, jsonb, customType } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, text, timestamp, pgEnum, boolean, integer, unique, numeric, index, date, uniqueIndex, jsonb, customType, foreignKey } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
 
 // ==================== DISCOUNT RULE TYPE ====================
@@ -1488,9 +1488,23 @@ export const bookingEmailProviderState = pgTable('booking_email_provider_state',
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
+// Centre-scoped folder tree. Folder moves are deliberately unsupported, preventing cycles.
+export const centreDocumentFolders = pgTable('centre_document_folders', {
+ id: uuid('id').defaultRandom().primaryKey(),
+ organisationId: uuid('organisation_id').references(() => organisations.id).notNull(),
+ centreId: uuid('centre_id').references(() => centres.id).notNull(),
+ parentId: uuid('parent_id'),
+ name: varchar('name', { length: 120 }).notNull(),
+ version: integer('version').default(1).notNull(),
+ createdBy: uuid('created_by').references(() => users.id).notNull(),
+ updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+ removedAt: timestamp('removed_at', { withTimezone: true }),
+}, table => ({ centreIdx: index('centre_document_folders_centre_idx').on(table.organisationId, table.centreId), scopeUnique: unique('centre_document_folders_scope_unique').on(table.id, table.centreId, table.organisationId), parentScope: foreignKey({ name: 'centre_document_folders_parent_scope', columns: [table.parentId, table.centreId, table.organisationId], foreignColumns: [table.id, table.centreId, table.organisationId] }) }));
+
 // Private centre documents; payload is omitted from folder listings.
 const documentBytes = customType<{ data: Buffer; driverData: Buffer }>({ dataType: () => 'bytea' });
 export const centreDocuments = pgTable('centre_documents', {
+ folderId: uuid('folder_id'),
  id: uuid('id').defaultRandom().primaryKey(),
  organisationId: uuid('organisation_id').references(() => organisations.id).notNull(),
  centreId: uuid('centre_id').references(() => centres.id).notNull(),
@@ -1502,4 +1516,4 @@ export const centreDocuments = pgTable('centre_documents', {
  createdBy: uuid('created_by').references(() => users.id).notNull(),
  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
  removedAt: timestamp('removed_at', { withTimezone: true }),
-}, table => ({ centreIdx: index('centre_documents_centre_idx').on(table.organisationId, table.centreId) }));
+}, table => ({ centreIdx: index('centre_documents_centre_idx').on(table.organisationId, table.centreId), folderScope: foreignKey({ name: 'centre_documents_folder_scope', columns: [table.folderId, table.centreId, table.organisationId], foreignColumns: [centreDocumentFolders.id, centreDocumentFolders.centreId, centreDocumentFolders.organisationId] }) }));
