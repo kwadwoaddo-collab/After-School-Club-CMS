@@ -1,5 +1,7 @@
 'use client';
 
+import {CorrectPaymentDialog} from './CorrectPaymentDialog';
+import {correctableMethods} from '../domain/payment-correction';
 import { format } from 'date-fns';
 import { useToast } from '@/components/ui/ToastProvider';
 import { CreditCard, Landmark, Ticket, HelpCircle, Check, X, Clock, AlertCircle, RotateCcw } from 'lucide-react';
@@ -16,15 +18,18 @@ interface Payment {
     recordedAt: Date | string;
     reversalReason?: string | null;
     reversedAt?: Date | string | null;
+    correctionHistory?:{id:string;at:Date|string;reason:string;from:string;to:string}[];
 }
 
 interface PaymentHistoryListProps {
     payments: Payment[];
     canReverse?: boolean;
+    canCorrect?:boolean;
     onPaymentReversed?: () => void;
 }
 
-export default function PaymentHistoryList({ payments, canReverse, onPaymentReversed }: PaymentHistoryListProps) {
+export default function PaymentHistoryList({ payments, canReverse, canCorrect=canReverse, onPaymentReversed }: PaymentHistoryListProps) {
+    const [correcting,setCorrecting]=useState<Payment|null>(null);
     const [processingId, setProcessingId] = useState<string | null>(null);
     const [reversalModalPayment, setReversalModalPayment] = useState<Payment | null>(null);
     const [reversalReason, setReversalReason] = useState('');
@@ -167,7 +172,7 @@ export default function PaymentHistoryList({ payments, canReverse, onPaymentReve
                             <td className="px-6 py-5 text-right">
                                 <span className={`text-sm font-black ${payment.status === 'failed' || payment.status === 'reversed' ? 'text-muted-foreground line-through' : 'text-foreground'}`}>
                                     £{Number(payment.amount).toFixed(2)}
-                                </span>
+                                </span>{!!payment.correctionHistory?.length&&<details className="mt-2 text-left text-sm"><summary className="min-h-11 cursor-pointer py-3 text-primary">Correction history</summary>{payment.correctionHistory.map(c=><p key={c.id} className="my-2 text-muted-foreground">{new Date(c.from).toLocaleDateString('en-GB',{timeZone:'Europe/London'})} → {new Date(c.to).toLocaleDateString('en-GB',{timeZone:'Europe/London'})}. {c.reason} · {new Date(c.at).toLocaleString('en-GB',{timeZone:'Europe/London'})}</p>)}</details>}
                             </td>
                             <td className="px-6 py-5 text-right">
                                 {payment.status === 'pending' && (
@@ -191,17 +196,18 @@ export default function PaymentHistoryList({ payments, canReverse, onPaymentReve
                                     </div>
                                 )}
                                 {payment.status === 'verified' && canReverse && (
-                                    <div className="flex items-center justify-end gap-2 mt-2">
+                                    <div className="flex flex-wrap items-center justify-end gap-2 mt-2">
+                                        {canCorrect&&correctableMethods.includes(payment.method)&&<button onClick={()=>setCorrecting(payment)} className="min-h-11 rounded-lg border border-border px-3 py-2 text-sm font-semibold text-primary">Correct payment details</button>}
                                         <button
                                             onClick={() => {
                                                 setReversalModalPayment(payment);
                                                 setReversalReason('');
                                             }}
                                             disabled={processingId === payment.id || isReversingId === payment.id}
-                                            className="p-2 rounded-lg bg-slate-500/10 text-slate-500 hover:bg-slate-500/20 transition-colors disabled:opacity-50"
+                                            className="inline-flex min-h-11 items-center gap-2 px-3 py-2 rounded-lg bg-slate-500/10 text-slate-500 hover:bg-slate-500/20 transition-colors disabled:opacity-50"
                                             title="Reverse Payment"
                                         >
-                                            <RotateCcw className="w-4 h-4" />
+                                            <RotateCcw className="w-4 h-4" /><span className="text-sm">Reverse payment entry</span>
                                         </button>
                                     </div>
                                 )}
@@ -210,14 +216,16 @@ export default function PaymentHistoryList({ payments, canReverse, onPaymentReve
                     ))}
                 </tbody>
             </table>
+            {correcting&&<CorrectPaymentDialog payment={correcting} onClose={()=>setCorrecting(null)} onSaved={()=>{setCorrecting(null);router.refresh();onPaymentReversed?.();toast({title:'Payment corrected',message:'The date/reference is saved. Your paid balance is unchanged. Open Receipt to download the corrected receipt.',variant:'success'});}}/>}
             {reversalModalPayment && (
                 <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                     <div className="bg-card border border-border rounded-[32px] p-8 max-w-md w-full shadow-2xl relative">
                         <div className="absolute top-0 right-0 w-32 h-32 bg-slate-500/10 rounded-full blur-[40px]" />
 
                         <div className="relative">
-                            <h3 className="text-xl font-black text-foreground mb-6">Reverse this payment?</h3>
+                            <h3 className="text-xl font-black text-foreground mb-6">Reverse this payment entry?</h3>
 
+                            <p className="mb-4 text-sm text-muted-foreground">This removes the entry from paid totals and can reopen the invoice. It does not refund money. For a date or reference typo, use Correct payment details.</p>
                             <div className="bg-secondary/40 rounded-xl p-4 mb-6 space-y-2 border border-border">
                                 <div className="flex justify-between text-sm">
                                     <span className="text-muted-foreground font-medium">Amount:</span>

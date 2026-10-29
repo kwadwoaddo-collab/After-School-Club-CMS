@@ -183,14 +183,11 @@ function FamilyBillingCard({ cycle, onGenerated }: { cycle: BillingCycleRow; onG
                 {/* Actions */}
                 <div className="px-5 pb-4 pt-1 flex gap-2">
                     <button
-                        onClick={() => cycle.coveredChildren[0]
-                            ? router.push(`/dashboard/students/${cycle.coveredChildren[0].childId}`)
-                            : null
-                        }
+                        onClick={() => router.push(`/dashboard/parents/${cycle.config.parentId}?billing=setup`)}
                         className="flex-1 h-10 rounded-xl bg-secondary/80 text-foreground text-xs font-bold hover:bg-secondary border border-border/50 transition-all flex items-center justify-center gap-1.5 active:scale-95"
                     >
                         <Settings2 className="w-3.5 h-3.5" />
-                        Profile
+                        Family billing
                     </button>
                     {cycle.cycleStatus === 'skipped' ? (
                         <button

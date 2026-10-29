@@ -661,6 +661,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                         <h3 className="text-xl font-bold text-foreground px-2">Payment Reconciliation Ledger</h3>
                         <PaymentHistoryList
                             payments={invoice.payments}
+                            canCorrect={invoice.status!=='void'&&(userRole==='ORG_OWNER'||userRole==='MANAGER')}
                             canReverse={userRole === 'ORG_OWNER' || userRole === 'MANAGER'}
                             onPaymentReversed={() => router.refresh()}
                         />

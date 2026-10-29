@@ -659,7 +659,11 @@ export async function getInvoiceDetails(invoiceId: string) {
         if (match) childDisplayName = match[1].trim();
     }
 
-    return { ...result, childDisplayName, emailStatus: await readInvoiceEmailStatus(invoiceId, orgId) };
+    const corrections=await db.query.auditEvents.findMany({where:and(eq(auditEvents.organisationId,orgId),eq(auditEvents.eventType,'payment_details_corrected'),sql`event_data::jsonb->>'invoiceId' = ${invoiceId}`),orderBy:(events,{asc})=>[asc(events.createdAt),asc(events.id)]});
+    const originalDates=new Map<string,string>();
+    const correctionHistory=new Map<string,{id:string;at:Date;reason:string;from:string;to:string}[]>();
+    for(const correction of corrections){try{const event=JSON.parse(correction.eventData??'{}');if(typeof event.paymentId==='string'&&typeof event.previousRecordedAt==='string'){if(!originalDates.has(event.paymentId))originalDates.set(event.paymentId,event.previousRecordedAt);const history=correctionHistory.get(event.paymentId)??[];history.push({id:correction.id,at:correction.createdAt,reason:event.reason,from:event.previousRecordedAt,to:event.correctedRecordedAt});correctionHistory.set(event.paymentId,history);}}catch{/* Historical malformed metadata does not alter payment values. */}}
+    return { ...result,payments:result.payments.map(p=>({...p,receiptIdentityDate:originalDates.get(p.id)??p.recordedAt,correctionHistory:correctionHistory.get(p.id)??[]})), childDisplayName, emailStatus: await readInvoiceEmailStatus(invoiceId, orgId) };
 }
 
 export interface RecordPaymentParams {

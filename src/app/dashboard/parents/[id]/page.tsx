@@ -2,8 +2,10 @@
 import { requireAuth } from '@/lib/require-auth';
 import { notFound } from 'next/navigation';
 import { db } from '@/db';
-import { parents, children, invoices, payments } from '@/db/schema';
-import { eq, desc, and } from 'drizzle-orm';
+import { parents, children, invoices, payments, billingConfigs } from '@/db/schema';
+import { eq, desc, and, inArray } from 'drizzle-orm';
+import { getUserAccessibleCentres } from '@/lib/permissions';
+import type { ParentBillingGroup } from '@/features/billing/components/ParentBillingSection';
 import ParentProfileClient from './ParentProfileClient';
 import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
@@ -17,10 +19,12 @@ import { logger } from '@/lib/logger';
 
 interface ParentPageProps {
     params: Promise<{ id: string }>;
+    searchParams?: Promise<{billing?: string}>;
 }
 
-export default async function ParentProfilePage({ params }: ParentPageProps) {
+export default async function ParentProfilePage({ params, searchParams }: ParentPageProps) {
     const { id } = await params;
+    const openBilling=(await searchParams)?.billing==='setup';
     // Same role rule as the Parents list and the rest of the People module —
     // see project-notes/milestone-3b-parents-audit.md §4. Previously this
     // page only checked for a session, so any authenticated org member
@@ -40,6 +44,15 @@ export default async function ParentProfilePage({ params }: ParentPageProps) {
     });
 
     if (!parent) return notFound();
+
+    const accessibleCentres=await getUserAccessibleCentres(session.user.id);
+    const canManageBilling=['ORG_OWNER','MANAGER'].includes((session.user as any).role);
+    const plans=canManageBilling&&accessibleCentres.length?await db.query.billingConfigs.findMany({where:and(eq(billingConfigs.parentId,id),eq(billingConfigs.organisationId,organisationId),inArray(billingConfigs.centreId,accessibleCentres.map(c=>c.id))),with:{children:{with:{child:true}}}}):[];
+    const billingGroups:ParentBillingGroup[]=canManageBilling?accessibleCentres.map(centre=>{
+      const siblings=parent.children.filter(c=>!c.deletedAt&&c.organisationId===organisationId&&c.centreId===centre.id).map(c=>({id:c.id,firstName:c.firstName,lastName:c.lastName}));
+      const config=plans.find(p=>p.centreId===centre.id);
+      return {centreId:centre.id,centreName:centre.name,siblings,config:config?{id:config.id,parentId:config.parentId,centreId:config.centreId,agreedMonthlyPence:config.agreedMonthlyPence,billingAnchorDate:config.billingAnchorDate,billingEndDate:config.billingEndDate??null,invoiceLeadDays:config.invoiceLeadDays,paymentDayOfMonth:config.paymentDayOfMonth,leadTimeUnit:config.leadTimeUnit,leadTimeValue:config.leadTimeValue,status:config.status,notes:config.notes,coveredChildren:config.children.filter(c=>c.child&&!c.child.deletedAt&&c.child.organisationId===organisationId&&c.child.parentId===id&&c.child.centreId===centre.id).map(c=>({childId:c.child.id,childName:c.child.firstName+' '+c.child.lastName}))}:null};
+    }).filter(g=>g.siblings.length||g.config):[];
 
     // 2. Fetch Family Invoices (Consolidated Ledger)
     const familyInvoices = await db.query.invoices.findMany({
@@ -141,6 +154,10 @@ export default async function ParentProfilePage({ params }: ParentPageProps) {
             {/* ── Tabs & tab content ──────────────────────────────────────── */}
             <ParentProfileClient
                 parent={parent}
+                billingGroups={billingGroups}
+                canManageBilling={canManageBilling}
+                orgId={organisationId}
+                openBilling={openBilling}
                 invoices={familyInvoices}
                 stats={{
                     totalOwed,

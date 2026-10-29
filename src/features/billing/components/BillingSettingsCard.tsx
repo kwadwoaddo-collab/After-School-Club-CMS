@@ -23,6 +23,8 @@ interface Sibling {
 interface Props {
     // The student this card is on
     childId:  string;
+    startEditing?:boolean;
+    familySurface?:boolean;
     parentId: string;
     centreId: string;
     orgId:    string;
@@ -131,6 +133,7 @@ function EditForm({
     existingConfig,
     onCancel,
     onSaved,
+    familySurface=false,
 }: Props & { onCancel: () => void; onSaved: () => void }) {
     const isNew = !existingConfig;
 
@@ -213,7 +216,7 @@ function EditForm({
             {/* Monthly fee */}
             <div>
                 <label className="text-label text-text-muted block mb-1.5">
-                    Agreed Monthly Fee
+                    Monthly family fee (£)
                 </label>
                 <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted font-medium text-small-body">£</span>
@@ -356,7 +359,7 @@ function EditForm({
 
             {(error || problem) && <div role="alert" className="flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-3 text-sm text-foreground">
                 <AlertTriangle aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0"/>
-                <div>{problem ? <><p className="font-semibold">{problem.title}</p><p className="mt-1">{problem.message}</p>{problem.reviewEnrolment && <a href="#main-content" className="mt-2 inline-flex min-h-10 items-center font-medium text-primary underline">Review enrolment at top of profile</a>}{problem.reference && <p className="mt-2 text-xs text-muted-foreground">Support reference: {problem.reference}</p>}</> : <p>{error}</p>}</div>
+                <div>{problem ? <><p className="font-semibold">{problem.title}</p><p className="mt-1">{problem.message}</p>{problem.reviewEnrolment && <a href={familySurface?'#family-enrolment-links':'#main-content'} className="mt-2 inline-flex min-h-10 items-center font-medium text-primary underline">{familySurface?'Review the students’ enrolment using the links below':'Review enrolment at top of profile'}</a>}{problem.reference && <p className="mt-2 text-xs text-muted-foreground">Support reference: {problem.reference}</p>}</> : <p>{error}</p>}</div>
             </div>}
 
             {/* Actions */}
@@ -368,7 +371,7 @@ function EditForm({
                     {isPending ? (
                         <><span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />Saving…</>
                     ) : (
-                        <><Check className="w-4 h-4" />{isNew ? 'Set Up Billing' : 'Save Changes'}</>
+                        <><Check className="w-4 h-4" />{familySurface?'Save billing cycle':isNew ? 'Set Up Billing' : 'Save Changes'}</>
                     )}
                 </Button>
             </div>
@@ -443,9 +446,11 @@ export default function BillingSettingsCard({
     orgId,
     siblings,
     existingConfig,
+    startEditing=false,
+    familySurface=false,
 }: Props) {
     const router = useRouter();
-    const [isEditing, setIsEditing] = useState(false);
+    const [isEditing, setIsEditing] = useState(startEditing&&!isQuarantinedParentId(parentId));
     const isQuarantined = isQuarantinedParentId(parentId);
 
     const handleSaved = () => {
@@ -487,6 +492,7 @@ export default function BillingSettingsCard({
                         orgId={orgId}
                         siblings={siblings}
                         existingConfig={existingConfig}
+                        familySurface={familySurface}
                         onCancel={() => setIsEditing(false)}
                         onSaved={handleSaved}
                     />
@@ -519,7 +525,7 @@ export default function BillingSettingsCard({
                         <p className="text-metadata mb-3">Set an agreed monthly fee for this family</p>
                         <Button onClick={() => setIsEditing(true)} className="w-full">
                             <PoundSterling className="w-4 h-4" />
-                            Set Up Family Billing
+                            {familySurface?'Set up billing cycle':'Set Up Family Billing'}
                         </Button>
                     </div>
                 )}
