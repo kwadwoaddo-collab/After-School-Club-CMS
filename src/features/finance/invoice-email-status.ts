@@ -5,7 +5,7 @@ import { emailService } from '@/lib/services/email';
 import { logger } from '@/lib/logger';
 
 export type InvoiceEmailStatus = {
-    status: 'sending' | 'accepted' | 'failed' | 'no_address' | 'unknown';
+    status: 'not_requested' | 'sending' | 'accepted' | 'failed' | 'no_address' | 'unknown';
     attemptedAt: string;
 };
 
@@ -19,7 +19,7 @@ export async function readInvoiceEmailStatus(invoiceId: string, organisationId: 
         });
         if (!event?.eventData) return null;
         const data = JSON.parse(event.eventData);
-        if (!['sending', 'accepted', 'failed', 'no_address', 'unknown'].includes(data.status) || typeof data.attemptedAt !== 'string') return null;
+        if (!['not_requested', 'sending', 'accepted', 'failed', 'no_address', 'unknown'].includes(data.status) || typeof data.attemptedAt !== 'string') return null;
         return { status: data.status, attemptedAt: data.attemptedAt };
     } catch (error) {
         logger.error('[Invoice email] Status unavailable', error);

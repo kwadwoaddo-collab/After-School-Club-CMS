@@ -431,6 +431,28 @@ describe('Category C — Payment Reversal Scenarios', () => {
         });
     });
 
+    describe('manual-only payment communications', () => {
+        it.each(['verify', 'fail'])('%s updates the payment without emailing the parent', async action => {
+            const {auth} = await import('@/lib/auth');
+            const {emailService} = await import('@/lib/services/email');
+            vi.mocked(auth).mockResolvedValue(OWNER_SESSION as never);
+            const tx = {
+                query: {
+                    payments: {findFirst: async()=>({id:'pay-1',amount:'600.00',status:'pending',invoiceId:'inv-1',invoice:{id:'inv-1',organisationId:'org-1',centreId:'c-1',status:'partially_paid',invoiceNumber:'INV-1',amount:'600.00',parentId:'p-1'}}),findMany:async()=> action==='verify'?[{status:'verified',amount:'600.00'}]:[]},
+                    invoices: {findFirst:async()=>({id:'inv-1',status:'partially_paid',amount:'600.00'})},
+                    parents: {findFirst:async()=>({firstName:'Example',email:'example@example.test'})},
+                },
+                update:vi.fn().mockReturnValue({set:vi.fn().mockReturnValue({where:vi.fn().mockResolvedValue([])})}),
+                insert:vi.fn().mockReturnValue({values:vi.fn().mockResolvedValue([])}),
+            };
+            dbTransaction.mockImplementationOnce((cb:(tx:unknown)=>unknown)=>cb(tx));
+            expect(await (action==='verify'?verifyPayment('pay-1'):failPayment('pay-1'))).toMatchObject({success:true});
+            expect(emailService.sendVoucherPaymentVerified).not.toHaveBeenCalled();
+            expect(emailService.sendVoucherPaymentFailed).not.toHaveBeenCalled();
+            expect(emailService.sendPaymentReceiptEmail).not.toHaveBeenCalled();
+        });
+    });
+
     // ──────────────────────────────────────────────────────────────────────────
     // H. RBAC
     // ──────────────────────────────────────────────────────────────────────────

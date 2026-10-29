@@ -1,5 +1,6 @@
 'use client';
 
+import SendReceiptButton from './SendReceiptButton';
 import {CorrectPaymentDialog} from './CorrectPaymentDialog';
 import {correctableMethods} from '../domain/payment-correction';
 import { format } from 'date-fns';
@@ -18,6 +19,7 @@ interface Payment {
     recordedAt: Date | string;
     reversalReason?: string | null;
     reversedAt?: Date | string | null;
+    receiptEmailStatus?:{status:string;at:Date|string}|null;
     correctionHistory?:{id:string;at:Date|string;reason:string;from:string;to:string}[];
 }
 
@@ -25,10 +27,12 @@ interface PaymentHistoryListProps {
     payments: Payment[];
     canReverse?: boolean;
     canCorrect?:boolean;
+    canSendReceipt?: boolean;
+    receiptRecipient?: string;
     onPaymentReversed?: () => void;
 }
 
-export default function PaymentHistoryList({ payments, canReverse, canCorrect=canReverse, onPaymentReversed }: PaymentHistoryListProps) {
+export default function PaymentHistoryList({ payments, canReverse, canCorrect=canReverse, canSendReceipt=false, receiptRecipient='', onPaymentReversed }: PaymentHistoryListProps) {
     const [correcting,setCorrecting]=useState<Payment|null>(null);
     const [processingId, setProcessingId] = useState<string | null>(null);
     const [reversalModalPayment, setReversalModalPayment] = useState<Payment | null>(null);
@@ -197,6 +201,7 @@ export default function PaymentHistoryList({ payments, canReverse, canCorrect=ca
                                 )}
                                 {payment.status === 'verified' && canReverse && (
                                     <div className="flex flex-wrap items-center justify-end gap-2 mt-2">
+                                        {canSendReceipt && <SendReceiptButton paymentId={payment.id} recipient={receiptRecipient} recordedStatus={payment.receiptEmailStatus?.status} />}
                                         {canCorrect&&correctableMethods.includes(payment.method)&&<button onClick={()=>setCorrecting(payment)} className="min-h-11 rounded-lg border border-border px-3 py-2 text-sm font-semibold text-primary">Correct payment details</button>}
                                         <button
                                             onClick={() => {

@@ -80,3 +80,12 @@ Commit and push immediately after each fix with a clear, descriptive commit mess
 | Glassmorphic card | `glassmorphic-card` CSS class |
 
 All pages must match the dashboard's premium dark glassmorphism aesthetic.
+
+## Financial communications — deliberate sending only
+
+Issuing an invoice, recording/verifying/failing a payment, generating a receipt,
+or correcting financial details must never automatically email or notify a parent.
+Do not schedule invoice-reminder emails. Keep internal staff notifications separate.
+Invoice and receipt emails require an explicit staff Send action. Issued status
+and PDF generation do not imply that anything was sent. Preserve this rule with
+regression tests; do not reintroduce automatic sending during a refactor.

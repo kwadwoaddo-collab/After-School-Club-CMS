@@ -56,6 +56,7 @@ vi.mock('@/db', () => ({
             centres: { findFirst: (...args: unknown[]) => centresFindFirst(...args) },
             parents: { findFirst: (...args: unknown[]) => parentsFindFirst(...args) },
             invoices: { findFirst: (...args: unknown[]) => invoicesFindFirst(...args) },
+            auditEvents: { findMany: vi.fn().mockResolvedValue([]), findFirst: vi.fn().mockResolvedValue(null) },
             billingConfigs: { findFirst: (...args: unknown[]) => billingConfigsFindFirst(...args) },
         },
         select: vi.fn(() => ({
@@ -327,6 +328,7 @@ describe('finance/actions — getInvoiceDetails authorization (Milestone 3G, L2b
             centreId: 'centre-target',
             child: null,
             coveredChildrenJson: null,
+            payments: [],
             notes: null,
         });
 
@@ -345,6 +347,7 @@ describe('finance/actions — getInvoiceDetails authorization (Milestone 3G, L2b
             centreId: 'centre-target',
             child: null,
             coveredChildrenJson: null,
+            payments: [],
             notes: null,
         });
 
@@ -546,6 +549,6 @@ describe('finance/actions — deleteInvoice safety rules (§11)', () => {
         const { resendInvoiceEmail } = await import('./actions');
         const res = await resendInvoiceEmail('inv-1');
         expect(res.success).toBe(false);
-        expect(res.error).toMatch(/Cannot resend a draft invoice/);
+        expect(res.error).toMatch(/Issue the draft first/);
     });
 });

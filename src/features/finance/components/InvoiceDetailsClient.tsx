@@ -59,7 +59,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
             const result = await issueDraftInvoice(invoice.id);
             if (result.emailStatus) setEmailStatus(result.emailStatus);
             setConfirmIssue(false);
-            toast({ title: result.alreadyIssued ? 'Invoice was already issued' : 'Invoice issued', message: result.emailStatus?.status === 'accepted' ? 'Email accepted by the sending service. Inbox delivery is not confirmed.' : 'Email delivery is not confirmed. Check email status before retrying; do not issue again.', variant: 'success' });
+            toast({ title: result.alreadyIssued ? 'Invoice was already issued' : 'Invoice issued', message: 'No email was sent by this action. Use Send invoice by email when you are ready.', variant: 'success' });
             router.refresh();
         } catch (err) {
             const message = err instanceof Error ? err.message : String(err);
@@ -271,7 +271,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                                 disabled={isPending || isIssuingDraft || Number(invoice.amount) <= 0}
                                 onClick={() => setConfirmIssue(true)}
                                 className="flex items-center gap-2 px-6 py-2.5 bg-primary rounded-xl text-sm font-bold text-white hover:bg-primary/90 transition-all shadow-lg shadow-primary/30 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                                title={Number(invoice.amount) <= 0 ? "Amount must be greater than £0.00 to issue" : "Issue invoice to parent"}
+                                title={Number(invoice.amount) <= 0 ? "Amount must be greater than £0.00 to issue" : "Issue invoice without emailing"}
                             >
                                 {isIssuingDraft ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                                 Issue Invoice
@@ -323,7 +323,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                                     className="flex items-center gap-2 px-5 py-2.5 bg-blue-500/10 border border-blue-500/20 rounded-xl text-sm font-bold text-blue-600 hover:bg-blue-500/20 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     {isSendingEmail ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                                    {isSendingEmail ? 'Sending…' : 'Resend email'}
+                                    {isSendingEmail ? 'Sending…' : 'Send invoice by email'}
                                 </button>
                             )}
                             {userRole === 'ORG_OWNER' && invoice.status !== 'void' && (
@@ -651,9 +651,9 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
 
                     {invoice.status !== 'draft' && <section aria-label="Invoice email status" className="rounded-xl border border-border bg-card p-4 text-sm">
                         <h3 className="font-semibold">Invoice email status</h3>
-                        <p role="status" className="mt-1">{emailStatus?.status === 'accepted' ? 'Accepted by email service — inbox delivery not confirmed.' : emailStatus?.status === 'failed' ? 'Email was not sent because the sending service is not configured. The invoice remains issued.' : emailStatus?.status === 'no_address' ? 'Not sent — no parent email address recorded.' : emailStatus?.status === 'sending' ? 'Sending attempt recorded — outcome not confirmed. Check before retrying.' : 'Email outcome not confirmed. Check communication history before retrying.'}</p>
+                        <p role="status" className="mt-1">{emailStatus?.status === 'not_requested' ? 'Not sent — sending has not been requested.' : emailStatus?.status === 'accepted' ? 'Accepted by email service — inbox delivery not confirmed.' : emailStatus?.status === 'failed' ? 'Email was not sent because the sending service is not configured. The invoice remains issued.' : emailStatus?.status === 'no_address' ? 'Not sent — no parent email address recorded.' : emailStatus?.status === 'sending' ? 'Sending attempt recorded — outcome not confirmed. Check before retrying.' : 'Email outcome not confirmed. Check communication history before retrying.'}</p>
                         {emailStatus?.attemptedAt && <p className="mt-1 text-muted-foreground">Last attempt: {new Date(emailStatus.attemptedAt).toLocaleString('en-GB', { timeZone: 'Europe/London' })} (UK time)</p>}
-                        <p className="mt-2 text-muted-foreground">Use Resend email for a deliberate new attempt, or download the PDF to share manually. Sending again does not create another invoice.</p>
+                        <p className="mt-2 text-muted-foreground">Use Send invoice by email for a deliberate sending attempt, or download the PDF to share manually. Sending again does not create another invoice.</p>
                     </section>}
 
                     {/* Payment History Section */}
@@ -661,6 +661,8 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                         <h3 className="text-xl font-bold text-foreground px-2">Payment Reconciliation Ledger</h3>
                         <PaymentHistoryList
                             payments={invoice.payments}
+                            canSendReceipt={invoice.status !== 'void' && invoice.status !== 'draft' && (userRole === 'ORG_OWNER' || userRole === 'MANAGER')}
+                            receiptRecipient={invoice.parent?.email || invoice.child?.parent?.email || ''}
                             canCorrect={invoice.status!=='void'&&(userRole==='ORG_OWNER'||userRole==='MANAGER')}
                             canReverse={userRole === 'ORG_OWNER' || userRole === 'MANAGER'}
                             onPaymentReversed={() => router.refresh()}

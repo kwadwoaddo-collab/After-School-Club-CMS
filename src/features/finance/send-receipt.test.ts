@@ -1,0 +1,19 @@
+import {beforeEach,describe,it,expect,vi} from 'vitest';
+const m=vi.hoisted(()=>({session:vi.fn(),from:vi.fn(),send:vi.fn(),audit:vi.fn(),transaction:vi.fn()}));
+vi.mock('@/lib/session',()=>({requireTenantSession:m.session}));
+vi.mock('next/cache',()=>({revalidatePath:vi.fn()}));
+vi.mock('@/lib/services/email',()=>({emailService:{sendPaymentReceiptEmail:m.send}}));
+vi.mock('@/db',()=>({db:{transaction:m.transaction,insert:()=>({values:m.audit})}}));
+import {sendReceiptEmail} from './send-receipt';
+const paymentId='11111111-1111-4111-8111-111111111111',requestId='22222222-2222-4222-8222-222222222222';
+const input={paymentId,requestId,expectedRecipient:'parent@example.test'};
+function rows(value:unknown[]){const p=Promise.resolve(value);return {where:()=>Object.assign(p,{for:()=>p,orderBy:()=>p})};}
+beforeEach(()=>{vi.resetAllMocks();m.session.mockResolvedValue({user:{id:'owner',organisationId:'org'}});m.from.mockReturnValueOnce(rows([{role:'ORG_OWNER'}])).mockReturnValueOnce(rows([{id:paymentId,invoiceId:'invoice',status:'verified',amount:'100.00',recordedAt:new Date('2026-10-26')}])).mockReturnValueOnce(rows([{id:'invoice',parentId:'parent',centreId:'centre',status:'paid',invoiceNumber:'INV-1'}])).mockReturnValueOnce(rows([{email:'parent@example.test',firstName:'Example'}])).mockReturnValueOnce(rows([])).mockReturnValueOnce(rows([{name:'Centre'}]));m.audit.mockResolvedValue([]);m.send.mockResolvedValue({success:true,messageId:'provider'});m.transaction.mockImplementation(async fn=>fn({execute:vi.fn(),select:()=>({from:m.from}),insert:()=>({values:m.audit})}));});
+describe('explicit receipt sender boundary',()=>{
+ it('uses verified stored payment and audited deliberate request before provider sending',async()=>{expect(await sendReceiptEmail(input)).toMatchObject({success:true,status:'accepted'});expect(m.send).toHaveBeenCalledOnce();expect(m.send.mock.calls[0][0]).toMatchObject({parentEmail:'parent@example.test',amountPaid:100,paymentId});expect(m.audit.mock.invocationCallOrder[0]).toBeLessThan(m.send.mock.invocationCallOrder[0]);expect(JSON.parse(m.audit.mock.calls[0][0].eventData)).toMatchObject({status:'sending',deliberate:true});});
+ it('requires a current privileged membership',async()=>{m.from.mockReset().mockReturnValueOnce(rows([{role:'FRONT_DESK'}]));expect(await sendReceiptEmail(input)).toMatchObject({success:false,status:'not_sent'});expect(m.send).not.toHaveBeenCalled();});
+ it('does not reveal or email a payment outside the organisation',async()=>{m.from.mockReset().mockReturnValueOnce(rows([{role:'ORG_OWNER'}])).mockReturnValueOnce(rows([{id:paymentId,invoiceId:'foreign'}])).mockReturnValueOnce(rows([]));expect(await sendReceiptEmail(input)).toMatchObject({success:false});expect(m.send).not.toHaveBeenCalled();});
+ it('does not send to an address changed since the staff preview',async()=>{expect(await sendReceiptEmail({...input,expectedRecipient:'old@example.test'})).toMatchObject({success:false,status:'not_sent'});expect(m.send).not.toHaveBeenCalled();});
+ it('does not send if the audit claim fails',async()=>{m.audit.mockRejectedValueOnce(Error('audit unavailable'));expect(await sendReceiptEmail(input)).toMatchObject({success:false,status:'unknown'});expect(m.send).not.toHaveBeenCalled();});
+ it('does not resend a matching request already accepted',async()=>{m.from.mockReset().mockReturnValueOnce(rows([{role:'ORG_OWNER'}])).mockReturnValueOnce(rows([{id:paymentId,invoiceId:'invoice',status:'verified'}])).mockReturnValueOnce(rows([{id:'invoice',parentId:'parent',centreId:'centre',status:'paid'}])).mockReturnValueOnce(rows([{email:'parent@example.test'}])).mockReturnValueOnce(rows([{userId:'owner',eventData:JSON.stringify({paymentId,recipient:'parent@example.test',status:'accepted'})}]));expect(await sendReceiptEmail(input)).toMatchObject({success:true,status:'accepted'});expect(m.send).not.toHaveBeenCalled();});
+});

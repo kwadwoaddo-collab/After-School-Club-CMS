@@ -73,7 +73,7 @@ export default function RecordPaymentModal({
             }
 
             clearIdempotencyKey();
-            toast(res.isReplay ? 'Payment already recorded (idempotent replay)' : 'Payment recorded successfully', 'success');
+            toast(res.isReplay ? 'Payment already recorded (idempotent replay)' : 'Payment recorded. No email sent.', 'success');
             onSuccess();
             onClose();
         } catch (error) {

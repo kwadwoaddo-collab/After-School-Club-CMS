@@ -4,12 +4,11 @@ import { logger } from '@/lib/logger';
 
 
 import { db } from '@/db';
-import { children, parents, centres, invoices, payments, bookings, bookingAttendees, registrationChildren, registrations, auditEvents, billingConfigs, billingRuns, portalNotifications, orgMemberships, centreMemberships } from '@/db/schema';
+import { children, parents, centres, invoices, payments, bookings, bookingAttendees, registrationChildren, registrations, auditEvents, billingConfigs, billingRuns, orgMemberships, centreMemberships } from '@/db/schema';
 import { eq, ilike, or, and, desc, inArray, sql, ne, isNull } from 'drizzle-orm';
 import { requireTenantSession } from '@/lib/session';
 import { revalidatePath } from 'next/cache';
 import { nanoid } from 'nanoid';
-import { emailService } from '@/lib/services/email';
 import { readInvoiceEmailStatus, sendAuditedInvoiceEmail, type InvoiceEmailStatus } from './invoice-email-status';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { notifyOwners } from '@/lib/db-notifications';
@@ -659,11 +658,13 @@ export async function getInvoiceDetails(invoiceId: string) {
         if (match) childDisplayName = match[1].trim();
     }
 
-    const corrections=await db.query.auditEvents.findMany({where:and(eq(auditEvents.organisationId,orgId),eq(auditEvents.eventType,'payment_details_corrected'),sql`event_data::jsonb->>'invoiceId' = ${invoiceId}`),orderBy:(events,{asc})=>[asc(events.createdAt),asc(events.id)]});
+    const corrections=await db.query.auditEvents.findMany({where:and(eq(auditEvents.organisationId,orgId),inArray(auditEvents.eventType,['payment_details_corrected','receipt_email_status']),sql`event_data::jsonb->>'invoiceId' = ${invoiceId}`),orderBy:(events,{asc})=>[asc(events.createdAt),asc(events.id)]});
+    const receiptEmailStatuses=new Map<string,{status:string;at:Date}>();
     const originalDates=new Map<string,string>();
     const correctionHistory=new Map<string,{id:string;at:Date;reason:string;from:string;to:string}[]>();
-    for(const correction of corrections){try{const event=JSON.parse(correction.eventData??'{}');if(typeof event.paymentId==='string'&&typeof event.previousRecordedAt==='string'){if(!originalDates.has(event.paymentId))originalDates.set(event.paymentId,event.previousRecordedAt);const history=correctionHistory.get(event.paymentId)??[];history.push({id:correction.id,at:correction.createdAt,reason:event.reason,from:event.previousRecordedAt,to:event.correctedRecordedAt});correctionHistory.set(event.paymentId,history);}}catch{/* Historical malformed metadata does not alter payment values. */}}
-    return { ...result,payments:result.payments.map(p=>({...p,receiptIdentityDate:originalDates.get(p.id)??p.recordedAt,correctionHistory:correctionHistory.get(p.id)??[]})), childDisplayName, emailStatus: await readInvoiceEmailStatus(invoiceId, orgId) };
+    for(const correction of corrections){try{const event=JSON.parse(correction.eventData??'{}');if(correction.eventType==='receipt_email_status' && typeof event.paymentId==='string' && typeof event.status==='string') receiptEmailStatuses.set(event.paymentId,{status:event.status,at:correction.createdAt});
+        if(correction.eventType==='payment_details_corrected' && typeof event.paymentId==='string'&&typeof event.previousRecordedAt==='string'){if(!originalDates.has(event.paymentId))originalDates.set(event.paymentId,event.previousRecordedAt);const history=correctionHistory.get(event.paymentId)??[];history.push({id:correction.id,at:correction.createdAt,reason:event.reason,from:event.previousRecordedAt,to:event.correctedRecordedAt});correctionHistory.set(event.paymentId,history);}}catch{/* Historical malformed metadata does not alter payment values. */}}
+    return { ...result,payments:result.payments.map(p=>({...p,receiptEmailStatus:receiptEmailStatuses.get(p.id)??null,receiptIdentityDate:originalDates.get(p.id)??p.recordedAt,correctionHistory:correctionHistory.get(p.id)??[]})), childDisplayName, emailStatus: await readInvoiceEmailStatus(invoiceId, orgId) };
 }
 
 export interface RecordPaymentParams {
@@ -964,7 +965,7 @@ export async function recordPayment(data: RecordPaymentParams): Promise<RecordPa
         }
         revalidatePath('/portal/billing');
 
-        // Only dispatch notifications and emails for fresh (non-replay) payments!
+        // Recording a payment never emails the parent. Keep internal owner notifications only.
         if (!txResult.isReplay) {
             notifyOwners({
                 orgId,
@@ -973,30 +974,7 @@ export async function recordPayment(data: RecordPaymentParams): Promise<RecordPa
                 message: `A £${Number(txResult.amount).toFixed(2)} payment (${data.method.replace('_', ' ')}) has been recorded.`,
             }).catch(() => {});
 
-            try {
-                const { organisations } = await import('@/db/schema');
-                const invoiceRecord = await db.query.invoices.findFirst({
-                    where: eq(invoices.id, data.invoiceId),
-                    with: { parent: true }
-                });
-                const orgRecord = await db.query.organisations.findFirst({
-                    where: eq(organisations.id, orgId)
-                });
 
-                if (invoiceRecord?.parent?.email) {
-                    await emailService.sendPaymentReceiptEmail({
-                        parentEmail: invoiceRecord.parent.email,
-                        parentName: invoiceRecord.parent.firstName,
-                        invoiceNumber: invoiceRecord.invoiceNumber,
-                        paymentId: txResult.id,
-                        amountPaid: Number(txResult.amount),
-                        organisationName: orgRecord?.name || 'Our Centre',
-                        invoiceId: data.invoiceId
-                    });
-                }
-            } catch (err) {
-                logger.error('[recordPayment] Failed to send receipt email:', err);
-            }
         }
 
         return txResult;
@@ -1326,35 +1304,12 @@ export async function verifyPayment(paymentId: string) {
         // 3. Recalculate invoice status
         await recalculateInvoiceStatus(tx, payment.invoiceId);
 
-        // Fetch verified total for email notification
-        const allInvoicePayments = await tx.query.payments.findMany({
-            where: eq(payments.invoiceId, payment.invoiceId),
-            columns: { status: true, amount: true }
-        });
-        const totalVerified = allInvoicePayments
-            .filter((p: any) => p.status === 'verified')
-            .reduce((sum: number, p: any) => sum + Number(p.amount), 0);
-
         await tx.insert(auditEvents).values({
             organisationId: session.user.organisationId,
             userId: session.user.id,
             eventType: 'payment_verified',
             eventData: JSON.stringify({ paymentId, invoiceId: payment.invoiceId, amount: payment.amount })
         });
-
-        // Send email notification to parent (fire-and-forget)
-        const invoiceFullyPaid = totalVerified >= Number(payment.invoice.amount);
-        const parentRecord = await tx.query.parents.findFirst({ where: eq(parents.id, payment.invoice.parentId), columns: { firstName: true, email: true } });
-        if (parentRecord?.email) {
-            emailService.sendVoucherPaymentVerified({
-                parentFirstName: parentRecord.firstName,
-                parentEmail: parentRecord.email,
-                invoiceNumber: payment.invoice.invoiceNumber,
-                amount: Number(payment.amount),
-                invoiceFullyPaid,
-                portalUrl: `${process.env.NEXTAUTH_URL || ''}/portal/billing`,
-            }).catch(e => logger.error('[Email] Failed to send voucher verified email:', e));
-        }
 
         revalidatePath('/dashboard/finance');
         revalidatePath('/dashboard/finance/invoices');
@@ -1402,18 +1357,6 @@ export async function failPayment(paymentId: string) {
             eventType: 'payment_failed',
             eventData: JSON.stringify({ paymentId, invoiceId: payment.invoiceId, amount: payment.amount, previousStatus: payment.status })
         });
-
-        // Send email notification to parent (fire-and-forget)
-        const parentRecord = await tx.query.parents.findFirst({ where: eq(parents.id, payment.invoice.parentId), columns: { firstName: true, email: true } });
-        if (parentRecord?.email) {
-            emailService.sendVoucherPaymentFailed({
-                parentFirstName: parentRecord.firstName,
-                parentEmail: parentRecord.email,
-                invoiceNumber: payment.invoice.invoiceNumber,
-                amount: Number(payment.amount),
-                portalUrl: `${process.env.NEXTAUTH_URL || ''}/portal/billing`,
-            }).catch(e => logger.error('[Email] Failed to send voucher failed email:', e));
-        }
 
         revalidatePath('/dashboard/finance');
         revalidatePath('/dashboard/finance/invoices');
@@ -1534,7 +1477,7 @@ export async function resendInvoiceEmail(invoiceId: string): Promise<{ success: 
     }
     if (invoice.status === 'paid') return { success: false, error: 'This invoice is already marked as paid.' };
     if (invoice.status === 'void') return { success: false, error: 'Cannot send a voided invoice.' };
-    if (invoice.status === 'draft') return { success: false, error: 'Cannot resend a draft invoice — use Issue Invoice to dispatch.' };
+    if (invoice.status === 'draft') return { success: false, error: 'Issue the draft first, then choose Send invoice by email separately.' };
 
     const parentEmail = invoice.parent?.email;
     const parentName = invoice.parent?.firstName ?? 'Parent';
@@ -1561,7 +1504,7 @@ export async function resendInvoiceEmail(invoiceId: string): Promise<{ success: 
 /**
  * Transition a draft invoice to 'sent' (issued) status (§13, B1).
  * Idempotent, enforced with row-locking, checks amount > 0 and dueDate,
- * updates status, logs audit event, and dispatches email/notifications.
+ * updates status and logs audit evidence. It never dispatches email or parent notifications.
  */
 export async function issueDraftInvoice(invoiceId: string) {
     const session = await requireTenantSession();
@@ -1659,45 +1602,13 @@ export async function issueDraftInvoice(invoiceId: string) {
             }),
         });
 
+        await tx.insert(auditEvents).values({ organisationId: orgId, userId: session.user.id,
+            eventType: 'invoice_email_status', eventData: JSON.stringify({ invoiceId, status: 'not_requested', attemptedAt: '' }) });
         return { alreadyIssued: false, invoice: updated };
     });
 
-    let emailStatus: InvoiceEmailStatus | null = null;
-    if (!result.alreadyIssued) {
-        // Issuance is already committed. Delivery has a separate, durable outcome.
-        try {
-            const parent = await db.query.parents.findFirst({
-                where: eq(parents.id, result.invoice.parentId), columns: { firstName: true, email: true },
-            });
-            const centre = await db.query.centres.findFirst({
-                where: eq(centres.id, result.invoice.centreId), columns: { name: true },
-            });
-            emailStatus = await sendAuditedInvoiceEmail({
-                invoiceId, organisationId: orgId, userId: session.user.id,
-                parentFirstName: parent?.firstName || 'Parent', parentEmail: parent?.email,
-                invoiceNumber: result.invoice.invoiceNumber, amount: Number(result.invoice.amount),
-                dueDate: result.invoice.dueDate, centreName: centre?.name || 'the centre',
-                portalUrl: `${process.env.NEXTAUTH_URL || ''}/portal/billing`,
-            });
-        } catch (error) {
-            logger.error('[issueDraftInvoice] Email outcome unavailable; invoice is issued', error);
-            emailStatus = { status: 'unknown', attemptedAt: new Date().toISOString() };
-        }
-
-        // Fire-and-forget portal notification
-        try {
-            await db.insert(portalNotifications).values({
-                parentId: result.invoice.parentId,
-                organisationId: orgId,
-                type: 'invoice_issued',
-                title: `Invoice ${result.invoice.invoiceNumber} Issued`,
-                body: `An invoice for £${Number(result.invoice.amount).toFixed(2)} has been issued and is due on ${result.invoice.dueDate ? new Date(result.invoice.dueDate).toISOString().split('T')[0] : ''}.`,
-                href: '/portal/billing',
-            });
-        } catch (err) {
-            logger.error('[issueDraftInvoice] Portal notification failed:', err);
-        }
-    }
+    // Issuance changes accounting status only. Sending requires a separate action.
+    const emailStatus: InvoiceEmailStatus | null = result.alreadyIssued ? null : { status: 'not_requested', attemptedAt: '' };
 
     revalidatePath(`/dashboard/finance/invoices/${invoiceId}`);
     revalidatePath('/dashboard/finance');
