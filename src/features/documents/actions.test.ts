@@ -37,7 +37,7 @@ describe('private centre documents authorization', () => {
         expect(result.success).toBe(false); expect(mocks.transaction).not.toHaveBeenCalled();
     });
     it('folder listings select metadata without document payloads', async () => {
-        const orderBy = vi.fn().mockResolvedValue([{ id: 'doc', name: 'Policy', originalFilename: 'policy.pdf', sizeBytes: 90, version: 1, updatedAt: new Date(), removedAt: null }]);
+        const orderBy = vi.fn().mockResolvedValueOnce([{ id: 'doc', name: 'Policy', originalFilename: 'policy.pdf', sizeBytes: 90, version: 1, updatedAt: new Date(), removedAt: null }]).mockResolvedValueOnce([]);
         mocks.select.mockReturnValue({ from: () => ({ where: () => ({ orderBy }) }) });
         const result = await getCentreDocuments(centreId);
         expect(result.documents).toHaveLength(1);

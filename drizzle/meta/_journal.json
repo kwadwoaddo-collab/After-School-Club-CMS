@@ -232,6 +232,13 @@
       "when": 1793296800000,
       "tag": "0033_centre_documents",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1793307600000,
+      "tag": "0034_document_subfolders",
+      "breakpoints": true
     }
   ]
 }

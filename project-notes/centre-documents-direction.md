@@ -1,3 +1,6 @@
 # Centre Documents
 
 Mode: Operate. Extend the existing dashboard with a Documents navigation item and a compact file list for the active centre. Preserve incumbent tokens, typography and navigation behavior. Owners and managers upload/name/replace/remove; assigned staff view/download. Combined view asks for a centre before displaying its files. PDF-only, 3 MB each, up to 20 active files per centre. Empty, loading, validation/error and success states must explain the next action. Removal is recoverable rather than permanent. No email or parent sharing occurs. Verify desktop/mobile and both themes using actual components with fictional data, then production empty-state and navigation without uploading user files.
+
+## Subfolder extension
+Allow nested centre folders with breadcrumbs, a New folder action, folder renaming, and removal of empty folders. Uploads land in the current folder; existing PDFs remain at the root. Move PDF offers the centre root and active folders within that same centre. Preserve centre-wide quotas and roles. Folder navigation must remain usable on mobile and retain clear current location. A folder must never hide or orphan removed PDFs when those are restored. Verify root, nested, create and move states in light/dark desktop/mobile fixtures.
