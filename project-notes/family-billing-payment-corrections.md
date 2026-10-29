@@ -5,7 +5,7 @@
 1. Open **Parents**, search for the parent, and open their profile.
 2. Choose **Set up billing cycle** (or **Manage billing cycle** for an existing plan). This opens the profile's **Finance / Ledger** section.
 3. If the family uses multiple centres, choose **Billing centre**. Each centre has its own fee and billing cycle.
-4. Enter the monthly family fee and first billing period start date. Review invoice preparation timing and the children covered, then choose **Save billing cycle**.
+4. Enter the monthly family fee and first billing period start date. Review invoice preparation timing and the children covered. Each child shows whether their enrolment is **Confirmed** or **Needs confirmation**. If any selected child still needs confirmation, tick **Confirm selected student(s) as enrolled** right below **Children Covered** (or click **Confirm enrolment & save billing cycle** in the alert banner) with their agreed enrolment start date and confirmation reason, then choose **Save billing cycle**.
 
 Saving makes the plan eligible for scheduled draft preparation. It does not issue or email an invoice. For an active plan with a positive fee and covered children, choose **Review first draft invoice** or **Review / prepare draft invoice** and review the period, amount and dates before the separate draft action. Follow the existing invoice review and issue workflow when ready to send an invoice.
 

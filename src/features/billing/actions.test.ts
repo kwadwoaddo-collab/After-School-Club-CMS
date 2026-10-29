@@ -335,4 +335,114 @@ describe('billing/actions — centre-scoped authorization (Milestone 3G, L2)', (
             expect(dbTransaction).not.toHaveBeenCalled();
         });
     });
+
+    describe('inline enrolment confirmation (createBillingConfig / confirmFamilyStudentsEnrolment)', () => {
+        it('confirms unconfirmed family students inside the createBillingConfig transaction and records audit events', async () => {
+            const { auth } = await import('@/lib/auth');
+            (auth as ReturnType<typeof vi.fn>).mockResolvedValue(OWNER_SESSION);
+            billingConfigsFindFirst.mockResolvedValue(null);
+
+            const insertedValues: unknown[] = [];
+            const updatedValues: unknown[] = [];
+            // 1st select in tx: familyCentreChildren -> ['child-1']
+            // 2nd select in tx: alreadyConfirmed -> [] (unconfirmed)
+            // 3rd select in tx: reviewedChildren after confirmation -> ['child-1']
+            // 4th select in tx: confirmRestartFeeReview -> []
+            dbSelectWhere
+                .mockResolvedValueOnce([{ id: 'child-1' }])
+                .mockResolvedValueOnce([])
+                .mockResolvedValueOnce([{ id: 'child-1' }])
+                .mockResolvedValueOnce([]);
+
+            dbTransaction.mockImplementationOnce(async (cb: any) => cb({
+                insert: () => ({
+                    values: (val: unknown) => {
+                        insertedValues.push(val);
+                        return {
+                            onConflictDoNothing: vi.fn().mockResolvedValue(undefined),
+                            returning: vi.fn().mockResolvedValue([{ id: 'new-config-inline' }]),
+                        };
+                    },
+                }),
+                execute: vi.fn().mockResolvedValue([]),
+                select: () => ({ from: () => ({ where: () => dbSelectWhere() }) }),
+                update: () => ({
+                    set: (val: unknown) => {
+                        updatedValues.push(val);
+                        return { where: vi.fn().mockResolvedValue(undefined) };
+                    },
+                }),
+                delete: () => makeDeleteChain(),
+            }));
+
+            const { createBillingConfig } = await import('./actions');
+            const result = await createBillingConfig({
+                parentId: 'parent-1',
+                centreId: 'centre-target',
+                agreedMonthlyPence: 15000,
+                billingAnchorDate: '2026-10-15',
+                childIds: ['child-1'],
+                confirmEnrolment: {
+                    confirmed: true,
+                    startDate: '2026-10-01',
+                    reason: 'Confirmed during family billing setup',
+                },
+            });
+
+            expect(result).toEqual({ success: true, configId: 'new-config-inline' });
+            expect(updatedValues).toContainEqual(expect.objectContaining({ isRegistered: true }));
+            expect(insertedValues).toContainEqual(expect.objectContaining({
+                organisationId: 'org-1',
+                userId: 'user-owner',
+                eventType: 'manual_student_enrolment_confirmed',
+                eventData: expect.stringContaining('"childId":"child-1"'),
+            }));
+        });
+
+        it('rejects inline confirmation when enrolment start date is after billing anchor date', async () => {
+            const { auth } = await import('@/lib/auth');
+            (auth as ReturnType<typeof vi.fn>).mockResolvedValue(OWNER_SESSION);
+            billingConfigsFindFirst.mockResolvedValue(null);
+
+            const { createBillingConfig } = await import('./actions');
+            await expect(createBillingConfig({
+                parentId: 'parent-1',
+                centreId: 'centre-target',
+                agreedMonthlyPence: 15000,
+                billingAnchorDate: '2026-10-15',
+                childIds: ['child-1'],
+                confirmEnrolment: {
+                    confirmed: true,
+                    startDate: '2026-10-20',
+                    reason: 'Confirmed during family billing setup',
+                },
+            })).rejects.toThrow(/Enrolment start date cannot be after the billing start date/);
+        });
+
+        it('confirmFamilyStudentsEnrolment rejects FRONT_DESK and unauthorized centre access', async () => {
+            const { auth } = await import('@/lib/auth');
+            const { confirmFamilyStudentsEnrolment } = await import('./actions');
+
+            (auth as ReturnType<typeof vi.fn>).mockResolvedValue(FRONT_DESK_SESSION);
+            const fdRes = await confirmFamilyStudentsEnrolment({
+                parentId: 'parent-1',
+                centreId: 'centre-target',
+                childIds: ['child-1'],
+                startDate: '2026-10-01',
+                reason: 'Confirmed on billing page',
+            });
+            expect(fdRes).toMatchObject({ ok: false, problem: { code: 'PERMISSION' } });
+
+            (auth as ReturnType<typeof vi.fn>).mockResolvedValue(MANAGER_SESSION);
+            getUserAccessibleCentreIds.mockResolvedValue(['centre-other']);
+            const mgrRes = await confirmFamilyStudentsEnrolment({
+                parentId: 'parent-1',
+                centreId: 'centre-target',
+                childIds: ['child-1'],
+                startDate: '2026-10-01',
+                reason: 'Confirmed on billing page',
+            });
+            expect(mgrRes).toMatchObject({ ok: false, problem: { code: 'PERMISSION' } });
+        });
+    });
 });

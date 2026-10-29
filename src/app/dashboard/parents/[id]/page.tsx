@@ -3,8 +3,9 @@ import { requireAuth } from '@/lib/require-auth';
 import { notFound } from 'next/navigation';
 import { db } from '@/db';
 import { parents, children, invoices, payments, billingConfigs } from '@/db/schema';
-import { eq, desc, and, inArray } from 'drizzle-orm';
+import { eq, desc, and, inArray, isNull, sql } from 'drizzle-orm';
 import { getUserAccessibleCentres } from '@/lib/permissions';
+import { confirmedEnrolmentChildSql, currentLifecycleStatusChildSql } from '@/lib/enrolment/finance-eligibility';
 import type { ParentBillingGroup } from '@/features/billing/components/ParentBillingSection';
 import ParentProfileClient from './ParentProfileClient';
 import Link from 'next/link';
@@ -47,9 +48,31 @@ export default async function ParentProfilePage({ params, searchParams }: Parent
 
     const accessibleCentres=await getUserAccessibleCentres(session.user.id);
     const canManageBilling=['ORG_OWNER','MANAGER'].includes((session.user as any).role);
+    const activeFamilyChildIds = parent.children
+        .filter(c => !c.deletedAt && c.organisationId === organisationId)
+        .map(c => c.id);
+    let childStatusMap: Map<string, { confirmedEnrolment: boolean; lifecycleStatus: string }> | null = null;
+    if (canManageBilling && activeFamilyChildIds.length > 0) {
+        try {
+            const statusRows = await db.select({
+                id: children.id,
+                confirmedEnrolment: sql<boolean>`CASE WHEN ${confirmedEnrolmentChildSql()} THEN true ELSE false END`,
+                lifecycleStatus: currentLifecycleStatusChildSql(),
+            })
+                .from(children)
+                .where(and(
+                    inArray(children.id, activeFamilyChildIds),
+                    eq(children.organisationId, organisationId),
+                    isNull(children.deletedAt),
+                ));
+            childStatusMap = new Map(statusRows.map(r => [r.id, { confirmedEnrolment: Boolean(r.confirmedEnrolment), lifecycleStatus: r.lifecycleStatus || 'active' }]));
+        } catch (err) {
+            logger.error('[parent] Confirmed enrolment lookup failed:', err);
+        }
+    }
     const plans=canManageBilling&&accessibleCentres.length?await db.query.billingConfigs.findMany({where:and(eq(billingConfigs.parentId,id),eq(billingConfigs.organisationId,organisationId),inArray(billingConfigs.centreId,accessibleCentres.map(c=>c.id))),with:{children:{with:{child:true}}}}):[];
     const billingGroups:ParentBillingGroup[]=canManageBilling?accessibleCentres.map(centre=>{
-      const siblings=parent.children.filter(c=>!c.deletedAt&&c.organisationId===organisationId&&c.centreId===centre.id).map(c=>({id:c.id,firstName:c.firstName,lastName:c.lastName}));
+      const siblings=parent.children.filter(c=>!c.deletedAt&&c.organisationId===organisationId&&c.centreId===centre.id).map(c=>({id:c.id,firstName:c.firstName,lastName:c.lastName,...(childStatusMap?.has(c.id)?childStatusMap.get(c.id):{})}));
       const config=plans.find(p=>p.centreId===centre.id);
       return {centreId:centre.id,centreName:centre.name,siblings,config:config?{id:config.id,parentId:config.parentId,centreId:config.centreId,agreedMonthlyPence:config.agreedMonthlyPence,billingAnchorDate:config.billingAnchorDate,billingEndDate:config.billingEndDate??null,invoiceLeadDays:config.invoiceLeadDays,paymentDayOfMonth:config.paymentDayOfMonth,leadTimeUnit:config.leadTimeUnit,leadTimeValue:config.leadTimeValue,status:config.status,notes:config.notes,coveredChildren:config.children.filter(c=>c.child&&!c.child.deletedAt&&c.child.organisationId===organisationId&&c.child.parentId===id&&c.child.centreId===centre.id).map(c=>({childId:c.child.id,childName:c.child.firstName+' '+c.child.lastName}))}:null};
     }).filter(g=>g.siblings.length||g.config):[];

@@ -7,7 +7,7 @@
 
 import { requireTenantSession, TypedSession } from '@/lib/session';
 import { db } from '@/db';
-import { billingConfigs, billingConfigChildren, billingRuns, billingCycleSkips, invoices, children, auditEvents, payments } from '@/db/schema';
+import { billingConfigs, billingConfigChildren, billingRuns, billingCycleSkips, invoices, children, auditEvents, payments, registrationChildren, registrations } from '@/db/schema';
 import { eq, and, sql, ne, inArray, isNull, desc, or } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { computeNextBillingPeriod, penceToPounds } from '@/lib/billing';
@@ -26,6 +26,7 @@ import { captureDraftResult, DraftEnrolmentReviewError } from './draft-result';
 import { captureBillingResult } from './billing-problem';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { financeEligibleChildSql, getFinanceEligibleChildIds, assertEligibleBillingCoverage, lockEnrolmentForBilling, confirmedEnrolmentChildSql, lifecycleEligibleChildSql, lockBillingConfiguration } from '@/lib/enrolment/finance-eligibility';
+import { isValidEnrolmentStartDate } from '@/lib/enrolment/start-date';
 import { assertNotQuarantined } from '@/lib/data-quality/quarantine';
 import { recurringInvoiceOverlapSql } from '@/lib/billing/invoice-overlap';
 
@@ -94,6 +95,148 @@ async function confirmRestartFeeReview(
     });
 }
 
+export interface InlineEnrolmentConfirmationInput {
+    confirmed: boolean;
+    startDate?: string; // ISO date string 'YYYY-MM-DD'
+    reason?: string;
+}
+
+/**
+ * Atomically confirms student enrolment inside a locked billing/enrolment transaction.
+ * Only confirms students proven to belong to (orgId, parentId, centreId) and records
+ * the required actor/reason/start-date audit trail without sending unsolicited emails.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function confirmChildrenEnrolmentInTx(
+    tx: any,
+    orgId: string,
+    actorId: string,
+    parentId: string,
+    centreId: string,
+    childIds: string[],
+    confirmation: InlineEnrolmentConfirmationInput,
+    billingStartDate?: string,
+) {
+    const uniqueChildIds = [...new Set(childIds)];
+    if (!confirmation.confirmed || uniqueChildIds.length === 0) return;
+    const startDate = (confirmation.startDate || billingStartDate || '').trim();
+    if (!isValidEnrolmentStartDate(startDate)) {
+        throw new Error('Enter a valid agreed enrolment start date');
+    }
+    if (billingStartDate && isValidEnrolmentStartDate(billingStartDate) && startDate > billingStartDate) {
+        throw new Error('Enrolment start date cannot be after the billing start date');
+    }
+    const reason = (confirmation.reason ?? 'Confirmed during family billing setup').trim();
+    if (reason.length < 5 || reason.length > 1000) {
+        throw new Error('Enter a confirmation reason between 5 and 1000 characters');
+    }
+
+    const familyCentreChildren: { id: string }[] = await tx.select({ id: children.id })
+        .from(children)
+        .where(and(
+            inArray(children.id, uniqueChildIds),
+            eq(children.organisationId, orgId),
+            eq(children.parentId, parentId),
+            eq(children.centreId, centreId),
+            isNull(children.deletedAt),
+        ));
+    if (familyCentreChildren.length !== uniqueChildIds.length) {
+        throw new Error('One or more children are invalid or do not belong to this family/centre');
+    }
+
+    const alreadyConfirmed: { id: string }[] = await tx.select({ id: children.id })
+        .from(children)
+        .where(and(
+            inArray(children.id, uniqueChildIds),
+            eq(children.organisationId, orgId),
+            eq(children.parentId, parentId),
+            eq(children.centreId, centreId),
+            isNull(children.deletedAt),
+            confirmedEnrolmentChildSql(),
+        ));
+    const alreadyConfirmedSet = new Set(alreadyConfirmed.map(row => row.id));
+    const unconfirmedIds = uniqueChildIds.filter(id => !alreadyConfirmedSet.has(id));
+    if (unconfirmedIds.length === 0) return;
+
+    const now = new Date();
+    const confirmedAt = now.toISOString();
+
+    await tx.update(children)
+        .set({ isRegistered: true, registeredAt: now, updatedAt: now })
+        .where(and(
+            inArray(children.id, unconfirmedIds),
+            eq(children.organisationId, orgId),
+            eq(children.parentId, parentId),
+            eq(children.centreId, centreId),
+            isNull(children.deletedAt),
+        ));
+
+    const regQuery = tx.select({
+        childId: registrationChildren.childId,
+        registrationId: registrations.id,
+        status: registrations.status,
+        centreId: registrations.centreId,
+    }).from(registrationChildren);
+
+    if (regQuery && typeof regQuery.innerJoin === 'function') {
+        const regLinks: { childId: string | null; registrationId: string; status: string; centreId: string | null }[] =
+            await regQuery
+                .innerJoin(registrations, eq(registrations.id, registrationChildren.registrationId))
+                .where(and(
+                    inArray(registrationChildren.childId, unconfirmedIds),
+                    eq(registrations.organisationId, orgId),
+                ));
+
+        const uniqueRegs = new Map<string, { status: string; centreId: string | null }>();
+        for (const link of regLinks) {
+            if (!link.centreId || link.centreId === centreId) {
+                uniqueRegs.set(link.registrationId, { status: link.status, centreId: link.centreId });
+            }
+        }
+
+        for (const [registrationId, regInfo] of uniqueRegs.entries()) {
+            if (regInfo.status === 'awaiting_confirmation' || regInfo.status === 'pending') {
+                const allRegChildren: { childId: string | null }[] = await tx.select({ childId: registrationChildren.childId })
+                    .from(registrationChildren)
+                    .where(eq(registrationChildren.registrationId, registrationId));
+                const allCovered = allRegChildren.length > 0 && allRegChildren.every(rc => Boolean(rc.childId) && uniqueChildIds.includes(rc.childId!));
+                if (allCovered) {
+                    await tx.update(registrations)
+                        .set({ status: 'signed_up', updatedAt: now })
+                        .where(and(eq(registrations.id, registrationId), eq(registrations.organisationId, orgId)));
+                    await tx.insert(auditEvents).values({
+                        organisationId: orgId,
+                        userId: actorId,
+                        eventType: 'registration_status_changed',
+                        eventData: JSON.stringify({
+                            registrationId,
+                            previousStatus: regInfo.status,
+                            status: 'signed_up',
+                            startDate,
+                            reason,
+                            confirmedAt,
+                        }),
+                    });
+                }
+            }
+        }
+    }
+
+    for (const childId of unconfirmedIds) {
+        await tx.insert(auditEvents).values({
+            organisationId: orgId,
+            userId: actorId,
+            eventType: 'manual_student_enrolment_confirmed',
+            eventData: JSON.stringify({
+                childId,
+                startDate,
+                reason,
+                confirmedAt,
+            }),
+        });
+    }
+}
+
 // ─── Create / Update config ───────────────────────────────────────────────────
 
 export interface BillingConfigData {
@@ -107,6 +250,7 @@ export interface BillingConfigData {
     leadTimeValue?:     number | null;
     notes?:             string;
     childIds:           string[]; // which children to cover
+    confirmEnrolment?:  InlineEnrolmentConfirmationInput;
 }
 
 /**
@@ -122,7 +266,7 @@ export async function createBillingConfig(data: BillingConfigData) {
     if (!Number.isInteger(data.agreedMonthlyPence) || data.agreedMonthlyPence <= 0) throw new Error('Enter the agreed family fee before billing review');
 
     if (data.childIds.length === 0) throw new Error('Select at least one confirmed signed-up student for billing');
-    if (data.childIds.length > 0) {
+    if (data.childIds.length > 0 && !data.confirmEnrolment?.confirmed) {
         const validChildren = await db.select({ id: children.id })
             .from(children)
             .where(
@@ -156,6 +300,18 @@ export async function createBillingConfig(data: BillingConfigData) {
 
     const config = await db.transaction(async (tx) => {
         await lockEnrolmentForBilling(tx, data.childIds);
+        if (data.confirmEnrolment?.confirmed) {
+            await confirmChildrenEnrolmentInTx(
+                tx,
+                orgId,
+                session.user.id,
+                data.parentId,
+                data.centreId,
+                data.childIds,
+                data.confirmEnrolment,
+                data.billingAnchorDate,
+            );
+        }
         const reviewedChildren = await tx.select({ id: children.id }).from(children).where(and(
             inArray(children.id, data.childIds), eq(children.organisationId, orgId),
             eq(children.parentId, data.parentId), eq(children.centreId, data.centreId),
@@ -206,6 +362,9 @@ export async function createBillingConfig(data: BillingConfigData) {
 
     revalidatePath('/dashboard/finance');
     revalidatePath('/dashboard/students');
+    if (data.confirmEnrolment?.confirmed) {
+        revalidatePath('/dashboard/registrations');
+    }
     revalidatePath(`/dashboard/centres/${data.centreId}/billing`);
     if (data.parentId) {
         revalidatePath(`/dashboard/parents/${data.parentId}`);
@@ -239,7 +398,7 @@ export async function updateBillingConfig(
 
     const childIds = data.childIds ?? (existingConfig.children ?? []).map(link => link.childId);
     const isFeeReview = data.agreedMonthlyPence !== undefined && data.billingAnchorDate !== undefined;
-    if ((data.agreedMonthlyPence !== undefined || data.billingAnchorDate !== undefined || data.childIds !== undefined) && !['ORG_OWNER', 'MANAGER'].includes(session.user.role)) throw new Error('Only an Owner or Manager can review family billing and coverage');
+    if ((data.agreedMonthlyPence !== undefined || data.billingAnchorDate !== undefined || data.childIds !== undefined || data.confirmEnrolment?.confirmed) && !['ORG_OWNER', 'MANAGER'].includes(session.user.role)) throw new Error('Only an Owner or Manager can review family billing and coverage');
     if (data.childIds !== undefined && !isFeeReview) throw new Error('Review billing settings with the family fee and start date when changing covered students');
     if (isFeeReview && (!Number.isInteger(data.agreedMonthlyPence) || data.agreedMonthlyPence! <= 0)) throw new Error('Enter the agreed family fee before billing review');
     if (data.childIds !== undefined && childIds.length === 0) throw new Error('Select at least one confirmed active student');
@@ -247,8 +406,20 @@ export async function updateBillingConfig(
     await db.transaction(async tx => {
         await lockBillingConfiguration(tx, configId);
         await lockEnrolmentForBilling(tx, [...childIds, ...(existingConfig.children ?? []).map(link => link.childId)]);
-        if (isFeeReview || data.childIds !== undefined) {
-            const startDate = data.billingAnchorDate ?? existingConfig.billingAnchorDate;
+        const startDate = data.billingAnchorDate ?? existingConfig.billingAnchorDate;
+        if (data.confirmEnrolment?.confirmed) {
+            await confirmChildrenEnrolmentInTx(
+                tx,
+                orgId,
+                session.user.id,
+                existingConfig.parentId,
+                existingConfig.centreId,
+                childIds,
+                data.confirmEnrolment,
+                startDate,
+            );
+        }
+        if (isFeeReview || data.childIds !== undefined || data.confirmEnrolment?.confirmed) {
             const valid = await tx.select({ id: children.id }).from(children).where(and(
                 inArray(children.id, childIds), eq(children.organisationId, orgId),
                 eq(children.parentId, existingConfig.parentId), eq(children.centreId, existingConfig.centreId),
@@ -293,14 +464,16 @@ export async function updateBillingConfig(
 
     revalidatePath('/dashboard/finance');
     revalidatePath('/dashboard/students');
+    if (data.confirmEnrolment?.confirmed) {
+        revalidatePath('/dashboard/registrations');
+    }
     revalidatePath(`/dashboard/centres/${existingConfig.centreId}/billing`);
     if (existingConfig.parentId) {
         revalidatePath(`/dashboard/parents/${existingConfig.parentId}`);
     }
-    if (existingConfig.children) {
-        for (const c of existingConfig.children) {
-            revalidatePath(`/dashboard/students/${c.childId}`);
-        }
+    const revalidatedChildIds = new Set([...childIds, ...(existingConfig.children ?? []).map(c => c.childId)]);
+    for (const childId of revalidatedChildIds) {
+        revalidatePath(`/dashboard/students/${childId}`);
     }
     return { success: true };
 }
@@ -1000,3 +1173,61 @@ export async function generateFamilyDraftInvoice(input: GenerateInvoiceInput) {
         return reference;
     });
 }
+
+/**
+ * Confirm selected family students' enrolment inline from the Family Billing page
+ * without requiring navigation to individual Student or Registration pages.
+ */
+export async function confirmFamilyStudentsEnrolment(input: {
+    parentId: string;
+    centreId: string;
+    childIds: string[];
+    startDate: string;
+    reason?: string;
+    billingAnchorDate?: string;
+}) {
+    return captureBillingResult(async () => {
+        const { orgId, session } = await getOrgIdAndSession();
+        if (!['ORG_OWNER', 'MANAGER'].includes(session.user.role)) {
+            throw new Error('Only an Owner or Manager can confirm student enrolment');
+        }
+        await assertCentreAccess(session, input.centreId);
+        assertNotQuarantined(input.parentId, 'Student enrolment confirmation');
+        if (!input.childIds || input.childIds.length === 0) {
+            throw new Error('Select at least one confirmed signed-up student for billing');
+        }
+
+        await db.transaction(async tx => {
+            await lockEnrolmentForBilling(tx, input.childIds);
+            await confirmChildrenEnrolmentInTx(
+                tx,
+                orgId,
+                session.user.id,
+                input.parentId,
+                input.centreId,
+                input.childIds,
+                {
+                    confirmed: true,
+                    startDate: input.startDate,
+                    reason: input.reason ?? 'Confirmed during family billing setup',
+                },
+                input.billingAnchorDate,
+            );
+        });
+
+        revalidatePath('/dashboard/finance');
+        revalidatePath('/dashboard/students');
+        revalidatePath('/dashboard/registrations');
+        revalidatePath(`/dashboard/centres/${input.centreId}/billing`);
+        revalidatePath(`/dashboard/parents/${input.parentId}`);
+        for (const childId of input.childIds) {
+            revalidatePath(`/dashboard/students/${childId}`);
+        }
+        return { confirmedChildIds: input.childIds };
+    }, error => {
+        const reference = `BILL-${nanoid(10)}`;
+        logger.error(`[${reference}] Inline enrolment confirmation not completed`, error);
+        return reference;
+    });
+}
+

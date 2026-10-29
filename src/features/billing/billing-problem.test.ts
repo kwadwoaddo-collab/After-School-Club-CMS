@@ -35,4 +35,10 @@ describe('safe billing feedback', () => {
         expect(await captureBillingResult(save,()=> 'unused')).toEqual({ok:true,data:{success:true,configId:'config'}});
         expect(save).toHaveBeenCalledTimes(1);
     });
+    it('maps inline enrolment confirmation date, reason and permission validation safely', () => {
+        expect(billingProblem(new Error('Enter a valid agreed enrolment start date'))).toMatchObject({ code: 'ENROLMENT_REVIEW', title: 'Enter a valid enrolment start date' });
+        expect(billingProblem(new Error('Enrolment start date cannot be after the billing start date'))).toMatchObject({ code: 'ENROLMENT_REVIEW', title: 'Check the enrolment start date' });
+        expect(billingProblem(new Error('Enter a confirmation reason between 5 and 1000 characters'))).toMatchObject({ code: 'ENROLMENT_REVIEW', title: 'Enter a reason for enrolment confirmation' });
+        expect(billingProblem(new Error('Only an Owner or Manager can confirm student enrolment'))).toMatchObject({ code: 'PERMISSION' });
+    });
 });

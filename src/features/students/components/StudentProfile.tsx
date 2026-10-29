@@ -29,7 +29,7 @@ import { formatDistanceToNow } from 'date-fns';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-interface Sibling { id: string; firstName: string; lastName: string; }
+interface Sibling { id: string; firstName: string; lastName: string; confirmedEnrolment?: boolean; lifecycleStatus?: 'active' | 'paused' | 'stopped' | string; }
 
 interface RegistrationDetail {
     id: string;

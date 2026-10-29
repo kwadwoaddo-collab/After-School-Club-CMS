@@ -12,12 +12,19 @@ export function billingProblem(error: unknown): BillingProblem {
     switch (message) {
         case 'One or more children are invalid or do not belong to this family/centre':
         case 'Billing requires confirmed signed-up, active students with reviewed fees and dates for the whole billing period. Review registration, pause/restart dates and family coverage first.':
-            return { code: 'ENROLMENT_REVIEW', title: 'Review enrolment before saving billing', message: 'Check that each selected student is confirmed as enrolled, belongs to this family and centre, and is active on the billing start date. Review enrolment at the top of this profile, then return to billing.', reviewEnrolment: true };
+            return { code: 'ENROLMENT_REVIEW', title: 'Review enrolment before saving billing', message: 'Check that each selected student is confirmed as enrolled, belongs to this family and centre, and is active on the billing start date. Confirm enrolment directly in this form or review enrolment on the student profile, then save billing.', reviewEnrolment: true };
+        case 'Enter a valid agreed enrolment start date':
+            return { code: 'ENROLMENT_REVIEW', title: 'Enter a valid enrolment start date', message: 'Choose a valid calendar date for the students’ agreed enrolment start date, then try again.', reviewEnrolment: true };
+        case 'Enrolment start date cannot be after the billing start date':
+            return { code: 'ENROLMENT_REVIEW', title: 'Check the enrolment start date', message: 'The agreed enrolment start date must be on or before the first billing period start date so each selected student is active when billing starts.', reviewEnrolment: true };
+        case 'Enter a confirmation reason between 5 and 1000 characters':
+            return { code: 'ENROLMENT_REVIEW', title: 'Enter a reason for enrolment confirmation', message: 'Enter a confirmation reason of at least 5 characters so the enrolment audit record is complete.', reviewEnrolment: true };
         case 'Unauthorized':
         case 'Unauthorized: No access to this centre':
         case 'Only an Owner or Manager can review family billing':
         case 'Only an Owner or Manager can review family billing and coverage':
         case 'Only an Owner or Manager can change billing status':
+        case 'Only an Owner or Manager can confirm student enrolment':
             return { code: 'PERMISSION', title: 'You cannot update these billing settings', message: 'Ask an Owner or Manager with access to this centre to review the family’s billing. If your session has expired, sign in again.' };
         case 'Enter the agreed family fee before billing review':
             return { code: 'FEE', title: 'Enter the agreed monthly fee', message: 'Enter an amount greater than £0, then save again.' };

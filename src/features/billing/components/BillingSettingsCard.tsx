@@ -7,7 +7,7 @@ import { penceToPounds, poundsToPence } from '@/lib/billing';
 import { previewBillingPeriods, formatDisplayDate, LeadTimeUnit } from '@/lib/billing/date-engine';
 import { cn } from '@/components/ui/utils';
 import { Button } from '@/components/ui/Button';
-import { saveFamilyBillingSettings, changeFamilyBillingStatus } from '@/features/billing/actions';
+import { saveFamilyBillingSettings, changeFamilyBillingStatus, confirmFamilyStudentsEnrolment } from '@/features/billing/actions';
 import { billingProblem, type BillingProblem } from '../billing-problem';
 import type { StudentBillingConfig, CoveredChild } from '@/features/billing/queries';
 import { isQuarantinedParentId } from '@/lib/data-quality/quarantine';
@@ -18,6 +18,8 @@ interface Sibling {
     id:        string;
     firstName: string;
     lastName:  string;
+    confirmedEnrolment?: boolean;
+    lifecycleStatus?: 'active' | 'paused' | 'stopped' | string;
 }
 
 interface Props {
@@ -154,10 +156,30 @@ function EditForm({
         // If new setup: pre-select ALL siblings at this centre — siblings registered together should all be covered.
         new Set(existingConfig?.coveredChildren.map(c => c.childId) ?? siblings.map(s => s.id))
     );
+    const [locallyConfirmedIds, setLocallyConfirmedIds] = useState<Set<string>>(() => new Set());
+    const [confirmEnrolmentChecked, setConfirmEnrolmentChecked] = useState(false);
+    const [enrolmentStartDate, setEnrolmentStartDate] = useState('');
+    const [enrolmentReason, setEnrolmentReason] = useState('Confirmed during family billing setup');
+    const [confirmationNotice, setConfirmationNotice] = useState('');
 
     const [error, setError]   = useState('');
     const [problem, setProblem] = useState<BillingProblem | null>(null);
     const [isPending, start]  = useTransition();
+
+    // Sort: current child first, then others. siblings already includes the current child.
+    const allSiblings = [
+        ...siblings.filter(s => s.id === childId),   // current child first
+        ...siblings.filter(s => s.id !== childId),   // then other siblings
+    ];
+
+    const isChildConfirmed = (s: Sibling) => locallyConfirmedIds.has(s.id) || s.confirmedEnrolment === true;
+    const isChildUnconfirmed = (s: Sibling) => !locallyConfirmedIds.has(s.id) && s.confirmedEnrolment === false;
+    const selectedSiblings = allSiblings.filter(s => selectedChildIds.has(s.id));
+    const unconfirmedSelectedSiblings = selectedSiblings.filter(isChildUnconfirmed);
+    const hasConfirmableSelection = unconfirmedSelectedSiblings.length > 0 || selectedSiblings.some(s => !isChildConfirmed(s) && s.confirmedEnrolment === undefined);
+    const targetsToConfirm = unconfirmedSelectedSiblings.length > 0 ? unconfirmedSelectedSiblings : selectedSiblings;
+    const showInlineConfirmation = unconfirmedSelectedSiblings.length > 0 || (Boolean(problem?.reviewEnrolment) && hasConfirmableSelection);
+    const effectiveEnrolmentStartDate = enrolmentStartDate || anchorDate;
 
     // Live period preview
     const periodPreview = anchorDate
@@ -176,9 +198,47 @@ function EditForm({
         });
     };
 
-    const handleSave = () => {
+    const handleConfirmEnrolmentNow = () => {
         setError('');
         setProblem(null);
+        setConfirmationNotice('');
+        if (selectedChildIds.size === 0) {
+            setError('Please select at least one child');
+            return;
+        }
+        const targetIds = [...selectedChildIds];
+
+        start(async () => {
+            try {
+                const result = await confirmFamilyStudentsEnrolment({
+                    parentId,
+                    centreId,
+                    childIds: targetIds,
+                    startDate: effectiveEnrolmentStartDate,
+                    reason: enrolmentReason.trim() || 'Confirmed during family billing setup',
+                    billingAnchorDate: anchorDate || undefined,
+                });
+                if (!result.ok) {
+                    setProblem(result.problem);
+                    return;
+                }
+                setLocallyConfirmedIds(prev => {
+                    const next = new Set(prev);
+                    for (const id of targetIds) next.add(id);
+                    return next;
+                });
+                setConfirmEnrolmentChecked(false);
+                setConfirmationNotice('Student enrolment confirmed. You can now save the billing cycle.');
+            } catch {
+                setProblem(billingProblem(null));
+            }
+        });
+    };
+
+    const handleSave = (options?: { forceConfirmEnrolment?: boolean }) => {
+        setError('');
+        setProblem(null);
+        setConfirmationNotice('');
         const amountPence = poundsToPence(fee);
         if (!amountPence || amountPence <= 0) { setError('Please enter a valid monthly fee'); return; }
         if (!anchorDate) { setError('Please select a billing start date'); return; }
@@ -187,15 +247,30 @@ function EditForm({
         const leadTimeUnit: LeadTimeUnit = leadMode === 'CALENDAR_MONTH' ? 'CALENDAR_MONTHS' : 'DAYS';
         const leadTimeValue: number = leadMode === 'CALENDAR_MONTH' ? 1 : customDays;
         const leadDays: number = leadMode === 'CALENDAR_MONTH' ? 30 : customDays;
+        const shouldConfirmEnrolment = Boolean(options?.forceConfirmEnrolment || confirmEnrolmentChecked);
 
         start(async () => {
             try {
                 const result = await saveFamilyBillingSettings({
                     configId: existingConfig?.id,
-                    data: { parentId, centreId, agreedMonthlyPence: amountPence,
-                        billingAnchorDate: anchorDate, invoiceLeadDays: leadDays,
-                        leadTimeUnit, leadTimeValue, notes: notes || undefined,
-                        childIds: [...selectedChildIds] },
+                    data: {
+                        parentId,
+                        centreId,
+                        agreedMonthlyPence: amountPence,
+                        billingAnchorDate: anchorDate,
+                        invoiceLeadDays: leadDays,
+                        leadTimeUnit,
+                        leadTimeValue,
+                        notes: notes || undefined,
+                        childIds: [...selectedChildIds],
+                        ...(shouldConfirmEnrolment && {
+                            confirmEnrolment: {
+                                confirmed: true,
+                                startDate: enrolmentStartDate || anchorDate,
+                                reason: enrolmentReason.trim() || 'Confirmed during family billing setup',
+                            },
+                        }),
+                    },
                 });
                 if (!result.ok) { setProblem(result.problem); return; }
                 onSaved();
@@ -204,12 +279,6 @@ function EditForm({
             }
         });
     };
-
-    // Sort: current child first, then others. siblings already includes the current child.
-    const allSiblings = [
-        ...siblings.filter(s => s.id === childId),   // current child first
-        ...siblings.filter(s => s.id !== childId),   // then other siblings
-    ];
 
     return (
         <div className="space-y-4">
@@ -338,9 +407,103 @@ function EditForm({
                             <span className={cn('text-small-body font-medium', selectedChildIds.has(s.id) ? 'text-accent' : 'text-text')}>
                                 {s.firstName} {s.lastName}
                             </span>
+                            <span className="ml-auto flex items-center gap-1.5">
+                                {s.lifecycleStatus === 'paused' && (
+                                    <span className="px-2 py-0.5 rounded-sm text-[10px] font-semibold uppercase tracking-wider bg-warning-soft text-amber-700 dark:text-amber-400">
+                                        Paused
+                                    </span>
+                                )}
+                                {s.lifecycleStatus === 'stopped' && (
+                                    <span className="px-2 py-0.5 rounded-sm text-[10px] font-semibold uppercase tracking-wider bg-danger-soft text-danger">
+                                        Stopped
+                                    </span>
+                                )}
+                                {isChildConfirmed(s) ? (
+                                    <span className="px-2 py-0.5 rounded-sm text-[10px] font-semibold uppercase tracking-wider bg-success-soft text-emerald-700 dark:text-emerald-400">
+                                        Confirmed
+                                    </span>
+                                ) : isChildUnconfirmed(s) ? (
+                                    <span className="px-2 py-0.5 rounded-sm text-[10px] font-semibold uppercase tracking-wider bg-warning-soft text-amber-700 dark:text-amber-400">
+                                        Needs confirmation
+                                    </span>
+                                ) : null}
+                            </span>
                         </label>
                     ))}
                 </div>
+
+                {confirmationNotice && (
+                    <p role="status" className="mt-2 rounded-sm border border-emerald-500/30 bg-success-soft px-3 py-2 text-xs font-medium text-emerald-700 dark:text-emerald-400">
+                        {confirmationNotice}
+                    </p>
+                )}
+
+                {showInlineConfirmation && (
+                    <div className="mt-2.5 rounded-sm border border-amber-500/30 bg-amber-500/5 p-3 space-y-2.5">
+                        <label className="flex items-start gap-2.5 cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={confirmEnrolmentChecked}
+                                onChange={e => setConfirmEnrolmentChecked(e.target.checked)}
+                                className="mt-0.5 w-4 h-4 rounded-sm accent-accent"
+                            />
+                            <span className="text-xs text-text">
+                                <span className="font-semibold block">
+                                    Confirm selected student{targetsToConfirm.length === 1 ? '' : 's'} as enrolled ({targetsToConfirm.map(s => `${s.firstName} ${s.lastName}`).join(', ')})
+                                </span>
+                                <span className="text-text-muted block mt-0.5">
+                                    Confirms student enrolment directly on this page so you don&apos;t need to open each student profile separately.
+                                </span>
+                            </span>
+                        </label>
+                        {confirmEnrolmentChecked && (
+                            <div className="pl-6 space-y-2.5 pt-1">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                    <div>
+                                        <label htmlFor="inline-enrolment-start-date" className="text-xs font-medium text-text-muted block mb-1">
+                                            Agreed enrolment start date
+                                        </label>
+                                        <input
+                                            id="inline-enrolment-start-date"
+                                            type="date"
+                                            value={enrolmentStartDate || anchorDate}
+                                            onChange={e => setEnrolmentStartDate(e.target.value)}
+                                            className="w-full h-9 px-2.5 rounded-sm border border-border bg-surface text-text text-xs font-medium focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label htmlFor="inline-enrolment-reason" className="text-xs font-medium text-text-muted block mb-1">
+                                            Confirmation reason
+                                        </label>
+                                        <input
+                                            id="inline-enrolment-reason"
+                                            type="text"
+                                            value={enrolmentReason}
+                                            onChange={e => setEnrolmentReason(e.target.value)}
+                                            placeholder="Confirmed during family billing setup"
+                                            className="w-full h-9 px-2.5 rounded-sm border border-border bg-surface text-text text-xs font-medium focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        disabled={isPending}
+                                        onClick={handleConfirmEnrolmentNow}
+                                    >
+                                        <Check className="w-3.5 h-3.5" />
+                                        Confirm enrolment now
+                                    </Button>
+                                    <span className="text-[11px] text-text-muted">
+                                        Or click {familySurface ? 'Save billing cycle' : isNew ? 'Set Up Billing' : 'Save Changes'} below to confirm and save together.
+                                    </span>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
 
             {/* Notes */}
@@ -359,7 +522,7 @@ function EditForm({
 
             {(error || problem) && <div role="alert" className="flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-3 text-sm text-foreground">
                 <AlertTriangle aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0"/>
-                <div>{problem ? <><p className="font-semibold">{problem.title}</p><p className="mt-1">{problem.message}</p>{problem.reviewEnrolment && <a href={familySurface?'#family-enrolment-links':'#main-content'} className="mt-2 inline-flex min-h-10 items-center font-medium text-primary underline">{familySurface?'Review the students’ enrolment using the links below':'Review enrolment at top of profile'}</a>}{problem.reference && <p className="mt-2 text-xs text-muted-foreground">Support reference: {problem.reference}</p>}</> : <p>{error}</p>}</div>
+                <div>{problem ? <><p className="font-semibold">{problem.title}</p><p className="mt-1">{problem.message}</p>{problem.reviewEnrolment && <div className="mt-2 flex flex-wrap items-center gap-3">{hasConfirmableSelection && <Button type="button" size="sm" disabled={isPending} onClick={() => handleSave({ forceConfirmEnrolment: true })}><Check className="w-3.5 h-3.5" />{familySurface ? 'Confirm enrolment & save billing cycle' : 'Confirm enrolment & save billing'}</Button>}<a href={familySurface?'#family-enrolment-links':'#main-content'} className="inline-flex min-h-10 items-center font-medium text-primary underline">{familySurface?'Review the students’ enrolment using the links below':'Review enrolment at top of profile'}</a></div>}{problem.reference && <p className="mt-2 text-xs text-muted-foreground">Support reference: {problem.reference}</p>}</> : <p>{error}</p>}</div>
             </div>}
 
             {/* Actions */}
@@ -367,7 +530,7 @@ function EditForm({
                 <Button variant="secondary" onClick={onCancel} disabled={isPending} className="flex-1">
                     Cancel
                 </Button>
-                <Button onClick={handleSave} disabled={isPending} className="flex-1">
+                <Button onClick={() => handleSave()} disabled={isPending} className="flex-1">
                     {isPending ? (
                         <><span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />Saving…</>
                     ) : (

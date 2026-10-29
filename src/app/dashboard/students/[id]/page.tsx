@@ -1,6 +1,6 @@
 import { readEnrolmentStart } from '@/features/students/enrolment-start-query';
 import { enrolmentBusinessDate } from '@/lib/enrolment/business-date';
-import { confirmedEnrolmentChildSql } from '@/lib/enrolment/finance-eligibility';
+import { confirmedEnrolmentChildSql, currentLifecycleStatusChildSql } from '@/lib/enrolment/finance-eligibility';
 import { logger } from '@/lib/logger';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { notFound } from 'next/navigation';
@@ -129,15 +129,27 @@ export default async function StudentProfilePage(
     }));
 
     // Fetch siblings at the same centre (for the billing card's children checkboxes and prefill link)
-    const siblings = student.centreId
-        ? await db.select({ id: children.id, firstName: children.firstName, lastName: children.lastName })
+    const siblingsRaw = student.centreId
+        ? await db.select({
+            id: children.id,
+            firstName: children.firstName,
+            lastName: children.lastName,
+            confirmedEnrolment: sql<boolean>`CASE WHEN ${confirmedEnrolmentChildSql()} THEN true ELSE false END`,
+            lifecycleStatus: currentLifecycleStatusChildSql(),
+        })
             .from(children)
             .where(and(
                 eq(children.parentId, student.parentId),
                 eq(children.centreId, student.centreId),
+                eq(children.organisationId, session.user.organisationId),
                 isNull(children.deletedAt),
             ))
         : [];
+    const siblings = siblingsRaw.map(s => ({
+        ...s,
+        confirmedEnrolment: s.confirmedEnrolment !== undefined ? Boolean(s.confirmedEnrolment) : undefined,
+        lifecycleStatus: s.lifecycleStatus || undefined,
+    }));
 
     // Fetch full registration detail (for the Registration tab)
     let registrationDetail: {

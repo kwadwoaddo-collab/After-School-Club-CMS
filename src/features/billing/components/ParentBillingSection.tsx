@@ -13,6 +13,8 @@ export type ParentBillingGroup = {
         id: string;
         firstName: string;
         lastName: string;
+        confirmedEnrolment?: boolean;
+        lifecycleStatus?: 'active' | 'paused' | 'stopped' | string;
     }[];
     config: StudentBillingConfig | null;
 };
