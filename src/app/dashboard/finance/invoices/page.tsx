@@ -7,7 +7,7 @@ import { eq, desc, and, inArray } from 'drizzle-orm';
 import { getUserAccessibleCentres } from '@/lib/permissions';
 import FilterableInvoiceHistorySection from '@/features/finance/components/FilterableInvoiceHistorySection';
 import Link from 'next/link';
-import { ArrowLeft, FileText } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 
 export default async function InvoicesListPage() {
     const session = await requireTenantSession();

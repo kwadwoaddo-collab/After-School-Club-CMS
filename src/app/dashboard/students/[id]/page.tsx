@@ -40,7 +40,7 @@ export default async function StudentProfilePage(
     const isOwner = userRole === 'ORG_OWNER';
 
     // Consolidated parallel database queries
-    const [studentData, bookingsRaw, initialNotes, [attendanceResults]] = await Promise.all([
+    const [studentData, bookingsRaw, initialNotes] = await Promise.all([
 
         db.select({
             id: children.id,
@@ -93,20 +93,6 @@ export default async function StudentProfilePage(
         .orderBy(desc(bookings.startAt)),
 
         getStudentNotes(id),
-
-        db.select({
-            total: sql<number>`count(*)`,
-            completed: sql<number>`count(*) filter (where
-                COALESCE(${bookingAttendees.attendanceStatus}::text, CASE WHEN ${bookings.status} = 'completed' THEN 'present' ELSE NULL END) = 'present'
-            )`,
-            absent: sql<number>`count(*) filter (where ${bookingAttendees.attendanceStatus} = 'absent')`,
-            late: sql<number>`count(*) filter (where ${bookingAttendees.attendanceStatus} = 'late')`,
-            noShow: sql<number>`count(*) filter (where ${bookingAttendees.attendanceStatus} = 'no_show')`,
-            excused: sql<number>`count(*) filter (where ${bookingAttendees.attendanceStatus} = 'excused')`,
-        })
-        .from(bookingAttendees)
-        .innerJoin(bookings, eq(bookingAttendees.bookingId, bookings.id))
-        .where(eq(bookingAttendees.childId, id)),
     ]);
 
     if (studentData.length === 0) return notFound();
@@ -247,7 +233,6 @@ export default async function StudentProfilePage(
             student={{
                 ...student,
                 bookings: studentBookings,
-                attendanceStats: attendanceResults
             }}
             initialNotes={initialNotes}
             currentUserId={session.user.id}

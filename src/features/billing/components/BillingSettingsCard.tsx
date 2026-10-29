@@ -2,14 +2,14 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { PoundSterling, Calendar, Users, ChevronDown, ChevronUp, Pencil, X, Check, Pause, Play, AlertTriangle } from 'lucide-react';
+import { PoundSterling, Pencil, X, Check, Pause, Play, AlertTriangle } from 'lucide-react';
 import { penceToPounds, poundsToPence } from '@/lib/billing';
 import { previewBillingPeriods, formatDisplayDate, LeadTimeUnit } from '@/lib/billing/date-engine';
 import { cn } from '@/components/ui/utils';
 import { Button } from '@/components/ui/Button';
 import { saveFamilyBillingSettings, changeFamilyBillingStatus, confirmFamilyStudentsEnrolment } from '@/features/billing/actions';
 import { billingProblem, type BillingProblem } from '../billing-problem';
-import type { StudentBillingConfig, CoveredChild } from '@/features/billing/queries';
+import type { StudentBillingConfig } from '@/features/billing/queries';
 import { isQuarantinedParentId } from '@/lib/data-quality/quarantine';
 
 // ─── Types ────────────────────────────────────────────────────────────────────

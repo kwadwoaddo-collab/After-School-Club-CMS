@@ -385,11 +385,11 @@ export const authConfig: any = {
   },
 };
 
-export const nextAuthResult = NextAuth(authConfig);
+const nextAuthResult = NextAuth(authConfig);
 
 export const { handlers, signIn, signOut } = nextAuthResult;
 
-export interface SessionWithOrg {
+interface SessionWithOrg {
   user: {
     id: string;
     organisationId?: string | null;
@@ -458,17 +458,4 @@ export async function auth(...args: unknown[]) {
   }
 
   return session;
-}
-
-// Helper to get current user with organisation
-export async function getCurrentUser() {
-  const session = await auth();
-  if (!session?.user?.id) return null;
-
-  const user = await db.query.users.findFirst({
-    where: eq(users.id, session.user.id),
-    with: { organisation: true },
-  });
-
-  return user;
 }

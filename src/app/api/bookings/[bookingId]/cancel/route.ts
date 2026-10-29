@@ -1,6 +1,6 @@
 import { logger } from '@/lib/logger';
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { NextRequest, NextResponse, after } from 'next/server';
+import { NextResponse, after } from 'next/server';
 import { getApiSession } from '@/lib/session';
 import { db } from '@/db';
 import { bookings } from '@/db/schema';

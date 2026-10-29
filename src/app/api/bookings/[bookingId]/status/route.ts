@@ -1,10 +1,10 @@
 import { logger } from '@/lib/logger';
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getApiSession } from '@/lib/session';
 import { db } from '@/db';
-import { bookings, centres } from '@/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { bookings } from '@/db/schema';
+import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { revalidatePath } from 'next/cache';
@@ -18,7 +18,7 @@ interface RouteContext {
     params: Promise<{ bookingId: string }>;
 }
 
-export async function PATCH(request: NextRequest, { params }: RouteContext) {
+export async function PATCH(request: Request, { params }: RouteContext) {
     try {
         const session = await getApiSession();
         if (!session?.user?.organisationId) {

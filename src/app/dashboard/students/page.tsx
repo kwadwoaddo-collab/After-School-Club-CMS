@@ -159,16 +159,6 @@ export default async function StudentsPage(props: {
         }
 
         // Base subqueries for counts
-        const centreFilterSql = activeCentreId !== 'all' 
-            ? sql`AND b.centre_id = ${activeCentreId}` 
-            : sql`AND b.centre_id IN ${sql`(${sql.join(accessibleCentreIds.map(id => sql`${id}`), sql`, `)})`}`;
-
-        // Instead of raw text list of accessibleCentreIds, we might need a better way if it's dynamic.
-        // Drizzle `inArray` can be used via sql. Or we just simplify since we are passing activeCentreId or we just check if it's 'all'
-        // Let's build a simpler subquery logic.
-        // Actually, joining all these inside CTE is easier.
-
-        // Let's do it using Drizzle sql``
         const pastCountQuery = sql<number>`(
             SELECT count(*)::int FROM ${bookingAttendees} ba
             INNER JOIN ${bookings} b ON ba.booking_id = b.id

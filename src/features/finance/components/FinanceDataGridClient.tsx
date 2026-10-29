@@ -5,19 +5,14 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { 
     FileText, 
-    MoreHorizontal, 
     CheckCircle2, 
     AlertCircle, 
     Clock, 
-    X, 
     ChevronRight, 
     Plus, 
-    Download, 
-    RefreshCw, 
     CreditCard,
     TrendingUp,
     ShieldAlert,
-    Wallet
 } from 'lucide-react';
 import { formatInvoiceDate, formatInvoicePeriod, invoiceBalanceLabel } from '../domain/invoice-display';
 import { useToast } from '@/components/ui/ToastProvider';

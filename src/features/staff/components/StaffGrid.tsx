@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { Mail, Building2, Clock } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { Badge } from '@/components/ui/Badge';
-import { ROLE_LABELS, ROLE_AVATAR_COLORS } from '@/lib/staff-constants';
+import { ROLE_LABELS, ROLE_AVATAR_COLORS, getStaffInitials } from '@/lib/staff-constants';
 
 /* ------------------------------------------------------------------ */
 /*  Mobile record card — same "tables collapse to stacked cards below   */
@@ -27,22 +27,13 @@ interface StaffGridProps {
     currentUserId: string;
 }
 
-function getInitials(name: string, email: string) {
-    if (name && name.trim().length > 0) {
-        const parts = name.trim().split(' ').filter(Boolean);
-        const raw = parts.map(n => n[0]).join('').toUpperCase().slice(0, 2);
-        return raw.length === 1 ? raw + raw : raw;
-    }
-    return (email || 'S').charAt(0).toUpperCase().repeat(2);
-}
-
 export default function StaffGrid({ staff, currentUserId }: StaffGridProps) {
     return (
         <div className="flex flex-col gap-3">
             {staff.map((member) => {
                 const isCurrentUser = member.id === currentUserId;
                 const isOwner = member.role === 'ORG_OWNER';
-                const initials = getInitials(member.displayName, member.email);
+                const initials = getStaffInitials(member.displayName, member.email);
 
                 return (
                     <Link

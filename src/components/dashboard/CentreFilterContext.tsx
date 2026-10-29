@@ -102,32 +102,3 @@ export function CentreFilterProvider({
 export function useCentreFilter() {
   return useContext(CentreFilterCtx);
 }
-
-/**
- * Reusable centre selector dropdown.
- * Drop this into any page header to get a consistent filtering UX.
- */
-export function CentreSelector({ className = '' }: { className?: string }) {
-  const { selectedCentreId, setSelectedCentreId, centres } = useCentreFilter();
-
-  if (centres.length <= 1) return null;
-
-  return (
-    <select
-      value={selectedCentreId}
-      onChange={e => setSelectedCentreId(e.target.value)}
-      className={`
-        bg-secondary text-text border border-border
-        text-sm font-semibold rounded-lg px-4 py-2
-        focus:border-accent focus:ring-1 focus:ring-accent/30
-        cursor-pointer appearance-none outline-none
-        ${className}
-      `}
-    >
-      <option value="all">All Centres</option>
-      {centres.map(c => (
-        <option key={c.id} value={c.id}>{c.name}</option>
-      ))}
-    </select>
-  );
-}

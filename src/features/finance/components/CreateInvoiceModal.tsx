@@ -65,11 +65,9 @@ export default function CreateInvoiceModal({ centres: rawCentres, onClose }: Cre
 
     // Ad-Hoc Invoice State
     const [adhocChildName, setAdhocChildName] = useState('');
-    const [adhocUseExistingParent, setAdhocUseExistingParent] = useState(true);
     const [adhocParentSearch, setAdhocParentSearch] = useState('');
     const [adhocParentResults, setAdhocParentResults] = useState<any[]>([]);
     const [adhocSelectedParent, setAdhocSelectedParent] = useState<any>(null);
-    const [adhocNewParent, setAdhocNewParent] = useState({ firstName: '', lastName: '', email: '', phone: '' });
 
     // Invoice Details State
     const [invoiceData, setInvoiceData] = useState(() => ({
@@ -204,8 +202,7 @@ export default function CreateInvoiceModal({ centres: rawCentres, onClose }: Cre
             } else if (step === 'adhoc-invoice' || (step === 'invoice-details' && !selectedParent && adhocChildName)) {
                 // Ad-Hoc Invoice — child not in system
                 await createAdHocInvoice({
-                    parentId: adhocUseExistingParent ? adhocSelectedParent?.id : undefined,
-                    newParent: !adhocUseExistingParent ? adhocNewParent : undefined,
+                    parentId: adhocSelectedParent?.id,
                     childName: adhocChildName,
                     amount: invoiceData.amount,
                     invoiceDate: new Date(invoiceData.invoiceDate),
@@ -514,96 +511,67 @@ export default function CreateInvoiceModal({ centres: rawCentres, onClose }: Cre
                                     </h3>
                                     <div className="flex items-center gap-1 bg-card rounded-xl p-1">
                                         <button
-                                            onClick={() => { setAdhocUseExistingParent(true); setAdhocSelectedParent(null); }}
-                                            className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all ${
-                                                adhocUseExistingParent ? 'bg-primary text-foreground' : 'text-muted-foreground'
-                                            }`}
+                                            onClick={() => setAdhocSelectedParent(null)}
+                                            className="px-3 py-1.5 rounded-lg text-xs font-black transition-all bg-primary text-foreground"
                                         >
                                             Search Existing
                                         </button>
                                         <button
                                             onClick={() => setStep('legacy-onboarding')}
-                                            className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all ${
-                                                !adhocUseExistingParent ? 'bg-primary text-foreground' : 'text-muted-foreground'
-                                            }`}
+                                            className="px-3 py-1.5 rounded-lg text-xs font-black transition-all text-muted-foreground"
                                         >
                                             Add Existing Enrolled Student
                                         </button>
                                     </div>
                                 </div>
 
-                                {adhocUseExistingParent ? (
-                                    <div className="space-y-3">
-                                        <div className="relative">
-                                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                                            <input
-                                                type="text"
-                                                placeholder="Search parent name or email..."
-                                                value={adhocParentSearch}
-                                                onChange={(e) => { setAdhocParentSearch(e.target.value); setAdhocSelectedParent(null); }}
-                                                className="w-full pl-10 pr-4 py-3 bg-secondary/40 border border-border rounded-xl text-foreground font-bold focus:outline-none focus:ring-2 focus:ring-primary/40"
-                                            />
+                                <div className="space-y-3">
+                                    <div className="relative">
+                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                                        <input
+                                            type="text"
+                                            placeholder="Search parent name or email..."
+                                            value={adhocParentSearch}
+                                            onChange={(e) => { setAdhocParentSearch(e.target.value); setAdhocSelectedParent(null); }}
+                                            className="w-full pl-10 pr-4 py-3 bg-secondary/40 border border-border rounded-xl text-foreground font-bold focus:outline-none focus:ring-2 focus:ring-primary/40"
+                                        />
+                                    </div>
+                                    {adhocSelectedParent ? (
+                                        <div className="flex items-center justify-between p-3 bg-primary/10 border border-primary/30 rounded-xl">
+                                            <div>
+                                                <p className="font-bold text-foreground text-sm">{adhocSelectedParent.firstName} {adhocSelectedParent.lastName}</p>
+                                                <p className="text-xs text-muted-foreground">{adhocSelectedParent.email || 'No email'}</p>
+                                            </div>
+                                            <button onClick={() => { setAdhocSelectedParent(null); setAdhocParentSearch(''); }} className="text-muted-foreground hover:text-foreground">
+                                                <X className="w-4 h-4" />
+                                            </button>
                                         </div>
-                                        {adhocSelectedParent ? (
-                                            <div className="flex items-center justify-between p-3 bg-primary/10 border border-primary/30 rounded-xl">
-                                                <div>
-                                                    <p className="font-bold text-foreground text-sm">{adhocSelectedParent.firstName} {adhocSelectedParent.lastName}</p>
-                                                    <p className="text-xs text-muted-foreground">{adhocSelectedParent.email || 'No email'}</p>
-                                                </div>
-                                                <button onClick={() => { setAdhocSelectedParent(null); setAdhocParentSearch(''); }} className="text-muted-foreground hover:text-foreground">
-                                                    <X className="w-4 h-4" />
+                                    ) : adhocParentResults.length > 0 && (
+                                        <div className="space-y-1 max-h-40 overflow-y-auto">
+                                            {adhocParentResults.map((p: any) => (
+                                                <button
+                                                    key={p.id}
+                                                    onClick={() => { setAdhocSelectedParent(p); setAdhocParentSearch(''); setAdhocParentResults([]); }}
+                                                    className="w-full flex items-center gap-3 p-3 bg-secondary/40 border border-border rounded-xl hover:bg-primary/10 hover:border-primary/30 transition-all text-left"
+                                                >
+                                                    <div className="w-8 h-8 rounded-lg bg-card flex items-center justify-center font-bold text-primary text-xs">
+                                                        {p.firstName[0]}{p.lastName[0]}
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-bold text-foreground text-sm">{p.firstName} {p.lastName}</p>
+                                                        <p className="text-xs text-muted-foreground">{p.email || 'No email'}</p>
+                                                    </div>
                                                 </button>
-                                            </div>
-                                        ) : adhocParentResults.length > 0 && (
-                                            <div className="space-y-1 max-h-40 overflow-y-auto">
-                                                {adhocParentResults.map((p: any) => (
-                                                    <button
-                                                        key={p.id}
-                                                        onClick={() => { setAdhocSelectedParent(p); setAdhocParentSearch(''); setAdhocParentResults([]); }}
-                                                        className="w-full flex items-center gap-3 p-3 bg-secondary/40 border border-border rounded-xl hover:bg-primary/10 hover:border-primary/30 transition-all text-left"
-                                                    >
-                                                        <div className="w-8 h-8 rounded-lg bg-card flex items-center justify-center font-bold text-primary text-xs">
-                                                            {p.firstName[0]}{p.lastName[0]}
-                                                        </div>
-                                                        <div>
-                                                            <p className="font-bold text-foreground text-sm">{p.firstName} {p.lastName}</p>
-                                                            <p className="text-xs text-muted-foreground">{p.email || 'No email'}</p>
-                                                        </div>
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                ) : (
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <div className="space-y-1.5">
-                                            <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-1">First Name *</label>
-                                            <input type="text" value={adhocNewParent.firstName} onChange={(e) => setAdhocNewParent({...adhocNewParent, firstName: e.target.value})} className="w-full p-3 bg-secondary/40 border border-border rounded-xl text-foreground font-bold" />
+                                            ))}
                                         </div>
-                                        <div className="space-y-1.5">
-                                            <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-1">Last Name</label>
-                                            <input type="text" value={adhocNewParent.lastName} onChange={(e) => setAdhocNewParent({...adhocNewParent, lastName: e.target.value})} className="w-full p-3 bg-secondary/40 border border-border rounded-xl text-foreground font-bold" />
-                                        </div>
-                                        <div className="space-y-1.5">
-                                            <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-1">Email</label>
-                                            <input type="email" value={adhocNewParent.email} onChange={(e) => setAdhocNewParent({...adhocNewParent, email: e.target.value})} className="w-full p-3 bg-secondary/40 border border-border rounded-xl text-foreground font-bold" />
-                                        </div>
-                                        <div className="space-y-1.5">
-                                            <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-1">Phone</label>
-                                            <input type="tel" value={adhocNewParent.phone} onChange={(e) => setAdhocNewParent({...adhocNewParent, phone: e.target.value})} className="w-full p-3 bg-secondary/40 border border-border rounded-xl text-foreground font-bold" />
-                                        </div>
-                                    </div>
-                                )}
+                                    )}
+                                </div>
                             </div>
 
                             <div className="pt-4 border-t border-border">
                                 <button
                                     onClick={() => setStep('invoice-details')}
-                                    disabled={
-                                        !adhocChildName.trim() ||
-                                        (adhocUseExistingParent && !adhocSelectedParent) ||
-                                        (!adhocUseExistingParent && !adhocNewParent.firstName.trim())
-                                    }
+                                    disabled={!adhocChildName.trim() || !adhocSelectedParent}
                                     className="w-full py-4 bg-primary text-white font-black uppercase tracking-widest rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary/90 transition-all shadow-xl shadow-primary/20"
                                 >
                                     Proceed to Billing

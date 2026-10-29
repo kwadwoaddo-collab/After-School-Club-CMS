@@ -59,9 +59,7 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
             centre: true,
             attendees: {
                 with: {
-                    child: {
-                        with: { notes: { orderBy: (notes, { desc }) => [desc(notes.createdAt)] } }
-                    }
+                    child: true
                 }
             },
             staff: true

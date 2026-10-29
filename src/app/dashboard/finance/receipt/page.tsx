@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { db } from '@/db';
 import { eq, and, inArray } from 'drizzle-orm';
-import { centres, children } from '@/db/schema';
+import { children } from '@/db/schema';
 import { getUserAccessibleCentres, getVisibleChildIds } from '@/lib/permissions';
 import ReceiptGeneratorClient from '@/features/finance/components/ReceiptGeneratorClient';
 import { stableReceiptNumber } from '@/lib/finance/receipt-number';

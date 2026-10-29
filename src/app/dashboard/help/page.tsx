@@ -10,20 +10,13 @@ import {
   getLearningPathForRole,
 } from '@/lib/help/get-help-content';
 
-import { CMS_STAFF_ROLES, HelpStaffRole } from '@/lib/help/types';
+import { CMS_STAFF_ROLES, HelpStaffRole, STAFF_ROLE_LABELS } from '@/lib/help/types';
 import HelpHubView from './_components/HelpHubView';
 
 export const metadata: Metadata = {
   title: 'Help & Training | SprintScale CMS',
   description:
     'Guides, walkthroughs and operational training resources for SprintScale after-school club management.',
-};
-
-const STAFF_ROLE_LABELS: Record<HelpStaffRole, string> = {
-  ORG_OWNER: 'Organisation Owner',
-  MANAGER: 'Centre Manager',
-  FRONT_DESK: 'Front Desk',
-  TUTOR: 'Tutor / Club Leader',
 };
 
 const COMMON_TASK_SLUGS = [

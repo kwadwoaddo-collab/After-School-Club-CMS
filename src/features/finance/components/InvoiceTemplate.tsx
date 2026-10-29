@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Document, Page, Text, View, StyleSheet, Font, Image } from '@react-pdf/renderer';
-import { format } from 'date-fns';
-import { billingStylesBase } from './billingPdfStyles';
+import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
+import { billingStylesBase, safeFormatDate, buildCentreAddressLines, getCoveredChildNames } from './billingPdfStyles';
 
 const styles = StyleSheet.create({
     ...billingStylesBase,
@@ -23,22 +22,12 @@ interface InvoiceTemplateProps {
 }
 
 export const InvoiceTemplate = ({ invoice, organisationName }: InvoiceTemplateProps) => {
-    const { parent, child, centre, amount, invoiceNumber, invoiceDate, dueDate, billingPeriodStart, billingPeriodEnd, notes, childDisplayName, status, payments } = invoice;
-    const safeFormatDate = (date: any, formatStr: string) => {
-        if (!date) return '-';
-        const d = new Date(date);
-        if (isNaN(d.getTime())) return '-';
-        return format(d, formatStr);
-    };
+    const { parent, child, centre, amount, invoiceNumber, invoiceDate, dueDate, billingPeriodStart, billingPeriodEnd, notes, status, payments } = invoice;
 
     // Parse address into lines for multi-line display
-    const addressLines: string[] = centre?.address ? centre.address.split('\n').map((l: string) => l.trim()).filter(Boolean) : [];
+    const addressLines: string[] = buildCentreAddressLines(centre?.address);
     // Fallback to child.parent if parent relation is missing (legacy support)
     const activeParent = parent || (child && (child as any).parent);
-    // Show child name from record or from the ad-hoc free-text field
-    const displayChildName = child
-        ? `${child.firstName} ${child.lastName}`
-        : (childDisplayName || null);
 
     const displayNotes = notes && 
         !notes.trim().startsWith('Monthly tuition') && 
@@ -53,15 +42,7 @@ export const InvoiceTemplate = ({ invoice, organisationName }: InvoiceTemplatePr
     // Build the canonical list of all children covered by this invoice.
     // coveredChildrenJson is the source of truth (supports multiple children);
     // fall back to the single child relation or free-text childDisplayName.
-    const allChildNames: string[] = (() => {
-        const json = invoice.coveredChildrenJson;
-        if (json && Array.isArray(json) && json.length > 0) {
-            return json.map((c: any) => c.name || `${c.firstName || ''} ${c.lastName || ''}`.trim()).filter(Boolean);
-        }
-        if (child) return [`${child.firstName} ${child.lastName}`];
-        if (childDisplayName) return [childDisplayName];
-        return [];
-    })();
+    const allChildNames: string[] = getCoveredChildNames(invoice);
 
     return (
         <Document title={`Invoice-${invoiceNumber}`}>

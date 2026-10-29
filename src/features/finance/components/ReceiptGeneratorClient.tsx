@@ -3,8 +3,7 @@
 
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { Printer, Copy, Check, Info, FileText, User, Coins, CreditCard, Landmark, Calendar, MapPin, Sparkles } from 'lucide-react';
+import { Printer, Check, Info, FileText, Coins, CreditCard, Landmark, Sparkles } from 'lucide-react';
 
 interface Child {
     id: string;
@@ -37,7 +36,7 @@ interface Props {
     stableReceiptNo?: string;
 }
 
-export default function ReceiptGeneratorClient({ organisation, centres, children: rawChildren, paymentId, stableReceiptNo }: Props) {
+export default function ReceiptGeneratorClient({ organisation, centres, children: rawChildren, stableReceiptNo }: Props) {
     const children = rawChildren as Child[];
     // Generate random receipt number
     const generateReceiptNumber = () => {
@@ -58,8 +57,6 @@ export default function ReceiptGeneratorClient({ organisation, centres, children
     const [paymentMethod, setPaymentMethod] = useState<'Cash' | 'Card' | 'Bank Transfer' | 'Childcare Vouchers'>('Cash');
     const [selectedCentreId, setSelectedCentreId] = useState(centres[0]?.id || '');
     const [description, setDescription] = useState('Weekly Club Sessions');
-
-    const [copied, setCopied] = useState(false);
 
     // Set initial values
     useEffect(() => {

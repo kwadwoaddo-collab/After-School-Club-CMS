@@ -125,7 +125,7 @@ export default async function ParentsPage({ searchParams }: Props) {
                 LEFT JOIN InvoiceSummary ins ON pa.id = ins.parent_id
                 WHERE pa.organisation_id = ${orgId} AND pa.deleted_at IS NULL
                 ${activeCentreId !== 'all'
-                    ? sql`AND (cd.child_count > 0 OR pa.id IN (SELECT parent_id FROM children WHERE centre_id = ${activeCentreId} AND deleted_at IS NULL))`
+                    ? sql`AND cd.child_count > 0`
                     : sql`AND (COALESCE(acd.total_child_count, 0) = 0 OR COALESCE(cd.child_count, 0) > 0)`}
             )
             SELECT * FROM ParentBase

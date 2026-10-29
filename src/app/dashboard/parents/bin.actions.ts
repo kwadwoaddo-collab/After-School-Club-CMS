@@ -2,7 +2,7 @@
 
 import { db } from '@/db';
 import { parents, children } from '@/db/schema';
-import { eq, isNull, and, sql, gte } from 'drizzle-orm';
+import { eq, and, sql, gte } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { requireApiAuth } from '@/lib/require-auth';
 

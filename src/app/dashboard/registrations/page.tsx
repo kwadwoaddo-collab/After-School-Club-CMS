@@ -9,13 +9,11 @@ import { registrations, organisations, registrationParents, registrationChildren
 import { eq, desc, and, inArray, or, ilike, sql } from 'drizzle-orm';
 import Link from 'next/link';
 import { Suspense } from 'react';
-import CopyRegistrationLink from '@/components/dashboard/CopyRegistrationLink';
 import RegistrationsBulkClient from '@/components/dashboard/RegistrationsBulkClient';
 import RegistrationsFilters from '@/features/registration/components/RegistrationsFilters';
 import { getUserAccessibleCentres } from '@/lib/permissions';
-import { normalizeString } from '@/lib/search-params';
 import { resolveActiveCentreId } from '@/lib/centre-filter';
-import { FileText, Clock, CheckCircle2, AlertTriangle, Share2 } from 'lucide-react';
+import { Share2 } from 'lucide-react';
 import HeaderPortal from '@/components/dashboard/HeaderPortal';
 
 const STATUS_BADGE: Record<string, string> = {
@@ -83,15 +81,17 @@ export default async function RegistrationsPage(props: {
 
         activeCentreId = await resolveActiveCentreId(searchParams.centre, centreIds);
 
+        const centreScopeCondition = activeCentreId !== 'all'
+            ? eq(registrations.centreId, activeCentreId)
+            : centreIds.length > 0
+                ? inArray(registrations.centreId, centreIds)
+                : eq(registrations.centreId, 'unauthorized_centre_id');
+
         // Fetch status counts via aggregation
         const aggWhere = and(
             eq(registrations.organisationId, orgId),
             summaryRangeSql(registrations.createdAt, summaryRange),
-            activeCentreId !== 'all'
-                ? eq(registrations.centreId, activeCentreId)
-                : centreIds.length > 0
-                    ? inArray(registrations.centreId, centreIds)
-                    : eq(registrations.centreId, 'unauthorized_centre_id')
+            centreScopeCondition
         );
 
         statusCountsAgg = await db.select({
@@ -117,11 +117,7 @@ export default async function RegistrationsPage(props: {
                 .where(
                     and(
                         eq(registrations.organisationId, orgId),
-                        activeCentreId !== 'all'
-                            ? eq(registrations.centreId, activeCentreId)
-                            : centreIds.length > 0
-                                ? inArray(registrations.centreId, centreIds)
-                                : eq(registrations.centreId, 'unauthorized_centre_id'),
+                        centreScopeCondition,
                         or(
                             ilike(registrationParents.submittedFirstName, searchPattern),
                             ilike(registrationParents.submittedLastName, searchPattern),
@@ -143,24 +139,14 @@ export default async function RegistrationsPage(props: {
             const periodCondition = summaryRangeSql(registrations.createdAt, summaryRange);
             if (periodCondition) conditions.push(periodCondition);
 
-            if (activeCentreId !== 'all') {
-                conditions.push(eq(registrations.centreId, activeCentreId));
-            } else if (centreIds.length > 0) {
-                conditions.push(inArray(registrations.centreId, centreIds));
-            } else {
-                conditions.push(eq(registrations.centreId, 'unauthorized_centre_id'));
-            }
+            conditions.push(centreScopeCondition);
 
             if (searchParams.status && searchParams.status !== 'all') {
                 conditions.push(eq(registrations.status, searchParams.status as any));
             }
 
-            if (searchParams.search) {
-                if (matchingIds.length > 0) {
-                    conditions.push(inArray(registrations.id, matchingIds));
-                } else {
-                    conditions.push(eq(registrations.id, '00000000-0000-0000-0000-000000000000'));
-                }
+            if (searchParams.search && matchingIds.length > 0) {
+                conditions.push(inArray(registrations.id, matchingIds));
             }
 
             // Use relational query to fetch all registration data in ONE trip

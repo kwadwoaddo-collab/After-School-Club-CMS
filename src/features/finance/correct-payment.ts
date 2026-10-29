@@ -5,6 +5,7 @@ import { and, eq, like, sql } from 'drizzle-orm';
 import { requireTenantSession } from '@/lib/session';
 import { revalidatePath } from 'next/cache';
 import { PaymentCorrectionSchema, correctionDate, correctableMethods, type PaymentCorrectionInput } from './domain/payment-correction';
+import { toEuropeLondonBusinessDate } from './domain/payment-eligibility';
 class PaymentCorrectionError extends Error {}
 
 async function applyPaymentCorrection(raw: PaymentCorrectionInput) {
@@ -14,7 +15,7 @@ async function applyPaymentCorrection(raw: PaymentCorrectionInput) {
     const parsed = PaymentCorrectionSchema.safeParse(raw);
     if (!parsed.success) throw new PaymentCorrectionError('Check the payment date, reference and reason, then try again.');
     const data = parsed.data, orgId = session.user.organisationId, userId = session.user.id;
-    const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/London', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+    const today = toEuropeLondonBusinessDate(new Date());
     let date: Date;
     try { date = correctionDate(data.paymentDate, today); } catch { throw new PaymentCorrectionError('Enter a valid payment date that is not in the future.'); }
     const reference = data.reference?.trim() || null;
@@ -50,8 +51,9 @@ async function applyPaymentCorrection(raw: PaymentCorrectionInput) {
             throw new PaymentCorrectionError('Only verified, manually recorded payments on a non-void invoice can be corrected.');
         if (payment.recordedAt.toISOString() !== new Date(data.expectedRecordedAt).toISOString() || payment.transactionReference !== data.expectedReference)
             throw new PaymentCorrectionError('This payment changed while you were editing. Reload the invoice and review it before correcting it.');
-        const sameBusinessDate = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/London', year: 'numeric', month: '2-digit', day: '2-digit' }).format(payment.recordedAt) === data.paymentDate;
-        if (new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/London', year: 'numeric', month: '2-digit', day: '2-digit' }).format(payment.recordedAt) === data.paymentDate && payment.transactionReference === reference)
+        const previousPaymentDate = toEuropeLondonBusinessDate(payment.recordedAt);
+        const sameBusinessDate = previousPaymentDate === data.paymentDate;
+        if (sameBusinessDate && payment.transactionReference === reference)
             throw new PaymentCorrectionError('Change the payment date or reference before saving a correction.');
         await tx.update(payments).set({ recordedAt: sameBusinessDate ? payment.recordedAt : date, transactionReference: reference, updatedAt: new Date() }).where(eq(payments.id, payment.id));
         await tx.insert(auditEvents).values({ organisationId: orgId, userId, eventType: 'payment_details_corrected', eventData: JSON.stringify({ correctionId: data.correctionId, actorId: userId, paymentId: payment.id, invoiceId: invoice.id, invoiceNumber: invoice.invoiceNumber, reason: data.reason, previousRecordedAt: payment.recordedAt.toISOString(), correctedRecordedAt: (sameBusinessDate ? payment.recordedAt : date).toISOString(), previousReference: payment.transactionReference, correctedReference: reference, amount: payment.amount, method: payment.method, paymentStatus: payment.status, request }) });

@@ -40,14 +40,3 @@ export const getRegistrationKpis = cache(async (orgId: string, centreCondition: 
         prevPeriod: sql<number>`count(*) filter (where ${registrations.createdAt} >= ${prevStart} and ${registrations.createdAt} <= ${prevEnd})::int`
     }).from(registrations).where(and(eq(registrations.organisationId, orgId), centreCondition));
 });
-
-export const getWeeklyRegistrations = cache(async (orgId: string, centreCondition: any, now: Date) => {
-    return db.select({
-        weekStart: sql<string>`date_trunc('week', ${registrations.createdAt})`,
-        count: sql<number>`count(*)::int`
-    })
-    .from(registrations)
-    .where(and(eq(registrations.organisationId, orgId), centreCondition, gte(registrations.createdAt, subDays(now, 56))))
-    .groupBy(sql`date_trunc('week', ${registrations.createdAt})`)
-    .orderBy(asc(sql`date_trunc('week', ${registrations.createdAt})`));
-});

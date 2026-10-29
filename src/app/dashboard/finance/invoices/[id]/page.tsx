@@ -7,12 +7,6 @@ import { db } from '@/db';
 import { organisations } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 
-interface InvoicePageProps {
-    params: {
-        id: string;
-    };
-}
-
 export default async function InvoicePage(props: { params: Promise<{ id: string }> }) {
     const params = await props.params;
     const session = await requireTenantSession();

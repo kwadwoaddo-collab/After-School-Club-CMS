@@ -110,23 +110,33 @@ export async function addStudentNote(
 }
 
 
-export async function deleteStudentNote(noteId: string) {
+async function authorizeNoteMutation(noteId: string, actionLabel: string = 'modify this note') {
     const session = await requireTenantSession();
     if (!session?.user?.id) {
         throw new Error('Unauthorized');
     }
 
     const note = await db.query.studentNotes.findFirst({
-        where: eq(studentNotes.id, noteId)
+        where: eq(studentNotes.id, noteId),
     });
+    if (!note) {
+        throw new Error('Note not found');
+    }
 
-    if (!note) throw new Error('Note not found');
     await assertChildAccess(note.childId, session);
 
     const userRole = (session.user as any).role;
-    if (note.userId !== session.user.id && userRole !== 'ORG_OWNER' && userRole !== 'MANAGER') {
-        throw new Error('Unauthorized: Only the author or an Admin can delete this note');
+    const isAuthor = note.userId === session.user.id;
+    const isAdmin = userRole === 'ORG_OWNER' || userRole === 'MANAGER';
+    if (!isAuthor && !isAdmin) {
+        throw new Error(`Unauthorized: Only the author or an Admin can ${actionLabel}`);
     }
+
+    return note;
+}
+
+export async function deleteStudentNote(noteId: string) {
+    const note = await authorizeNoteMutation(noteId, 'delete this note');
 
     await db.delete(studentNotes).where(eq(studentNotes.id, noteId));
 
@@ -137,23 +147,7 @@ export async function deleteStudentNote(noteId: string) {
 }
 
 export async function toggleStudentNotePin(noteId: string, pinned: boolean) {
-    const session = await requireTenantSession();
-    if (!session?.user?.id) {
-        throw new Error('Unauthorized');
-    }
-
-    const note = await db.query.studentNotes.findFirst({
-        where: eq(studentNotes.id, noteId)
-    });
-    if (!note) throw new Error('Note not found');
-    await assertChildAccess(note.childId, session);
-
-    const userRole = (session.user as any).role;
-    if (userRole !== 'ORG_OWNER' && userRole !== 'MANAGER') {
-        if (note.userId !== session.user.id) {
-            throw new Error('Unauthorized: Only the author or an Admin can pin/unpin notes');
-        }
-    }
+    const note = await authorizeNoteMutation(noteId, 'pin/unpin notes');
 
     await db.update(studentNotes)
         .set({ pinnedAt: pinned ? new Date() : null })
@@ -175,34 +169,17 @@ export async function editStudentNote(
         rating?: 'excellent' | 'good' | 'satisfactory' | 'needs_improvement' | 'unsatisfactory';
     }
 ) {
-    // 1. Authenticate user
-    const session = await requireTenantSession();
-    if (!session?.user?.id) {
-        throw new Error('Unauthorized');
-    }
-
-    // 2. Validate input
     if (!content || !content.trim()) {
+        const session = await requireTenantSession();
+        if (!session?.user?.id) {
+            throw new Error('Unauthorized');
+        }
         throw new Error('Note content cannot be empty');
     }
 
-    // 3. Retrieve note and verify existence
-    const note = await db.query.studentNotes.findFirst({
-        where: eq(studentNotes.id, noteId)
-    });
+    const note = await authorizeNoteMutation(noteId, 'edit this note');
 
-    if (!note) {
-        throw new Error('Note not found');
-    }
-    await assertChildAccess(note.childId, session);
-
-    // 4. Authorization check (Author or ORG_OWNER / MANAGER only)
-    const userRole = (session.user as any).role;
-    if (note.userId !== session.user.id && userRole !== 'ORG_OWNER' && userRole !== 'MANAGER') {
-        throw new Error('Unauthorized: Only the author or an Admin can edit this note');
-    }
-
-    // 5. Perform the database update safely preserving non-updated optional fields
+    // Perform the database update safely preserving non-updated optional fields
     await db.update(studentNotes)
         .set({
             content: content.trim(),
@@ -214,7 +191,6 @@ export async function editStudentNote(
         })
         .where(eq(studentNotes.id, noteId));
 
-    // 6. Revalidate relevant cache paths
     revalidatePath(`/dashboard/students/${note.childId}`);
     revalidatePath('/dashboard/students');
 

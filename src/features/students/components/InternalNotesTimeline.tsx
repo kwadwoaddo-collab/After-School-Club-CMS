@@ -22,6 +22,49 @@ interface InternalNotesTimelineProps {
   initialNotes: Note[];
 }
 
+function NoteAuthorBadgeHeader({ note }: { note: Note }) {
+  return (
+    <div className="flex items-center gap-2">
+      {note.category === 'Medical' ? (
+        <>
+          <AlertTriangle className="w-4 h-4 text-destructive" />
+          {note.userId ? (
+            <Link href={`/dashboard/staff/${note.userId}`} className="text-sm font-bold text-destructive hover:underline">
+              {note.authorName}
+            </Link>
+          ) : (
+            <span className="text-sm font-bold text-destructive">{note.authorName}</span>
+          )}
+          <span className="text-[10px] px-2 py-0.5 rounded border border-destructive/20 bg-destructive/10 text-destructive font-bold uppercase tracking-wider ml-1">Medical</span>
+        </>
+      ) : note.category === 'Safeguarding' ? (
+        <>
+          <Shield className="w-4 h-4 text-primary" />
+          {note.userId ? (
+            <Link href={`/dashboard/staff/${note.userId}`} className="text-sm font-bold text-primary hover:underline">
+              {note.authorName}
+            </Link>
+          ) : (
+            <span className="text-sm font-bold text-primary">{note.authorName}</span>
+          )}
+          <span className="text-[10px] px-2 py-0.5 rounded border border-primary/20 bg-primary/10 text-primary font-bold uppercase tracking-wider ml-1">Safeguarding</span>
+        </>
+      ) : (
+        <>
+          <User className="w-4 h-4 text-muted-foreground" />
+          {note.userId ? (
+            <Link href={`/dashboard/staff/${note.userId}`} className="text-sm font-bold text-foreground hover:text-primary hover:underline transition-colors">
+              {note.authorName}
+            </Link>
+          ) : (
+            <span className="text-sm font-bold text-foreground">{note.authorName}</span>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 export default function InternalNotesTimeline({ childId, initialNotes }: InternalNotesTimelineProps) {
   const [content, setContent] = useState('');
   const [category, setCategory] = useState<'General' | 'Medical' | 'Safeguarding'>('General');
@@ -137,42 +180,7 @@ export default function InternalNotesTimeline({ childId, initialNotes }: Interna
               </div>
 
               <div className="flex items-center justify-between mb-2 relative z-10">
-                <div className="flex items-center gap-2">
-                  {note.category === 'Medical' ? (
-                    <>
-                      <AlertTriangle className="w-4 h-4 text-destructive" />
-                      {note.userId ? (
-                        <Link href={`/dashboard/staff/${note.userId}`} className="text-sm font-bold text-destructive hover:underline">
-                          {note.authorName}
-                        </Link>
-                      ) : (
-                        <span className="text-sm font-bold text-destructive">{note.authorName}</span>
-                      )}
-                    </>
-                  ) : note.category === 'Safeguarding' ? (
-                    <>
-                      <Shield className="w-4 h-4 text-primary" />
-                      {note.userId ? (
-                        <Link href={`/dashboard/staff/${note.userId}`} className="text-sm font-bold text-primary hover:underline">
-                          {note.authorName}
-                        </Link>
-                      ) : (
-                        <span className="text-sm font-bold text-primary">{note.authorName}</span>
-                      )}
-                    </>
-                  ) : (
-                    <>
-                      <User className="w-4 h-4 text-muted-foreground" />
-                      {note.userId ? (
-                        <Link href={`/dashboard/staff/${note.userId}`} className="text-sm font-bold text-foreground hover:text-primary hover:underline transition-colors">
-                          {note.authorName}
-                        </Link>
-                      ) : (
-                        <span className="text-sm font-bold text-foreground">{note.authorName}</span>
-                      )}
-                    </>
-                  )}
-                </div>
+                <NoteAuthorBadgeHeader note={note} />
                 <div className="flex items-center gap-2 text-muted-foreground text-xs">
                   <Clock className="w-3 h-3" />
                   <span title={format(new Date(note.createdAt), 'PPpp')}>
@@ -224,44 +232,7 @@ export default function InternalNotesTimeline({ childId, initialNotes }: Interna
 
               <div className="bg-card rounded-2xl p-4 border border-border shadow-sm">
                 <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    {note.category === 'Medical' ? (
-                      <>
-                        <AlertTriangle className="w-4 h-4 text-destructive" />
-                        {note.userId ? (
-                          <Link href={`/dashboard/staff/${note.userId}`} className="text-sm font-bold text-destructive hover:underline">
-                            {note.authorName}
-                          </Link>
-                        ) : (
-                          <span className="text-sm font-bold text-destructive">{note.authorName}</span>
-                        )}
-                        <span className="text-[10px] px-2 py-0.5 rounded border border-destructive/20 bg-destructive/10 text-destructive font-bold uppercase tracking-wider ml-1">Medical</span>
-                      </>
-                    ) : note.category === 'Safeguarding' ? (
-                      <>
-                        <Shield className="w-4 h-4 text-primary" />
-                        {note.userId ? (
-                          <Link href={`/dashboard/staff/${note.userId}`} className="text-sm font-bold text-primary hover:underline">
-                            {note.authorName}
-                          </Link>
-                        ) : (
-                          <span className="text-sm font-bold text-primary">{note.authorName}</span>
-                        )}
-                        <span className="text-[10px] px-2 py-0.5 rounded border border-primary/20 bg-primary/10 text-primary font-bold uppercase tracking-wider ml-1">Safeguarding</span>
-                      </>
-                    ) : (
-                      <>
-                        <User className="w-4 h-4 text-muted-foreground" />
-                        {note.userId ? (
-                          <Link href={`/dashboard/staff/${note.userId}`} className="text-sm font-bold text-foreground hover:text-primary hover:underline transition-colors">
-                            {note.authorName}
-                          </Link>
-                        ) : (
-                          <span className="text-sm font-bold text-foreground">{note.authorName}</span>
-                        )}
-                      </>
-                    )}
-                  </div>
+                  <NoteAuthorBadgeHeader note={note} />
                   <div className="flex items-center gap-2 text-muted-foreground text-xs">
                     <Clock className="w-3 h-3" />
                     <span title={format(new Date(note.createdAt), 'PPpp')}>

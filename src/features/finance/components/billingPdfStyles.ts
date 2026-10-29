@@ -1,3 +1,28 @@
+import { format } from 'date-fns';
+
+export function safeFormatDate(date: unknown, formatStr: string): string {
+    if (!date) return '-';
+    const d = new Date(date as string | number | Date);
+    if (isNaN(d.getTime())) return '-';
+    return format(d, formatStr);
+}
+
+export function buildCentreAddressLines(address?: string | null): string[] {
+    return address ? address.split('\n').map((l: string) => l.trim()).filter(Boolean) : [];
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function getCoveredChildNames(invoice: any): string[] {
+    const json = invoice?.coveredChildrenJson;
+    if (json && Array.isArray(json) && json.length > 0) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return json.map((c: any) => c.name || `${c.firstName || ''} ${c.lastName || ''}`.trim()).filter(Boolean);
+    }
+    if (invoice?.child) return [`${invoice.child.firstName} ${invoice.child.lastName}`];
+    if (invoice?.childDisplayName) return [invoice.childDisplayName];
+    return [];
+}
+
 export const billingStylesBase = {
     page: {
         padding: 40,

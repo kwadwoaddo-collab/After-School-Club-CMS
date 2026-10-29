@@ -324,57 +324,87 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
         return '?';
     };
 
-    const hasMedicalNote = (booking: any) => {
-        if (booking.attendees && booking.attendees.length > 0) {
-            return booking.attendees.some((a: any) =>
-                a.child?.notes?.some((n: any) => n.category === 'Medical')
-            );
-        }
-        if (booking.child && booking.child.notes) {
-            return booking.child.notes.some((n: any) => n.category === 'Medical');
-        }
-        return false;
-    };
-
-    const getMedicalNotesContent = (booking: any) => {
+    const getCategoryNotes = (booking: any, category: 'Medical' | 'Safeguarding'): string[] => {
         let notes: ChildNote[] = [];
         if (booking.attendees && booking.attendees.length > 0) {
             booking.attendees.forEach((a: any) => {
                 if (a.child?.notes) {
-                    notes = notes.concat(a.child.notes.filter((n: any) => n.category === 'Medical'));
+                    notes = notes.concat(a.child.notes.filter((n: any) => n.category === category));
                 }
             });
-        } else if (booking.child && booking.child.notes) {
-            notes = booking.child.notes.filter((n: any) => n.category === 'Medical');
+        } else if (booking.child?.notes) {
+            notes = booking.child.notes.filter((n: any) => n.category === category);
         }
-        return notes.map(n => n.content).join('\n\n');
+        return notes.map(n => n.content);
     };
 
-    const hasSafeguardingNote = (booking: any) => {
-        if (booking.attendees && booking.attendees.length > 0) {
-            return booking.attendees.some((a: any) =>
-                a.child?.notes?.some((n: any) => n.category === 'Safeguarding')
-            );
-        }
-        if (booking.child && booking.child.notes) {
-            return booking.child.notes.some((n: any) => n.category === 'Safeguarding');
-        }
-        return false;
-    };
+    const hasMedicalNote = (booking: any) => getCategoryNotes(booking, 'Medical').length > 0;
+    const getMedicalNotesContent = (booking: any) => getCategoryNotes(booking, 'Medical').join('\n\n');
+    const hasSafeguardingNote = (booking: any) => getCategoryNotes(booking, 'Safeguarding').length > 0;
+    const getSafeguardingNotesContent = (booking: any) => getCategoryNotes(booking, 'Safeguarding').join('\n\n');
 
-    const getSafeguardingNotesContent = (booking: any) => {
-        let notes: ChildNote[] = [];
-        if (booking.attendees && booking.attendees.length > 0) {
-            booking.attendees.forEach((a: any) => {
-                if (a.child?.notes) {
-                    notes = notes.concat(a.child.notes.filter((n: any) => n.category === 'Safeguarding'));
-                }
-            });
-        } else if (booking.child && booking.child.notes) {
-            notes = booking.child.notes.filter((n: any) => n.category === 'Safeguarding');
-        }
-        return notes.map(n => n.content).join('\n\n');
-    };
+    const renderBookingActionItems = (booking: any) => (
+        <>
+            <button
+                onClick={(e) => { e.stopPropagation(); handleReschedule(booking.id); }}
+                className="flex items-center gap-3 px-4 py-2 hover:bg-page text-sm text-text transition-colors w-full text-left"
+            >
+                <CalendarIcon className="w-4 h-4" />
+                Reschedule
+            </button>
+            {centres.length > 1 && (
+                <button
+                    onClick={(e) => { e.stopPropagation(); setReassignTarget(booking.id); setActiveDropdown(null); }}
+                    className="flex items-center gap-3 px-4 py-2 hover:bg-page text-sm text-text transition-colors w-full text-left"
+                >
+                    <MapPin className="w-4 h-4 text-accent" />
+                    Reassign Centre
+                </button>
+            )}
+            <div className="mx-3 my-1 border-t border-border-subtle" />
+            <p className="px-4 py-1 text-label text-text-muted">Quick Status</p>
+            <button
+                onClick={(e) => { e.stopPropagation(); handleQuickStatus(booking.id, 'confirmed'); }}
+                disabled={updatingStatus === booking.id}
+                className="flex items-center gap-3 px-4 py-2 hover:bg-page text-sm text-text transition-colors w-full text-left disabled:opacity-50"
+            >
+                <BookOpen className="w-4 h-4" />
+                Mark as Booked
+            </button>
+            <button
+                onClick={(e) => { e.stopPropagation(); handleQuickStatus(booking.id, 'signed_up'); }}
+                disabled={updatingStatus === booking.id}
+                className="flex items-center gap-3 px-4 py-2 hover:bg-page text-sm text-text transition-colors w-full text-left disabled:opacity-50"
+            >
+                <CheckCircle className="w-4 h-4" />
+                Mark joining requested
+            </button>
+            <button
+                onClick={(e) => { e.stopPropagation(); handleQuickStatus(booking.id, 'completed'); }}
+                disabled={updatingStatus === booking.id}
+                title="Marks entire booking as attended (applies to all children)"
+                className="flex items-center gap-3 px-4 py-2 hover:bg-page text-sm text-text transition-colors w-full text-left disabled:opacity-50"
+            >
+                <GraduationCap className="w-4 h-4" />
+                Mark as Attended
+            </button>
+            <div className="mx-3 my-1 border-t border-border-subtle" />
+            <button
+                onClick={(e) => { e.stopPropagation(); openCancelModal(booking.id); }}
+                className="flex items-center gap-3 px-4 py-2 hover:bg-danger-soft text-sm text-danger transition-colors w-full text-left"
+            >
+                <X className="w-4 h-4" />
+                Cancel Booking
+            </button>
+            <button
+                onClick={(e) => { e.stopPropagation(); setConfirmDelete(booking.id); setActiveDropdown(null); }}
+                className="flex items-center gap-3 px-4 py-2 hover:bg-danger-soft text-sm text-danger transition-colors w-full text-left"
+            >
+                <Trash2 className="w-4 h-4" />
+                Delete Booking
+            </button>
+        </>
+    );
 
     // Calculate Sorted Bookings
     const sortedBookings = [...bookings].sort((a, b) => {
@@ -725,64 +755,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                                                 View Student Profile
                                                             </Link>
                                                         )}
-                                                        <button
-                                                            onClick={(e) => { e.stopPropagation(); handleReschedule(booking.id); }}
-                                                            className="flex items-center gap-3 px-4 py-2 hover:bg-page text-sm text-text transition-colors w-full text-left"
-                                                        >
-                                                            <CalendarIcon className="w-4 h-4" />
-                                                            Reschedule
-                                                        </button>
-                                                        {centres.length > 1 && (
-                                                            <button
-                                                                onClick={(e) => { e.stopPropagation(); setReassignTarget(booking.id); setActiveDropdown(null); }}
-                                                                className="flex items-center gap-3 px-4 py-2 hover:bg-page text-sm text-text transition-colors w-full text-left"
-                                                            >
-                                                                <MapPin className="w-4 h-4 text-accent" />
-                                                                Reassign Centre
-                                                            </button>
-                                                        )}
-                                                        <div className="mx-3 my-1 border-t border-border-subtle" />
-                                                        <p className="px-4 py-1 text-label text-text-muted">Quick Status</p>
-                                                        <button
-                                                            onClick={(e) => { e.stopPropagation(); handleQuickStatus(booking.id, 'confirmed'); }}
-                                                            disabled={updatingStatus === booking.id}
-                                                            className="flex items-center gap-3 px-4 py-2 hover:bg-page text-sm text-text transition-colors w-full text-left disabled:opacity-50"
-                                                        >
-                                                            <BookOpen className="w-4 h-4" />
-                                                            Mark as Booked
-                                                        </button>
-                                                        <button
-                                                            onClick={(e) => { e.stopPropagation(); handleQuickStatus(booking.id, 'signed_up'); }}
-                                                            disabled={updatingStatus === booking.id}
-                                                            className="flex items-center gap-3 px-4 py-2 hover:bg-page text-sm text-text transition-colors w-full text-left disabled:opacity-50"
-                                                        >
-                                                            <CheckCircle className="w-4 h-4" />
-                                                            Mark joining requested
-                                                        </button>
-                                                        <button
-                                                            onClick={(e) => { e.stopPropagation(); handleQuickStatus(booking.id, 'completed'); }}
-                                                            disabled={updatingStatus === booking.id}
-                                                            title="Marks entire booking as attended (applies to all children)"
-                                                            className="flex items-center gap-3 px-4 py-2 hover:bg-page text-sm text-text transition-colors w-full text-left disabled:opacity-50"
-                                                        >
-                                                            <GraduationCap className="w-4 h-4" />
-                                                            Mark as Attended
-                                                        </button>
-                                                        <div className="mx-3 my-1 border-t border-border-subtle" />
-                                                        <button
-                                                            onClick={(e) => { e.stopPropagation(); openCancelModal(booking.id); }}
-                                                            className="flex items-center gap-3 px-4 py-2 hover:bg-danger-soft text-sm text-danger transition-colors w-full text-left"
-                                                        >
-                                                            <X className="w-4 h-4" />
-                                                            Cancel Booking
-                                                        </button>
-                                                        <button
-                                                            onClick={(e) => { e.stopPropagation(); setConfirmDelete(booking.id); setActiveDropdown(null); }}
-                                                            className="flex items-center gap-3 px-4 py-2 hover:bg-danger-soft text-sm text-danger transition-colors w-full text-left"
-                                                        >
-                                                            <Trash2 className="w-4 h-4" />
-                                                            Delete Booking
-                                                        </button>
+                                                        {renderBookingActionItems(booking)}
                                                     </BookingActionsPopover>
                                                 )}
                                             </div>
@@ -858,64 +831,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
 
                                         {activeDropdown === `mobile-${booking.id}` && (
                                             <BookingActionsPopover id={`booking-mobile-actions-${booking.id}`} anchor={menuAnchor} desktop={false} onClose={() => setActiveDropdown(null)}>
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); handleReschedule(booking.id); }}
-                                                    className="flex items-center gap-3 px-4 py-2 hover:bg-page text-sm text-text transition-colors w-full text-left"
-                                                >
-                                                    <CalendarIcon className="w-4 h-4" />
-                                                    Reschedule
-                                                </button>
-                                                {centres.length > 1 && (
-                                                    <button
-                                                        onClick={(e) => { e.stopPropagation(); setReassignTarget(booking.id); setActiveDropdown(null); }}
-                                                        className="flex items-center gap-3 px-4 py-2 hover:bg-page text-sm text-text transition-colors w-full text-left"
-                                                    >
-                                                        <MapPin className="w-4 h-4 text-accent" />
-                                                        Reassign Centre
-                                                    </button>
-                                                )}
-                                                <div className="mx-3 my-1 border-t border-border-subtle" />
-                                                <p className="px-4 py-1 text-label text-text-muted">Quick Status</p>
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); handleQuickStatus(booking.id, 'confirmed'); }}
-                                                    disabled={updatingStatus === booking.id}
-                                                    className="flex items-center gap-3 px-4 py-2 hover:bg-page text-sm text-text transition-colors w-full text-left disabled:opacity-50"
-                                                >
-                                                    <BookOpen className="w-4 h-4" />
-                                                    Mark as Booked
-                                                </button>
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); handleQuickStatus(booking.id, 'signed_up'); }}
-                                                    disabled={updatingStatus === booking.id}
-                                                    className="flex items-center gap-3 px-4 py-2 hover:bg-page text-sm text-text transition-colors w-full text-left disabled:opacity-50"
-                                                >
-                                                    <CheckCircle className="w-4 h-4" />
-                                                    Mark joining requested
-                                                </button>
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); handleQuickStatus(booking.id, 'completed'); }}
-                                                    disabled={updatingStatus === booking.id}
-                                                    title="Marks entire booking as attended (applies to all children)"
-                                                    className="flex items-center gap-3 px-4 py-2 hover:bg-page text-sm text-text transition-colors w-full text-left disabled:opacity-50"
-                                                >
-                                                    <GraduationCap className="w-4 h-4" />
-                                                    Mark as Attended
-                                                </button>
-                                                <div className="mx-3 my-1 border-t border-border-subtle" />
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); openCancelModal(booking.id); }}
-                                                    className="flex items-center gap-3 px-4 py-2 hover:bg-danger-soft text-sm text-danger transition-colors w-full text-left"
-                                                >
-                                                    <X className="w-4 h-4" />
-                                                    Cancel Booking
-                                                </button>
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); setConfirmDelete(booking.id); setActiveDropdown(null); }}
-                                                    className="flex items-center gap-3 px-4 py-2 hover:bg-danger-soft text-sm text-danger transition-colors w-full text-left"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                    Delete Booking
-                                                </button>
+                                                {renderBookingActionItems(booking)}
                                             </BookingActionsPopover>
                                         )}
                                     </div>

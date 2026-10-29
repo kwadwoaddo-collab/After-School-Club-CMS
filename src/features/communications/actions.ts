@@ -7,25 +7,7 @@ import { requireTenantSession, TypedSession } from '@/lib/session';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
 import { revalidatePath } from 'next/cache';
-import { processBroadcastDeliveries } from './delivery';
-
-/**
- * Milestone 3H: narrow, local escaping helper for the one HTML template this
- * file builds by hand. Not a new shared abstraction — src/lib/services/
- * email.ts's own templated methods have the same unescaped-interpolation
- * pattern throughout, but that file is shared with Bookings/Finance/Staff
- * and is out of this milestone's scope (see project-notes/
- * milestone-3h-communications-audit.md, §G/§P). This helper only protects
- * the interpolation this file itself owns.
- */
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
+import { processBroadcastDeliveries, escapeHtml } from './delivery';
 
 /**
  * Milestone 3H, C1-C4: `sendBroadcast` previously took `organisationId` as a

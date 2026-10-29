@@ -1,4 +1,6 @@
 /** Read-only labels for the invoice list. Never changes an invoice or allocation. */
+import { parseStrictDecimalToPence } from './payment-eligibility';
+
 export function formatInvoiceDate(value: string | Date | null | undefined): string {
     const date = value ? new Date(value) : null;
     return date && Number.isFinite(date.getTime()) ? new Intl.DateTimeFormat('en-GB', {day:'numeric',month:'short',year:'numeric',timeZone:'UTC'}).format(date) : 'Not recorded';
@@ -11,10 +13,11 @@ export function formatInvoicePeriod(start: string | Date | null | undefined, end
     return `${first} – ${formatInvoiceDate(b)}`;
 }
 function pence(value: string | number): number | null {
-    const match = String(value).match(/^(\d+)(?:\.(\d{1,2}))?$/);
-    if (!match) return null;
-    const result = Number(match[1]) * 100 + Number((match[2] || '').padEnd(2,'0'));
-    return Number.isSafeInteger(result) ? result : null;
+    try {
+        return parseStrictDecimalToPence(String(value));
+    } catch {
+        return null;
+    }
 }
 export function invoiceBalanceLabel(invoice: {amount:string|number;status:string;payments?:{amount:string|number;status?:string|null}[]}): string {
     const amount = pence(invoice.amount);

@@ -3,8 +3,8 @@
 
 
 import { db } from '@/db';
-import { bookings, centreAvailabilityRules, bookingAttendees, slotHolds, calendarBusy, children, parents, centres, organisations } from '@/db/schema';
-import { eq, and, gt, gte, lte, or, desc, inArray, type InferInsertModel } from 'drizzle-orm';
+import { bookings, bookingAttendees, children, parents, centres, organisations } from '@/db/schema';
+import { eq, and, desc, inArray, type InferInsertModel } from 'drizzle-orm';
 
 // Partial update payload shared by the two attendance-marking branches below
 // (existing-booking and on-demand-booking paths) — both build the same

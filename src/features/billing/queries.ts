@@ -4,9 +4,9 @@
  */
 
 import { db } from '@/db';
-import { billingConfigs, billingConfigChildren, billingRuns, billingCycleSkips, invoices, parents, children, centres } from '@/db/schema';
-import { eq, and, desc, ne, inArray, lt, gte, isNull, sql, type Column } from 'drizzle-orm';
-import { computeNextBillingPeriod, penceToPounds } from '@/lib/billing';
+import { billingConfigs, billingRuns, billingCycleSkips, invoices, children } from '@/db/schema';
+import { eq, and, desc, inArray, lt, gte, isNull, sql, type Column } from 'drizzle-orm';
+import { penceToPounds } from '@/lib/billing';
 import {
     computeBillingSchedule,
     getBillingPeriodForDate,
@@ -243,51 +243,10 @@ export async function fetchBillingCycles(
     }));
 
     // Append unconfigured registered families (Issue D)
-    const registeredKids = await db.query.children.findMany({
-        where: and(
-            eq(children.organisationId, orgId),
-            financeEligibleChildSql(),
-            isNull(children.deletedAt),
-            centreId !== 'all' ? eq(children.centreId, centreId) : undefined,
-        ),
-        with: {
-            parent: { columns: { firstName: true, lastName: true, email: true, deletedAt: true } },
-            centre: { columns: { name: true } },
-        },
-    });
-
     const configKeySet = new Set(configs.map(c => `${c.parentId}:${c.centreId}`));
+    const unconfiguredFamilies = await fetchUnconfiguredEligibleFamilies(orgId, centreId, configKeySet);
 
-    const unconfiguredMap = new Map<string, {
-        parentId: string;
-        centreId: string;
-        parent: { firstName: string; lastName: string; email: string | null; deletedAt: Date | null } | null;
-        centre: { name: string } | null;
-        kids: { id: string; firstName: string; lastName: string }[];
-    }>();
-
-    for (const kid of registeredKids) {
-        if (!kid.parentId || !kid.centreId || !kid.parent || kid.parent.deletedAt) continue;
-        const key = `${kid.parentId}:${kid.centreId}`;
-        if (configKeySet.has(key)) continue;
-
-        if (!unconfiguredMap.has(key)) {
-            unconfiguredMap.set(key, {
-                parentId: kid.parentId,
-                centreId: kid.centreId,
-                parent: kid.parent,
-                centre: kid.centre,
-                kids: [],
-            });
-        }
-        unconfiguredMap.get(key)!.kids.push({
-            id: kid.id,
-            firstName: kid.firstName,
-            lastName: kid.lastName,
-        });
-    }
-
-    const unconfiguredRows: BillingCycleRow[] = Array.from(unconfiguredMap.values()).map(item => {
+    const unconfiguredRows: BillingCycleRow[] = unconfiguredFamilies.map(item => {
         const isQuarantined = isQuarantinedParentId(item.parentId);
         return {
             config: {
@@ -403,6 +362,57 @@ function buildCentreFilter(column: Column, centreId: string | string[]) {
     return eq(column, centreId);
 }
 
+async function fetchUnconfiguredEligibleFamilies(
+    orgId: string,
+    centreId: string | string[],
+    configKeySet: Set<string>,
+) {
+    const childCentreCond = buildCentreFilter(children.centreId, centreId);
+    const registeredKids = await db.query.children.findMany({
+        where: and(
+            eq(children.organisationId, orgId),
+            financeEligibleChildSql(),
+            isNull(children.deletedAt),
+            childCentreCond,
+        ),
+        with: {
+            parent: { columns: { firstName: true, lastName: true, email: true, deletedAt: true } },
+            centre: { columns: { name: true } },
+        },
+    });
+
+    const unconfiguredMap = new Map<string, {
+        parentId: string;
+        centreId: string;
+        parent: { firstName: string; lastName: string; email: string | null; deletedAt: Date | null } | null;
+        centre: { name: string } | null;
+        kids: { id: string; firstName: string; lastName: string }[];
+    }>();
+
+    for (const kid of registeredKids) {
+        if (!kid.parentId || !kid.centreId || !kid.parent || kid.parent.deletedAt) continue;
+        const key = `${kid.parentId}:${kid.centreId}`;
+        if (configKeySet.has(key)) continue;
+
+        if (!unconfiguredMap.has(key)) {
+            unconfiguredMap.set(key, {
+                parentId: kid.parentId,
+                centreId: kid.centreId,
+                parent: kid.parent,
+                centre: kid.centre,
+                kids: [],
+            });
+        }
+        unconfiguredMap.get(key)!.kids.push({
+            id: kid.id,
+            firstName: kid.firstName,
+            lastName: kid.lastName,
+        });
+    }
+
+    return Array.from(unconfiguredMap.values());
+}
+
 /**
  * Fetch all unissued draft invoices awaiting Manager review (B10).
  */
@@ -457,56 +467,14 @@ export async function fetchBillingSetupRequired(orgId: string, centreId: string 
     const activeConfigs = configs.filter(c => !c.parent?.deletedAt);
 
     // Also include active registered children with no billing config (Issue D)
-    const childCentreCond = buildCentreFilter(children.centreId, centreId);
-    const registeredKids = await db.query.children.findMany({
-        where: and(
-            eq(children.organisationId, orgId),
-            financeEligibleChildSql(),
-            isNull(children.deletedAt),
-            childCentreCond,
-        ),
-        with: {
-            parent: { columns: { firstName: true, lastName: true, email: true, deletedAt: true } },
-            centre: { columns: { name: true } },
-        },
-    });
-
     const allOrgConfigs = await db.query.billingConfigs.findMany({
         where: eq(billingConfigs.organisationId, orgId),
         columns: { parentId: true, centreId: true },
     });
     const configKeySet = new Set(allOrgConfigs.map(c => `${c.parentId}:${c.centreId}`));
+    const unconfiguredFamilies = await fetchUnconfiguredEligibleFamilies(orgId, centreId, configKeySet);
 
-    const unconfiguredMap = new Map<string, {
-        parentId: string;
-        centreId: string;
-        parent: { firstName: string; lastName: string; email: string | null; deletedAt: Date | null } | null;
-        centre: { name: string } | null;
-        kids: { id: string; firstName: string; lastName: string }[];
-    }>();
-
-    for (const kid of registeredKids) {
-        if (!kid.parentId || !kid.centreId || !kid.parent || kid.parent.deletedAt) continue;
-        const key = `${kid.parentId}:${kid.centreId}`;
-        if (configKeySet.has(key)) continue;
-
-        if (!unconfiguredMap.has(key)) {
-            unconfiguredMap.set(key, {
-                parentId: kid.parentId,
-                centreId: kid.centreId,
-                parent: kid.parent,
-                centre: kid.centre,
-                kids: [],
-            });
-        }
-        unconfiguredMap.get(key)!.kids.push({
-            id: kid.id,
-            firstName: kid.firstName,
-            lastName: kid.lastName,
-        });
-    }
-
-    const unconfiguredItems = Array.from(unconfiguredMap.values()).map(item => ({
+    const unconfiguredItems = unconfiguredFamilies.map(item => ({
         id: `unconfigured-${item.parentId}-${item.centreId}`,
         organisationId: orgId,
         centreId: item.centreId,

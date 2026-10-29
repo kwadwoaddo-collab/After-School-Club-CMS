@@ -3,7 +3,7 @@
 
 
 import { useState, useEffect, useTransition } from 'react';
-import { CreditCard, ArrowLeft, Download, Send, Clock, CheckCircle2, AlertCircle, AlertTriangle, Trash2, Ban, Eye, Loader2, Edit2, Check, X as XIcon } from 'lucide-react';
+import { CreditCard, ArrowLeft, Download, Send, Clock, CheckCircle2, AlertCircle, Trash2, Ban, Eye, Loader2, Edit2, Check, X as XIcon } from 'lucide-react';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import RecordPaymentModal from './RecordPaymentModal';
@@ -14,7 +14,7 @@ import { InvoiceTemplate } from './InvoiceTemplate';
 import { ReceiptTemplate } from './ReceiptTemplate';
 import PDFPreviewModal from './PDFPreviewModal';
 import ConfirmActionModal from './ConfirmActionModal';
-import { deleteInvoice, voidInvoice, updateInvoiceDate, updateInvoiceNotes, resendInvoiceEmail, issueDraftInvoice, updateDraftInvoice, discardDraftInvoice } from '../actions';
+import { voidInvoice, updateInvoiceDate, updateInvoiceNotes, resendInvoiceEmail, issueDraftInvoice, updateDraftInvoice, discardDraftInvoice } from '../actions';
 import { canOfferRecordPayment, parseStoredDecimalToPence } from '../domain/payment-eligibility';
 import { formatInvoicePeriod } from '../domain/invoice-display';
 import IssueInvoiceConfirmation from './IssueInvoiceConfirmation';
@@ -31,7 +31,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
     const [previewType, setPreviewType] = useState<'invoice' | 'receipt' | null>(null);
     const [isClient, setIsClient] = useState(false);
-    const [confirmAction, setConfirmAction] = useState<'delete' | 'void' | null>(null);
+    const [confirmAction, setConfirmAction] = useState<'void' | null>(null);
     const [isPending, startTransition] = useTransition();
     const [isEditingDate, setIsEditingDate] = useState(false);
     const [newDateValue, setNewDateValue] = useState(invoice.invoiceDate ? new Date(invoice.invoiceDate).toISOString().split('T')[0] : '');
@@ -360,16 +360,6 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                     {/* Invoice Card */}
                     <div className="bg-card border border-border rounded-[40px] p-8 md:p-12 relative overflow-hidden">
                         <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-[100px] -mr-32 -mt-32" />
-
-                        {invoice.status === 'draft' && Number(invoice.amount) <= 0 && (
-                            <div className="relative mb-8 flex items-start gap-3 p-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl text-amber-600 dark:text-amber-400">
-                                <AlertTriangle className="w-5 h-5 flex-shrink-0 text-amber-500 mt-0.5" />
-                                <div className="text-xs md:text-sm">
-                                    <span className="font-bold uppercase tracking-wider text-[11px] block text-amber-600 dark:text-amber-400 mb-0.5">Amount required to issue</span>
-                                    This draft invoice has a £0.00 amount. Staff must set a valid amount before this invoice can be issued to parents.
-                                </div>
-                            </div>
-                        )}
 
                         <div className="relative flex flex-col md:flex-row justify-between gap-8 mb-12">
                             <div>
@@ -754,13 +744,8 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                 onConfirm={async () => {
                     startTransition(async () => {
                         try {
-                            if (confirmAction === 'delete') {
-                                await deleteInvoice(invoice.id);
-                                router.push('/dashboard/finance');
-                            } else {
-                                await voidInvoice(invoice.id);
-                                router.refresh();
-                            }
+                            await voidInvoice(invoice.id);
+                            router.refresh();
                         } catch (err) {
                             const message = err instanceof Error ? err.message : String(err);
                             toast({ title: 'Error', message: message || 'Action failed', variant: 'error' });

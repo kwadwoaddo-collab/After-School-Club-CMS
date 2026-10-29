@@ -8,7 +8,7 @@ import {
 import { useToast } from '@/components/ui/ToastProvider';
 import Link from 'next/link';
 import { format, formatDistanceToNow } from 'date-fns';
-import { ROLE_LABELS, ROLE_AVATAR_COLORS } from '@/lib/staff-constants';
+import { ROLE_LABELS, ROLE_AVATAR_COLORS, getStaffInitials } from '@/lib/staff-constants';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/Table';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Badge } from '@/components/ui/Badge';
@@ -45,15 +45,6 @@ interface Props {
     orgCentres: OrgCentre[];
     currentUserId: string;
     error?: boolean;
-}
-
-function getInitials(name: string, email: string) {
-    if (name && name.trim().length > 0) {
-        const parts = name.trim().split(' ').filter(Boolean);
-        const raw = parts.map(n => n[0]).join('').toUpperCase().slice(0, 2);
-        return raw.length === 1 ? raw + raw : raw;
-    }
-    return (email || 'S').charAt(0).toUpperCase().repeat(2);
 }
 
 export default function StaffDashboardClient({ staff, pendingInvites, currentUserId, error }: Props) {
@@ -187,7 +178,7 @@ export default function StaffDashboardClient({ staff, pendingInvites, currentUse
                                         {filteredStaff.map(member => {
                                             const isCurrentUser = member.id === currentUserId;
                                             const isOwner = member.role === 'ORG_OWNER';
-                                            const initials = getInitials(member.displayName, member.email);
+                                            const initials = getStaffInitials(member.displayName, member.email);
 
                                             return (
                                                 <TableRow key={member.id} className="group">

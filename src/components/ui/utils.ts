@@ -1,6 +1,4 @@
-export function cn(...classes: (string | undefined | null | false)[]) {
-    return classes.filter(Boolean).join(' ');
-}
+export { cn } from '@/lib/utils';
 
 export function getAvatarGradient(name?: string) {
     if (!name) return 'from-primary to-accent-violet';

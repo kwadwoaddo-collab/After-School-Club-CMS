@@ -68,7 +68,6 @@ interface AssessmentProfileProps {
             feedbackAttachmentBase64: string | null; feedbackAttachmentMime: string | null;
             feedbackSentAt: Date | null; attendanceStatus: string | null; attendanceNote: string | null;
         }>;
-        attendanceStats?: { total: number; completed: number };
     };
     initialNotes: Array<{
         id: string; content: string; authorName: string; userId: string | null;

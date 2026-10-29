@@ -1,4 +1,4 @@
-import { put, del } from '@vercel/blob';
+import { put } from '@vercel/blob';
 import { logger } from '@/lib/logger';
 
 /**
@@ -17,19 +17,5 @@ export async function uploadToBlob(file: File | Blob, filename: string): Promise
     } catch (error) {
         logger.error('Failed to upload file to Blob', { error, filename });
         throw new Error('File upload failed.');
-    }
-}
-
-/**
- * Deletes a file from Vercel Blob storage.
- * @param url The URL of the blob to delete.
- */
-export async function deleteFromBlob(url: string): Promise<void> {
-    try {
-        await del(url);
-        logger.info('Successfully deleted file from Blob', { url });
-    } catch (error) {
-        logger.error('Failed to delete file from Blob', { error, url });
-        throw new Error('File deletion failed.');
     }
 }

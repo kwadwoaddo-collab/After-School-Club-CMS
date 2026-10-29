@@ -4,7 +4,7 @@ import { getApiSession } from '@/lib/session';
 import { db } from '@/db';
 import { bookings } from '@/db/schema';
 import { eq } from 'drizzle-orm';
-import { NextRequest, NextResponse, after } from 'next/server';
+import { NextResponse, after } from 'next/server';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { notificationService } from '@/lib/services/notifications';
 import { notifyOwners } from '@/lib/db-notifications';

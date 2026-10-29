@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import { correctPaymentDetails } from '../correct-payment';
+import { toEuropeLondonBusinessDate } from '../domain/payment-eligibility';
 export function CorrectPaymentDialog({ payment, onClose, onSaved }: {
     payment: {
         id: string;
@@ -12,7 +13,7 @@ export function CorrectPaymentDialog({ payment, onClose, onSaved }: {
     onSaved: () => void;
 }) {
     const dialog = useRef<HTMLDialogElement>(null);
-    const [date, setDate] = useState(() => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/London', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(payment.recordedAt)));
+    const [date, setDate] = useState(() => toEuropeLondonBusinessDate(payment.recordedAt));
     const [reference, setReference] = useState(payment.transactionReference ?? '');
     const [reason, setReason] = useState('');
     const [busy, setBusy] = useState(false);

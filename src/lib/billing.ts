@@ -6,25 +6,12 @@
 
 import {
     BillingPeriod,
-    clampToMonthEnd as engineClampToMonthEnd,
     computeNextBillingPeriod as engineComputeNextBillingPeriod,
-    previewBillingPeriods as enginePreviewBillingPeriods,
-    LeadTimeUnit,
-    formatDisplayDate,
 } from '@/lib/billing/date-engine';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type { BillingPeriod };
-
-export interface BillingConfig {
-    billingAnchorDate: Date | string;
-    invoiceLeadDays:   number;
-}
-
-// ─── Utilities ────────────────────────────────────────────────────────────────
-
-export const clampToMonthEnd = engineClampToMonthEnd;
 
 // ─── Core billing period calculation ─────────────────────────────────────────
 
@@ -32,28 +19,10 @@ export const clampToMonthEnd = engineClampToMonthEnd;
  * Compute the next billing period with canonical anniversary recurrence.
  */
 export function computeNextBillingPeriod(
-    config: BillingConfig,
+    config: { billingAnchorDate: Date | string; invoiceLeadDays: number },
     now: Date = new Date(),
 ): BillingPeriod {
     return engineComputeNextBillingPeriod(config, now);
-}
-
-/**
- * Generate human-readable preview strings for upcoming billing periods.
- * Used in BillingSettingsCard UI live preview.
- */
-export function previewBillingPeriods(
-    anchorDate: Date | string,
-    count = 4,
-    options?: {
-        leadTimeUnit?: LeadTimeUnit | null;
-        leadTimeValue?: number | null;
-        invoiceLeadDays?: number;
-        paymentDayOfMonth?: number | null;
-    }
-): string[] {
-    const items = enginePreviewBillingPeriods(anchorDate, count, options);
-    return items.map(p => `${p.periodSpan} (draft prepared ${formatDisplayDate(p.draftDate)})`);
 }
 
 /** Format pence as a £ string, e.g. 42000 → "£420.00" */

@@ -443,7 +443,6 @@ export function computeBillingSchedule(
 ): BillingSchedule {
     const anchor = toUtcDate(config.billingAnchorDate);
     const originalAnchorDay = anchor.getUTCDate();
-    const refDate = toUtcDate(now);
 
     let periodStart: Date;
 

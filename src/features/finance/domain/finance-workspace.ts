@@ -1,11 +1,5 @@
 import type { FinanceInvoice } from '../components/FinanceDataGridClient';
-function parseStrictDecimalToPence(value: string): number {
-    if (!/^\d+(?:\.\d{1,2})?$/.test(value)) throw new Error('Invalid amount');
-    const [whole, fraction = ''] = value.split('.');
-    const amount = Number(whole) * 100 + Number(fraction.padEnd(2, '0'));
-    if (!Number.isSafeInteger(amount)) throw new Error('Invalid amount');
-    return amount;
-}
+import { parseStrictDecimalToPence } from './payment-eligibility';
 
 export type WorkspaceInvoice = Omit<FinanceInvoice, 'payments'> & { billingConfigId?: string | null; coveredChildrenJson?: unknown; payments?: (NonNullable<FinanceInvoice['payments']>[number] & { reversedAt?: string | Date | null })[] };
 export function isFinanceWorkspaceView(params: {view?: string; status?: string; create?: string}) {

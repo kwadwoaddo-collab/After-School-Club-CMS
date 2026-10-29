@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Document, Page, Text, View, StyleSheet, Font, Image } from '@react-pdf/renderer';
-import { format } from 'date-fns';
-import { billingStylesBase } from './billingPdfStyles';
+import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
+import { billingStylesBase, safeFormatDate, buildCentreAddressLines, getCoveredChildNames } from './billingPdfStyles';
 import {receiptIdentityPayment} from '../domain/payment-correction';
 import { stableReceiptNumber } from '@/lib/finance/receipt-number';
 
@@ -24,31 +23,16 @@ interface ReceiptTemplateProps {
 }
 
 export const ReceiptTemplate = ({ invoice, organisationName }: ReceiptTemplateProps) => {
-    const { child, centre, invoiceNumber, payments, billingPeriodStart, billingPeriodEnd, childDisplayName, status } = invoice;
+    const { child, centre, invoiceNumber, payments, billingPeriodStart, billingPeriodEnd, status } = invoice;
     // parent is a top-level relation on the invoice, not nested under child
     const parent = invoice.parent || (child as any)?.parent || null;
     // Parse address into lines for multi-line display
-    const addressLines: string[] = centre?.address ? centre.address.split('\n').map((l: string) => l.trim()).filter(Boolean) : [];
-
-    const safeFormatDate = (date: any, formatStr: string) => {
-        if (!date) return '-';
-        const d = new Date(date);
-        if (isNaN(d.getTime())) return '-';
-        return format(d, formatStr);
-    };
+    const addressLines: string[] = buildCentreAddressLines(centre?.address);
 
     // Build the canonical list of all children covered by this invoice.
     // coveredChildrenJson is the source of truth (supports multiple children);
     // fall back to the single child relation or free-text childDisplayName.
-    const allChildNames: string[] = (() => {
-        const json = invoice.coveredChildrenJson;
-        if (json && Array.isArray(json) && json.length > 0) {
-            return json.map((c: any) => c.name || `${c.firstName || ''} ${c.lastName || ''}`.trim()).filter(Boolean);
-        }
-        if (child) return [`${child.firstName} ${child.lastName}`];
-        if (childDisplayName) return [childDisplayName];
-        return [];
-    })();
+    const allChildNames: string[] = getCoveredChildNames(invoice);
 
     // Only verified payments count towards received funds
     const verifiedPayments = (payments ?? []).filter((p: any) => p.status === 'verified');

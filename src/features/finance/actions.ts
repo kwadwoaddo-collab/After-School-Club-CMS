@@ -4,7 +4,7 @@ import { logger } from '@/lib/logger';
 
 
 import { db } from '@/db';
-import { children, parents, centres, invoices, payments, bookings, bookingAttendees, registrationChildren, registrations, auditEvents, billingConfigs, billingRuns, orgMemberships, centreMemberships } from '@/db/schema';
+import { children, parents, centres, invoices, payments, auditEvents, billingConfigs, billingRuns, orgMemberships, centreMemberships } from '@/db/schema';
 import { eq, ilike, or, and, desc, inArray, sql, ne, isNull } from 'drizzle-orm';
 import { requireTenantSession } from '@/lib/session';
 import { revalidatePath } from 'next/cache';
@@ -194,9 +194,6 @@ export async function getParents(query: string) {
             eq(parents.organisationId, orgId),
             isNull(parents.deletedAt),
             inArray(parents.id, eligibleParentIds),
-            accessibleCentreIds !== null
-                ? sql`${parents.id} IN (SELECT ${children.parentId} FROM ${children} WHERE ${children.organisationId} = ${orgId} AND ${inArray(children.centreId, accessibleCentreIds)})`
-                : undefined,
             or(...orClauses)
         ),
         with: {
@@ -505,14 +502,8 @@ export async function createLegacyFamilyAndInvoice(data: {
 }
 
 export async function createAdHocInvoice(data: {
-    // Existing parent OR new parent details
     parentId?: string;
-    newParent?: {
-        firstName: string;
-        lastName: string;
-        email?: string;
-        phone?: string;
-    };
+    newParent?: { firstName: string; lastName: string; email?: string; phone?: string };
     // Free-text child name — stored in notes, printed on PDF, no DB record created
     childName: string;
     amount: string;
@@ -563,22 +554,9 @@ export async function createAdHocInvoice(data: {
     return await db.transaction(async (tx) => {
         await lockEnrolmentForBilling(tx, [eligibleAdHocChildId!]);
         assertEligibleBillingCoverage([eligibleAdHocChildId!], await getFinanceEligibleChildIds(orgId, [eligibleAdHocChildId!], tx, { parentId: data.parentId!, centreId: data.centreId }, servicePeriod));
-        // 1. Resolve parent — either existing or create a minimal new one
-        let parentId = data.parentId;
-        if (!parentId) {
-            if (!data.newParent?.firstName) throw new Error('Parent name is required for ad-hoc invoices');
-            const [newParent] = await tx.insert(parents).values({
-                organisationId: session.user.organisationId!,
-                firstName: data.newParent.firstName,
-                lastName: data.newParent.lastName || '',
-                email: data.newParent.email || null,
-                phone: data.newParent.phone || null,
-                preferredContact: 'email',
-            }).returning();
-            parentId = newParent.id;
-        }
+        const parentId = data.parentId!;
 
-        // 2. Build ad-hoc child details
+        // Build ad-hoc child details
         const childLabel = data.childName.trim();
         const coveredChildren = [{ childName: childLabel }];
 
@@ -1047,7 +1025,12 @@ export async function recordPayment(data: RecordPaymentParams): Promise<RecordPa
 }
 
 
-export async function updateInvoiceDate(invoiceId: string, newInvoiceDate: Date) {
+async function updateInvoiceMetadataField(
+    invoiceId: string,
+    updates: Partial<typeof invoices.$inferInsert>,
+    eventType: string,
+    eventData: Record<string, unknown>,
+) {
     const session = await requireTenantSession();
     if (!session?.user?.organisationId) throw new Error('Unauthorized');
     const orgId = session.user.organisationId;
@@ -1070,7 +1053,7 @@ export async function updateInvoiceDate(invoiceId: string, newInvoiceDate: Date)
     const result = await db.transaction(async (tx) => {
         const [updatedInvoice] = await tx
             .update(invoices)
-            .set({ invoiceDate: newInvoiceDate, updatedAt: new Date() })
+            .set({ ...updates, updatedAt: new Date() })
             .where(and(
                 eq(invoices.id, invoiceId),
                 eq(invoices.organisationId, orgId)
@@ -1082,8 +1065,8 @@ export async function updateInvoiceDate(invoiceId: string, newInvoiceDate: Date)
         await tx.insert(auditEvents).values({
             organisationId: orgId,
             userId: session.user.id,
-            eventType: 'invoice_date_updated',
-            eventData: JSON.stringify({ invoiceId, newInvoiceDate })
+            eventType,
+            eventData: JSON.stringify(eventData)
         });
 
         return updatedInvoice;
@@ -1093,55 +1076,26 @@ export async function updateInvoiceDate(invoiceId: string, newInvoiceDate: Date)
     revalidatePath('/dashboard/finance');
     revalidatePath('/dashboard/finance/invoices');
     return result;
+}
+
+export async function updateInvoiceDate(invoiceId: string, newInvoiceDate: Date) {
+    return updateInvoiceMetadataField(
+        invoiceId,
+        { invoiceDate: newInvoiceDate },
+        'invoice_date_updated',
+        { invoiceId, newInvoiceDate }
+    );
 }
 
 export async function updateInvoiceNotes(invoiceId: string, notes: string | null) {
-    const session = await requireTenantSession();
-    if (!session?.user?.organisationId) throw new Error('Unauthorized');
-    const orgId = session.user.organisationId;
-
-    const userRole = (session.user as any).role;
-    if (userRole !== 'ORG_OWNER') {
-        const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
-        const invoice = await db.query.invoices.findFirst({
-            where: and(
-                eq(invoices.id, invoiceId),
-                eq(invoices.organisationId, orgId)
-            ),
-            columns: { centreId: true }
-        });
-        if (!invoice || !accessibleCentreIds.includes(invoice.centreId)) {
-            throw new Error('Unauthorized: No access to this centre');
-        }
-    }
-
-    const result = await db.transaction(async (tx) => {
-        const [updatedInvoice] = await tx
-            .update(invoices)
-            .set({ notes: notes || null, updatedAt: new Date() })
-            .where(and(
-                eq(invoices.id, invoiceId),
-                eq(invoices.organisationId, orgId)
-            ))
-            .returning();
-
-        if (!updatedInvoice) throw new Error('Invoice not found');
-
-        await tx.insert(auditEvents).values({
-            organisationId: orgId,
-            userId: session.user.id,
-            eventType: 'invoice_notes_updated',
-            eventData: JSON.stringify({ invoiceId, notes })
-        });
-
-        return updatedInvoice;
-    });
-
-    revalidatePath(`/dashboard/finance/invoices/${invoiceId}`);
-    revalidatePath('/dashboard/finance');
-    revalidatePath('/dashboard/finance/invoices');
-    return result;
+    return updateInvoiceMetadataField(
+        invoiceId,
+        { notes: notes || null },
+        'invoice_notes_updated',
+        { invoiceId, notes }
+    );
 }
+
 
 export async function deleteInvoice(invoiceId: string) {
     const session = await requireTenantSession();

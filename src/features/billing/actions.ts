@@ -10,7 +10,6 @@ import { db } from '@/db';
 import { billingConfigs, billingConfigChildren, billingRuns, billingCycleSkips, invoices, children, auditEvents, payments, registrationChildren, registrations } from '@/db/schema';
 import { eq, and, sql, ne, inArray, isNull, desc, or } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
-import { computeNextBillingPeriod, penceToPounds } from '@/lib/billing';
 import {
     computeExpectedPaymentDate,
     computeAutomatedBillingScheduleForIndex,
@@ -64,6 +63,35 @@ async function getOrgIdAndSession(): Promise<{ orgId: string; session: TypedSess
     const session = await requireTenantSession();
     if (!session?.user?.organisationId) throw new Error('Unauthorized');
     return { orgId: session.user.organisationId, session };
+}
+
+function revalidateBillingSurface(opts: {
+    centreId: string;
+    parentId?: string | null;
+    childIds?: Iterable<string>;
+    includeRegistrations?: boolean;
+    includeInvoices?: boolean;
+    includeStudents?: boolean;
+}) {
+    revalidatePath('/dashboard/finance');
+    if (opts.includeInvoices) {
+        revalidatePath('/dashboard/finance/invoices');
+    }
+    if (opts.includeStudents ?? true) {
+        revalidatePath('/dashboard/students');
+    }
+    if (opts.includeRegistrations) {
+        revalidatePath('/dashboard/registrations');
+    }
+    revalidatePath(`/dashboard/centres/${opts.centreId}/billing`);
+    if (opts.parentId) {
+        revalidatePath(`/dashboard/parents/${opts.parentId}`);
+    }
+    if (opts.childIds) {
+        for (const childId of new Set(opts.childIds)) {
+            revalidatePath(`/dashboard/students/${childId}`);
+        }
+    }
 }
 
 /** Called only in the transaction that saves an explicitly reviewed fee/start
@@ -360,20 +388,12 @@ export async function createBillingConfig(data: BillingConfigData) {
         return newConfig;
     });
 
-    revalidatePath('/dashboard/finance');
-    revalidatePath('/dashboard/students');
-    if (data.confirmEnrolment?.confirmed) {
-        revalidatePath('/dashboard/registrations');
-    }
-    revalidatePath(`/dashboard/centres/${data.centreId}/billing`);
-    if (data.parentId) {
-        revalidatePath(`/dashboard/parents/${data.parentId}`);
-    }
-    if (data.childIds) {
-        for (const childId of data.childIds) {
-            revalidatePath(`/dashboard/students/${childId}`);
-        }
-    }
+    revalidateBillingSurface({
+        centreId: data.centreId,
+        parentId: data.parentId,
+        childIds: data.childIds,
+        includeRegistrations: Boolean(data.confirmEnrolment?.confirmed),
+    });
     return { success: true, configId: config.id };
 }
 
@@ -462,19 +482,12 @@ export async function updateBillingConfig(
             data.agreedMonthlyPence!, data.billingAnchorDate!);
     });
 
-    revalidatePath('/dashboard/finance');
-    revalidatePath('/dashboard/students');
-    if (data.confirmEnrolment?.confirmed) {
-        revalidatePath('/dashboard/registrations');
-    }
-    revalidatePath(`/dashboard/centres/${existingConfig.centreId}/billing`);
-    if (existingConfig.parentId) {
-        revalidatePath(`/dashboard/parents/${existingConfig.parentId}`);
-    }
-    const revalidatedChildIds = new Set([...childIds, ...(existingConfig.children ?? []).map(c => c.childId)]);
-    for (const childId of revalidatedChildIds) {
-        revalidatePath(`/dashboard/students/${childId}`);
-    }
+    revalidateBillingSurface({
+        centreId: existingConfig.centreId,
+        parentId: existingConfig.parentId,
+        childIds: [...childIds, ...(existingConfig.children ?? []).map(c => c.childId)],
+        includeRegistrations: Boolean(data.confirmEnrolment?.confirmed),
+    });
     return { success: true };
 }
 
@@ -544,8 +557,9 @@ async function requireOwnedConfig(configId: string, orgId: string, session: Type
     return config;
 }
 
-async function setBillingConfigStatus(configId: string, orgId: string, session: TypedSession,
-    config: Awaited<ReturnType<typeof requireOwnedConfig>>, status: 'active' | 'paused' | 'cancelled') {
+async function setBillingConfigStatus(configId: string, status: 'active' | 'paused' | 'cancelled') {
+    const { orgId, session } = await getOrgIdAndSession();
+    const config = await requireOwnedConfig(configId, orgId, session);
     await db.transaction(async tx => {
         await lockBillingConfiguration(tx, configId);
         await lockEnrolmentForBilling(tx, (config.children ?? []).map(link => link.childId));
@@ -555,54 +569,24 @@ async function setBillingConfigStatus(configId: string, orgId: string, session: 
             eventType: 'billing_status_changed', eventData: JSON.stringify({ configId, status }),
         });
     });
+    revalidateBillingSurface({
+        centreId: config.centreId,
+        parentId: config.parentId,
+        childIds: (config.children ?? []).map(c => c.childId),
+    });
+    return { success: true };
 }
 
 export async function pauseBillingConfig(configId: string) {
-    const { orgId, session } = await getOrgIdAndSession();
-    const config = await requireOwnedConfig(configId, orgId, session);
-    await setBillingConfigStatus(configId, orgId, session, config, 'paused');
-    revalidatePath('/dashboard/finance');
-    revalidatePath('/dashboard/students');
-    revalidatePath(`/dashboard/centres/${config.centreId}/billing`);
-    if (config.parentId) {
-        revalidatePath(`/dashboard/parents/${config.parentId}`);
-    }
-    for (const c of config.children ?? []) {
-        revalidatePath(`/dashboard/students/${c.childId}`);
-    }
-    return { success: true };
+    return setBillingConfigStatus(configId, 'paused');
 }
 
 export async function resumeBillingConfig(configId: string) {
-    const { orgId, session } = await getOrgIdAndSession();
-    const config = await requireOwnedConfig(configId, orgId, session);
-    await setBillingConfigStatus(configId, orgId, session, config, 'active');
-    revalidatePath('/dashboard/finance');
-    revalidatePath('/dashboard/students');
-    revalidatePath(`/dashboard/centres/${config.centreId}/billing`);
-    if (config.parentId) {
-        revalidatePath(`/dashboard/parents/${config.parentId}`);
-    }
-    for (const c of config.children ?? []) {
-        revalidatePath(`/dashboard/students/${c.childId}`);
-    }
-    return { success: true };
+    return setBillingConfigStatus(configId, 'active');
 }
 
 export async function cancelBillingConfig(configId: string) {
-    const { orgId, session } = await getOrgIdAndSession();
-    const config = await requireOwnedConfig(configId, orgId, session);
-    await setBillingConfigStatus(configId, orgId, session, config, 'cancelled');
-    revalidatePath('/dashboard/finance');
-    revalidatePath('/dashboard/students');
-    revalidatePath(`/dashboard/centres/${config.centreId}/billing`);
-    if (config.parentId) {
-        revalidatePath(`/dashboard/parents/${config.parentId}`);
-    }
-    for (const c of config.children ?? []) {
-        revalidatePath(`/dashboard/students/${c.childId}`);
-    }
-    return { success: true };
+    return setBillingConfigStatus(configId, 'cancelled');
 }
 
 // ─── Skip Cycle & Reopen Actions (§26, §27, B4, B7) ──────────────────────────
@@ -704,12 +688,12 @@ export async function skipBillingCycle(
         return skip;
     });
 
-    revalidatePath('/dashboard/finance');
-    revalidatePath('/dashboard/finance/invoices');
-    revalidatePath(`/dashboard/centres/${config.centreId}/billing`);
-    if (config.parentId) {
-        revalidatePath(`/dashboard/parents/${config.parentId}`);
-    }
+    revalidateBillingSurface({
+        centreId: config.centreId,
+        parentId: config.parentId,
+        includeInvoices: true,
+        includeStudents: false,
+    });
     return { success: true, skipId: result.id };
 }
 
@@ -744,12 +728,12 @@ export async function unskipBillingCycle(configId: string, periodStartStr: strin
         });
     });
 
-    revalidatePath('/dashboard/finance');
-    revalidatePath('/dashboard/finance/invoices');
-    revalidatePath(`/dashboard/centres/${config.centreId}/billing`);
-    if (config.parentId) {
-        revalidatePath(`/dashboard/parents/${config.parentId}`);
-    }
+    revalidateBillingSurface({
+        centreId: config.centreId,
+        parentId: config.parentId,
+        includeInvoices: true,
+        includeStudents: false,
+    });
     return { success: true };
 }
 
@@ -802,12 +786,12 @@ export async function reopenBillingCycle(configId: string, periodStartStr: strin
         });
     });
 
-    revalidatePath('/dashboard/finance');
-    revalidatePath('/dashboard/finance/invoices');
-    revalidatePath(`/dashboard/centres/${config.centreId}/billing`);
-    if (config.parentId) {
-        revalidatePath(`/dashboard/parents/${config.parentId}`);
-    }
+    revalidateBillingSurface({
+        centreId: config.centreId,
+        parentId: config.parentId,
+        includeInvoices: true,
+        includeStudents: false,
+    });
     return { success: true };
 }
 
@@ -1126,15 +1110,13 @@ async function generateInvoiceFromConfigInternal(input: GenerateInvoiceInput, el
         return { id: invoice.id, alreadyGenerated: false };
     });
 
-    revalidatePath('/dashboard/finance');
-    revalidatePath('/dashboard/finance/invoices');
-    revalidatePath(`/dashboard/centres/${config.centreId}/billing`);
-    if (config.parentId) {
-        revalidatePath(`/dashboard/parents/${config.parentId}`);
-    }
-    for (const cc of config.children ?? []) {
-        revalidatePath(`/dashboard/students/${cc.child.id}`);
-    }
+    revalidateBillingSurface({
+        centreId: config.centreId,
+        parentId: config.parentId,
+        childIds: (config.children ?? []).map(cc => cc.child.id),
+        includeInvoices: true,
+        includeStudents: false,
+    });
     return { success: true, invoiceId: result.id, alreadyGenerated: result.alreadyGenerated };
 }
 
@@ -1215,14 +1197,12 @@ export async function confirmFamilyStudentsEnrolment(input: {
             );
         });
 
-        revalidatePath('/dashboard/finance');
-        revalidatePath('/dashboard/students');
-        revalidatePath('/dashboard/registrations');
-        revalidatePath(`/dashboard/centres/${input.centreId}/billing`);
-        revalidatePath(`/dashboard/parents/${input.parentId}`);
-        for (const childId of input.childIds) {
-            revalidatePath(`/dashboard/students/${childId}`);
-        }
+        revalidateBillingSurface({
+            centreId: input.centreId,
+            parentId: input.parentId,
+            childIds: input.childIds,
+            includeRegistrations: true,
+        });
         return { confirmedChildIds: input.childIds };
     }, error => {
         const reference = `BILL-${nanoid(10)}`;
