@@ -405,10 +405,11 @@ export default function StudentProfile({
                                         </a>
                                     </div>
                                     <div className="p-3 border-t border-border-subtle">
-                                        <Button asChild variant="secondary" size="sm" className="w-full">
+                                        <Button asChild size="lg" className="h-auto min-h-11 w-full whitespace-normal py-3 text-center font-semibold">
                                             <Link href={`/dashboard/parents/${student.parent.id}`}>
+                                                <CreditCard className="h-4 w-4 shrink-0" aria-hidden="true" />
                                                 View family account &amp; ledger
-                                                <ChevronRight className="w-3.5 h-3.5" />
+                                                <ChevronRight className="h-4 w-4 shrink-0" aria-hidden="true" />
                                             </Link>
                                         </Button>
                                     </div>
