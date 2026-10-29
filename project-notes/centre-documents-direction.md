@@ -1,0 +1,3 @@
+# Centre Documents
+
+Mode: Operate. Extend the existing dashboard with a Documents navigation item and a compact file list for the active centre. Preserve incumbent tokens, typography and navigation behavior. Owners and managers upload/name/replace/remove; assigned staff view/download. Combined view asks for a centre before displaying its files. PDF-only, 3 MB each, up to 20 active files per centre. Empty, loading, validation/error and success states must explain the next action. Removal is recoverable rather than permanent. No email or parent sharing occurs. Verify desktop/mobile and both themes using actual components with fictional data, then production empty-state and navigation without uploading user files.

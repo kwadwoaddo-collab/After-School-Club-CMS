@@ -2,6 +2,10 @@ import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
 
 const nextConfig: NextConfig = {
+  experimental: {
+    // Allow a 3 MB centre PDF plus multipart metadata; file validation stays stricter.
+    serverActions: { bodySizeLimit: '4mb' },
+  },
   typescript: {
     ignoreBuildErrors: true,
   },

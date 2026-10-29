@@ -31,6 +31,7 @@ import {
     MessageSquare,
     AlertTriangle,
     CircleHelp,
+    FolderOpen,
 } from 'lucide-react';
 import { useSidebar } from './SidebarContext';
 import { useCentreFilter } from '@/components/dashboard/CentreFilterContext';
@@ -48,15 +49,15 @@ interface SidebarProps {
 const ROLE_NAV: Record<string, string[]> = {
     // N-1 (Milestone 3N): Availability added to ORG_OWNER and MANAGER. The page gate
     // permits ORG_OWNER and MANAGER; the sidebar had no entry — no UI path existed.
-    ORG_OWNER: ['Dashboard', 'Help & Training', 'Centres', 'Students', 'Parents', 'Bookings', 'Attendance', 'Incidents', 'Kiosk', 'Registrations', 'Finance', 'Reports', 'Team', 'Communications', 'Settings', 'Availability'],
-    MANAGER: ['Dashboard', 'Help & Training', 'Centres', 'Students', 'Parents', 'Bookings', 'Attendance', 'Incidents', 'Kiosk', 'Registrations', 'Finance', 'Reports', 'Team', 'Communications', 'Settings', 'Availability'],
+    ORG_OWNER: ['Dashboard', 'Help & Training', 'Centres', 'Students', 'Parents', 'Bookings', 'Attendance', 'Incidents', 'Kiosk', 'Registrations', 'Finance', 'Reports', 'Team', 'Communications', 'Settings', 'Availability', 'Documents'],
+    MANAGER: ['Dashboard', 'Help & Training', 'Centres', 'Students', 'Parents', 'Bookings', 'Attendance', 'Incidents', 'Kiosk', 'Registrations', 'Finance', 'Reports', 'Team', 'Communications', 'Settings', 'Availability', 'Documents'],
     // A-1 (Milestone 3M — orchestrator decision, Option A): Parents added to FRONT_DESK.
     // The /dashboard/parents page gate explicitly permits FRONT_DESK; this sidebar entry
     // was inconsistent. Follows the same policy as Milestone 3L A-2 (Registrations).
-    FRONT_DESK: ['Dashboard', 'Help & Training', 'Students', 'Parents', 'Bookings', 'Attendance', 'Incidents', 'Kiosk', 'Registrations'],
+    FRONT_DESK: ['Dashboard', 'Help & Training', 'Students', 'Parents', 'Bookings', 'Attendance', 'Incidents', 'Kiosk', 'Registrations', 'Documents'],
     // Milestone 3K (A-1 Option C — orchestrator decision 2026-08-24): TUTOR does not
     // have access to the Incidents module. Removed from this ROLE_NAV entry.
-    TUTOR: ['Dashboard', 'Help & Training', 'Attendance', 'Kiosk'],
+    TUTOR: ['Dashboard', 'Help & Training', 'Attendance', 'Kiosk', 'Documents'],
 };
 
 const ROLE_QUICK_ACTIONS: Record<string, string[]> = {
@@ -150,6 +151,7 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
         { name: 'Availability', icon: Clock, href: '/dashboard/availability' },
         { name: 'Reports', icon: BarChart, href: '/dashboard/reports' },
         { name: 'Finance', icon: Wallet, href: '/dashboard/finance' },
+        { name: 'Documents', icon: FolderOpen, href: '/dashboard/documents' },
         { name: 'Settings', icon: Settings, href: '/dashboard/settings' },
     ].filter(item => allowedNav.includes(item.name));
 

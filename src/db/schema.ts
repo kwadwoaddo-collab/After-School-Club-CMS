@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, text, timestamp, pgEnum, boolean, integer, unique, numeric, index, date, uniqueIndex, jsonb } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, text, timestamp, pgEnum, boolean, integer, unique, numeric, index, date, uniqueIndex, jsonb, customType } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
 
 // ==================== DISCOUNT RULE TYPE ====================
@@ -1487,3 +1487,19 @@ export const bookingEmailProviderState = pgTable('booking_email_provider_state',
   rampUntil: timestamp('ramp_until', { withTimezone: true }),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 });
+
+// Private centre documents; payload is omitted from folder listings.
+const documentBytes = customType<{ data: Buffer; driverData: Buffer }>({ dataType: () => 'bytea' });
+export const centreDocuments = pgTable('centre_documents', {
+ id: uuid('id').defaultRandom().primaryKey(),
+ organisationId: uuid('organisation_id').references(() => organisations.id).notNull(),
+ centreId: uuid('centre_id').references(() => centres.id).notNull(),
+ name: varchar('name', { length: 120 }).notNull(),
+ originalFilename: varchar('original_filename', { length: 200 }).notNull(),
+ sizeBytes: integer('size_bytes').notNull(),
+ content: documentBytes('content').notNull(),
+ version: integer('version').default(1).notNull(),
+ createdBy: uuid('created_by').references(() => users.id).notNull(),
+ updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+ removedAt: timestamp('removed_at', { withTimezone: true }),
+}, table => ({ centreIdx: index('centre_documents_centre_idx').on(table.organisationId, table.centreId) }));
