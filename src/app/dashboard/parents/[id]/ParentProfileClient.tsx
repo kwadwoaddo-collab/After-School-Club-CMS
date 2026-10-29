@@ -23,6 +23,7 @@ import { cn } from '@/components/ui/utils';
 import { InvoiceTable } from '@/features/finance/components/FinanceDashboardClient';
 import { useToast } from '@/components/ui/ToastProvider';
 import { Card } from '@/components/ui/Card';
+import {ParentBillingSection,type ParentBillingGroup} from '@/features/billing/components/ParentBillingSection';
 import { EmptyState } from '@/components/ui/EmptyState';
 
 interface ParentProfileClientProps {
@@ -34,6 +35,10 @@ interface ParentProfileClientProps {
         outstanding: number;
     };
     isOwner?: boolean;
+    billingGroups?:ParentBillingGroup[];
+    canManageBilling?:boolean;
+    orgId?:string;
+    openBilling?:boolean;
 }
 
 type TabId = 'overview' | 'finance';
@@ -47,8 +52,10 @@ function SubPanel({ children, className }: { children: React.ReactNode; classNam
     return <div className={cn('rounded-md border border-border-subtle bg-page p-4', className)}>{children}</div>;
 }
 
-export default function ParentProfileClient({ parent, invoices, stats, isOwner }: ParentProfileClientProps) {
-    const [activeTab, setActiveTab] = useState<TabId>('overview');
+export default function ParentProfileClient({ parent, invoices, stats, isOwner, billingGroups=[],canManageBilling=false,orgId,openBilling=false }: ParentProfileClientProps) {
+    const [activeTab, setActiveTab] = useState<TabId>(openBilling?'finance':'overview');
+    const [billingOpen,setBillingOpen]=useState(openBilling);
+    const [billingKey,setBillingKey]=useState(0);
     const router = useRouter();
     const { toast } = useToast();
     const [isEditingContact, setIsEditingContact] = useState(false);
@@ -93,6 +100,7 @@ export default function ParentProfileClient({ parent, invoices, stats, isOwner }
 
     return (
         <div className="space-y-5">
+            {canManageBilling&&<div className="flex flex-wrap items-center justify-between gap-3"><p className="text-sm text-muted-foreground">Manage this family’s monthly fee and billing schedule.</p><button className="inline-flex min-h-11 items-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" onClick={()=>{setActiveTab('finance');setBillingOpen(true);setBillingKey(k=>k+1);}}>{billingGroups.some(g=>g.config)?'Manage billing cycle':'Set up billing cycle'}</button></div>}
             {/* ── Tabs ────────────────────────────────────────────────────── */}
             <div className="flex border-b border-border gap-1">
                 {TABS.map(({ id, label, icon: Icon }) => (
@@ -329,6 +337,7 @@ export default function ParentProfileClient({ parent, invoices, stats, isOwner }
                 {/* Finance / Ledger tab */}
                 {activeTab === 'finance' && (
                     <div className="space-y-4">
+                        {canManageBilling&&orgId&&<ParentBillingSection key={billingKey} groups={billingGroups} familyName={parent.firstName+' '+parent.lastName} parentEmail={parent.email??''} hasInvoices={invoices.length>0} parentId={parent.id} orgId={orgId} openSetup={billingOpen}/> }
                         {/* Stats strip */}
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                             <SubPanel className="flex items-center justify-between">
