@@ -225,6 +225,13 @@
       "when": 1792537200000,
       "tag": "0032_student_enrolment_follow_up",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1793296800000,
+      "tag": "0033_centre_documents",
+      "breakpoints": true
     }
   ]
 }
