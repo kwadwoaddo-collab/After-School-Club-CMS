@@ -2,6 +2,7 @@
 import { Document, Page, Text, View, StyleSheet, Font, Image } from '@react-pdf/renderer';
 import { format } from 'date-fns';
 import { billingStylesBase } from './billingPdfStyles';
+import {receiptIdentityPayment} from '../domain/payment-correction';
 import { stableReceiptNumber } from '@/lib/finance/receipt-number';
 
 
@@ -66,7 +67,7 @@ export const ReceiptTemplate = ({ invoice, organisationName }: ReceiptTemplatePr
     // Category C: stable deterministic receipt number derived from the most-recently recorded
     // verified payment UUID. Falls back to 'MANUAL' if no payment IDs are available.
     // The same payment ID always produces the same RCP — matching the email receipt.
-    const latestVerifiedPayment = sortedPayments[0] ?? null;
+    const latestVerifiedPayment = receiptIdentityPayment(verifiedPayments) ?? null;
     const rcpNumber = latestVerifiedPayment?.id
         ? stableReceiptNumber(latestVerifiedPayment.id)
         : 'RCP-MANUAL';
