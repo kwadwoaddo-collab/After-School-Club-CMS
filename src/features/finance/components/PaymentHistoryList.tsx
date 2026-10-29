@@ -119,27 +119,17 @@ export default function PaymentHistoryList({ payments, canReverse, canCorrect=ca
     };
 
     return (
-        <div className="overflow-hidden bg-card border border-border rounded-[32px]">
-            <table className="w-full">
-                <thead>
-                    <tr className="text-left border-b border-border">
-                        <th className="px-6 py-4 text-xs font-black text-muted-foreground uppercase tracking-widest">Date</th>
-                        <th className="px-6 py-4 text-xs font-black text-muted-foreground uppercase tracking-widest">Method</th>
-                        <th className="px-6 py-4 text-xs font-black text-muted-foreground uppercase tracking-widest">Reference</th>
-                        <th className="px-6 py-4 text-xs font-black text-muted-foreground uppercase tracking-widest">Status</th>
-                        <th className="px-6 py-4 text-xs font-black text-muted-foreground uppercase tracking-widest text-right">Amount</th>
-                        <th className="px-6 py-4"></th>
-                    </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
+        <div className="min-w-0 bg-card border border-border rounded-[32px]">
+            <div className="divide-y divide-border">
                     {payments.map((payment) => (
-                        <tr key={payment.id} className="group hover:bg-secondary/60 transition-colors">
-                            <td className="px-6 py-5">
+                        <article key={payment.id} aria-label={`Payment on ${format(new Date(payment.recordedAt), 'dd MMM yyyy')}`} className="min-w-0 space-y-4 p-4 sm:p-6">
+                            <dl className="grid min-w-0 grid-cols-2 gap-x-4 gap-y-5 lg:grid-cols-3">
+                            <div className="min-w-0"><dt className="mb-2 text-xs font-semibold text-muted-foreground">Date</dt><dd className="min-w-0 break-words">
                                 <span className="text-sm font-bold text-foreground">
                                     {format(new Date(payment.recordedAt), 'MMM d, yyyy')}
                                 </span>
-                            </td>
-                            <td className="px-6 py-5">
+                            </dd></div>
+                            <div className="min-w-0"><dt className="mb-2 text-xs font-semibold text-muted-foreground">Method</dt><dd className="min-w-0 break-words">
                                 <div className="flex items-center gap-3">
                                     <div className="w-8 h-8 rounded-xl bg-secondary/60 flex items-center justify-center">
                                         {getMethodIcon(payment.method)}
@@ -148,13 +138,13 @@ export default function PaymentHistoryList({ payments, canReverse, canCorrect=ca
                                         {getMethodLabel(payment.method)}
                                     </span>
                                 </div>
-                            </td>
-                            <td className="px-6 py-5">
+                            </dd></div>
+                            <div className="min-w-0"><dt className="mb-2 text-xs font-semibold text-muted-foreground">Reference</dt><dd className="min-w-0 break-words">
                                 <span className="text-sm font-medium text-muted-foreground">
                                     {payment.transactionReference || '-'}
                                 </span>
-                            </td>
-                            <td className="px-6 py-5">
+                            </dd></div>
+                            <div className="min-w-0"><dt className="mb-2 text-xs font-semibold text-muted-foreground">Status</dt><dd className="min-w-0 break-words">
                                 {payment.status === 'pending' ? (
                                     <span className="flex items-center gap-1.5 px-3 py-1 bg-amber-500/10 text-amber-600 rounded-full text-xs font-bold ring-1 ring-amber-500/20 w-fit">
                                         <Clock className="w-3.5 h-3.5" /> Pending
@@ -172,15 +162,16 @@ export default function PaymentHistoryList({ payments, canReverse, canCorrect=ca
                                         <Check className="w-3.5 h-3.5" /> Verified
                                     </span>
                                 )}
-                            </td>
-                            <td className="px-6 py-5 text-right">
+                            </dd></div>
+                            <div className="min-w-0"><dt className="mb-2 text-xs font-semibold text-muted-foreground">Amount</dt><dd className="min-w-0 break-words">
                                 <span className={`text-sm font-black ${payment.status === 'failed' || payment.status === 'reversed' ? 'text-muted-foreground line-through' : 'text-foreground'}`}>
                                     £{Number(payment.amount).toFixed(2)}
                                 </span>{!!payment.correctionHistory?.length&&<details className="mt-2 text-left text-sm"><summary className="min-h-11 cursor-pointer py-3 text-primary">Correction history</summary>{payment.correctionHistory.map(c=><p key={c.id} className="my-2 text-muted-foreground">{new Date(c.from).toLocaleDateString('en-GB',{timeZone:'Europe/London'})} → {new Date(c.to).toLocaleDateString('en-GB',{timeZone:'Europe/London'})}. {c.reason} · {new Date(c.at).toLocaleString('en-GB',{timeZone:'Europe/London'})}</p>)}</details>}
-                            </td>
-                            <td className="px-6 py-5 text-right">
+                            </dd></div>
+                            </dl>
+                            <div className="flex min-w-0 flex-wrap gap-2 border-t border-border pt-4" aria-label="Payment actions">
                                 {payment.status === 'pending' && (
-                                    <div className="flex items-center justify-end gap-2">
+                                    <div className="flex flex-wrap items-center gap-2">
                                         <button
                                             onClick={() => handleVerify(payment.id)}
                                             disabled={processingId === payment.id}
@@ -200,7 +191,7 @@ export default function PaymentHistoryList({ payments, canReverse, canCorrect=ca
                                     </div>
                                 )}
                                 {payment.status === 'verified' && canReverse && (
-                                    <div className="flex flex-wrap items-center justify-end gap-2 mt-2">
+                                    <div className="flex flex-wrap items-center gap-2">
                                         {canSendReceipt && <SendReceiptButton paymentId={payment.id} recipient={receiptRecipient} recordedStatus={payment.receiptEmailStatus?.status} />}
                                         {canCorrect&&correctableMethods.includes(payment.method)&&<button onClick={()=>setCorrecting(payment)} className="min-h-11 rounded-lg border border-border px-3 py-2 text-sm font-semibold text-primary">Correct payment details</button>}
                                         <button
@@ -216,11 +207,10 @@ export default function PaymentHistoryList({ payments, canReverse, canCorrect=ca
                                         </button>
                                     </div>
                                 )}
-                            </td>
-                        </tr>
+                            </div>
+                        </article>
                     ))}
-                </tbody>
-            </table>
+            </div>
             {correcting&&<CorrectPaymentDialog payment={correcting} onClose={()=>setCorrecting(null)} onSaved={()=>{setCorrecting(null);router.refresh();onPaymentReversed?.();toast({title:'Payment corrected',message:'The date/reference is saved. Your paid balance is unchanged. Open Receipt to download the corrected receipt.',variant:'success'});}}/>}
             {reversalModalPayment && (
                 <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">

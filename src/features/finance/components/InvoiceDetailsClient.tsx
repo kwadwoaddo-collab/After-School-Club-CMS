@@ -356,7 +356,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Main Details */}
-                <div className="lg:col-span-2 space-y-8">
+                <div className="min-w-0 lg:col-span-2 space-y-8">
                     {/* Invoice Card */}
                     <div className="bg-card border border-border rounded-[40px] p-8 md:p-12 relative overflow-hidden">
                         <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-[100px] -mr-32 -mt-32" />
