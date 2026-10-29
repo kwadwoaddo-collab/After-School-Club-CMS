@@ -28,3 +28,9 @@ If the payment changed while you were editing, or saving was not confirmed, relo
 - **Correct payment details** fixes a date or reference while preserving the payment amount and paid balance.
 - **Reverse payment entry** removes the entry from paid totals and can reopen the invoice. It does not refund money.
 - **Void invoice** is an invoice cancellation action; it is not a payment date correction.
+
+## Troubleshoot draft preparation
+
+If **Review enrolment before creating this draft** appears, follow the **Review [student]** link to the affected student's **Enrolment and follow-up** section. Review confirmation, pause/restart history and the agreed fee dates for the selected billing period. Correcting the original enrolment start date does not clear a later pause or restart billing hold; that requires the separate billing review.
+
+The draft form keeps your amount and notes when it reports a problem. A **Draft creation not confirmed** message means the outcome is uncertain: check the family ledger before retrying because a draft may already exist. Reload the page if the result remains unclear. An error message is not confirmation that a draft was created.

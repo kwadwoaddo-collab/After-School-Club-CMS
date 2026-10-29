@@ -7,7 +7,7 @@ const mocks=vi.hoisted(()=>({card:vi.fn(),generate:vi.fn(),refresh:vi.fn()}));
 vi.mock('next/navigation',()=>({useRouter:()=>({refresh:mocks.refresh})}));
 vi.mock('next/link',()=>({default:({children,...props}:React.PropsWithChildren<React.AnchorHTMLAttributes<HTMLAnchorElement>>)=><a {...props}>{children}</a>}));
 vi.mock('./BillingSettingsCard',()=>({default:(props:unknown)=>{mocks.card(props);return <div>Billing settings form</div>;}}));
-vi.mock('@/features/billing/actions',()=>({generateInvoiceFromConfig:mocks.generate}));
+vi.mock('@/features/billing/actions',()=>({generateFamilyDraftInvoice:mocks.generate}));
 const child={id:'child-a',firstName:'Ada',lastName:'Example'};
 const group=(centreId='centre-a',configured=false):ParentBillingGroup=>({centreId,centreName:centreId==='centre-a'?'Sydenham':'Dagenham',siblings:[child,{id:'child-b',firstName:'Ben',lastName:'Example'}],config:configured?{id:`config-${centreId}`,parentId:'parent-a',centreId,agreedMonthlyPence:120000,billingAnchorDate:'2026-10-20',billingEndDate:null,invoiceLeadDays:7,leadTimeUnit:'DAYS',leadTimeValue:7,status:'active',notes:null,coveredChildren:[{childId:'child-a',childName:'Ada Example'},{childId:'child-b',childName:'Ben Example'}]}:null});
 const props={parentId:'parent-a',orgId:'org-a',familyName:'Example family',parentEmail:'family@example.test'};
