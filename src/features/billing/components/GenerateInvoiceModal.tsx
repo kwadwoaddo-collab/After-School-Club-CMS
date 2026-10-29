@@ -9,7 +9,9 @@ import {
     getBillingPeriodForDate,
     isHistoricalBillingPeriod,
 } from '@/lib/billing/date-engine';
-import { generateInvoiceFromConfig } from '@/features/billing/actions';
+import Link from 'next/link';
+import type { DraftProblem } from '../draft-result';
+import { generateFamilyDraftInvoice } from '@/features/billing/actions';
 import type { CoveredChild } from '@/features/billing/queries';
 
 interface Props {
@@ -117,6 +119,7 @@ export default function GenerateInvoiceModal({
     const [notes, setNotes]             = useState('');
     const [historicalReason, setHistoricalReason] = useState('');
     const [confirmHistorical, setConfirmHistorical] = useState(false);
+    const [problem, setProblem] = useState<DraftProblem | null>(null);
     const [error, setError]             = useState('');
     const [isPending, start]            = useTransition();
     const [invoiceId, setInvoiceId]     = useState('');
@@ -128,7 +131,7 @@ export default function GenerateInvoiceModal({
     };
 
     const handleGenerate = () => {
-        setError('');
+        setError(''); setProblem(null);
         if (!editedPence || editedPence <= 0) {
             setError('Please enter a valid amount');
             return;
@@ -143,7 +146,7 @@ export default function GenerateInvoiceModal({
 
         start(async () => {
             try {
-                const result = await generateInvoiceFromConfig({
+                const result = await generateFamilyDraftInvoice({
                     configId,
                     periodStartStr:    activePeriod.periodStartStr,
                     periodEndStr:      activePeriod.periodEndStr,
@@ -152,12 +155,12 @@ export default function GenerateInvoiceModal({
                     confirmHistorical: activePeriod.isHistorical ? confirmHistorical : undefined,
                     historicalReason:  activePeriod.isHistorical ? historicalReason.trim() : undefined,
                 });
-                setInvoiceId(result.invoiceId);
+                if (!result.ok) { setProblem(result.problem); return; }
+                setInvoiceId(result.data.invoiceId);
                 setStep('success');
                 onSuccess();
-            } catch (e) {
-                const message = e instanceof Error ? e.message : String(e);
-                setError(message ?? 'Failed to generate invoice. Please try again.');
+            } catch {
+                setProblem({title:'Draft creation not confirmed',message:'Check the family ledger before retrying because a draft may already have been created. Your entries are still here; reload the page if the result is unclear.'});
             }
         });
     };
@@ -321,12 +324,13 @@ export default function GenerateInvoiceModal({
                             {parentEmail && <p className="text-xs text-muted-foreground">{parentEmail}</p>}
                         </div>
 
-                        {error && (
-                            <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-xl">
-                                <AlertTriangle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
-                                <p className="text-xs text-red-600 font-semibold">{error}</p>
-                            </div>
-                        )}
+                        {(error || problem) && <div role="alert" className="flex items-start gap-2 p-3 bg-card border border-destructive/40 rounded-xl">
+                            <AlertTriangle aria-hidden="true" className="w-4 h-4 text-destructive flex-shrink-0 mt-0.5" />
+                            <div className="text-sm text-foreground">{problem ? <><p className="font-semibold">{problem.title}</p><p className="mt-1">{problem.message}</p>
+                                {problem.reviewEnrolment && <div className="mt-2 flex flex-wrap gap-x-3">{coveredChildren.filter(child=>!problem.childIds || problem.childIds.includes(child.childId)).map(child=><Link key={child.childId} href={`/dashboard/students/${child.childId}#enrolment-follow-up`} className="inline-flex min-h-11 items-center text-primary underline">Review {child.childName}</Link>)}</div>}
+                                {problem.reference && <p className="mt-2 text-xs text-muted-foreground">Support reference: {problem.reference}</p>}
+                            </> : <p>{error}</p>}</div>
+                        </div>}
 
                         {/* Actions */}
                         <div className="flex gap-2 pt-1">

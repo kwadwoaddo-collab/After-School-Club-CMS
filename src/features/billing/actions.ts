@@ -22,6 +22,7 @@ import {
 } from '@/lib/billing/date-engine';
 import { nanoid } from 'nanoid';
 import { logger } from '@/lib/logger';
+import { captureDraftResult, DraftEnrolmentReviewError } from './draft-result';
 import { captureBillingResult } from './billing-problem';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { financeEligibleChildSql, getFinanceEligibleChildIds, assertEligibleBillingCoverage, lockEnrolmentForBilling, confirmedEnrolmentChildSql, lifecycleEligibleChildSql, lockBillingConfiguration } from '@/lib/enrolment/finance-eligibility';
@@ -775,7 +776,9 @@ async function generateInvoiceFromConfigInternal(input: GenerateInvoiceInput, el
 
     const coveredIds = (config.children ?? []).map(cc => cc.child.id);
     const servicePeriod = { startDate: input.periodStartStr, endDate: input.periodEndStr };
-    assertEligibleBillingCoverage(coveredIds, await getFinanceEligibleChildIds(orgId, coveredIds, db, { parentId: config.parentId, centreId: config.centreId }, servicePeriod));
+    const eligibleIds = await getFinanceEligibleChildIds(orgId, coveredIds, db, { parentId: config.parentId, centreId: config.centreId }, servicePeriod);
+    if (coveredIds.some(id => !eligibleIds.has(id))) throw new DraftEnrolmentReviewError(coveredIds.filter(id => !eligibleIds.has(id)));
+    assertEligibleBillingCoverage(coveredIds, eligibleIds);
 
     // Copy-forward resolution (§16, §17, Issue E & 8)
     // Precedence: explicit input > most recent issued invoice (sent/partially_paid/paid) > agreedMonthlyPence > 0.00 draft
@@ -985,6 +988,15 @@ export async function changeFamilyBillingStatus(configId: string, action: 'pause
     }, error => {
         const reference = `BILL-${nanoid(10)}`;
         logger.error(`[${reference}] Billing status change not confirmed`, error);
+        return reference;
+    });
+}
+
+/** UI boundary: expected billing failures must survive production React error redaction. */
+export async function generateFamilyDraftInvoice(input: GenerateInvoiceInput) {
+    return captureDraftResult(() => generateInvoiceFromConfig(input), error => {
+        const reference = `DRAFT-${nanoid(10)}`;
+        logger.error(`[${reference}] Draft generation not confirmed`, error);
         return reference;
     });
 }
