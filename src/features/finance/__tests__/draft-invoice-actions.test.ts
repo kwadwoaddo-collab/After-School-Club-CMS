@@ -1,3 +1,4 @@
+import { auditEvents } from '@/db/schema';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('@/lib/session', () => ({
@@ -124,21 +125,22 @@ describe('Draft Invoice Lifecycle Actions (§18, B1, B2, B3)', () => {
             expect(res.alreadyIssued).toBe(true);
         });
 
-        it('keeps issuance committed when email outcome is unknown and does not automatically re-send on replay', async () => {
+        it('issues without emailing or notifying the parent, including on replay', async () => {
             const { requireTenantSession } = await import('@/lib/session');
             const { emailService } = await import('@/lib/services/email');
             (requireTenantSession as any).mockResolvedValue(OWNER_SESSION);
             const row = { id: 'inv-1', parentId: 'parent', organisationId: 'org-1', centreId: 'centre-1', status: 'draft', amount: '150.00', dueDate: new Date('2026-10-15'), invoiceNumber: 'INV-100' };
             mockTxSelect.mockReturnValue(makeTxSelectChain([row]));
             mockTxUpdate.mockReturnValue(makeTxUpdateChain([{ ...row, status: 'sent' }]));
-            vi.mocked(emailService.sendInvoiceCreated).mockResolvedValueOnce({ success: false, error: 'connection lost' });
             const { issueDraftInvoice } = await import('../actions');
             const result = await issueDraftInvoice('inv-1');
-            expect(result).toMatchObject({ success: true, alreadyIssued: false, emailStatus: { status: 'unknown' } });
-            expect(emailService.sendInvoiceCreated).toHaveBeenCalledTimes(1);
+            expect(result).toMatchObject({ success: true, alreadyIssued: false, emailStatus: { status: 'not_requested' } });
+            expect(emailService.sendInvoiceCreated).not.toHaveBeenCalled();
+            expect(mockDbQuery.parents.findFirst).not.toHaveBeenCalled();
+            expect(mockTxInsert.mock.calls.every(call => call[0] === auditEvents)).toBe(true);
             mockTxSelect.mockReturnValue(makeTxSelectChain([{ ...row, status: 'sent' }]));
             expect(await issueDraftInvoice('inv-1')).toMatchObject({ success: true, alreadyIssued: true });
-            expect(emailService.sendInvoiceCreated).toHaveBeenCalledTimes(1);
+            expect(emailService.sendInvoiceCreated).not.toHaveBeenCalled();
         });
 
         it('rejects if invoice is void', async () => {

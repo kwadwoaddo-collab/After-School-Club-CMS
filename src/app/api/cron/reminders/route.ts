@@ -1,10 +1,9 @@
 import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { bookings, invoices, payments } from '@/db/schema';
-import { and, gte, lte, inArray } from 'drizzle-orm';
+import { bookings } from '@/db/schema';
+import { and, gte, lte } from 'drizzle-orm';
 import { startOfDay, endOfDay, addDays } from 'date-fns';
-import { emailService } from '@/lib/services/email';
 import { getBaseUrl } from '@/lib/base-url';
 import { Resend } from 'resend';
 import { InferSelectModel } from 'drizzle-orm';
@@ -33,7 +32,7 @@ const FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@sprintscaleit.co.uk';
  * POST /api/cron/reminders
  *
  * 1. Sends "Session Tomorrow" reminder emails to parents with confirmed bookings tomorrow.
- * 2. Sends invoice due / overdue reminders for invoices due within 7 days.
+ * Financial emails are manual-only; no invoice reminders are sent.
  *
  * Secured by a CRON_SECRET header. Configure your cron provider (e.g. Vercel Cron, GitHub Actions)
  * to call this at 5pm daily.
@@ -149,51 +148,16 @@ export async function POST(req: NextRequest) {
         }
     }
 
-    // ── 3. Invoice due reminders ─────────────────────────────────────────────
-    // Send reminders for invoices due within 7 days or already overdue
-    let invoiceSent = 0;
-    try {
-        const sevenDaysFromNow = addDays(new Date(), 7);
-        const dueInvoices = await db.query.invoices.findMany({
-            where: and(
-                lte(invoices.dueDate, sevenDaysFromNow),
-                inArray(invoices.status, ['sent', 'partially_paid'])
-            ),
-            with: {
-                parent: { columns: { firstName: true, email: true } },
-                payments: true,
-            }
-        });
-
-        for (const invoice of dueInvoices) {
-            if (!invoice.parent?.email) continue;
-
-            // Only count verified payments against the balance
-            const verifiedTotal = (invoice.payments || []).reduce((sum: number, p) =>
-                p.status === 'verified' ? sum + Number(p.amount) : sum, 0);
-            const amountDue = Number(invoice.amount) - verifiedTotal;
-            if (amountDue <= 0) continue; // Already paid, skip
-
-            await emailService.sendInvoiceDue({
-                parentFirstName: invoice.parent.firstName,
-                parentEmail: invoice.parent.email,
-                invoiceNumber: invoice.invoiceNumber,
-                amountDue,
-                dueDate: invoice.dueDate,
-                portalUrl: `${getBaseUrl()}/portal/billing`,
-            });
-            invoiceSent++;
-        }
-    } catch (err) {
-        logger.error('[Reminder] Failed to process invoice reminders:', err);
-    }
+    // Financial communications are manual-only. Issuance must never schedule an
+    // unsolicited invoice reminder; booking/session reminders above are separate.
+    const invoiceSent = 0;
 
     return NextResponse.json({
         sent,
         errors,
         total: upcomingBookings.length,
         invoiceRemindersSent: invoiceSent,
-        message: `Sent ${sent} session reminder${sent !== 1 ? 's' : ''} and ${invoiceSent} invoice reminder${invoiceSent !== 1 ? 's' : ''}`,
+        message: `Sent ${sent} session reminder${sent !== 1 ? 's' : ''}. Invoice emails require a deliberate staff action.`,
     });
 }
 

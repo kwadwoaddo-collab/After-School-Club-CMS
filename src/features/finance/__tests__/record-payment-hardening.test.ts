@@ -182,6 +182,7 @@ describe('recordPayment hardening & RBAC unit tests', () => {
         expect(res.success).toBe(true);
         expect(res.payment.amount).toBe('50.00');
         expect(mockNotifyOwners).toHaveBeenCalledTimes(1);
+        expect(mockSendReceiptEmail).not.toHaveBeenCalled();
     });
 
     it('RBAC: MANAGER with centre membership succeeds', async () => {

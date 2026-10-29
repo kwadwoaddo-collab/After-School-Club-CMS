@@ -20,7 +20,7 @@ beforeEach(()=>{
  vi.clearAllMocks();
  Object.defineProperty(HTMLDialogElement.prototype,'showModal',{configurable:true,value:function(){this.setAttribute('open','');}});
  Object.defineProperty(HTMLDialogElement.prototype,'close',{configurable:true,value:function(){this.removeAttribute('open');}});
- mocks.issue.mockResolvedValue({success:true,alreadyIssued:false,emailStatus:{status:'accepted',attemptedAt:new Date().toISOString()}});
+ mocks.issue.mockResolvedValue({success:true,alreadyIssued:false,emailStatus:{status:'not_requested',attemptedAt:''}});
 });
 afterEach(cleanup);
 describe('invoice review and truthful email status',()=>{
@@ -41,7 +41,8 @@ describe('invoice review and truthful email status',()=>{
   fireEvent.click(screen.getByRole('button',{name:'Confirm and issue invoice'}));
   await waitFor(()=>expect(mocks.issue).toHaveBeenCalledTimes(1));
   expect(mocks.issue).toHaveBeenCalledWith('inv');
-  expect(mocks.toast.mock.calls[0][0].message).toContain('Inbox delivery is not confirmed');
+  expect(mocks.resend).not.toHaveBeenCalled();
+  expect(mocks.toast.mock.calls[0][0].message).toContain('No email was sent');
  });
  it('does not allow repeated confirmation while issuance is in flight',async()=>{
   let finish:(v:unknown)=>void=()=>{};mocks.issue.mockReturnValue(new Promise(resolve=>{finish=resolve;}));
@@ -61,7 +62,7 @@ describe('invoice review and truthful email status',()=>{
  it('handles a lost resend response without claiming failure or delivery',async()=>{
   mocks.resend.mockRejectedValue(new Error('lost response'));
   render(<InvoiceDetails invoice={{...invoice,status:'sent'}} organisationName="Dummy" userRole="MANAGER"/>);
-  fireEvent.click(screen.getByRole('button',{name:'Resend email'}));
+  fireEvent.click(screen.getByRole('button',{name:'Send invoice by email'}));
   await waitFor(()=>expect(mocks.toast).toHaveBeenCalled());
   expect(mocks.toast.mock.calls[0][0].message).toContain('email may have been accepted');
   expect(screen.getByRole('status').textContent).toContain('not confirmed');

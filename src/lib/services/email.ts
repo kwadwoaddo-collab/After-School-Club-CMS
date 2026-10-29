@@ -1517,40 +1517,32 @@ export class EmailService {
    * Send payment receipt email
    */
   async sendPaymentReceiptEmail(params: {
-    parentEmail: string;
-    parentName: string;
-    invoiceNumber: string;
-    amountPaid: number;
-    organisationName: string;
-    invoiceId: string;
-    paymentId: string;
-  }): Promise<void> {
-    if (!resend) {
-      logger.warn('[EmailService] Resend client not initialized. Email not sent.');
-      return;
-    }
-
+    parentEmail: string; parentName: string; invoiceNumber: string; amountPaid: number;
+    organisationName: string; invoiceId: string; paymentId: string;
+    paymentDate?: string; childcarePeriod?: string; idempotencyKey?: string;
+  }): Promise<EmailResult & { outcome?: 'not_sent' | 'unknown' }> {
+    if (!resend) return { success: false, error: 'Email service not configured', outcome: 'not_sent' };
+    const safe = (value: unknown) => String(value).replace(/[&<>"']/g, character => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[character]!));
     const rcp = stableReceiptNumber(params.paymentId);
-    const htmlContent = `
-      <h2>Payment Receipt — ${params.organisationName}</h2>
-      <p>Dear ${params.parentName},</p>
-      <p>We have received your payment of £${params.amountPaid} for invoice #${params.invoiceNumber}.</p>
+    const htmlContent = `<h2>Payment Receipt — ${safe(params.organisationName)}</h2>
+      <p>Dear ${safe(params.parentName)},</p>
+      <p>Payment received: £${params.amountPaid.toFixed(2)} for invoice ${safe(params.invoiceNumber)}.</p>
       <p>Receipt No: ${rcp}</p>
-      <p>Thank you. Your account is now up to date.</p>
-      <p>Best regards,<br/>${params.organisationName}</p>
-    `;
-
+      ${params.paymentDate ? `<p>Payment date: ${safe(params.paymentDate)}</p>` : ''}
+      ${params.childcarePeriod ? `<p>Childcare period: ${safe(params.childcarePeriod)}</p>` : ''}
+      <p>This receipt confirms this payment. Any remaining balance is shown separately on the invoice.</p>`;
     try {
-      await resend.emails.send({
-        from: `${params.organisationName} via SprintScale <${FROM_EMAIL}>`,
-        to: params.parentEmail,
-        subject: `Payment Receipt — ${rcp} — Invoice ${params.invoiceNumber}`,
-        html: htmlContent,
-      });
-    } catch (err) {
-      logger.error('[EmailService] Failed to send payment receipt email:', err);
+      const {data, error} = await resend.emails.send({
+        from: `${params.organisationName} via SprintScale <${FROM_EMAIL}>`, to: params.parentEmail,
+        subject: `Payment Receipt — ${rcp} — Invoice ${params.invoiceNumber}`, html: htmlContent,
+      }, params.idempotencyKey ? { idempotencyKey: params.idempotencyKey } : undefined);
+      if (error) return { success: false, error: error.message, outcome: 'unknown' };
+      return { success: true, messageId: data?.id };
+    } catch {
+      return { success: false, error: 'Email outcome unknown', outcome: 'unknown' };
     }
   }
+
 }
 
 // Export singleton instance
