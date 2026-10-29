@@ -3,11 +3,12 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
+import EnrolmentStartDate from './EnrolmentStartDate';
 import { Badge } from '@/components/ui/Badge';
 
 type Event = { id: string; status: 'active' | 'paused' | 'stopped'; effectiveDate: string; reason: string; expectedRestartDate: string | null; nextContactDate: string | null; feeReviewConfirmed: boolean; billingReviewedFrom?: string | null; createdAt: string };
 type Contact = { id: string; createdAt: string; contactedAt: string; notes: string; nextContactDate: string | null };
-export default function StudentLifecyclePanel({ childId, events, contacts, today, canChangeStatus, confirmed }: { childId: string; events: Event[]; contacts: Contact[]; today: string; canChangeStatus: boolean; confirmed: boolean }) {
+export default function StudentLifecyclePanel({ childId, events, contacts, today, canChangeStatus, confirmed, enrolmentStart }: { childId: string; events: Event[]; contacts: Contact[]; today: string; canChangeStatus: boolean; confirmed: boolean; enrolmentStart?: {date: string | null; version: string | null} }) {
     const router = useRouter();
     const current = events.find(event => event.effectiveDate <= today);
     const scheduled = events.filter(event => event.effectiveDate > today);
@@ -20,6 +21,7 @@ export default function StudentLifecyclePanel({ childId, events, contacts, today
     const inputClass = 'mt-1 block w-full rounded-lg border border-border bg-background p-2 text-foreground';
     return <section id="enrolment-follow-up" className="rounded-xl border border-border bg-card p-4 sm:p-6 space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3"><h2 className="text-lg font-semibold text-foreground">Enrolment and follow-up</h2><Badge variant={!confirmed ? 'default' : status === 'active' ? 'success' : 'warning'}>{!confirmed ? 'Joining not yet confirmed' : status === 'active' ? 'Active attendance' : status === 'paused' ? 'Paused' : 'Stopped'}</Badge></div>
+        {enrolmentStart && <EnrolmentStartDate childId={childId} date={enrolmentStart.date} version={enrolmentStart.version} today={today} canEdit={canChangeStatus && confirmed} />}
         {current && <p className="text-sm text-muted-foreground">Effective {current.effectiveDate}: {current.reason}{current.expectedRestartDate ? ` · Expected restart ${current.expectedRestartDate} (reminder only)` : ''}</p>}
         {confirmed && status === 'active' && current && !current.feeReviewConfirmed && <p role="status" className="text-sm text-warning">Enrolment is active. Billing remains on hold until an Owner or Manager reviews the actual fee and agreed restart date in Billing configuration. No catch-up invoices are created.</p>}
         {confirmed && status === 'active' && current?.feeReviewConfirmed && current.billingReviewedFrom && current.billingReviewedFrom > today && <p role="status" className="text-sm text-warning">Enrolment is active. The reviewed billing start is {current.billingReviewedFrom}; earlier restart-period invoices remain blocked.</p>}

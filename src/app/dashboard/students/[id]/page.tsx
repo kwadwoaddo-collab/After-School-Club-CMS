@@ -1,3 +1,4 @@
+import { readEnrolmentStart } from '@/features/students/enrolment-start-query';
 import { enrolmentBusinessDate } from '@/lib/enrolment/business-date';
 import { confirmedEnrolmentChildSql } from '@/lib/enrolment/finance-eligibility';
 import { logger } from '@/lib/logger';
@@ -220,6 +221,7 @@ export default async function StudentProfilePage(
         logger.error('[student-profile] fetchStudentBillingConfig failed:', err);
     }
 
+    const enrolmentStart = await readEnrolmentStart(session.user.organisationId, id);
     const [[confirmedEnrolment], enrolmentEvents, followUpContacts] = await Promise.all([
         db.select({ id: children.id }).from(children).where(and(eq(children.id, id), eq(children.organisationId, session.user.organisationId), confirmedEnrolmentChildSql())).limit(1),
         db.query.studentEnrolmentEvents.findMany({ where: and(eq(studentEnrolmentEvents.childId, id), eq(studentEnrolmentEvents.organisationId, session.user.organisationId)), orderBy: [desc(studentEnrolmentEvents.effectiveDate), desc(studentEnrolmentEvents.createdAt), desc(studentEnrolmentEvents.id)] }),
@@ -228,7 +230,7 @@ export default async function StudentProfilePage(
     return (
         <>
         {!student.registrationId && !confirmedEnrolment && ['ORG_OWNER', 'MANAGER'].includes(userRole ?? '') && <ConfirmExistingEnrolment childId={id} />}
-        <StudentLifecyclePanel childId={id} today={enrolmentBusinessDate()} canChangeStatus={['ORG_OWNER', 'MANAGER'].includes(userRole ?? '')} confirmed={Boolean(confirmedEnrolment)} events={enrolmentEvents.map(event => ({ ...event, createdAt: event.createdAt.toISOString() }))} contacts={followUpContacts.map(contact => ({ ...contact, contactedAt: contact.contactedAt.toISOString(), createdAt: contact.createdAt.toISOString() }))} />
+        <StudentLifecyclePanel enrolmentStart={enrolmentStart} childId={id} today={enrolmentBusinessDate()} canChangeStatus={['ORG_OWNER', 'MANAGER'].includes(userRole ?? '')} confirmed={Boolean(confirmedEnrolment)} events={enrolmentEvents.map(event => ({ ...event, createdAt: event.createdAt.toISOString() }))} contacts={followUpContacts.map(contact => ({ ...contact, contactedAt: contact.contactedAt.toISOString(), createdAt: contact.createdAt.toISOString() }))} />
         <StudentProfile
             student={{
                 ...student,
