@@ -66,8 +66,22 @@ export default async function ParentProfilePage({ params, searchParams }: Parent
                     isNull(children.deletedAt),
                 ));
             childStatusMap = new Map(statusRows.map(r => [r.id, { confirmedEnrolment: Boolean(r.confirmedEnrolment), lifecycleStatus: r.lifecycleStatus || 'active' }]));
-        } catch (err) {
-            logger.error('[parent] Confirmed enrolment lookup failed:', err);
+        } catch {
+            try {
+                const fallbackRows = await db.select({
+                    id: children.id,
+                    confirmedEnrolment: sql<boolean>`CASE WHEN ${confirmedEnrolmentChildSql()} THEN true ELSE false END`,
+                })
+                    .from(children)
+                    .where(and(
+                        inArray(children.id, activeFamilyChildIds),
+                        eq(children.organisationId, organisationId),
+                        isNull(children.deletedAt),
+                    ));
+                childStatusMap = new Map(fallbackRows.map(r => [r.id, { confirmedEnrolment: Boolean(r.confirmedEnrolment), lifecycleStatus: 'active' }]));
+            } catch (err) {
+                logger.error('[parent] Confirmed enrolment lookup failed:', err);
+            }
         }
     }
     const plans=canManageBilling&&accessibleCentres.length?await db.query.billingConfigs.findMany({where:and(eq(billingConfigs.parentId,id),eq(billingConfigs.organisationId,organisationId),inArray(billingConfigs.centreId,accessibleCentres.map(c=>c.id))),with:{children:{with:{child:true}}}}):[];

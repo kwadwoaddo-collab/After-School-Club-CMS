@@ -53,7 +53,7 @@ export function lifecycleEligibleChildSql(startDate?: string, endDate?: string, 
 export function currentLifecycleStatusChildSql() {
     return sql<string>`COALESCE((
         SELECT e.status FROM student_enrolment_events e
-        WHERE e.child_id = ${children.id} AND e.organisation_id = ${children.organisationId}
+        WHERE e.child_id = "children"."id" AND e.organisation_id = "children"."organisation_id"
           AND e.effective_date <= (now() AT TIME ZONE 'Europe/London')::date
         ORDER BY e.effective_date DESC, e.created_at DESC, e.id DESC LIMIT 1
     ), 'active')`;
