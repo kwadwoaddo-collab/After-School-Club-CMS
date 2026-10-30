@@ -57,7 +57,10 @@ export const InvoiceTemplate = ({ invoice, organisationName }: InvoiceTemplatePr
                     <View>
                         <Text style={styles.subtitle}>Childcare Services</Text>
                         <Text style={styles.title}>INVOICE</Text>
-                        <Text style={{ fontSize: 8, color: '#64748b', marginTop: 4 }}>
+                        <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#1e40af', marginTop: 2 }}>
+                            {centre?.name || organisationName || 'CENTRE'}
+                        </Text>
+                        <Text style={{ fontSize: 8, color: '#64748b', marginTop: 3 }}>
                             Ofsted / Ref No: {centre?.ofstedId || 'N/A'}
                         </Text>
                     </View>
@@ -210,7 +213,7 @@ export const InvoiceTemplate = ({ invoice, organisationName }: InvoiceTemplatePr
                 {/* Footer */}
                 <View style={styles.footer}>
                     <View style={styles.footerLeft}>
-                        <Text style={{ fontWeight: 'bold', color: '#ffffff', fontSize: 9 }}>{organisationName || centre?.name || 'CENTRE'}</Text>
+                        <Text style={{ fontWeight: 'bold', color: '#ffffff', fontSize: 9 }}>{centre?.name || organisationName || 'CENTRE'}</Text>
                         {addressLines.map((line: string, i: number) => (
                             <Text key={i} style={{ color: '#ffffff', fontSize: 7, marginTop: 1 }}>{line}</Text>
                         ))}

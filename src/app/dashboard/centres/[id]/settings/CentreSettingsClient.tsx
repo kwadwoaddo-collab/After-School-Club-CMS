@@ -25,6 +25,9 @@ interface CentreFormValues {
     name: string;
     address: string;
     ofstedId: string;
+    managerName: string;
+    billingPhone: string;
+    billingEmail: string;
     sessionSlots: SessionSlot[];
     // Billing
     bankName: string;
@@ -63,6 +66,9 @@ export default function CentreSettingsClient({ centre }: { centre: any }) {
             name: centre.name || '',
             address: centre.address || '',
             ofstedId: centre.ofstedId || '',
+            managerName: centre.managerName || '',
+            billingPhone: centre.billingPhone || '',
+            billingEmail: centre.billingEmail || '',
             sessionSlots: parsedSessions.length > 0 ? parsedSessions : [
                 { name: 'Breakfast Club', startTime: '07:30', endTime: '09:00', price: 5, capacity: 30, daysActive: WEEKDAYS },
                 { name: 'After School', startTime: '15:30', endTime: '18:00', price: 12, capacity: 30, daysActive: WEEKDAYS }
@@ -172,11 +178,11 @@ export default function CentreSettingsClient({ centre }: { centre: any }) {
                             <input
                                 {...register('name', { required: true })}
                                 className={inputCls}
-                                placeholder="e.g. Sydenham Primary School"
+                                placeholder="e.g. Dagenham After School Club"
                             />
                         </div>
                         <div>
-                            <label className="block text-label text-text-muted mb-1.5">Full address</label>
+                            <label className="block text-label text-text-muted mb-1.5">Full address (shown on centre receipts &amp; invoices)</label>
                             <textarea
                                 {...register('address')}
                                 rows={3}
@@ -184,13 +190,43 @@ export default function CentreSettingsClient({ centre }: { centre: any }) {
                                 placeholder="Enter physical location…"
                             />
                         </div>
-                        <div>
-                            <label className="block text-label text-text-muted mb-1.5">Ofsted registration ID</label>
-                            <input
-                                {...register('ofstedId')}
-                                className={`${inputCls} font-mono`}
-                                placeholder="e.g. EY123456"
-                            />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-label text-text-muted mb-1.5">Centre manager name</label>
+                                <input
+                                    {...register('managerName')}
+                                    className={inputCls}
+                                    placeholder="e.g. Margaret Ampadu"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-label text-text-muted mb-1.5">Ofsted registration ID</label>
+                                <input
+                                    {...register('ofstedId')}
+                                    className={`${inputCls} font-mono`}
+                                    placeholder="e.g. EY123456"
+                                />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-label text-text-muted mb-1.5">Centre phone (receipts &amp; invoices)</label>
+                                <input
+                                    type="tel"
+                                    {...register('billingPhone')}
+                                    className={inputCls}
+                                    placeholder="e.g. 07456 490797"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-label text-text-muted mb-1.5">Centre email (receipts &amp; invoices)</label>
+                                <input
+                                    type="email"
+                                    {...register('billingEmail')}
+                                    className={inputCls}
+                                    placeholder="e.g. dagenham@yourclub.co.uk"
+                                />
+                            </div>
                         </div>
                     </div>
 

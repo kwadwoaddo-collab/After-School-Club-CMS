@@ -30,6 +30,9 @@ export async function updateCentreAction(centreId: string, data: any) {
             name: data.name,
             address: data.address,
             ofstedId: data.ofstedId,
+            managerName: data.managerName?.trim() || null,
+            billingPhone: data.billingPhone?.trim() || null,
+            billingEmail: data.billingEmail?.trim() || null,
             sessionSlots: data.sessionSlots ? JSON.stringify(data.sessionSlots) : null,
             // Billing fields if provided
             bankName: data.bankName,

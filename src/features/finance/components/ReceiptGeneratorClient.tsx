@@ -10,6 +10,7 @@ interface Child {
     firstName: string;
     lastName: string;
     schoolYear: string;
+    centreId?: string | null;
     parent: {
         id: string;
         firstName: string;
@@ -22,6 +23,11 @@ interface Child {
 interface Centre {
     id: string;
     name: string;
+    address?: string | null;
+    ofstedId?: string | null;
+    managerName?: string | null;
+    billingPhone?: string | null;
+    billingEmail?: string | null;
 }
 
 interface InitialPayment {
@@ -160,12 +166,17 @@ export default function ReceiptGeneratorClient({ organisation, centres, children
         if (child) {
             setStudentName(`${child.firstName} ${child.lastName}`);
             setParentName(`${child.parent.firstName} ${child.parent.lastName}`);
+            if (child.centreId) {
+                setSelectedCentreId(child.centreId);
+            }
         }
     };
 
+    const selectedCentre = centres.find(c => c.id === selectedCentreId);
     const selectedCentreName =
-        centres.find(c => c.id === selectedCentreId)?.name ||
+        selectedCentre?.name ||
         initialPayment?.centreName ||
+        organisation.name ||
         'Main Centre';
 
     const handlePrint = () => {
@@ -359,11 +370,22 @@ export default function ReceiptGeneratorClient({ organisation, centres, children
                         <div>
                             <div className="flex items-center gap-2.5">
                                 <div className="w-8 h-8 rounded-lg bg-slate-900 text-white font-extrabold text-xs flex items-center justify-center">
-                                    {organisation.name.slice(0, 2).toUpperCase()}
+                                    {selectedCentreName.slice(0, 2).toUpperCase()}
                                 </div>
-                                <h2 className="text-base font-extrabold text-slate-900 uppercase tracking-tight">{organisation.name}</h2>
+                                <h2 className="text-base font-extrabold text-slate-900 uppercase tracking-tight">{selectedCentreName}</h2>
                             </div>
-                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-1">{selectedCentreName}</p>
+                            {selectedCentre?.address && (
+                                <p className="text-[10px] text-slate-500 font-semibold mt-1 whitespace-pre-line">{selectedCentre.address}</p>
+                            )}
+                            {(selectedCentre?.billingPhone || selectedCentre?.billingEmail || selectedCentre?.ofstedId) && (
+                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-1">
+                                    {[
+                                        selectedCentre?.ofstedId ? `Ofsted: ${selectedCentre.ofstedId}` : null,
+                                        selectedCentre?.billingPhone ? `Tel: ${selectedCentre.billingPhone}` : null,
+                                        selectedCentre?.billingEmail || null,
+                                    ].filter(Boolean).join(' · ')}
+                                </p>
+                            )}
                         </div>
                         <div className="sm:text-right">
                             <h3 className="text-xl font-black text-slate-900 tracking-tighter uppercase">Official Receipt</h3>
@@ -431,11 +453,10 @@ export default function ReceiptGeneratorClient({ organisation, centres, children
                         </div>
                         <div className="space-y-4 text-right">
                             <div className="h-10 flex items-end justify-end">
-                                {/* Simulated premium signature font */}
-                                <span className="font-serif italic text-base text-slate-600 opacity-60 tracking-wider">Sprintscale Admin</span>
+                                <span className="font-serif italic text-base text-slate-600 opacity-75 tracking-wider">{selectedCentre?.managerName || 'Centre Manager'}</span>
                             </div>
                             <div className="border-t border-slate-200 pt-1.5">
-                                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Authorized Signature</span>
+                                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Authorized Signature ({selectedCentreName})</span>
                             </div>
                         </div>
                     </div>

@@ -67,7 +67,10 @@ export const ReceiptTemplate = ({ invoice, organisationName }: ReceiptTemplatePr
                     <View>
                         <Text style={styles.subtitle}>Payment Confirmation</Text>
                         <Text style={styles.title}>RECEIPT</Text>
-                        <Text style={{ fontSize: 8, color: '#64748b', marginTop: 4 }}>
+                        <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#1e40af', marginTop: 2 }}>
+                            {centre?.name || organisationName || 'CENTRE'}
+                        </Text>
+                        <Text style={{ fontSize: 8, color: '#64748b', marginTop: 3 }}>
                             Ofsted Registration No: {centre?.ofstedId || '—'}
                         </Text>
                     </View>
@@ -173,7 +176,7 @@ export const ReceiptTemplate = ({ invoice, organisationName }: ReceiptTemplatePr
                 {/* Footer */}
                 <View style={styles.footer}>
                     <View style={styles.footerLeft}>
-                        <Text style={{ fontWeight: 'bold', color: '#ffffff', fontSize: 9 }}>{organisationName || centre?.name || 'CENTRE'}</Text>
+                        <Text style={{ fontWeight: 'bold', color: '#ffffff', fontSize: 9 }}>{centre?.name || organisationName || 'CENTRE'}</Text>
                         {addressLines.map((line: string, i: number) => (
                             <Text key={i} style={{ color: '#ffffff', fontSize: 7, marginTop: 1 }}>{line}</Text>
                         ))}

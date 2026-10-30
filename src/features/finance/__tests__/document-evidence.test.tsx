@@ -493,6 +493,31 @@ describe('Document Evidence Improvement — Invoice & Receipt Tests', () => {
             expect(allText).not.toContain('Jane Doe');
         });
 
+        it('Receipt and Invoice always display the centre name instead of the parent organisation name when both are present', () => {
+            const invoiceB = {
+                invoiceNumber: 'INV-B-CENTRE-ONLY',
+                amount: '140.00',
+                status: 'paid',
+                centre: baseCentreB,
+                parent: baseParent,
+                payments: [
+                    { id: 'p1', amount: '140.00', method: 'bank_transfer', recordedAt: new Date('2026-10-03'), status: 'verified' }
+                ],
+            };
+
+            const receiptText = extractTextFromTree(
+                ReceiptTemplate({ invoice: invoiceB, organisationName: 'Mother Organisation Holdings LTD' })
+            );
+            const invoiceText = extractTextFromTree(
+                InvoiceTemplate({ invoice: invoiceB, organisationName: 'Mother Organisation Holdings LTD' })
+            );
+
+            expect(receiptText).toContain('Peckham Learning Hub');
+            expect(receiptText).not.toContain('Mother Organisation Holdings LTD');
+            expect(invoiceText).toContain('Peckham Learning Hub');
+            expect(invoiceText).not.toContain('Mother Organisation Holdings LTD');
+        });
+
         it('Template source files contain NO hard-coded centre names or branding', () => {
             const invoiceTemplateSrc = readSrc('src/features/finance/components/InvoiceTemplate.tsx');
             const receiptTemplateSrc = readSrc('src/features/finance/components/ReceiptTemplate.tsx');
