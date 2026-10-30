@@ -132,27 +132,31 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
     const allowedActions = ROLE_QUICK_ACTIONS[userRole] || [];
 
     const navItems = [
-        { name: 'Dashboard', icon: LayoutGrid, href: '/dashboard' },
-        { name: 'Help & Training', icon: CircleHelp, href: '/dashboard/help' },
-        { name: 'Centres', icon: School, href: '/dashboard/centres' },
-        { name: 'Team', icon: UserCircle2, href: '/dashboard/staff' },
-        { name: 'Communications', icon: MessageSquare, href: '/dashboard/communications' },
-        { name: 'Students', icon: Users, href: '/dashboard/students' },
-        { name: 'Parents', icon: UserRound, href: '/dashboard/parents', children: [
-            { name: 'Recovery Bin', href: '/dashboard/parents/bin' },
-        ] },
-        { name: 'Bookings', icon: CalendarDays, href: '/dashboard/bookings' },
-        { name: 'Attendance', icon: ClipboardCheck, href: '/dashboard/attendance', children: [
+        // Overview & Support
+        { name: 'Dashboard', icon: LayoutGrid, href: '/dashboard', group: 'overview' },
+        { name: 'Help & Training', icon: CircleHelp, href: '/dashboard/help', group: 'overview' },
+        // Daily Club Operations
+        { name: 'Attendance', icon: ClipboardCheck, href: '/dashboard/attendance', group: 'daily', children: [
             { name: 'Session Ledger', href: '/dashboard/attendance/ledger' },
         ] },
-        { name: 'Incidents', icon: AlertTriangle, href: '/dashboard/incidents' },
-        { name: 'Kiosk', icon: Monitor, href: '/dashboard/kiosk' },
-        { name: 'Registrations', icon: ClipboardList, href: '/dashboard/registrations' },
-        { name: 'Availability', icon: Clock, href: '/dashboard/availability' },
-        { name: 'Reports', icon: BarChart, href: '/dashboard/reports' },
-        { name: 'Finance', icon: Wallet, href: '/dashboard/finance' },
-        { name: 'Documents', icon: FolderOpen, href: '/dashboard/documents' },
-        { name: 'Settings', icon: Settings, href: '/dashboard/settings' },
+        { name: 'Kiosk', icon: Monitor, href: '/dashboard/kiosk', group: 'daily' },
+        { name: 'Bookings', icon: CalendarDays, href: '/dashboard/bookings', group: 'daily' },
+        { name: 'Registrations', icon: ClipboardList, href: '/dashboard/registrations', group: 'daily' },
+        { name: 'Incidents', icon: AlertTriangle, href: '/dashboard/incidents', group: 'daily' },
+        // Families & Directory
+        { name: 'Students', icon: Users, href: '/dashboard/students', group: 'families' },
+        { name: 'Parents', icon: UserRound, href: '/dashboard/parents', group: 'families', children: [
+            { name: 'Recovery Bin', href: '/dashboard/parents/bin' },
+        ] },
+        // Finance, Centres & Administration
+        { name: 'Finance', icon: Wallet, href: '/dashboard/finance', group: 'admin' },
+        { name: 'Reports', icon: BarChart, href: '/dashboard/reports', group: 'admin' },
+        { name: 'Centres', icon: School, href: '/dashboard/centres', group: 'admin' },
+        { name: 'Availability', icon: Clock, href: '/dashboard/availability', group: 'admin' },
+        { name: 'Team', icon: UserCircle2, href: '/dashboard/staff', group: 'admin' },
+        { name: 'Communications', icon: MessageSquare, href: '/dashboard/communications', group: 'admin' },
+        { name: 'Documents', icon: FolderOpen, href: '/dashboard/documents', group: 'admin' },
+        { name: 'Settings', icon: Settings, href: '/dashboard/settings', group: 'admin' },
     ].filter(item => allowedNav.includes(item.name));
 
     return (
@@ -325,12 +329,16 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                     <div ref={sidebarScrollRef} className="flex-1 overflow-y-auto min-h-0 -mx-2 px-2">
                     {/* A11Y-1 (Milestone 3N): aria-label identifies this as the primary navigation landmark */}
                     <nav className="space-y-0.5" aria-label="Main navigation">
-                        {navItems.map((item) => {
+                        {navItems.map((item, idx) => {
                             const isActive = item.href === '/dashboard'
                                 ? pathname === item.href
                                 : pathname.startsWith(item.href);
+                            const showGroupDivider = idx > 0 && item.group !== navItems[idx - 1].group;
                             return (
                                 <div key={item.name}>
+                                    {showGroupDivider && (
+                                        <div className="h-px bg-border-subtle my-2" role="separator" />
+                                    )}
                                     <Link
                                         href={item.href}
                                         prefetch={true}

@@ -70,8 +70,10 @@ export async function GET(request: NextRequest) {
           id: children.id,
           firstName: children.firstName,
           lastName: children.lastName,
+          centreName: centres.name,
         })
         .from(children)
+        .leftJoin(centres, eq(children.centreId, centres.id))
         .where(
           and(
             eq(children.organisationId, organisationId),
@@ -94,6 +96,7 @@ export async function GET(request: NextRequest) {
           firstName: parents.firstName,
           lastName: parents.lastName,
           email: parents.email,
+          phone: parents.phone,
         })
         .from(parents)
         .where(
@@ -110,6 +113,7 @@ export async function GET(request: NextRequest) {
               ilike(parents.firstName, searchPattern),
               ilike(parents.lastName, searchPattern),
               ilike(parents.email, searchPattern),
+              ilike(parents.phone, searchPattern),
               ilike(sql`concat(${parents.firstName}, ' ', ${parents.lastName})`, searchPattern)
             )
           )
@@ -141,6 +145,7 @@ export async function GET(request: NextRequest) {
         .select({
           id: bookings.id,
           startAt: bookings.startAt,
+          centreName: centres.name,
           parentFirstName: parents.firstName,
           parentLastName: parents.lastName,
           childFirstName: children.firstName,
@@ -177,26 +182,27 @@ export async function GET(request: NextRequest) {
         id: s.id,
         type: 'student',
         title: `${s.firstName} ${s.lastName}`,
-        subtitle: 'Student',
+        subtitle: (s as any).centreName ? `Student · ${(s as any).centreName}` : 'Student',
         url: `/dashboard/students/${s.id}`
       })),
       ...parentResults.map(p => ({
         id: p.id,
         type: 'parent',
         title: `${p.firstName} ${p.lastName}`,
-        subtitle: p.email || 'Parent',
+        subtitle: [p.email, (p as any).phone].filter(Boolean).join(' · ') || 'Parent',
         url: `/dashboard/parents/${p.id}`
       })),
       ...bookingResults.map(b => {
         const date = new Date(b.startAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
         const time = new Date(b.startAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
         const childName = b.childFirstName ? `${b.childFirstName} ${b.childLastName}` : 'Unknown Child';
+        const centreSuffix = (b as any).centreName ? ` · ${(b as any).centreName}` : '';
         
         return {
           id: b.id,
           type: 'booking',
           title: `Booking: ${childName}`,
-          subtitle: `${date} at ${time}`,
+          subtitle: `${date} at ${time}${centreSuffix}`,
           url: `/dashboard/bookings/${b.id}`
         };
       }),

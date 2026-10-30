@@ -39,6 +39,7 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
     const { collapsed, setCollapsed } = useSidebar();
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<any[]>([]);
+    const [activeSearchIdx, setActiveSearchIdx] = useState(-1);
     const [isSearching, setIsSearching] = useState(false);
     const [showSearchResults, setShowSearchResults] = useState(false);
     const searchInputRef = useRef<HTMLInputElement>(null);
@@ -195,6 +196,7 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                 if (res.ok) {
                     const data = await res.json();
                     setSearchResults(data.results || []);
+                    setActiveSearchIdx(-1);
                 }
             } catch (error) {
                 logger.error('Search failed:', error);
@@ -230,8 +232,36 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
+        if (activeSearchIdx >= 0 && searchResults[activeSearchIdx]) {
+            router.push(searchResults[activeSearchIdx].url);
+            setShowSearchResults(false);
+            setSearchQuery('');
+            setActiveSearchIdx(-1);
+            return;
+        }
         if (searchQuery.trim()) {
             router.push(`/dashboard/bookings?search=${encodeURIComponent(searchQuery)}`);
+            setShowSearchResults(false);
+        }
+    };
+
+    const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'ArrowDown') {
+            if (searchResults.length > 0) {
+                e.preventDefault();
+                setShowSearchResults(true);
+                setActiveSearchIdx(prev => (prev + 1) % searchResults.length);
+            }
+        } else if (e.key === 'ArrowUp') {
+            if (searchResults.length > 0) {
+                e.preventDefault();
+                setShowSearchResults(true);
+                setActiveSearchIdx(prev => (prev - 1 + searchResults.length) % searchResults.length);
+            }
+        } else if (e.key === 'Escape') {
+            setShowSearchResults(false);
+            setActiveSearchIdx(-1);
+            searchInputRef.current?.blur();
         }
     };
 
@@ -274,12 +304,14 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                                 onChange={(e) => {
                                     setSearchQuery(e.target.value);
                                     setShowSearchResults(true);
+                                    setActiveSearchIdx(-1);
                                 }}
                                 onFocus={() => {
                                     if (searchQuery.trim().length >= 2) setShowSearchResults(true);
                                 }}
-                                placeholder="Search students, bookings…"
-                                aria-label="Search students and bookings"
+                                onKeyDown={handleSearchKeyDown}
+                                placeholder="Search students, bookings, parents…"
+                                aria-label="Search students, bookings, and parents"
                                 className="flex-1 h-full bg-transparent px-3 py-0 text-sm text-text placeholder:text-text-muted/60 outline-none"
                             />
                             {isSearching && (
@@ -303,21 +335,23 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                                     </div>
                                 ) : (
                                     <div className="max-h-96 overflow-y-auto">
-                                        {searchResults.map((result) => (
+                                        {searchResults.map((result, idx) => (
                                             // A11Y-2 (Milestone 3N): button element for keyboard
                                             // accessibility — was a non-interactive div with onClick.
                                             <button
                                                 key={`${result.type}-${result.id}`}
                                                 type="button"
+                                                onMouseEnter={() => setActiveSearchIdx(idx)}
                                                 onClick={() => {
                                                     router.push(result.url);
                                                     setShowSearchResults(false);
                                                     setSearchQuery('');
+                                                    setActiveSearchIdx(-1);
                                                 }}
-                                                className="w-full text-left p-3 border-b border-border hover:bg-page cursor-pointer transition-colors flex items-center justify-between group"
+                                                className={`w-full text-left p-3 border-b border-border hover:bg-page cursor-pointer transition-colors flex items-center justify-between group ${idx === activeSearchIdx ? 'bg-page' : ''}`}
                                             >
                                                 <div>
-                                                    <p className="font-semibold text-sm text-text group-hover:text-accent transition-colors">
+                                                    <p className={`font-semibold text-sm transition-colors ${idx === activeSearchIdx ? 'text-accent' : 'text-text group-hover:text-accent'}`}>
                                                         {result.title}
                                                     </p>
                                                     <p className="text-xs text-text-muted mt-0.5">
@@ -338,7 +372,7 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
 
             <div className="ml-auto flex items-center gap-2">
                 {isListPage && (
-                    <div id="header-right-actions" className="hidden md:flex items-center gap-2" />
+                    <div id="header-right-actions" className="flex items-center gap-1.5 sm:gap-2" />
                 )}
                 {/* Theme Toggle */}
                 <button

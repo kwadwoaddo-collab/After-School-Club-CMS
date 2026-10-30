@@ -2,6 +2,8 @@ import TodayWork from './_components/TodayWork';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { requireTenantSession } from '@/lib/session';
 import { redirect } from 'next/navigation';
+import Link from 'next/link';
+import { ClipboardCheck, Monitor, CalendarPlus, UserPlus, Receipt, Share2 } from 'lucide-react';
 import { db } from '@/db';
 import { organisations, centres, registrations, bookings, children, staffInvites } from '@/db/schema';
 import { resolveActiveCentreId } from '@/lib/centre-filter';
@@ -58,6 +60,15 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
     if (!org) return redirect('/onboarding');
     const firstName = session.user.name?.split(' ')[0] || '';
 
+    const typedCentres = centresList as { id: string; name: string }[];
+    const selectedCentreObj = activeCentreId !== 'all'
+        ? typedCentres.find(c => c.id === activeCentreId)
+        : (accessibleCentreIds.length === 1 ? typedCentres.find(c => c.id === accessibleCentreIds[0]) : undefined);
+    const isCombinedView = activeCentreId === 'all' && !selectedCentreObj && typedCentres.length > 1;
+    const activeCentreDisplayName = selectedCentreObj?.name || (isCombinedView ? 'Combined View — All Centres' : org.name);
+    const canManageOperations = ['ORG_OWNER', 'MANAGER', 'FRONT_DESK'].includes(userRole);
+    const canManageFinanceAndShare = ['ORG_OWNER', 'MANAGER'].includes(userRole);
+
     const now = new Date();
     const targetDateStr = normalizeDate(searchParams.date);
     const targetDate = targetDateStr ? parseISO(targetDateStr) : now;
@@ -103,11 +114,70 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
 
     return (
         <div className="space-y-8 animate-in fade-in duration-700">
-            <DashboardHero firstName={firstName} orgName={org.name}>
+            <DashboardHero
+                firstName={firstName}
+                orgName={org.name}
+                centreName={activeCentreDisplayName}
+                isCombinedView={isCombinedView}
+            >
                 <Suspense fallback={<div role="status" className="w-auto min-w-[140px] h-[44px] bg-secondary rounded-xl animate-pulse" aria-label="Loading date filter" />}>
                     <DashboardFilter currentView={currentView} currentDateIso={targetDate.toISOString()} dateLabel={dateLabel} />
                 </Suspense>
             </DashboardHero>
+
+            {/* Quick Actions Bar — direct 1-click access to high-frequency daily club tasks */}
+            <nav aria-label="Quick actions" className="flex flex-wrap items-center gap-2">
+                <Link
+                    href="/dashboard/attendance"
+                    className="inline-flex items-center gap-2 px-3.5 py-2 rounded-md bg-accent text-white text-xs sm:text-sm font-medium hover:bg-accent-hover transition-colors shadow-xs"
+                >
+                    <ClipboardCheck className="size-4 flex-shrink-0" aria-hidden="true" />
+                    <span>Take Roll Call</span>
+                </Link>
+                <Link
+                    href="/dashboard/kiosk"
+                    className="inline-flex items-center gap-2 px-3.5 py-2 rounded-md border border-border bg-surface text-text hover:bg-page text-xs sm:text-sm font-medium transition-colors"
+                >
+                    <Monitor className="size-4 text-accent flex-shrink-0" aria-hidden="true" />
+                    <span>Launch Kiosk</span>
+                </Link>
+                {canManageOperations && (
+                    <>
+                        <Link
+                            href="/dashboard/bookings/new"
+                            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-md border border-border bg-surface text-text hover:bg-page text-xs sm:text-sm font-medium transition-colors"
+                        >
+                            <CalendarPlus className="size-4 text-accent flex-shrink-0" aria-hidden="true" />
+                            <span>New Booking</span>
+                        </Link>
+                        <Link
+                            href="/dashboard/students/add"
+                            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-md border border-border bg-surface text-text hover:bg-page text-xs sm:text-sm font-medium transition-colors"
+                        >
+                            <UserPlus className="size-4 text-accent flex-shrink-0" aria-hidden="true" />
+                            <span>Add Student</span>
+                        </Link>
+                    </>
+                )}
+                {canManageFinanceAndShare && (
+                    <>
+                        <Link
+                            href="/dashboard/finance/receipt"
+                            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-md border border-border bg-surface text-text hover:bg-page text-xs sm:text-sm font-medium transition-colors"
+                        >
+                            <Receipt className="size-4 text-accent flex-shrink-0" aria-hidden="true" />
+                            <span>Create Receipt</span>
+                        </Link>
+                        <Link
+                            href="/dashboard/share"
+                            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-md border border-border bg-surface text-text hover:bg-page text-xs sm:text-sm font-medium transition-colors"
+                        >
+                            <Share2 className="size-4 text-accent flex-shrink-0" aria-hidden="true" />
+                            <span>Share Centre Links</span>
+                        </Link>
+                    </>
+                )}
+            </nav>
 
             {/* First-time welcome modal — only shown to ORG_OWNER when nothing is done yet.
                 Non-owner staff cannot complete these setup steps (Settings/Centres/Staff
@@ -119,7 +189,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
             {isOwner && !onboardingAllDone && <OnboardingChecklist steps={onboardingSteps} completedCount={completedCount} />}
 
             <Suspense fallback={<p role="status" className="text-sm text-muted-foreground">Checking today’s work…</p>}>
-                <TodayWork orgId={org.id} centreIds={accessibleCentreIds} centreId={activeCentreId} role={userRole}/>
+                <TodayWork orgId={org.id} centreIds={accessibleCentreIds} centreId={activeCentreId} centreName={selectedCentreObj?.name} role={userRole}/>
             </Suspense>
 
             <Suspense fallback={<OverviewSkeleton />}>
