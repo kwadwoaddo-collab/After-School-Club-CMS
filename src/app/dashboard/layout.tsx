@@ -102,23 +102,23 @@ export default async function DashboardLayout({
         }
     }
 
-    // Fetch org name for sidebar branding
+    // Fetch org name for sidebar branding & accessible centres concurrently
     let orgName = 'AfterSchool';
-    try {
-        const [org] = await db
+    const [orgRow, orgCentres] = await Promise.all([
+        db
             .select({ name: organisations.name })
             .from(organisations)
             .where(eq(organisations.id, organisationId))
-            .limit(1);
-        if (org?.name) orgName = org.name;
-    } catch {
-        // Non-critical — fall back to default
-    }
+            .limit(1)
+            .then(rows => rows[0])
+            .catch(() => null),
+        getUserAccessibleCentres(session.user.id),
+    ]);
+    if (orgRow?.name) orgName = orgRow.name;
 
     const userOrgs = ((session.user as any).userOrgs ?? []) as { id: string; name: string; slug: string; role: string }[];
 
     // Resolve user's accessible centres and selected centre
-    const orgCentres = await getUserAccessibleCentres(session.user.id);
     const validCentreIds = orgCentres.map(c => c.id);
 
     // If a centre subdomain was detected and the user has access to it, force-select it

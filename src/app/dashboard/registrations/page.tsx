@@ -64,18 +64,20 @@ export default async function RegistrationsPage(props: {
     let fullRegistrationUrl: string | null = null;
 
     try {
-        // Fetch org slug for the registration link
-        const [fetchedOrg] = await db
-            .select({ slug: organisations.slug, name: organisations.name })
-            .from(organisations)
-            .where(eq(organisations.id, orgId))
-            .limit(1);
+        // Fetch org slug and accessible centres concurrently
+        const [[fetchedOrg], fetchedCentres] = await Promise.all([
+            db
+                .select({ slug: organisations.slug, name: organisations.name })
+                .from(organisations)
+                .where(eq(organisations.id, orgId))
+                .limit(1),
+            getUserAccessibleCentres(session.user.id),
+        ]);
         org = fetchedOrg;
 
         const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://after-school-club-live.vercel.app';
 
-        // Get accessible centres
-        orgCentres = await getUserAccessibleCentres(session.user.id);
+        orgCentres = fetchedCentres;
         centreIds = orgCentres.map(c => c.id);
 
         activeCentreId = await resolveActiveCentreId(searchParams.centre, centreIds);

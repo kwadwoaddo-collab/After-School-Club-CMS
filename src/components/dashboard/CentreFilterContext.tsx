@@ -10,7 +10,7 @@
  * to Server Components.
  */
 
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode, startTransition } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useTransition, type ReactNode } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 
 export interface Centre {
@@ -25,6 +25,8 @@ interface CentreFilterContextValue {
   setSelectedCentreId: (id: string) => void;
   /** Available centres (populated by the nearest provider) */
   centres: Centre[];
+  /** Whether a centre switch transition is currently in flight */
+  isPending?: boolean;
 }
 
 const STORAGE_KEY = 'dashboard_centre_filter';
@@ -52,6 +54,7 @@ export function CentreFilterProvider({
   defaultCentreId: string;
 }) {
   const [selectedCentreId, setSelectedCentreIdState] = useState<string>(defaultCentreId);
+  const [isPending, startTransition] = useTransition();
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
@@ -85,7 +88,9 @@ export function CentreFilterProvider({
     });
   }, [router, searchParams, pathname]);
 
-  // Sync from URL search parameter ?centre=XYZ and clean it up
+  // Sync from URL search parameter ?centre=XYZ without firing a redundant
+  // router.replace() navigation (which previously caused a double server render
+  // on every filter click whenever ?centre= was present).
   useEffect(() => {
     const urlCentre = searchParams.get('centre');
     if (urlCentre) {
@@ -99,18 +104,17 @@ export function CentreFilterProvider({
           // ignore
         }
       }
-
-      // Clean up URL parameter
-      const params = new URLSearchParams(searchParams.toString());
-      params.delete('centre');
-      const search = params.toString();
-      const newUrl = `${pathname}${search ? `?${search}` : ''}`;
-      router.replace(newUrl);
     }
-  }, [searchParams, pathname, router, centres, selectedCentreId]);
+  }, [searchParams, centres, selectedCentreId]);
 
   return (
-    <CentreFilterCtx.Provider value={{ selectedCentreId, setSelectedCentreId, centres }}>
+    <CentreFilterCtx.Provider value={{ selectedCentreId, setSelectedCentreId, centres, isPending }}>
+      {isPending && (
+        <div
+          className="fixed top-0 left-0 right-0 z-[250] h-0.5 bg-accent animate-pulse pointer-events-none"
+          aria-hidden="true"
+        />
+      )}
       {children}
     </CentreFilterCtx.Provider>
   );

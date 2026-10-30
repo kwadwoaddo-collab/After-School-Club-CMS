@@ -218,24 +218,18 @@ export default async function StudentsPage(props: {
             conditions.push(sql`${pastCountQuery} >= 3 AND (${presentCountQuery}::float / ${pastCountQuery}::float) < 0.75`);
         }
 
-        const [fetchedStats] = await statsQuery;
-        stats = fetchedStats;
-
         const PAGE_SIZE = 20;
         page = Math.max(1, parseInt(searchParams.page || '1', 10));
         const offset = (page - 1) * PAGE_SIZE;
 
-        // We also need the filtered total count for pagination
-        const [{ filteredCount: fc }] = await db
+        // Build filtered count and paginated student list queries and run all 3 concurrently
+        const filteredCountQuery = db
             .select({ filteredCount: sql<number>`count(*)::int` })
             .from(children)
             .innerJoin(parents, eq(children.parentId, parents.id))
             .where(and(...conditions));
-        filteredCount = fc;
 
-        totalPages = Math.ceil(filteredCount / PAGE_SIZE);
-
-        const studentsList = await db
+        const studentsListQuery = db
             .select({
                 id: children.id,
                 firstName: children.firstName,
@@ -265,6 +259,15 @@ export default async function StudentsPage(props: {
             .orderBy(...(showFollowUps ? [studentFollowUpOrderSql(), sql`${studentLastContactSql()} ASC NULLS FIRST`] : []), asc(children.lastName), asc(children.firstName), asc(children.id))
             .limit(PAGE_SIZE)
             .offset(offset);
+
+        const [[fetchedStats], [{ filteredCount: fc }], studentsList] = await Promise.all([
+            statsQuery,
+            filteredCountQuery,
+            studentsListQuery,
+        ]);
+        stats = fetchedStats;
+        filteredCount = fc;
+        totalPages = Math.ceil(filteredCount / PAGE_SIZE);
 
         const LOW_ATTENDANCE_THRESHOLD = 75;
         const MIN_SESSIONS_FOR_ALERT = 3;

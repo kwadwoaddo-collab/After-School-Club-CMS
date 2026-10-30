@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect, useTransition } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 import {
@@ -29,11 +30,20 @@ type QuickFilter = 'this-week' | 'last-week' | 'this-month' | 'last-month';
 export function DashboardFilter({ currentView, currentDateIso, dateLabel }: DashboardFilterProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [isPending, startTransition] = useTransition();
+  const [optimisticView, setOptimisticView] = useState<'weekly' | 'monthly'>(currentView);
+
+  useEffect(() => {
+    setOptimisticView(currentView);
+  }, [currentView]);
 
   const handleViewChange = (view: 'weekly' | 'monthly') => {
+    setOptimisticView(view);
     const params = new URLSearchParams(searchParams);
     params.set('view', view);
-    router.push(`?${params.toString()}`);
+    startTransition(() => {
+      router.push(`?${params.toString()}`);
+    });
   };
 
   const handleNavigate = (direction: 'prev' | 'next') => {
@@ -41,7 +51,7 @@ export function DashboardFilter({ currentView, currentDateIso, dateLabel }: Dash
     if (!isValid(dateObj)) return;
 
     let newDate: Date;
-    if (currentView === 'weekly') {
+    if (optimisticView === 'weekly') {
       newDate = direction === 'prev' ? subWeeks(dateObj, 1) : addWeeks(dateObj, 1);
     } else {
       newDate = direction === 'prev' ? subMonths(dateObj, 1) : addMonths(dateObj, 1);
@@ -49,13 +59,17 @@ export function DashboardFilter({ currentView, currentDateIso, dateLabel }: Dash
 
     const params = new URLSearchParams(searchParams);
     params.set('date', newDate.toISOString());
-    router.push(`?${params.toString()}`);
+    startTransition(() => {
+      router.push(`?${params.toString()}`);
+    });
   };
 
   const goToToday = () => {
     const params = new URLSearchParams(searchParams);
     params.delete('date');
-    router.push(`?${params.toString()}`);
+    startTransition(() => {
+      router.push(`?${params.toString()}`);
+    });
   };
 
   const handleQuickFilter = (filter: QuickFilter) => {
@@ -64,24 +78,30 @@ export function DashboardFilter({ currentView, currentDateIso, dateLabel }: Dash
 
     switch (filter) {
       case 'this-week':
+        setOptimisticView('weekly');
         params.set('view', 'weekly');
         params.delete('date');
         break;
       case 'last-week':
+        setOptimisticView('weekly');
         params.set('view', 'weekly');
         params.set('date', subWeeks(now, 1).toISOString());
         break;
       case 'this-month':
+        setOptimisticView('monthly');
         params.set('view', 'monthly');
         params.delete('date');
         break;
       case 'last-month':
+        setOptimisticView('monthly');
         params.set('view', 'monthly');
         params.set('date', subMonths(now, 1).toISOString());
         break;
     }
 
-    router.push(`?${params.toString()}`);
+    startTransition(() => {
+      router.push(`?${params.toString()}`);
+    });
   };
 
   const quickFilters: { id: QuickFilter; label: string }[] = [
@@ -92,7 +112,13 @@ export function DashboardFilter({ currentView, currentDateIso, dateLabel }: Dash
   ];
 
   return (
-    <div className="flex flex-col items-end gap-2">
+    <div className={`flex flex-col items-end gap-2 transition-opacity ${isPending ? 'opacity-70' : ''}`}>
+      {isPending && (
+        <div
+          className="fixed top-0 left-0 right-0 z-[250] h-0.5 bg-accent animate-pulse pointer-events-none"
+          aria-hidden="true"
+        />
+      )}
       {/* View toggle + date nav */}
       <div className="flex items-center gap-2">
         {/* View Toggle — flat segmented control */}
@@ -101,7 +127,7 @@ export function DashboardFilter({ currentView, currentDateIso, dateLabel }: Dash
             suppressHydrationWarning
             onClick={() => handleViewChange('weekly')}
             className={`px-3 h-7 text-xs font-medium rounded-sm transition-colors ${
-              currentView === 'weekly'
+              optimisticView === 'weekly'
                 ? 'bg-surface text-text shadow-sm'
                 : 'text-text-secondary hover:text-text'
             }`}
@@ -112,7 +138,7 @@ export function DashboardFilter({ currentView, currentDateIso, dateLabel }: Dash
             suppressHydrationWarning
             onClick={() => handleViewChange('monthly')}
             className={`px-3 h-7 text-xs font-medium rounded-sm transition-colors ${
-              currentView === 'monthly'
+              optimisticView === 'monthly'
                 ? 'bg-surface text-text shadow-sm'
                 : 'text-text-secondary hover:text-text'
             }`}

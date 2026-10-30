@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { Search, Filter, Calendar, X, SlidersHorizontal } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCentreFilter } from '@/components/dashboard/CentreFilterContext';
@@ -23,6 +23,7 @@ export default function BookingsFilters({ centres, resultsCount = 0, statusCount
     const [fromDate, setFromDate] = useState(searchParams.get('from') || '');
     const [toDate, setToDate] = useState(searchParams.get('to') || '');
     const [isMobileSheetOpen, setIsMobileSheetOpen] = useState(false);
+    const [isPending, startTransition] = useTransition();
     const urlStatus = searchParams.get('status') || 'all';
     useEffect(() => { setStatus(urlStatus); }, [urlStatus]);
 
@@ -54,7 +55,9 @@ export default function BookingsFilters({ centres, resultsCount = 0, statusCount
         setFromDate('');
         setToDate('');
         setSelectedCentreId('all');
-        router.push('/dashboard/bookings');
+        startTransition(() => {
+            router.push('/dashboard/bookings');
+        });
     };
 
     const handleSearch = (e: React.FormEvent) => {
@@ -88,11 +91,19 @@ export default function BookingsFilters({ centres, resultsCount = 0, statusCount
         if (currentToday) params.set('today', currentToday);
 
         const queryString = params.toString();
-        router.push(`/dashboard/bookings${queryString ? `?${queryString}` : ''}`);
+        startTransition(() => {
+            router.push(`/dashboard/bookings${queryString ? `?${queryString}` : ''}`);
+        });
     };
 
     return (
-        <div className="space-y-3">
+        <div className={`space-y-3 transition-opacity ${isPending ? 'opacity-75' : ''}`}>
+            {isPending && (
+                <div
+                    className="fixed top-0 left-0 right-0 z-[250] h-0.5 bg-accent animate-pulse pointer-events-none"
+                    aria-hidden="true"
+                />
+            )}
             <button type="button" aria-pressed={searchParams.get('outcome') === 'required'} onClick={() => { setStatus('all'); setFromDate(''); setToDate(''); applyFilters({ newOutcome: searchParams.get('outcome') === 'required' ? '' : 'required', newStatus: 'all', newToday: '', newFrom: '', newTo: '' }); }} className="rounded-md border border-border px-3 py-2 text-sm text-foreground hover:bg-secondary focus-visible:outline-2 focus-visible:outline-primary">{searchParams.get('outcome') === 'required' ? 'Showing assessments needing an outcome — show all' : 'Outcomes to record'}</button>
             {/* Desktop toolbar */}
             <div className="hidden lg:flex items-center justify-between gap-3 flex-wrap">

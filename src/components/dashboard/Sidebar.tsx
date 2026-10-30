@@ -71,10 +71,16 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
     const { collapsed, setCollapsed } = useSidebar();
     const pathname = usePathname();
     const [dropdownOpen, setDropdownOpen] = useState(false);
+    const [pendingHref, setPendingHref] = useState<string | null>(null);
     const { selectedCentreId, setSelectedCentreId, centres } = useCentreFilter();
     const centreBtnRef = useRef<HTMLButtonElement>(null);
     const [dropdownAnchor, setDropdownAnchor] = useState<{ top: number; left: number; width: number } | null>(null);
     const sidebarScrollRef = useRef<HTMLDivElement>(null);
+
+    // Clear optimistic pending indicator once navigation completes
+    useEffect(() => {
+        setPendingHref(null);
+    }, [pathname]);
 
     // Close dropdown on collapsed state change, window resize, or sidebar scroll
     useEffect(() => {
@@ -161,6 +167,12 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
 
     return (
         <>
+            {pendingHref && (
+                <div
+                    className="fixed top-0 left-0 right-0 z-[250] h-0.5 bg-accent animate-pulse pointer-events-none"
+                    aria-hidden="true"
+                />
+            )}
             {/* Mobile Overlay */}
             {!collapsed && (
                 <div
@@ -333,6 +345,7 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                             const isActive = item.href === '/dashboard'
                                 ? pathname === item.href
                                 : pathname.startsWith(item.href);
+                            const isPendingTarget = pendingHref === item.href && !isActive;
                             const showGroupDivider = idx > 0 && item.group !== navItems[idx - 1].group;
                             return (
                                 <div key={item.name}>
@@ -344,6 +357,9 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                                         prefetch={true}
                                         aria-current={isActive ? 'page' : undefined}
                                         onClick={() => {
+                                            if (item.href !== pathname) {
+                                                setPendingHref(item.href);
+                                            }
                                             if (window.innerWidth < 1024) {
                                                 setCollapsed(true);
                                             }
@@ -351,7 +367,7 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                                         className={`
                                             flex items-center gap-2.5 px-3 py-2 rounded-md
                                             text-sm font-medium transition-colors group
-                                            ${isActive
+                                            ${isActive || isPendingTarget
                                                 ? 'text-accent bg-accent-soft'
                                                 : 'text-text-secondary hover:text-text hover:bg-page'
                                             }
@@ -360,10 +376,13 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                                         title={item.name}
                                     >
                                         <item.icon className={`size-4 shrink-0 ${
-                                            isActive ? 'text-accent' : 'text-text-muted group-hover:text-text'
+                                            isActive || isPendingTarget ? 'text-accent' : 'text-text-muted group-hover:text-text'
                                         } ${collapsed ? 'mx-auto' : ''}`} aria-hidden="true" />
                                         {!collapsed && (
-                                            <span>{item.name}</span>
+                                            <span className="flex-1 truncate">{item.name}</span>
+                                        )}
+                                        {!collapsed && isPendingTarget && (
+                                            <span className="size-1.5 rounded-full bg-accent animate-ping flex-shrink-0" aria-hidden="true" />
                                         )}
                                     </Link>
                                     {/* Sub-items (children) */}

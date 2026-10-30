@@ -1,7 +1,7 @@
 'use client';
 
 import { FOLLOW_UP_FILTERS, FOLLOW_UP_LABELS, normalizeFollowUpFilter } from '../follow-up-queue';
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect, useTransition } from 'react';
 import { Search, Filter, X, ChevronDown, Check } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCentreFilter } from '@/components/dashboard/CentreFilterContext';
@@ -32,6 +32,7 @@ export default function StudentsFilters({ centres, resultsCount = 0 }: StudentsF
     useEffect(() => { setStatus(urlStatus); setFollowUp(urlFollowUp); }, [urlStatus, urlFollowUp]);
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const dropdownRef = useRef<HTMLDivElement>(null);
+    const [isPending, startTransition] = useTransition();
 
     const yearOptions = [
         { value: 'Reception', label: 'Reception' },
@@ -63,7 +64,9 @@ export default function StudentsFilters({ centres, resultsCount = 0 }: StudentsF
         setStatus('all');
         setFollowUp('all');
         setSelectedCentreId('all');
-        router.push('/dashboard/students');
+        startTransition(() => {
+            router.push('/dashboard/students');
+        });
     };
 
     const applyFilters = useCallback((overrides?: { newSearch?: string; newYears?: string[]; newStatus?: string; newFollowUp?: string }) => {
@@ -91,7 +94,9 @@ export default function StudentsFilters({ centres, resultsCount = 0 }: StudentsF
         if (selectedCentreId !== 'all') params.set('centre', selectedCentreId);
 
         const queryString = params.toString();
-        router.push(`/dashboard/students${queryString ? `?${queryString}` : ''}`);
+        startTransition(() => {
+            router.push(`/dashboard/students${queryString ? `?${queryString}` : ''}`);
+        });
     }, [search, selectedYears, status, followUp, selectedCentreId, router, searchParams]);
 
     const handleSearchChange = useCallback((value: string) => {
@@ -136,7 +141,13 @@ export default function StudentsFilters({ centres, resultsCount = 0 }: StudentsF
     }, []);
 
     return (
-        <div className="space-y-3">
+        <div className={`space-y-3 transition-opacity ${isPending ? 'opacity-75' : ''}`}>
+            {isPending && (
+                <div
+                    className="fixed top-0 left-0 right-0 z-[250] h-0.5 bg-accent animate-pulse pointer-events-none"
+                    aria-hidden="true"
+                />
+            )}
             {/* Toolbar */}
             <div className="flex items-center gap-2 flex-wrap">
                 {/* Search */}

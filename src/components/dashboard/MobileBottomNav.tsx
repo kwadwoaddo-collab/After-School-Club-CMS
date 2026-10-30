@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -38,8 +39,13 @@ const ALL_NAV = [
 export default function MobileBottomNav({ userRole = 'TUTOR' }: MobileNavProps) {
     const pathname = usePathname();
     const { collapsed } = useSidebar();
+    const [pendingHref, setPendingHref] = useState<string | null>(null);
     const allowed = ROLE_NAV[userRole] || ROLE_NAV['TUTOR'];
     const items = ALL_NAV.filter(i => allowed.includes(i.name)).slice(0, 5);
+
+    useEffect(() => {
+        setPendingHref(null);
+    }, [pathname]);
 
     // Hidden while the full-height mobile nav drawer (Sidebar.tsx, `!collapsed`
     // on <lg) is open — both are the "mobile navigation" surface, and showing
@@ -58,6 +64,8 @@ export default function MobileBottomNav({ userRole = 'TUTOR' }: MobileNavProps) 
                     const isActive = item.exact
                         ? pathname === item.href
                         : pathname === item.href || pathname.startsWith(item.href + '/');
+                    const isPendingTarget = pendingHref === item.href && !isActive;
+                    const highlighted = isActive || isPendingTarget;
                     return (
                         <Link
                             key={item.name}
@@ -65,17 +73,22 @@ export default function MobileBottomNav({ userRole = 'TUTOR' }: MobileNavProps) 
                             prefetch={true}
                             aria-current={isActive ? 'page' : undefined}
                             aria-label={item.name}
-                            className={`relative flex flex-col items-center gap-1 px-3 py-2 rounded-sm transition-colors min-h-[44px] min-w-[44px] justify-center ${isActive
+                            onClick={() => {
+                                if (item.href !== pathname) {
+                                    setPendingHref(item.href);
+                                }
+                            }}
+                            className={`relative flex flex-col items-center gap-1 px-3 py-2 rounded-sm transition-colors min-h-[44px] min-w-[44px] justify-center ${highlighted
                                     ? 'text-accent font-semibold'
                                     : 'text-text-muted hover:text-text'
                                 }`}
                         >
                             {/* Active indicator pill at top */}
-                            {isActive && (
-                                <span className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-accent rounded-full" />
+                            {highlighted && (
+                                <span className={`absolute -top-0.5 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-accent rounded-full ${isPendingTarget ? 'animate-pulse' : ''}`} />
                             )}
-                            <item.icon className={`w-5 h-5 ${isActive ? 'text-accent' : 'text-text-muted'}`} />
-                            <span className={`text-[10px] font-semibold ${isActive ? 'text-accent' : ''}`}>
+                            <item.icon className={`w-5 h-5 ${highlighted ? 'text-accent' : 'text-text-muted'}`} />
+                            <span className={`text-[10px] font-semibold ${highlighted ? 'text-accent' : ''}`}>
                                 {item.name}
                             </span>
                         </Link>

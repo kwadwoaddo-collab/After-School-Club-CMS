@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect, useTransition } from 'react';
 import { Search, Filter, X } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCentreFilter } from '@/components/dashboard/CentreFilterContext';
@@ -19,6 +19,7 @@ export default function ParentsFilters({ resultsCount = 0 }: ParentsFiltersProps
     const [search, setSearch] = useState(searchParams.get('search') || '');
     const [status, setStatus] = useState(searchParams.get('status') || 'all');
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const [isPending, startTransition] = useTransition();
 
     const statusOptions = [
         { value: 'all', label: 'All parents' },
@@ -42,7 +43,9 @@ export default function ParentsFilters({ resultsCount = 0 }: ParentsFiltersProps
         if (currentStatus !== 'all') params.set('status', currentStatus);
 
         const queryString = params.toString();
-        router.push(`/dashboard/parents${queryString ? `?${queryString}` : ''}`);
+        startTransition(() => {
+            router.push(`/dashboard/parents${queryString ? `?${queryString}` : ''}`);
+        });
     }, [search, status, router]);
 
     const handleSearchChange = useCallback((value: string) => {
@@ -56,7 +59,9 @@ export default function ParentsFilters({ resultsCount = 0 }: ParentsFiltersProps
     const handleClearFilters = () => {
         setSearch('');
         setStatus('all');
-        router.push('/dashboard/parents');
+        startTransition(() => {
+            router.push('/dashboard/parents');
+        });
     };
 
     useEffect(() => {
@@ -64,7 +69,13 @@ export default function ParentsFilters({ resultsCount = 0 }: ParentsFiltersProps
     }, []);
 
     return (
-        <div className="space-y-3">
+        <div className={`space-y-3 transition-opacity ${isPending ? 'opacity-75' : ''}`}>
+            {isPending && (
+                <div
+                    className="fixed top-0 left-0 right-0 z-[250] h-0.5 bg-accent animate-pulse pointer-events-none"
+                    aria-hidden="true"
+                />
+            )}
             {/* Toolbar */}
             <div className="flex items-center gap-2 flex-wrap">
                 {/* Search */}

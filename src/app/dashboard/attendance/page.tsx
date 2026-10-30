@@ -65,16 +65,17 @@ export default async function AttendancePage(props: {
                 ? inArray(children.centreId, centreIds)
                 : eq(children.centreId, 'no-centre');
 
-        allChildrenAtCentre = await db.query.children.findMany({
-            where: and(centreChildrenCondition, eq(children.isRegistered, true), isNull(children.deletedAt)),
-            with: { parent: true, centre: true },
-            extras: { effectiveEnrolmentStatus: studentLifecycleStatusSql(targetStr).as('effective_enrolment_status') },
-        });
-
-        dayBookings = await db.query.bookings.findMany({
-            where: and(centreFilter, gte(bookings.startAt, dayStart), lte(bookings.startAt, dayEnd)),
-            with: { parent: true, centre: true, attendees: { with: { child: true } } },
-        });
+        [allChildrenAtCentre, dayBookings] = await Promise.all([
+            db.query.children.findMany({
+                where: and(centreChildrenCondition, eq(children.isRegistered, true), isNull(children.deletedAt)),
+                with: { parent: true, centre: true },
+                extras: { effectiveEnrolmentStatus: studentLifecycleStatusSql(targetStr).as('effective_enrolment_status') },
+            }),
+            db.query.bookings.findMany({
+                where: and(centreFilter, gte(bookings.startAt, dayStart), lte(bookings.startAt, dayEnd)),
+                with: { parent: true, centre: true, attendees: { with: { child: true } } },
+            }),
+        ]);
     } catch (e) {
         logger.error("Error fetching attendance", e);
         hasError = true;

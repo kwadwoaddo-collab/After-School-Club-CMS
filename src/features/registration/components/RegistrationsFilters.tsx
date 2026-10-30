@@ -62,7 +62,9 @@ export default function RegistrationsFilters({ centres, resultsCount = 0 }: Regi
         setSearch('');
         setStatus('all');
         setSelectedCentreId('all');
-        router.push('/dashboard/registrations');
+        startTransition(() => {
+            router.push('/dashboard/registrations');
+        });
     };
 
     // Debounced search — applies 400ms after the user stops typing
@@ -79,13 +81,14 @@ export default function RegistrationsFilters({ centres, resultsCount = 0 }: Regi
     // Status filter — immediate (consistent with centre filter)
     const handleStatusChange = (val: string) => {
         setStatus(val);
-        router.push(buildUrl({ newStatus: val }));
+        startTransition(() => {
+            router.push(buildUrl({ newStatus: val }));
+        });
     };
 
-    // Centre filter — already immediate via context; also apply to URL
+    // Centre filter — handled by CentreFilterContext (avoids duplicate router.push + router.refresh)
     const handleCentreChange = (val: string) => {
         setSelectedCentreId(val);
-        router.push(buildUrl({ newCentre: val }));
     };
 
     // Cleanup on unmount

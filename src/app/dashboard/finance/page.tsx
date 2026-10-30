@@ -118,23 +118,25 @@ export default async function FinancePage(props: {
                 },
             });
         } else if (!familyView) {
-        const [countResult] = await db.select({ count: count() }).from(invoices).where(combinedFilter);
-        totalInvoices = Number(countResult?.count || 0);
-
-        paginatedInvoices = await db.query.invoices.findMany({
-            where: combinedFilter,
-            extras: { needsBillingReview: draftLifecycleReviewSql().as('needs_billing_review') },
-            limit: pageSize,
-            offset: (page - 1) * pageSize,
-            orderBy: [desc(invoices.createdAt)],
-            with: {
-                centre: true,
-                child: true,
-                parent: true,
-                payments: true,
-                lineItems: true
-            }
-        });
+            const [[countResult], rows] = await Promise.all([
+                db.select({ count: count() }).from(invoices).where(combinedFilter),
+                db.query.invoices.findMany({
+                    where: combinedFilter,
+                    extras: { needsBillingReview: draftLifecycleReviewSql().as('needs_billing_review') },
+                    limit: pageSize,
+                    offset: (page - 1) * pageSize,
+                    orderBy: [desc(invoices.createdAt)],
+                    with: {
+                        centre: true,
+                        child: true,
+                        parent: true,
+                        payments: true,
+                        lineItems: true
+                    }
+                }),
+            ]);
+            totalInvoices = Number(countResult?.count || 0);
+            paginatedInvoices = rows;
         }
     } catch (err) {
         logger.error('[finance] fetchInvoices failed:', err);
@@ -143,18 +145,20 @@ export default async function FinancePage(props: {
 
     const serializedInvoices = serialize(paginatedInvoices);
 
-    // Fetch billing cycles for the Billing Cycles tab — wrapped in try-catch for resilience
+    // Fetch billing cycles only when needed for the workspace or Family accounts view
     let cycleFetchError = false;
     let billingCycles: import('@/features/billing/queries').BillingCycleRow[] = [];
-    try {
-        billingCycles = await fetchBillingCycles(session.user.organisationId, activeCentreId);
-        {
-            const accessibleIds = orgCentres.map((c: { id: string }) => c.id);
-            billingCycles = billingCycles.filter(c => accessibleIds.includes(c.config.centreId));
+    if (workspaceView || familyView) {
+        try {
+            billingCycles = await fetchBillingCycles(session.user.organisationId, activeCentreId);
+            {
+                const accessibleIds = orgCentres.map((c: { id: string }) => c.id);
+                billingCycles = billingCycles.filter(c => accessibleIds.includes(c.config.centreId));
+            }
+        } catch (err) {
+            logger.error('[finance] fetchBillingCycles failed:', err);
+            cycleFetchError = true;
         }
-    } catch (err) {
-        logger.error('[finance] fetchBillingCycles failed:', err);
-        cycleFetchError = true;
     }
     const serializedBillingCycles = serialize(billingCycles);
 

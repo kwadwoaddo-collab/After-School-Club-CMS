@@ -161,8 +161,8 @@ export default async function ParentsPage({ searchParams }: Props) {
             ? sql` AND ${sql.join(filterClauses, sql` AND `)}`
             : sql``;
 
-        // 3. Get total counts (both filtered and total KPIs)
-        const kpisResult = await db.execute(sql`
+        // 3. Build KPIs, filtered total, and paginated rows queries and run all 3 concurrently
+        const kpisQuery = sql`
             WITH ChildData AS (
                 SELECT parent_id, COUNT(*) as child_count
                 FROM children
@@ -204,25 +204,13 @@ export default async function ParentsPage({ searchParams }: Props) {
             ${activeCentreId !== 'all'
                 ? sql`AND cd.child_count > 0`
                 : sql`AND (COALESCE(acd.total_child_count, 0) = 0 OR COALESCE(cd.child_count, 0) > 0)`}
-        `);
+        `;
 
-        const kpis = kpisResult[0] || { total_families: 0, total_children: 0, with_outstanding: 0, total_outstanding: 0 };
-        totalFamilies = Number(kpis.total_families);
-        totalChildren = Number(kpis.total_children);
-        withOutstanding = Number(kpis.with_outstanding);
-        totalOutstanding = Number(kpis.total_outstanding);
-
-        // 4. Get filtered total for pagination
         const countQuery = sql`
             ${baseQuery}
             ${whereSql}
         `;
 
-        const countResult = await db.execute(sql`SELECT COUNT(*)::int as count FROM (${countQuery}) as sub`);
-        filteredCount = Number(countResult[0]?.count || 0);
-        totalPages = Math.ceil(filteredCount / PAGE_SIZE);
-
-        // 5. Get paginated rows
         const dataQuery = sql`
             ${baseQuery}
             ${whereSql}
@@ -231,7 +219,20 @@ export default async function ParentsPage({ searchParams }: Props) {
             OFFSET ${offset}
         `;
 
-        const rawRows = await db.execute(dataQuery);
+        const [kpisResult, countResult, rawRows] = await Promise.all([
+            db.execute(kpisQuery),
+            db.execute(sql`SELECT COUNT(*)::int as count FROM (${countQuery}) as sub`),
+            db.execute(dataQuery),
+        ]);
+
+        const kpis = kpisResult[0] || { total_families: 0, total_children: 0, with_outstanding: 0, total_outstanding: 0 };
+        totalFamilies = Number(kpis.total_families);
+        totalChildren = Number(kpis.total_children);
+        withOutstanding = Number(kpis.with_outstanding);
+        totalOutstanding = Number(kpis.total_outstanding);
+
+        filteredCount = Number(countResult[0]?.count || 0);
+        totalPages = Math.ceil(filteredCount / PAGE_SIZE);
 
         rows = rawRows.map(row => ({
             id: row.id as string,

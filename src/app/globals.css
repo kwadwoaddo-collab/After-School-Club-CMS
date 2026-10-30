@@ -295,6 +295,12 @@ select:user-valid {
   contain-intrinsic-size: auto 500px;
 }
 
+@supports not (content-visibility: auto) {
+  .data-grid-optimized {
+    contain: layout style paint;
+  }
+}
+
 /* Light/Dark Glassmorphism */
 .glass-panel {
   background: var(--header-bg);

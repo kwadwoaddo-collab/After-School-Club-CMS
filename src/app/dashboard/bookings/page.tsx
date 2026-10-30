@@ -65,11 +65,13 @@ export default async function BookingsPage(props: {
     let centreIds: string[] = [];
 
     try {
-        const [fetchedOrg] = await db.select({ id: organisations.id }).from(organisations).where(eq(organisations.id, orgId)).limit(1);
+        const [[fetchedOrg], fetchedCentres] = await Promise.all([
+            db.select({ id: organisations.id }).from(organisations).where(eq(organisations.id, orgId)).limit(1),
+            getUserAccessibleCentres(session.user.id),
+        ]);
         org = fetchedOrg;
 
         if (org) {
-            const fetchedCentres = await getUserAccessibleCentres(session.user.id);
             orgCentres = fetchedCentres.map((c) => ({ id: c.id, name: c.name }));
             centreIds = fetchedCentres.map((c) => c.id);
         }
