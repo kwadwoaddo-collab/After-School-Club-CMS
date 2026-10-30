@@ -1,13 +1,14 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import ConfirmModal from '@/components/ui/ConfirmModal';
 
 type Status = 'awaiting_confirmation' | 'signed_up' | 'not_interested';
 
 const OPTIONS: { value: Status; label: string; cls: string }[] = [
-    { value: 'awaiting_confirmation', label: 'Form received — awaiting confirmation', cls: 'text-amber-400 hover:bg-amber-500/10' },
-    { value: 'signed_up', label: 'Confirm joining', cls: 'text-emerald-400 hover:bg-emerald-500/10' },
-    { value: 'not_interested', label: 'Not Interested', cls: 'text-slate-400 hover:bg-card' },
+    { value: 'awaiting_confirmation', label: 'Form received — awaiting confirmation', cls: 'text-amber-700 dark:text-amber-400 hover:bg-amber-500/10' },
+    { value: 'signed_up', label: 'Confirm joining', cls: 'text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/10' },
+    { value: 'not_interested', label: 'Not Interested', cls: 'text-slate-600 dark:text-slate-400 hover:bg-card' },
 ];
 
 export default function RegistrationStatusUpdater({
@@ -16,6 +17,7 @@ export default function RegistrationStatusUpdater({
     const [open, setOpen] = useState(false);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [confirmingStatus, setConfirmingStatus] = useState<Status | null>(null);
     const router = useRouter();
     const wrapperRef = useRef<HTMLDivElement>(null);
 
@@ -31,9 +33,7 @@ export default function RegistrationStatusUpdater({
         return () => document.removeEventListener('mousedown', handler);
     }, [open]);
 
-    const update = async (status: Status) => {
-        if (status === currentStatus) { setOpen(false); return; }
-        if (status === 'signed_up' && !window.confirm('Confirm this family has joined? Only the children on this registration will become eligible for billing from their agreed billing start date.')) return;
+    const performUpdate = async (status: Status) => {
         setSaving(true);
         setError(null);
         try {
@@ -59,6 +59,16 @@ export default function RegistrationStatusUpdater({
         }
     };
 
+    const handleSelectStatus = (status: Status) => {
+        if (status === currentStatus) { setOpen(false); return; }
+        if (status === 'signed_up') {
+            setOpen(false);
+            setConfirmingStatus('signed_up');
+            return;
+        }
+        void performUpdate(status);
+    };
+
     return (
         <div className="relative" ref={wrapperRef}>
             <button
@@ -82,7 +92,7 @@ export default function RegistrationStatusUpdater({
                     className="absolute right-0 top-full mt-1 w-52 bg-card border border-outline-variant/10 rounded-xl shadow-lg shadow-black/50 z-10 overflow-hidden"
                 >
                     {OPTIONS.map(o => (
-                        <button key={o.value} onClick={() => update(o.value)}
+                        <button key={o.value} onClick={() => handleSelectStatus(o.value)}
                             role="option"
                             aria-selected={o.value === currentStatus}
                             className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${o.cls} ${o.value === currentStatus ? 'opacity-40 cursor-default' : ''}`}>
@@ -91,6 +101,19 @@ export default function RegistrationStatusUpdater({
                     ))}
                 </div>
             )}
+
+            <ConfirmModal
+                isOpen={confirmingStatus === 'signed_up'}
+                onClose={() => setConfirmingStatus(null)}
+                onConfirm={() => {
+                    if (confirmingStatus) void performUpdate(confirmingStatus);
+                }}
+                title="Confirm Family Joining"
+                description="Confirm this family has joined? Only the children on this registration will become eligible for billing from their agreed billing start date."
+                confirmText="Confirm Joining"
+                cancelText="Cancel"
+                variant="info"
+            />
         </div>
     );
 }

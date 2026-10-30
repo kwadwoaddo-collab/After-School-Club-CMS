@@ -574,7 +574,7 @@ export default function RegisterPage() {
                         )}
                         <button
                             onClick={() => setShowFeesIntro(false)}
-                            className="flex-1 py-4 rounded-2xl font-semibold text-foreground text-base transition-all bg-primary text-primary-foreground hover:bg-primary/90 text-primary-foreground active:bg-primary/80 text-primary-foreground shadow-lg shadow-blue-600/25"
+                            className="flex-1 py-4 rounded-2xl font-semibold text-base transition-all bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/80 shadow-lg shadow-blue-600/25"
                         >
                             I understand — Proceed to Registration →
                         </button>
@@ -627,10 +627,11 @@ export default function RegisterPage() {
                                         emergencyContact={emergency}
                                         funding={funding}
                                         specialNeeds={specialNeeds}
+                                        parentSignature={signature}
                                     />
                                 }
                                 fileName={`registration-${parentList[0]?.lastName.toLowerCase()}-${parentList[0]?.firstName.toLowerCase()}.pdf`.replace(/\s+/g, '-')}
-                                className="w-full py-4 bg-primary text-primary-foreground hover:bg-primary/90 text-primary-foreground active:bg-primary/80 text-primary-foreground text-foreground font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-blue-600/25"
+                                className="w-full py-4 bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/80 font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-blue-600/25"
                             >
                                 {({ loading }) => (
                                     <>
@@ -748,8 +749,6 @@ export default function RegisterPage() {
                                         </Field>
                                     </div>
                                     <div className="mb-4">
-                                        <p className="text-sm font-medium text-muted-foreground mb-2">Address</p>
-                                        <input type="text" placeholder="Start typing address to search..." className="w-full px-4 py-3 mb-3 rounded-xl bg-secondary/50 border border-border text-sm placeholder:text-muted-foreground focus:outline-none focus:border-primary/50" />
                                         <Field label="Address Line 1 *">
                                             <input id={`p-a1-${i}`} type="text" value={p.addressLine1} onChange={e => { updateParent(i, 'addressLine1', e.target.value); setInvalidFields(f => { const n = new Set(f); n.delete(`p-a1-${i}`); return n; }); }} onBlur={() => { if(!p.addressLine1.trim()) setInvalidFields(f => new Set(f).add(`p-a1-${i}`)); }} className={invalidFields.has(`p-a1-${i}`) ? inputErrCls : inputCls} placeholder="Street address" />
                                             {invalidFields.has(`p-a1-${i}`) && <p className="text-sm text-red-500 mt-1 animate-in slide-in-from-top-1">Address is required</p>}
@@ -960,7 +959,7 @@ export default function RegisterPage() {
                                     {[{ v: false, l: 'No' }, { v: true, l: 'Yes' }].map(opt => (
                                         <label key={String(opt.v)} className={`flex items-center gap-2 px-5 py-3 rounded-xl border cursor-pointer transition-all font-medium text-sm ${
                                             specialNeeds.has === opt.v
-                                                ? 'border-primary/20 bg-primary/10 text-blue-700 ring-1 ring-blue-500/30'
+                                                ? 'border-primary/30 bg-primary/15 text-primary font-semibold ring-1 ring-primary/30'
                                                 : 'border-border text-muted-foreground hover:border-primary/20'
                                         }`}>
                                             <input type="radio" name="specialNeeds" checked={specialNeeds.has === opt.v} onChange={() => setSpecialNeeds(s => ({ ...s, has: opt.v }))} className="sr-only" />
@@ -1009,26 +1008,36 @@ export default function RegisterPage() {
                                             }
                                             return slotsToUse.map((slot: string) => {
                                                 const isSelected = c.sessions.includes(slot);
-                                                const [day, time] = slot.split(' ', 2).concat(slot.split(' ').slice(2).join(' '));
+                                                const [day] = slot.split(' ', 2).concat(slot.split(' ').slice(2).join(' '));
+                                                const toggleSlot = () => {
+                                                    const updated = isSelected
+                                                        ? c.sessions.filter(s => s !== slot)
+                                                        : [...c.sessions, slot];
+                                                    updateChild(i, 'sessions', updated);
+                                                    setInvalidFields(f => { const n = new Set(f); n.delete(`child-sessions-${i}`); return n; });
+                                                };
                                                 return (
                                                     <div 
                                                         key={slot}
-                                                        onClick={() => {
-                                                            const updated = isSelected
-                                                                ? c.sessions.filter(s => s !== slot)
-                                                                : [...c.sessions, slot];
-                                                            updateChild(i, 'sessions', updated);
-                                                            setInvalidFields(f => { const n = new Set(f); n.delete(`child-sessions-${i}`); return n; });
+                                                        role="button"
+                                                        tabIndex={0}
+                                                        aria-pressed={isSelected}
+                                                        onClick={toggleSlot}
+                                                        onKeyDown={e => {
+                                                            if (e.key === 'Enter' || e.key === ' ') {
+                                                                e.preventDefault();
+                                                                toggleSlot();
+                                                            }
                                                         }}
-                                                        className={`relative p-4 rounded-xl border cursor-pointer transition-all ${isSelected ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500 shadow-sm' : 'border-slate-200 bg-card hover:border-blue-200 hover:bg-slate-50'}`}
+                                                        className={`relative p-4 rounded-xl border cursor-pointer transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 ${isSelected ? 'border-primary bg-primary/15 ring-1 ring-primary shadow-sm' : 'border-border bg-card hover:border-primary/40 hover:bg-secondary/50'}`}
                                                     >
                                                         {isSelected && (
                                                             <div className="absolute top-2 right-2 animate-in zoom-in duration-200">
-                                                                <svg className="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
+                                                                <svg className="w-5 h-5 text-primary" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
                                                             </div>
                                                         )}
-                                                        <p className={`font-bold ${isSelected ? 'text-blue-900' : 'text-foreground'}`}>{day || slot.split(' ')[0]}</p>
-                                                        <p className={`text-sm mt-1 ${isSelected ? 'text-blue-700' : 'text-muted-foreground'}`}>{slot.substring(day ? day.length + 1 : slot.split(' ')[0].length + 1)}</p>
+                                                        <p className={`font-bold ${isSelected ? 'text-primary' : 'text-foreground'}`}>{day || slot.split(' ')[0]}</p>
+                                                        <p className={`text-sm mt-1 ${isSelected ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>{slot.substring(day ? day.length + 1 : slot.split(' ')[0].length + 1)}</p>
                                                     </div>
                                                 );
                                             });
@@ -1049,7 +1058,7 @@ export default function RegisterPage() {
                                         className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all ${
                                             funding.type === opt.value
                                                 ? 'border-primary/20 bg-primary/10 ring-1 ring-blue-500/30'
-                                                : 'border-border bg-card hover:border-primary/20 hover:bg-primary/10/30 shadow-sm'
+                                                : 'border-border bg-card hover:border-primary/20 hover:bg-primary/10 shadow-sm'
                                         }`}
                                     >
                                         <input
@@ -1161,7 +1170,7 @@ export default function RegisterPage() {
                             id="submit-registration"
                             onClick={handleSubmit}
                             disabled={submitting}
-                            className="w-full py-4 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/80 text-foreground font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-blue-600/25"
+                            className="w-full py-4 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/80 font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-blue-600/25"
                         >
                             {submitting ? (
                                 <><svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>Submitting...</>
@@ -1189,7 +1198,7 @@ export default function RegisterPage() {
                     {step < TOTAL_STEPS && (
                         <button
                             onClick={handleContinue}
-                            className="inline-flex items-center gap-2 px-8 py-3 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 text-primary-foreground active:bg-primary/80 text-primary-foreground text-foreground font-semibold transition-all text-sm shadow-md shadow-blue-600/25"
+                            className="inline-flex items-center gap-2 px-8 py-3 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/80 font-semibold transition-all text-sm shadow-md shadow-blue-600/25"
                         >
                             Continue →
                         </button>

@@ -4,7 +4,7 @@
 
 import { db } from '@/db';
 import { bookingAttendees, bookings, children, sessionCredits, users } from '@/db/schema';
-import { eq, and, gte, lte, inArray } from 'drizzle-orm';
+import { eq, and, gte, lte, inArray, isNull } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { requireTenantSession } from '@/lib/session';
 import { format } from 'date-fns';
@@ -121,9 +121,13 @@ export async function getSessionLedger(
     const year = academicYear ?? getAcademicYear();
     const { start, end } = getAcademicYearRange(year);
 
-    // ── Option B: start from ALL children at this centre ──────────────────────
+    // ── Option B: start from ALL active registered children at this centre ────
     const allChildren = await db.query.children.findMany({
-        where: eq(children.centreId, centreId),
+        where: and(
+            eq(children.centreId, centreId),
+            isNull(children.deletedAt),
+            eq(children.isRegistered, true),
+        ),
     });
 
     // Build ledger map seeded with every child (balance starts at 0)

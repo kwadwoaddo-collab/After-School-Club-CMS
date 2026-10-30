@@ -47,6 +47,7 @@ export default function StudentsFilters({ centres, resultsCount = 0 }: StudentsF
         { value: 'billing-review', label: 'Restart billing review' },
         { value: 'registered', label: 'Registered' },
         { value: 'unregistered', label: 'Leads / unregistered' },
+        { value: 'low-attendance', label: 'Low attendance (<70%)' },
     ];
 
     const hasActiveFilters = !!(

@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { requireAuth } from '@/lib/require-auth';
+import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { db } from '@/db';
 import { centres } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
@@ -14,6 +15,13 @@ export default async function CentreSettingsPage({ params }: { params: Promise<{
     const { session } = await requireAuth({ roles: ['ORG_OWNER', 'MANAGER'] });
 
     const resolvedParams = await params;
+
+    if (session.user.role === 'MANAGER') {
+        const accessibleIds = await getUserAccessibleCentreIds(session.user.id);
+        if (!accessibleIds.includes(resolvedParams.id)) {
+            return redirect('/dashboard/centres');
+        }
+    }
     
     const [centre] = await db
         .select()

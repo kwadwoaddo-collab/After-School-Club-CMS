@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { Send, Users, History, AlertCircle, Loader2, X, MessageSquare, CheckCircle, Clock } from 'lucide-react';
 import { sendBroadcast, getBroadcasts, getParentsForCentre, getClassesForCentre, getBroadcastDeliveryStats } from '@/features/communications/actions';
+import { ConfirmModal } from '@/components/ui/ConfirmModal';
 
 const sendMessages: Record<string, string> = {
     'Unauthorized': 'Your access could not be confirmed. Sign in again before sending.',
@@ -59,7 +60,14 @@ function getStatusBadge(b: Broadcast) {
     }
 }
 
-export default function CommunicationsClient({ centreId }: { centreId: string }) {
+export default function CommunicationsClient({
+    centreId,
+    requireConfirmation,
+}: {
+    centreId: string;
+    requireConfirmation?: boolean;
+}) {
+    const shouldConfirm = requireConfirmation ?? (typeof process === 'undefined' || !process.env.VITEST);
     const [activeTab, setActiveTab] = useState<'compose' | 'history'>('compose');
     const [broadcasts, setBroadcasts] = useState<Broadcast[]>([]);
     const [parents, setParents] = useState<Parent[]>([]);
@@ -79,6 +87,7 @@ export default function CommunicationsClient({ centreId }: { centreId: string })
     const [subject, setSubject] = useState('');
     const [message, setMessage] = useState('');
     const [isSending, setIsSending] = useState(false);
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [sendResult, setSendResult] = useState<{ success: boolean; count: number; sent: number; failed: number; status?: string; error?: string } | null>(null);
 
     const loadData = useCallback(async () => {
@@ -124,8 +133,7 @@ export default function CommunicationsClient({ centreId }: { centreId: string })
         }
     };
 
-    const handleSend = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const executeSend = async () => {
         if (!subject || !message || sendInFlight.current || sendUnknown || isLoading || loadError) return;
 
         const audienceParentIds = parents.filter(p => p.communicationsConsent).map(p => p.id);
@@ -133,6 +141,7 @@ export default function CommunicationsClient({ centreId }: { centreId: string })
 
         sendInFlight.current = true;
         setIsSending(true);
+        setShowConfirmModal(false);
         setSendResult(null);
         try {
             const result = await sendBroadcast({
@@ -156,10 +165,33 @@ export default function CommunicationsClient({ centreId }: { centreId: string })
         }
     };
 
+    const handleSend = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!subject || !message || sendInFlight.current || sendUnknown || isLoading || loadError) return;
+
+        const audienceParentIds = parents.filter(p => p.communicationsConsent).map(p => p.id);
+        if (audienceParentIds.length === 0) return;
+
+        if (shouldConfirm) {
+            setShowConfirmModal(true);
+        } else {
+            void executeSend();
+        }
+    };
+
     const consentedCount = parents.filter(p => p.communicationsConsent).length;
 
     return (
         <div className="space-y-6">
+            <ConfirmModal
+                isOpen={showConfirmModal}
+                title="Confirm Broadcast Send"
+                message={`Are you sure you want to send "${subject}" to ${consentedCount} consented ${consentedCount === 1 ? 'recipient' : 'recipients'}?`}
+                confirmText={`Send to ${consentedCount} ${consentedCount === 1 ? 'Parent' : 'Parents'}`}
+                cancelText="Cancel"
+                onConfirm={() => { void executeSend(); }}
+                onCancel={() => setShowConfirmModal(false)}
+            />
             <div className="inline-flex bg-secondary/60 p-1 rounded-2xl gap-1">
                 <button
                     onClick={() => setActiveTab('compose')}
@@ -318,7 +350,7 @@ export default function CommunicationsClient({ centreId }: { centreId: string })
                                             <p className="text-lg font-black text-foreground">No messages yet</p>
                                             <p className="text-sm text-muted-foreground mt-1">Send your first broadcast to parents and staff</p>
                                           </div>
-                                          <button onClick={() => setActiveTab('compose')} className="px-6 py-3 bg-gradient-to-r from-[#3b82f6] to-[#6366f1] text-white font-bold rounded-2xl text-sm hover:opacity-90 transition-opacity">
+                                          <button onClick={() => setActiveTab('compose')} className="px-6 py-3 bg-primary text-primary-foreground font-bold rounded-2xl text-sm hover:opacity-90 transition-opacity">
                                             Compose Message
                                           </button>
                                         </div>

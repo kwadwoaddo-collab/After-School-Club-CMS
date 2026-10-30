@@ -23,26 +23,8 @@ export async function triggerWondeSync() {
     if (!centreId || centreId === 'all') throw new Error('No active centre selected');
 
     const service = new WondeService(session.user.organisationId, centreId);
-    
-    // Use dummy data since it's stubbed in the service
-    const mockStudents: WondeStudent[] = [
-        {
-            id: 'ws_123',
-            forename: 'Alice',
-            surname: 'Wonderland',
-            date_of_birth: '2015-04-12',
-            contact_details: [{ id: 'wc_1', forename: 'Mrs', surname: 'Wonderland', email: 'alice.mum@example.com' }]
-        },
-        {
-            id: 'ws_124',
-            forename: 'Bob',
-            surname: 'Builder',
-            date_of_birth: '2014-11-20',
-            contact_details: [{ id: 'wc_2', forename: 'Mr', surname: 'Builder', phone: '07700900000' }]
-        }
-    ];
-
-    const results = await service.syncStudents(mockStudents);
+    const students = await service.fetchStudentsFromWonde();
+    const results = await service.syncStudents(students);
 
     // Update the last sync time on organisation
     await db.update(organisations)

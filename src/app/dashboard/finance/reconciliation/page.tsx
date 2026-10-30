@@ -1,6 +1,6 @@
 import { db } from '@/db';
 import { invoices, parents, children, payments } from '@/db/schema';
-import { eq, and, notInArray, desc, inArray } from 'drizzle-orm';
+import { eq, and, desc, inArray } from 'drizzle-orm';
 import { requireTenantSession } from '@/lib/session';
 import { redirect } from 'next/navigation';
 import { resolveActiveCentreId } from '@/lib/centre-filter';
@@ -41,7 +41,7 @@ export default async function ReconciliationPage(props: {
       ? inArray(invoices.centreId, validCentreIds)
       : eq(invoices.centreId, 'unauthorized_centre_id');
 
-  // Find all invoices that are pending (sent or partially_paid)
+  // Find all payable invoices (sent, overdue, or partially_paid)
   const pendingInvoices = await db.select({
     id: invoices.id,
     invoiceNumber: invoices.invoiceNumber,
@@ -65,15 +65,16 @@ export default async function ReconciliationPage(props: {
     and(
       eq(invoices.organisationId, organisationId),
       centreFilter,
-      notInArray(invoices.status, ['draft', 'paid', 'void'])
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      inArray(invoices.status, ['sent', 'overdue', 'partially_paid'] as any)
     )
   )
   .orderBy(desc(invoices.createdAt));
 
-  // Also fetch payments to calculate remaining balances
+  // Fetch verified payments to calculate remaining balances in pence
   const allInvoiceIds = pendingInvoices.map(i => i.id);
   
-  let paymentsByInvoice: Record<string, number> = {};
+  let verifiedPaidPenceByInvoice: Record<string, number> = {};
   if (allInvoiceIds.length > 0) {
     const existingPayments = await db.select({
       invoiceId: payments.invoiceId,
@@ -82,21 +83,26 @@ export default async function ReconciliationPage(props: {
     .from(payments)
     .where(and(inArray(payments.invoiceId, allInvoiceIds), eq(payments.status, 'verified')));
     
-    paymentsByInvoice = existingPayments.reduce((acc, p) => {
-      acc[p.invoiceId] = (acc[p.invoiceId] || 0) + parseFloat(p.amount as string);
+    verifiedPaidPenceByInvoice = existingPayments.reduce((acc, p) => {
+      const amountPence = Math.round(parseFloat(p.amount as string) * 100);
+      acc[p.invoiceId] = (acc[p.invoiceId] || 0) + (Number.isFinite(amountPence) ? amountPence : 0);
       return acc;
     }, {} as Record<string, number>);
   }
 
   const enhancedInvoices = pendingInvoices.map(i => {
-    const totalAmount = parseFloat(i.amount as string);
-    const paid = paymentsByInvoice[i.id] || 0;
+    const amountDuePence = Math.round(parseFloat(i.amount as string) * 100);
+    const paidAmountPence = verifiedPaidPenceByInvoice[i.id] || 0;
+    const remainingBalancePence = Math.max(0, amountDuePence - paidAmountPence);
     return {
       ...i,
-      totalAmount,
-      remainingBalance: Math.max(0, totalAmount - paid),
+      amountDuePence,
+      paidAmountPence,
+      remainingBalancePence,
+      totalAmount: amountDuePence / 100,
+      remainingBalance: remainingBalancePence / 100,
     };
-  }).filter(i => i.remainingBalance > 0);
+  }).filter(i => i.remainingBalancePence > 0);
 
   return (
     <div className="flex flex-col h-full bg-background">

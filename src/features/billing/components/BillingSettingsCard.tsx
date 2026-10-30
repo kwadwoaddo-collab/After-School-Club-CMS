@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { PoundSterling, Pencil, X, Check, Pause, Play, AlertTriangle } from 'lucide-react';
+import { PoundSterling, Pencil, X, Check, Pause, Play, AlertTriangle, FileText } from 'lucide-react';
 import { penceToPounds, poundsToPence } from '@/lib/billing';
 import { previewBillingPeriods, formatDisplayDate, LeadTimeUnit } from '@/lib/billing/date-engine';
 import { cn } from '@/components/ui/utils';
@@ -11,6 +12,7 @@ import { saveFamilyBillingSettings, changeFamilyBillingStatus, confirmFamilyStud
 import { billingProblem, type BillingProblem } from '../billing-problem';
 import type { StudentBillingConfig } from '@/features/billing/queries';
 import { isQuarantinedParentId } from '@/lib/data-quality/quarantine';
+import GenerateInvoiceModal from './GenerateInvoiceModal';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -20,6 +22,18 @@ interface Sibling {
     lastName:  string;
     confirmedEnrolment?: boolean;
     lifecycleStatus?: 'active' | 'paused' | 'stopped' | string;
+}
+
+interface FirstSetupSavedData {
+    configId: string;
+    agreedMonthlyPence: number;
+    billingAnchorDate: string;
+    coveredChildren: { childId: string; childName: string }[];
+    periodLabel: string;
+    periodStartStr: string;
+    periodEndStr: string;
+    invoiceDateStr: string;
+    dueDateStr: string;
 }
 
 interface Props {
@@ -36,6 +50,9 @@ interface Props {
 
     // Existing config if one already exists
     existingConfig: StudentBillingConfig | null;
+
+    // Optional callback invoked when billing is set up for the first time
+    onFirstSetupComplete?: () => void;
 }
 
 // ─── Status badge ─────────────────────────────────────────────────────────────
@@ -99,14 +116,18 @@ function CollapsedView({
                         </p>
                     )}
                     <div className="flex flex-wrap gap-1.5">
-                        {config.coveredChildren.map(c => (
-                            <span
-                                key={c.childId}
-                                className="px-2 py-0.5 bg-accent-soft text-accent rounded-sm text-xs font-medium"
-                            >
-                                {c.childName}
-                            </span>
-                        ))}
+                        {config.coveredChildren.map(c => {
+                            const targetChildId = c.childId || (c as { id?: string }).id || '';
+                            return (
+                                <Link
+                                    key={targetChildId || c.childName}
+                                    href={`/dashboard/students/${targetChildId}`}
+                                    className="px-2 py-0.5 bg-accent-soft text-accent hover:underline rounded-sm text-xs font-medium transition-colors"
+                                >
+                                    {c.childName}
+                                </Link>
+                            );
+                        })}
                     </div>
                 </div>
             )}
@@ -136,7 +157,7 @@ function EditForm({
     onCancel,
     onSaved,
     familySurface=false,
-}: Props & { onCancel: () => void; onSaved: () => void }) {
+}: Props & { onCancel: () => void; onSaved: (firstSetup?: FirstSetupSavedData) => void }) {
     const isNew = !existingConfig;
 
     const [fee, setFee]                 = useState(existingConfig ? String(existingConfig.agreedMonthlyPence / 100) : '');
@@ -273,7 +294,28 @@ function EditForm({
                     },
                 });
                 if (!result.ok) { setProblem(result.problem); return; }
-                onSaved();
+                if (isNew) {
+                    const createdConfigId = (result.data as { configId?: string } | undefined)?.configId || '';
+                    const firstPeriod = periodPreview[0];
+                    const toIsoDateStr = (val: Date | string | undefined, fallback: string): string =>
+                        val instanceof Date ? val.toISOString().split('T')[0] : (val || fallback);
+                    const covered = allSiblings
+                        .filter(s => selectedChildIds.has(s.id))
+                        .map(s => ({ childId: s.id, childName: `${s.firstName} ${s.lastName}`.trim() }));
+                    onSaved({
+                        configId: createdConfigId,
+                        agreedMonthlyPence: amountPence,
+                        billingAnchorDate: anchorDate,
+                        coveredChildren: covered,
+                        periodLabel: firstPeriod?.periodSpan || anchorDate,
+                        periodStartStr: toIsoDateStr(firstPeriod?.periodStart, anchorDate),
+                        periodEndStr: toIsoDateStr(firstPeriod?.periodEnd, anchorDate),
+                        invoiceDateStr: toIsoDateStr(firstPeriod?.draftDate, new Date().toISOString().split('T')[0]),
+                        dueDateStr: toIsoDateStr(firstPeriod?.periodStart, anchorDate),
+                    });
+                } else {
+                    onSaved();
+                }
             } catch {
                 setProblem(billingProblem(null));
             }
@@ -546,6 +588,7 @@ function EditForm({
 
 function StatusControls({ config, onDone }: { config: StudentBillingConfig; onDone: () => void }) {
     const [isPending, start] = useTransition();
+    const [confirmingCancel, setConfirmingCancel] = useState(false);
 
     const [problem, setProblem] = useState<BillingProblem | null>(null);
     const changeStatus = (action: 'pause' | 'resume' | 'cancel') => start(async () => {
@@ -553,49 +596,77 @@ function StatusControls({ config, onDone }: { config: StudentBillingConfig; onDo
         try {
             const result = await changeFamilyBillingStatus(config.id, action);
             if (!result.ok) { setProblem(result.problem); return; }
+            setConfirmingCancel(false);
             onDone();
         } catch { setProblem(billingProblem(null)); }
     });
     const handlePause = () => changeStatus('pause');
     const handleResume = () => changeStatus('resume');
     const handleCancel = () => {
-        if (confirm('Cancel billing for this family? This cannot be undone easily.')) changeStatus('cancel');
+        setConfirmingCancel(true);
     };
 
     return (
         <div className="space-y-2 pt-2">
             {problem && <div role="alert" className="text-sm text-foreground"><p className="font-semibold">{problem.title}</p><p>{problem.message}</p>{problem.reference && <p>Support reference: {problem.reference}</p>}</div>}
-            <div className="flex gap-2">
-            {config.status === 'active' ? (
-                <button
-                    onClick={handlePause}
-                    disabled={isPending}
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm border border-border-subtle text-amber-700 dark:text-amber-400 text-xs font-medium hover:bg-warning-soft transition-colors disabled:opacity-50"
-                >
-                    <Pause className="w-3.5 h-3.5" />
-                    Pause
-                </button>
-            ) : config.status === 'paused' ? (
-                <button
-                    onClick={handleResume}
-                    disabled={isPending}
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm border border-border-subtle text-emerald-700 dark:text-emerald-400 text-xs font-medium hover:bg-success-soft transition-colors disabled:opacity-50"
-                >
-                    <Play className="w-3.5 h-3.5" />
-                    Resume
-                </button>
-            ) : null}
-            {config.status !== 'cancelled' && (
-                <button
-                    onClick={handleCancel}
-                    disabled={isPending}
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm border border-border-subtle text-danger text-xs font-medium hover:bg-danger-soft transition-colors disabled:opacity-50"
-                >
-                    <X className="w-3.5 h-3.5" />
-                    Cancel
-                </button>
+            {confirmingCancel ? (
+                <div role="alertdialog" aria-label="Confirm cancel billing" className="rounded-sm border border-danger/30 bg-danger-soft/40 p-3 space-y-2">
+                    <p className="text-xs font-medium text-text">
+                        Cancel billing for this family? Existing invoices and payments will remain preserved.
+                    </p>
+                    <div className="flex gap-2">
+                        <button
+                            type="button"
+                            onClick={() => changeStatus('cancel')}
+                            disabled={isPending}
+                            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm bg-danger text-white text-xs font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+                        >
+                            <Check className="w-3.5 h-3.5" />
+                            Confirm Cancel
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setConfirmingCancel(false)}
+                            disabled={isPending}
+                            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm border border-border-subtle bg-surface text-text text-xs font-medium hover:bg-secondary/40 transition-colors disabled:opacity-50"
+                        >
+                            Keep Active
+                        </button>
+                    </div>
+                </div>
+            ) : (
+                <div className="flex gap-2">
+                    {config.status === 'active' ? (
+                        <button
+                            onClick={handlePause}
+                            disabled={isPending}
+                            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm border border-border-subtle text-amber-700 dark:text-amber-400 text-xs font-medium hover:bg-warning-soft transition-colors disabled:opacity-50"
+                        >
+                            <Pause className="w-3.5 h-3.5" />
+                            Pause
+                        </button>
+                    ) : config.status === 'paused' ? (
+                        <button
+                            onClick={handleResume}
+                            disabled={isPending}
+                            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm border border-border-subtle text-emerald-700 dark:text-emerald-400 text-xs font-medium hover:bg-success-soft transition-colors disabled:opacity-50"
+                        >
+                            <Play className="w-3.5 h-3.5" />
+                            Resume
+                        </button>
+                    ) : null}
+                    {config.status !== 'cancelled' && (
+                        <button
+                            onClick={handleCancel}
+                            disabled={isPending}
+                            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm border border-border-subtle text-danger text-xs font-medium hover:bg-danger-soft transition-colors disabled:opacity-50"
+                        >
+                            <X className="w-3.5 h-3.5" />
+                            Cancel
+                        </button>
+                    )}
+                </div>
             )}
-            </div>
         </div>
     );
 }
@@ -611,15 +682,50 @@ export default function BillingSettingsCard({
     existingConfig,
     startEditing=false,
     familySurface=false,
+    onFirstSetupComplete,
 }: Props) {
     const router = useRouter();
     const [isEditing, setIsEditing] = useState(startEditing&&!isQuarantinedParentId(parentId));
+    const [firstSetupData, setFirstSetupData] = useState<FirstSetupSavedData | null>(null);
+    const [showFirstDraftModal, setShowFirstDraftModal] = useState(false);
     const isQuarantined = isQuarantinedParentId(parentId);
 
-    const handleSaved = () => {
+    const handleSaved = (savedFirstSetup?: FirstSetupSavedData) => {
         setIsEditing(false);
+        if (savedFirstSetup) {
+            setFirstSetupData(savedFirstSetup);
+            if (onFirstSetupComplete) {
+                onFirstSetupComplete();
+            }
+        }
         router.refresh();
     };
+
+    const activeFirstDraftData: FirstSetupSavedData | null = firstSetupData ?? (existingConfig ? (() => {
+        const preview = previewBillingPeriods(existingConfig.billingAnchorDate, 1, {
+            leadTimeUnit: existingConfig.leadTimeUnit,
+            leadTimeValue: existingConfig.leadTimeValue,
+            invoiceLeadDays: existingConfig.invoiceLeadDays,
+            paymentDayOfMonth: existingConfig.paymentDayOfMonth,
+        });
+        const firstPeriod = preview[0];
+        const toIsoDateStr = (val: Date | string | undefined, fallback: string): string =>
+            val instanceof Date ? val.toISOString().split('T')[0] : (val || fallback);
+        return {
+            configId: existingConfig.id,
+            agreedMonthlyPence: existingConfig.agreedMonthlyPence,
+            billingAnchorDate: existingConfig.billingAnchorDate,
+            coveredChildren: existingConfig.coveredChildren.map(c => ({
+                childId: c.childId || (c as { id?: string }).id || '',
+                childName: c.childName,
+            })),
+            periodLabel: firstPeriod?.periodSpan || existingConfig.billingAnchorDate,
+            periodStartStr: toIsoDateStr(firstPeriod?.periodStart, existingConfig.billingAnchorDate),
+            periodEndStr: toIsoDateStr(firstPeriod?.periodEnd, existingConfig.billingAnchorDate),
+            invoiceDateStr: toIsoDateStr(firstPeriod?.draftDate, new Date().toISOString().split('T')[0]),
+            dueDateStr: toIsoDateStr(firstPeriod?.periodStart, existingConfig.billingAnchorDate),
+        };
+    })() : null);
 
     return (
         <div className="rounded-md border border-border-subtle bg-surface overflow-hidden">
@@ -646,7 +752,24 @@ export default function BillingSettingsCard({
             <div className="border-t border-border-subtle" />
 
             {/* Body */}
-            <div className="px-4 py-4">
+            <div className="px-4 py-4 space-y-3">
+                {firstSetupData && !isEditing && (
+                    <div role="status" className="rounded-sm border border-emerald-500/30 bg-success-soft/50 p-3 space-y-2">
+                        <p className="text-xs font-medium text-emerald-700 dark:text-emerald-400">
+                            Billing cycle saved. You can review and prepare the first draft invoice now.
+                        </p>
+                        <Button
+                            type="button"
+                            size="sm"
+                            onClick={() => setShowFirstDraftModal(true)}
+                            className="w-full"
+                        >
+                            <FileText className="w-3.5 h-3.5" />
+                            Review first draft invoice
+                        </Button>
+                    </div>
+                )}
+
                 {isEditing ? (
                     <EditForm
                         childId={childId}
@@ -662,7 +785,7 @@ export default function BillingSettingsCard({
                 ) : existingConfig ? (
                     <>
                         <CollapsedView config={existingConfig} onEdit={() => setIsEditing(true)} />
-                        <StatusControls config={existingConfig} onDone={handleSaved} />
+                        <StatusControls config={existingConfig} onDone={() => handleSaved()} />
                     </>
                 ) : isQuarantined ? (
                     <div className="rounded-md border border-amber-500/30 bg-amber-500/5 p-4 text-center space-y-3">
@@ -679,7 +802,7 @@ export default function BillingSettingsCard({
                             Billing Setup Unavailable (Review Required)
                         </Button>
                     </div>
-                ) : (
+                ) : !firstSetupData ? (
                     <div className="text-center py-4">
                         <div className="w-9 h-9 bg-page rounded-md flex items-center justify-center mx-auto mb-2">
                             <PoundSterling className="w-4 h-4 text-text-muted" />
@@ -691,8 +814,30 @@ export default function BillingSettingsCard({
                             {familySurface?'Set up billing cycle':'Set Up Family Billing'}
                         </Button>
                     </div>
-                )}
+                ) : null}
             </div>
+
+            {showFirstDraftModal && activeFirstDraftData && (
+                <GenerateInvoiceModal
+                    configId={activeFirstDraftData.configId}
+                    familyName={siblings[0]?.lastName ? `${siblings[0].lastName} Family` : 'Family'}
+                    parentEmail=""
+                    coveredChildren={activeFirstDraftData.coveredChildren}
+                    amountPence={activeFirstDraftData.agreedMonthlyPence}
+                    periodLabel={activeFirstDraftData.periodLabel}
+                    invoiceDateStr={activeFirstDraftData.invoiceDateStr}
+                    dueDateStr={activeFirstDraftData.dueDateStr}
+                    periodStartStr={activeFirstDraftData.periodStartStr}
+                    periodEndStr={activeFirstDraftData.periodEndStr}
+                    billingAnchorDate={activeFirstDraftData.billingAnchorDate}
+                    onClose={() => setShowFirstDraftModal(false)}
+                    onSuccess={() => {
+                        setShowFirstDraftModal(false);
+                        setFirstSetupData(null);
+                        router.refresh();
+                    }}
+                />
+            )}
         </div>
     );
 }

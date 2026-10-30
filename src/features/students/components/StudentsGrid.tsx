@@ -28,10 +28,9 @@ export default function StudentsGrid({ students, followUpMode = false, today = '
                 const hasAlerts = hasMedical || hasSafeguarding;
 
                 return (
-                    <Link
+                    <div
                         key={student.id}
-                        href={`/dashboard/students/${student.id}${followUpMode ? '#enrolment-follow-up' : ''}`}
-                        className="block rounded-lg border border-border bg-surface p-4 active:bg-page/60 transition-colors"
+                        className="relative block rounded-lg border border-border bg-surface p-4 active:bg-page/60 transition-colors"
                     >
                         <div className="flex items-start gap-3">
                             <div className="w-9 h-9 rounded-full bg-accent-soft text-accent flex items-center justify-center text-sm font-semibold flex-shrink-0">
@@ -39,9 +38,12 @@ export default function StudentsGrid({ students, followUpMode = false, today = '
                             </div>
                             <div className="min-w-0 flex-1">
                                 <div className="flex items-center gap-2">
-                                    <p className="text-table-value font-medium text-text truncate">
+                                    <Link
+                                        href={`/dashboard/students/${student.id}${followUpMode ? '#enrolment-follow-up' : ''}`}
+                                        className="text-table-value font-medium text-text hover:text-accent truncate after:absolute after:inset-0"
+                                    >
                                         {student.firstName} {student.lastName}
-                                    </p>
+                                    </Link>
                                     {student.isRegistered && (
                                         <span className="w-1.5 h-1.5 rounded-full bg-success flex-shrink-0" title="Registered" />
                                     )}
@@ -78,9 +80,18 @@ export default function StudentsGrid({ students, followUpMode = false, today = '
                         </div>
 
                         <div className="mt-3 pt-3 border-t border-border-subtle space-y-1">
-                            <p className="text-small-body font-medium text-text truncate">
-                                {student.parentFirstName} {student.parentLastName}
-                            </p>
+                            {student.parentId ? (
+                                <Link
+                                    href={`/dashboard/parents/${student.parentId}`}
+                                    className="relative z-10 text-small-body font-medium text-text hover:text-accent hover:underline truncate block"
+                                >
+                                    {student.parentFirstName} {student.parentLastName}
+                                </Link>
+                            ) : (
+                                <p className="text-small-body font-medium text-text truncate">
+                                    {student.parentFirstName} {student.parentLastName}
+                                </p>
+                            )}
                             {student.parentEmail && (
                                 <p className="text-metadata flex items-center gap-1.5 truncate">
                                     <Mail className="w-3 h-3 flex-shrink-0 text-text-muted" />
@@ -114,7 +125,7 @@ export default function StudentsGrid({ students, followUpMode = false, today = '
                                 </span>
                             )}
                         </div>
-                    </Link>
+                    </div>
                 );
             })}
         </div>

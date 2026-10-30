@@ -11,8 +11,9 @@ import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/componen
 import { Button } from '@/components/ui/Button';
 import { ROLE_LABELS } from '@/lib/staff-constants';
 
-export default function InviteStaffForm() {
+export default function InviteStaffForm({ userRole: initialRole }: { userRole?: string } = {}) {
     const router = useRouter();
+    const [userRole, setUserRole] = useState<string | undefined>(initialRole);
     const [formData, setFormData] = useState({
         email: '',
         role: 'FRONT_DESK' as 'MANAGER' | 'FRONT_DESK' | 'TUTOR',
@@ -24,16 +25,35 @@ export default function InviteStaffForm() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
+    const isCentreRequired = userRole === 'MANAGER' || (Boolean(userRole) && userRole !== 'ORG_OWNER');
+
     useEffect(() => {
+        if (!initialRole) {
+            fetch('/api/auth/session')
+                .then(res => (res.ok ? res.json() : null))
+                .then(session => {
+                    if (session?.user?.role) {
+                        setUserRole(session.user.role);
+                    }
+                })
+                .catch(() => { /* ignore */ });
+        }
+
         // Fetch centres for the dropdown
         fetch('/api/centres')
             .then(res => res.json())
             .then(data => {
-                if (Array.isArray(data)) setCentres(data);
-                else if (data.centres) setCentres(data.centres);
+                const list = Array.isArray(data) ? data : (data?.centres ?? []);
+                setCentres(list);
+                if (list.length > 0) {
+                    setFormData(prev => ({
+                        ...prev,
+                        centreId: prev.centreId || list[0]?.id || '',
+                    }));
+                }
             })
             .catch(err => logger.error('Failed to fetch centres:', err));
-    }, []);
+    }, [initialRole]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -167,16 +187,19 @@ export default function InviteStaffForm() {
                                 <label htmlFor="invite-centre" className="block text-label text-text-muted mb-1.5">
                                     <span className="flex items-center gap-1.5">
                                         <Building2 className="w-3.5 h-3.5" />
-                                        Primary centre (optional)
+                                        {isCentreRequired ? 'Primary centre *' : 'Primary centre (optional)'}
                                     </span>
                                 </label>
                                 <select
                                     id="invite-centre"
                                     value={formData.centreId}
                                     onChange={(e) => setFormData({ ...formData, centreId: e.target.value })}
+                                    required={isCentreRequired}
                                     className="w-full h-9 px-3 rounded-sm text-sm text-text focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent transition-colors border border-border bg-surface"
                                 >
-                                    <option value="">Select a centre (optional)</option>
+                                    {!isCentreRequired && (
+                                        <option value="">Select a centre (optional)</option>
+                                    )}
                                     {centres.map((centre) => (
                                         <option key={centre.id} value={centre.id}>{centre.name}</option>
                                     ))}

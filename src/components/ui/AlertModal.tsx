@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode } from 'react';
+import { ReactNode, useEffect } from 'react';
 import { AlertTriangle, CheckCircle2, Info } from 'lucide-react';
 
 interface AlertModalProps {
@@ -12,7 +12,7 @@ interface AlertModalProps {
     variant?: 'error' | 'success' | 'info';
 }
 
-export default function AlertModal({
+export function AlertModal({
     isOpen,
     onClose,
     title,
@@ -20,6 +20,17 @@ export default function AlertModal({
     buttonText = 'Okay',
     variant = 'error'
 }: AlertModalProps) {
+    useEffect(() => {
+        if (!isOpen) return;
+        const onKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                onClose();
+            }
+        };
+        window.addEventListener('keydown', onKeyDown);
+        return () => window.removeEventListener('keydown', onKeyDown);
+    }, [isOpen, onClose]);
+
     if (!isOpen) return null;
 
     const Icon = variant === 'error' ? AlertTriangle : variant === 'success' ? CheckCircle2 : Info;
@@ -27,19 +38,25 @@ export default function AlertModal({
     const iconBg = variant === 'error' ? 'bg-rose-500/10 border-rose-500/20' : variant === 'success' ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-blue-500/10 border-blue-500/20';
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+        <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="alert-modal-title"
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+        >
             <div className="bg-card border border-outline-variant/20 rounded-3xl shadow-2xl p-8 max-w-sm w-full mx-4 animate-in zoom-in-95 duration-200 relative">
                 <div className={`w-14 h-14 ${iconBg} border rounded-2xl flex items-center justify-center mx-auto mb-5`}>
                     <Icon className={`w-7 h-7 ${iconColor}`} />
                 </div>
-                <h3 className="text-xl font-black text-foreground text-center mb-2 tracking-tight">{title}</h3>
+                <h3 id="alert-modal-title" className="text-xl font-black text-foreground text-center mb-2 tracking-tight">{title}</h3>
                 <div className="text-sm text-muted-foreground text-center mb-6 font-medium">
                     {description}
                 </div>
                 
                 <button
+                    type="button"
                     onClick={onClose}
-                    className="w-full bg-secondary/80 text-foreground font-bold py-3.5 rounded-xl hover:bg-secondary/80/80 transition-all border border-outline-variant/10 shadow-lg"
+                    className="w-full bg-secondary/80 text-foreground font-bold py-3.5 rounded-xl hover:bg-secondary/80 transition-all border border-outline-variant/10 shadow-lg"
                 >
                     {buttonText}
                 </button>
@@ -47,3 +64,5 @@ export default function AlertModal({
         </div>
     );
 }
+
+export default AlertModal;

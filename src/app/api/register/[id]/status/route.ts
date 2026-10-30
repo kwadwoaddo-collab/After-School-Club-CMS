@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getApiSession } from '@/lib/session';
 import { db } from '@/db';
 import { registrations, registrationParents, registrationChildren, organisations, centres, children, auditEvents } from '@/db/schema';
-import { and, eq, inArray, sql } from 'drizzle-orm';
+import { and, eq, inArray, ne, sql } from 'drizzle-orm';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { emailService } from '@/lib/services/email';
 import { revalidatePath } from 'next/cache';
@@ -88,6 +88,42 @@ export async function PATCH(
                 })
                 .where(and(inArray(children.id, childIds), eq(children.organisationId, session.user.organisationId!)));
         }
+    } else if (status !== 'signed_up' && reg.registrationChildren?.length && (tx as any).query?.children) {
+        const childIds = reg.registrationChildren
+            .map(c => c.childId)
+            .filter((cid): cid is string => Boolean(cid));
+        for (const childId of childIds) {
+            const child = await tx.query.children.findFirst({
+                where: and(eq(children.id, childId), eq(children.organisationId, session.user.organisationId!)),
+                columns: { id: true, isRegistered: true },
+            });
+            if (!child) continue;
+
+            // Check if any other registration for this child is still 'signed_up'
+            const otherSignedUp = typeof (tx as any).select === 'function'
+                ? await tx
+                    .select({ id: registrations.id })
+                    .from(registrationChildren)
+                    .innerJoin(registrations, eq(registrationChildren.registrationId, registrations.id))
+                    .where(and(
+                        eq(registrationChildren.childId, childId),
+                        ne(registrations.id, id),
+                        eq(registrations.organisationId, session.user.organisationId!),
+                        eq(registrations.status, 'signed_up'),
+                    ))
+                    .limit(1)
+                : [];
+
+            if (otherSignedUp.length === 0) {
+                await tx
+                    .update(children)
+                    .set({
+                        isRegistered: false,
+                        updatedAt: new Date(),
+                    })
+                    .where(and(eq(children.id, childId), eq(children.organisationId, session.user.organisationId!)));
+            }
+        }
     }
 
     await tx.insert(auditEvents).values({ organisationId: session.user.organisationId!, userId: session.user.id,
@@ -134,9 +170,7 @@ export async function PATCH(
     revalidatePath('/dashboard/finance');
     revalidatePath('/dashboard/registrations');
     revalidatePath(`/dashboard/registrations/${id}`);
-    if (status === 'signed_up') {
-        revalidatePath('/dashboard/students');
-    }
+    revalidatePath('/dashboard/students');
 
     return NextResponse.json({ success: true });
 }

@@ -142,6 +142,7 @@ export interface CompiledAttendee {
   lastName: string;
   schoolYear: string;
   notes: string | null;
+  parentId?: string | null;
   parentFirstName: string;
   parentLastName: string;
   parentPhone: string | null;
@@ -280,6 +281,7 @@ export function compileDailyRegisterSlots(params: {
           lastName: child.lastName,
           schoolYear: child.schoolYear,
           notes: child.notes || null,
+          parentId: parentInfo?.id || child.parentId || bookingMatch.parentId || null,
           parentFirstName: parentInfo?.firstName || '',
           parentLastName: parentInfo?.lastName || '',
           parentPhone: parentInfo?.phone || null,
@@ -304,6 +306,7 @@ export function compileDailyRegisterSlots(params: {
           lastName: child.lastName,
           schoolYear: child.schoolYear,
           notes: child.notes || null,
+          parentId: parentInfo?.id || child.parentId || null,
           parentFirstName: parentInfo?.firstName || '',
           parentLastName: parentInfo?.lastName || '',
           parentPhone: parentInfo?.phone || null,
@@ -358,6 +361,7 @@ export function compileDailyRegisterSlots(params: {
           lastName: att.child.lastName,
           schoolYear: att.child.schoolYear,
           notes: att.child.notes || null,
+          parentId: parentInfo?.id || att.child.parentId || booking.parentId || null,
           parentFirstName: parentInfo?.firstName || '',
           parentLastName: parentInfo?.lastName || '',
           parentPhone: parentInfo?.phone || null,

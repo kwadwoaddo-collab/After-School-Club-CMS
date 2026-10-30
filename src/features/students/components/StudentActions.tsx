@@ -11,14 +11,22 @@ import { Button } from '@/components/ui/Button';
 interface DeleteStudentButtonProps {
     studentId: string;
     studentName: string;
+    canDelete?: boolean;
+    userRole?: string;
 }
 
-export default function StudentActions({ studentId, studentName }: DeleteStudentButtonProps) {
+export default function StudentActions({ studentId, studentName, canDelete, userRole }: DeleteStudentButtonProps) {
     const [showConfirm, setShowConfirm] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [alertError, setAlertError] = useState<string | null>(null);
     const router = useRouter();
     const { toast } = useToast();
+
+    const isAllowedToDelete = canDelete !== undefined
+        ? canDelete
+        : userRole
+            ? ['ORG_OWNER', 'MANAGER'].includes(userRole)
+            : true;
 
     const handleDelete = async () => {
         setIsDeleting(true);
@@ -28,6 +36,9 @@ export default function StudentActions({ studentId, studentName }: DeleteStudent
                 toast('Student deleted successfully', 'success');
                 router.push('/dashboard/students');
                 router.refresh();
+            } else if (res.status === 403) {
+                toast('Only Owners and Managers can delete student records', 'error');
+                setAlertError('You do not have permission to delete student records. Only Owners and Managers can perform this action.');
             } else {
                 toast('Failed to delete student — please try again', 'error');
                 setAlertError('Failed to delete student. Please try again.');
@@ -44,7 +55,7 @@ export default function StudentActions({ studentId, studentName }: DeleteStudent
     return (
         <>
             {/* Confirmation Modal */}
-            {showConfirm && (
+            {showConfirm && isAllowedToDelete && (
                 <div
                     className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
                     onClick={(e) => e.stopPropagation()}
@@ -55,7 +66,7 @@ export default function StudentActions({ studentId, studentName }: DeleteStudent
                         </div>
                         <h3 className="text-section-title text-text mb-2">Delete student?</h3>
                         <p className="text-small-body text-text-secondary mb-6">
-                            This will permanently remove <strong className="text-text font-medium">{studentName}</strong> and all their notes and attendance records. This action <strong className="text-danger font-medium">cannot be undone</strong>.
+                            This will remove <strong className="text-text font-medium">{studentName}</strong> from the active student list.
                         </p>
                         <div className="flex gap-3">
                             <Button variant="secondary" className="flex-1" onClick={() => setShowConfirm(false)} disabled={isDeleting}>
@@ -76,13 +87,15 @@ export default function StudentActions({ studentId, studentName }: DeleteStudent
                 >
                     Manage <ArrowRight className="w-3 h-3" />
                 </Link>
-                <button
-                    onClick={() => setShowConfirm(true)}
-                    className="p-1.5 text-text-muted hover:text-danger hover:bg-danger-soft rounded-sm transition-colors"
-                    title={`Delete ${studentName}`}
-                >
-                    <Trash2 className="w-3.5 h-3.5" />
-                </button>
+                {isAllowedToDelete && (
+                    <button
+                        onClick={() => setShowConfirm(true)}
+                        className="p-1.5 text-text-muted hover:text-danger hover:bg-danger-soft rounded-sm transition-colors"
+                        title={`Delete ${studentName}`}
+                    >
+                        <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                )}
             </div>
             <AlertModal
                 isOpen={!!alertError}

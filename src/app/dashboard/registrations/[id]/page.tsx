@@ -3,8 +3,8 @@ import JoiningJourneyGuide from '@/features/students/components/JoiningJourneyGu
 import { requireTenantSession } from '@/lib/session';
 import { redirect, notFound } from 'next/navigation';
 import { db } from '@/db';
-import { registrations, registrationChildren, registrationParents, organisations, centres } from '@/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { registrations, registrationChildren, registrationParents, organisations, centres, children, authorisedCollectors } from '@/db/schema';
+import { eq, and, inArray } from 'drizzle-orm';
 import Link from 'next/link';
 import { Check, ChevronLeft } from 'lucide-react';
 import RegistrationStatusUpdater from './StatusUpdater';
@@ -21,8 +21,8 @@ const FUNDING_LABELS: Record<string, string> = {
 };
 
 const STATUS_BADGE: Record<string, string> = {
-    awaiting_confirmation: 'bg-amber-500/10 text-amber-400 border border-amber-500/20',
-    signed_up: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20',
+    awaiting_confirmation: 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20',
+    signed_up: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20',
     not_interested: 'bg-secondary text-muted-foreground border border-border',
 };
 
@@ -88,6 +88,25 @@ export default async function RegistrationDetailPage({ params }: { params: Promi
     const pars = reg.registrationParents;
     const primary = pars.find(p => p.isPrimary) ?? pars[0];
 
+    const linkedChildIds = kids
+        .map(k => k.childId)
+        .filter((cid): cid is string => Boolean(cid));
+
+    const [linkedChildren, linkedCollectors] = linkedChildIds.length > 0
+        ? await Promise.all([
+            db.select().from(children).where(and(inArray(children.id, linkedChildIds), eq(children.organisationId, orgId))),
+            db.select().from(authorisedCollectors).where(and(inArray(authorisedCollectors.childId, linkedChildIds), eq(authorisedCollectors.organisationId, orgId))),
+        ])
+        : [[], []];
+
+    const childRecordMap = new Map(linkedChildren.map(c => [c.id, c]));
+    const collectorsByChildId = new Map<string, typeof linkedCollectors>();
+    for (const col of linkedCollectors) {
+        const list = collectorsByChildId.get(col.childId) ?? [];
+        list.push(col);
+        collectorsByChildId.set(col.childId, list);
+    }
+
     return (
         <div className="p-4 sm:p-6 max-w-4xl mx-auto">
             <JoiningJourneyGuide />
@@ -148,167 +167,178 @@ export default async function RegistrationDetailPage({ params }: { params: Promi
                         }}
                         parentSignature={reg.parentSignature ?? null}
                     />
-                    <EditRegistrationForm
-                        reg={{
-                            id: reg.id,
-                            startDate: reg.startDate,
-                            fundingTypes: reg.fundingTypes,
-                            fundingOther: reg.fundingOther,
-                            emergencyContactName: reg.emergencyContactName,
-                            emergencyContactRelationship: reg.emergencyContactRelationship,
-                            emergencyContactPhone: reg.emergencyContactPhone,
-                            hasSpecialNeeds: reg.hasSpecialNeeds,
-                            specialNeedsDetails: reg.specialNeedsDetails,
-                        }}
-                        pars={pars.map(p => ({
-                            id: p.id,
-                            parentId: p.parentId,
-                            isPrimary: p.isPrimary,
-                            submittedFirstName: p.submittedFirstName,
-                            submittedLastName: p.submittedLastName,
-                            submittedRelationship: p.submittedRelationship,
-                            submittedPhone: p.submittedPhone,
-                            submittedEmail: p.submittedEmail,
-                            parent: p.parent ? {
-                                addressLine1: p.parent.addressLine1,
-                                addressLine2: p.parent.addressLine2,
-                                city: p.parent.city,
-                                postcode: p.parent.postcode,
-                            } : null,
-                        }))}
-                        kids={kids.map(k => ({
-                            id: k.id,
-                            childId: k.childId,
-                            submittedFirstName: k.submittedFirstName,
-                            submittedLastName: k.submittedLastName,
-                            submittedDateOfBirth: k.submittedDateOfBirth,
-                            submittedSchoolYear: k.submittedSchoolYear,
-                            submittedSessions: k.submittedSessions,
-                        }))}
-                        centreSessionSlots={centreSessionSlots}
-                    />
                 </div>
             </div>
 
-            {/* Read-only detail cards — shown always for quick reference */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {/* Editable & read-only registration details */}
+            <div className="space-y-6">
+                <EditRegistrationForm
+                    reg={{
+                        id: reg.id,
+                        startDate: reg.startDate,
+                        fundingTypes: reg.fundingTypes,
+                        fundingOther: reg.fundingOther,
+                        emergencyContactName: reg.emergencyContactName,
+                        emergencyContactRelationship: reg.emergencyContactRelationship,
+                        emergencyContactPhone: reg.emergencyContactPhone,
+                        hasSpecialNeeds: reg.hasSpecialNeeds,
+                        specialNeedsDetails: reg.specialNeedsDetails,
+                    }}
+                    pars={pars.map(p => ({
+                        id: p.id,
+                        parentId: p.parentId,
+                        isPrimary: p.isPrimary,
+                        submittedFirstName: p.submittedFirstName,
+                        submittedLastName: p.submittedLastName,
+                        submittedRelationship: p.submittedRelationship,
+                        submittedPhone: p.submittedPhone,
+                        submittedEmail: p.submittedEmail,
+                        parent: p.parent ? {
+                            addressLine1: p.parent.addressLine1,
+                            addressLine2: p.parent.addressLine2,
+                            city: p.parent.city,
+                            postcode: p.parent.postcode,
+                        } : null,
+                    }))}
+                    kids={kids.map(k => ({
+                        id: k.id,
+                        childId: k.childId,
+                        submittedFirstName: k.submittedFirstName,
+                        submittedLastName: k.submittedLastName,
+                        submittedDateOfBirth: k.submittedDateOfBirth,
+                        submittedSchoolYear: k.submittedSchoolYear,
+                        submittedSessions: k.submittedSessions,
+                    }))}
+                    centreSessionSlots={centreSessionSlots}
+                />
 
-                {/* Children */}
-                <div className="md:col-span-2 bg-card border border-border rounded-2xl p-6">
-                    <h2 className="text-foreground font-bold mb-4">Children ({kids.length})</h2>
-                    <div className="space-y-3">
-                        {kids.map((k) => (
-                            <div key={k.id} className="py-4 border-b border-border/50 last:border-0">
-                                <div className="flex items-start justify-between">
-                                    <div>
-                                        {k.childId ? (
-                                            <Link
-                                                href={`/dashboard/students/${k.childId}`}
-                                                className="text-foreground font-medium hover:text-primary hover:underline transition-colors"
-                                            >
-                                                {k.submittedFirstName} {k.submittedLastName}
-                                            </Link>
-                                        ) : (
-                                            <p className="text-foreground font-medium">{k.submittedFirstName} {k.submittedLastName}</p>
-                                        )}
-                                        <p className="text-muted-foreground text-sm">{k.submittedSchoolYear}</p>
-                                        {k.submittedDateOfBirth && (
-                                            <p className="text-muted-foreground text-xs mt-0.5">DOB: {new Date(k.submittedDateOfBirth).toLocaleDateString('en-GB')}</p>
-                                        )}
-                                        {k.submittedSessions && k.submittedSessions.length > 0 && (
-                                            <div className="flex flex-wrap gap-1 mt-2">
-                                                {k.submittedSessions.map(s => (
-                                                    <span key={s} className="text-xs bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 rounded-full">{s}</span>
-                                                ))}
+                {/* Safeguarding, Medical, Consents & Authorised Collectors */}
+                {kids.length > 0 && (
+                    <div className="bg-card border border-border rounded-2xl p-6 space-y-5">
+                        <div>
+                            <h2 className="text-foreground font-bold text-base">Safeguarding, Medical, Consents &amp; Authorised Collectors</h2>
+                            <p className="text-xs text-muted-foreground mt-0.5">Medical profile, safeguarding consents, and authorised collection contacts linked to each child.</p>
+                        </div>
+                        <div className="space-y-5">
+                            {kids.map(k => {
+                                const childRecord = k.childId ? childRecordMap.get(k.childId) : undefined;
+                                const collectors = k.childId ? (collectorsByChildId.get(k.childId) ?? []) : [];
+                                const allergiesText = childRecord?.allergies && childRecord.allergies.length > 0
+                                    ? childRecord.allergies.join(', ')
+                                    : 'None reported';
+
+                                return (
+                                    <div key={k.id} className="p-4 rounded-xl bg-secondary/20 border border-border space-y-4">
+                                        <div className="flex items-center justify-between flex-wrap gap-2 border-b border-border/60 pb-3">
+                                            <div>
+                                                {k.childId ? (
+                                                    <Link
+                                                        href={`/dashboard/students/${k.childId}`}
+                                                        className="text-foreground font-bold hover:text-primary hover:underline transition-colors"
+                                                    >
+                                                        {k.submittedFirstName} {k.submittedLastName}
+                                                    </Link>
+                                                ) : (
+                                                    <span className="text-foreground font-bold">{k.submittedFirstName} {k.submittedLastName}</span>
+                                                )}
+                                                {k.submittedSchoolYear && (
+                                                    <span className="ml-2 text-xs text-muted-foreground">({k.submittedSchoolYear})</span>
+                                                )}
                                             </div>
+                                            {k.childId && (
+                                                <Link
+                                                    href={`/dashboard/students/${k.childId}#enrolment-follow-up`}
+                                                    className="text-xs font-medium text-primary hover:text-primary/80 hover:underline transition-colors"
+                                                >
+                                                    View Student Profile &amp; Enrolment →
+                                                </Link>
+                                            )}
+                                        </div>
+
+                                        {childRecord ? (
+                                            <>
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                                    <dl className="space-y-2">
+                                                        <DetailRow label="Allergies" value={allergiesText} />
+                                                        <DetailRow label="Dietary Requirements" value={childRecord.dietaryRequirements || 'None reported'} />
+                                                        <DetailRow label="Medical Conditions" value={childRecord.medicalConditions || 'None reported'} />
+                                                        <DetailRow label="Medication Notes" value={childRecord.medicationNotes || 'None reported'} />
+                                                    </dl>
+                                                    <dl className="space-y-2">
+                                                        <DetailRow label="GP Name" value={childRecord.gpName || '—'} />
+                                                        <DetailRow label="GP Phone" value={childRecord.gpPhone || '—'} />
+                                                        <DetailRow label="SEN Details" value={childRecord.senDetails || (reg.hasSpecialNeeds ? (reg.specialNeedsDetails || 'Yes') : 'None reported')} />
+                                                    </dl>
+                                                </div>
+
+                                                {/* Consents */}
+                                                <div className="pt-2 border-t border-border/50">
+                                                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Consents</p>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        <span className={`text-xs font-medium px-2.5 py-1 rounded-full border ${childRecord.photoConsent ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20' : 'bg-secondary text-muted-foreground border-border'}`}>
+                                                            Photo Consent: {childRecord.photoConsent ? 'Yes ✓' : 'No'}
+                                                        </span>
+                                                        <span className={`text-xs font-medium px-2.5 py-1 rounded-full border ${childRecord.sunCreamConsent ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20' : 'bg-secondary text-muted-foreground border-border'}`}>
+                                                            Sun Cream: {childRecord.sunCreamConsent ? 'Yes ✓' : 'No'}
+                                                        </span>
+                                                        <span className={`text-xs font-medium px-2.5 py-1 rounded-full border ${childRecord.firstAidConsent ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20' : 'bg-secondary text-muted-foreground border-border'}`}>
+                                                            Emergency First Aid: {childRecord.firstAidConsent ? 'Yes ✓' : 'No'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                {/* Authorised Collectors */}
+                                                <div className="pt-2 border-t border-border/50">
+                                                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                                                        Authorised Collectors ({collectors.length})
+                                                    </p>
+                                                    {collectors.length === 0 ? (
+                                                        <p className="text-xs text-muted-foreground">No additional authorised collectors listed.</p>
+                                                    ) : (
+                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                            {collectors.map(col => (
+                                                                <div key={col.id} className="p-3 rounded-lg bg-card border border-border text-xs space-y-1">
+                                                                    <p className="font-bold text-foreground">{col.name} <span className="font-normal text-muted-foreground">({col.relationship})</span></p>
+                                                                    {col.phone && <p className="text-muted-foreground">Phone: <span className="text-foreground font-medium">{col.phone}</span></p>}
+                                                                    {col.collectionPassword && (
+                                                                        <p className="text-muted-foreground">Password: <span className="text-foreground font-mono font-semibold">{col.collectionPassword}</span></p>
+                                                                    )}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <p className="text-xs text-muted-foreground">No linked student profile found for this registration entry.</p>
                                         )}
                                     </div>
-                                    <div className="text-right">
-                                        {k.wasMatched && (
-                                            <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 block mb-2">Matched record</span>
-                                        )}
-                                        {k.childId && (
-                                            <Link href={`/dashboard/students/${k.childId}#enrolment-follow-up`} className="inline-block text-xs text-primary hover:text-primary/80 transition-colors">
-                                                Enrolment / follow-up →
-                                            </Link>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
+                                );
+                            })}
+                        </div>
                     </div>
-                </div>
-
-                {/* Parents */}
-                {pars.map((p) => (
-                    <div key={p.id} className="bg-card border border-border rounded-2xl p-6">
-                        <h2 className="text-foreground font-bold mb-4">{p.isPrimary ? 'Primary ' : ''}Parent / Carer</h2>
-                        <dl className="space-y-3 text-sm">
-                            {p.parentId ? (
-                                <div className="flex justify-between gap-4">
-                                    <dt className="text-muted-foreground flex-shrink-0">Name</dt>
-                                    <dd className="text-foreground text-right font-medium">
-                                        <Link href={`/dashboard/parents/${p.parentId}`} className="text-primary hover:text-blue-400 hover:underline transition-colors">
-                                            {p.submittedFirstName} {p.submittedLastName}
-                                        </Link>
-                                    </dd>
-                                </div>
-                            ) : (
-                                <DetailRow label="Name" value={`${p.submittedFirstName} ${p.submittedLastName}`} />
-                            )}
-                            <DetailRow label="Relationship" value={p.submittedRelationship ?? '—'} />
-                            <DetailRow label="Email" value={p.submittedEmail ?? '—'} />
-                            <DetailRow label="Phone" value={p.submittedPhone ?? '—'} />
-                            {p.parent?.addressLine1 && (
-                                <DetailRow label="Address" value={[p.parent.addressLine1, p.parent.addressLine2, p.parent.city, p.parent.postcode].filter(Boolean).join(', ')} />
-                            )}
-                            {p.wasMatched && (
-                                <p className="text-xs text-primary bg-primary/5 border border-primary/20 rounded px-2 py-1 mt-2 flex items-center gap-1">
-                                    <Check className="w-3 h-3" /> Matched to existing parent record
-                                </p>
-                            )}
-                        </dl>
-                    </div>
-                ))}
-
-                {/* Emergency Contact */}
-                <div className="bg-card border border-border rounded-2xl p-6">
-                    <h2 className="text-foreground font-bold mb-4">Emergency Contact</h2>
-                    <dl className="space-y-3 text-sm">
-                        <DetailRow label="Name" value={reg.emergencyContactName ?? '—'} />
-                        <DetailRow label="Relationship" value={reg.emergencyContactRelationship ?? '—'} />
-                        <DetailRow label="Phone" value={reg.emergencyContactPhone ?? '—'} />
-                    </dl>
-                </div>
-
-                {/* Funding & Details */}
-                <div className="bg-card border border-border rounded-2xl p-6">
-                    <h2 className="text-foreground font-bold mb-4">Funding &amp; Details</h2>
-                    <dl className="space-y-3 text-sm">
-                        <DetailRow label="Start Date" value={reg.startDate ? new Date(reg.startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : 'Not specified'} />
-                        <DetailRow label="Funding" value={reg.fundingTypes?.map(t => FUNDING_LABELS[t] ?? t).join(', ') || 'Not specified'} />
-                        {reg.fundingOther && <DetailRow label="Funding (Other)" value={reg.fundingOther} />}
-                        <DetailRow label="Special Needs" value={reg.hasSpecialNeeds ? 'Yes' : 'No'} />
-                        {reg.specialNeedsDetails && <DetailRow label="Details" value={reg.specialNeedsDetails} />}
-                        <DetailRow label="T&Cs Agreed" value={reg.termsAgreed ? 'Yes ✓' : 'No'} />
-                    </dl>
-                </div>
+                )}
 
                 {/* Signature */}
                 {reg.parentSignature && (
                     <div className="bg-card border border-border rounded-2xl p-6">
                         <h2 className="text-foreground font-bold mb-4">Parent Signature</h2>
-                        <div className="bg-secondary/30 rounded-xl p-4 border border-border">
-                            <img
-                                src={reg.parentSignature}
-                                alt="Parent signature"
-                                className="max-h-24 max-w-xs object-contain"
-                            />
-                        </div>
+                        {reg.parentSignature.startsWith('data:image/') ? (
+                            <div className="bg-secondary/30 rounded-xl p-4 border border-border">
+                                <img
+                                    src={reg.parentSignature}
+                                    alt="Parent signature"
+                                    className="max-h-24 max-w-xs object-contain"
+                                />
+                            </div>
+                        ) : (
+                            <div className="px-4 py-2.5 rounded-lg border border-border bg-secondary/40 font-serif italic text-lg text-foreground">
+                                {reg.parentSignature}
+                            </div>
+                        )}
                         <p className="text-muted-foreground text-xs mt-2">Signed on {new Date(reg.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
                     </div>
                 )}
-
             </div>
         </div>
     );

@@ -226,9 +226,6 @@ export default async function StudentProfilePage(
         db.query.studentFollowUpContacts.findMany({ where: and(eq(studentFollowUpContacts.childId, id), eq(studentFollowUpContacts.organisationId, session.user.organisationId)), orderBy: [desc(studentFollowUpContacts.contactedAt), desc(studentFollowUpContacts.id)], limit: 100 }),
     ]);
     return (
-        <>
-        {!student.registrationId && !confirmedEnrolment && ['ORG_OWNER', 'MANAGER'].includes(userRole ?? '') && <ConfirmExistingEnrolment childId={id} />}
-        <StudentLifecyclePanel enrolmentStart={enrolmentStart} childId={id} today={enrolmentBusinessDate()} canChangeStatus={['ORG_OWNER', 'MANAGER'].includes(userRole ?? '')} confirmed={Boolean(confirmedEnrolment)} events={enrolmentEvents.map(event => ({ ...event, createdAt: event.createdAt.toISOString() }))} contacts={followUpContacts.map(contact => ({ ...contact, contactedAt: contact.contactedAt.toISOString(), createdAt: contact.createdAt.toISOString() }))} />
         <StudentProfile
             student={{
                 ...student,
@@ -240,7 +237,9 @@ export default async function StudentProfilePage(
             billingConfig={billingConfig}
             siblings={siblings}
             registrationDetail={registrationDetail}
-        />
-        </>
+        >
+            {!student.registrationId && !confirmedEnrolment && ['ORG_OWNER', 'MANAGER'].includes(userRole ?? '') && <ConfirmExistingEnrolment childId={id} />}
+            <StudentLifecyclePanel enrolmentStart={enrolmentStart} childId={id} today={enrolmentBusinessDate()} canChangeStatus={['ORG_OWNER', 'MANAGER'].includes(userRole ?? '')} confirmed={Boolean(confirmedEnrolment)} events={enrolmentEvents.map(event => ({ ...event, createdAt: event.createdAt.toISOString() }))} contacts={followUpContacts.map(contact => ({ ...contact, contactedAt: contact.contactedAt.toISOString(), createdAt: contact.createdAt.toISOString() }))} />
+        </StudentProfile>
     );
 }

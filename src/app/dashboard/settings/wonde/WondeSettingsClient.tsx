@@ -118,7 +118,9 @@ export default function WondeSettingsClient({ orgName, lastSync }: { orgName: st
                     <div className="space-y-4">
                         <div className="flex justify-between items-center py-2 border-b border-border">
                             <span className="text-sm text-muted-foreground">Status</span>
-                            <span className="px-2 py-1 bg-success/10 text-success text-xs font-bold rounded-full border border-success/20">Connected</span>
+                            <span className="px-2.5 py-1 bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs font-bold rounded-full border border-amber-500/20">
+                                Not Connected (API Key Required)
+                            </span>
                         </div>
                         <div className="flex justify-between items-center py-2 border-b border-border">
                             <span className="text-sm text-muted-foreground">Organisation</span>

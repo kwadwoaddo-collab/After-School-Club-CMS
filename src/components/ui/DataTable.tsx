@@ -1,6 +1,7 @@
 'use client';
 
 import { ReactNode } from 'react';
+import { Inbox } from 'lucide-react';
 import { cn } from './utils';
 
 /* ------------------------------------------------------------------ */
@@ -66,7 +67,7 @@ function SkeletonRow({ columnCount }: { columnCount: number }) {
     <tr className="animate-pulse">
       {Array.from({ length: columnCount }).map((_, i) => (
         <td key={i} className="px-6 py-4">
-          <div className="h-4 rounded-lg bg-secondary/40/50 w-3/4" />
+          <div className="h-4 rounded-lg bg-secondary/50 w-3/4" />
         </td>
       ))}
     </tr>
@@ -80,10 +81,10 @@ function SkeletonRow({ columnCount }: { columnCount: number }) {
 function DefaultEmptyState() {
   return (
     <div className="flex flex-col items-center justify-center py-20 text-center">
-      <div className="w-16 h-16 rounded-2xl bg-card flex items-center justify-center mb-4 text-3xl">
-        📭
+      <div className="w-16 h-16 rounded-2xl bg-card flex items-center justify-center mb-4">
+        <Inbox className="w-8 h-8 text-muted-foreground" />
       </div>
-      <h3 className="text-white font-semibold mb-2">No data found</h3>
+      <h3 className="text-foreground font-semibold mb-2">No data found</h3>
       <p className="text-on-surface-variant text-sm max-w-sm">
         There are no records to display. Try adjusting your filters or adding new items.
       </p>

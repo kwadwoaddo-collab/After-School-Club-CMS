@@ -2,6 +2,7 @@ import { requireAuth } from '@/lib/require-auth';
 import { db } from '@/db';
 import { centres } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+import { getUserAccessibleCentres } from '@/lib/permissions';
 import BookingForm from '@/features/bookings/components/BookingForm';
 import Link from 'next/link';
 import { MapPin, ChevronLeft, ArrowRight } from 'lucide-react';
@@ -10,17 +11,20 @@ import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 
 export default async function NewBookingPage(props: {
-    searchParams: Promise<{ centreId?: string }>;
+    searchParams: Promise<{ centreId?: string; centre?: string }>;
 }) {
     const { session } = await requireAuth({ roles: ['ORG_OWNER', 'MANAGER', 'FRONT_DESK'] });
 
     const searchParams = await props.searchParams;
+    const userRole = (session.user as { role?: string }).role;
 
-    // Fetch all org centres
-    const orgCentres = await db.query.centres.findMany({
-        where: eq(centres.organisationId, session.user.organisationId),
-        orderBy: (c, { asc }) => [asc(c.name)],
-    });
+    // Fetch accessible centres based on user role
+    const orgCentres = userRole === 'ORG_OWNER'
+        ? await db.query.centres.findMany({
+            where: eq(centres.organisationId, session.user.organisationId),
+            orderBy: (c, { asc }) => [asc(c.name)],
+        })
+        : await getUserAccessibleCentres(session.user.id);
 
     if (orgCentres.length === 0) {
         return (
@@ -46,8 +50,9 @@ export default async function NewBookingPage(props: {
     }
 
     // Multiple centres — check if one is selected via URL param
-    const selectedCentre = searchParams.centreId
-        ? orgCentres.find(c => c.id === searchParams.centreId)
+    const requestedCentreId = searchParams.centreId || searchParams.centre;
+    const selectedCentre = requestedCentreId
+        ? orgCentres.find(c => c.id === requestedCentreId)
         : null;
 
     if (selectedCentre) {

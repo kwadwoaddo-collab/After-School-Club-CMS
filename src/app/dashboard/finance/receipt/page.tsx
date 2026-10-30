@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { db } from '@/db';
 import { eq, and, inArray } from 'drizzle-orm';
-import { children } from '@/db/schema';
+import { children, organisations, payments } from '@/db/schema';
 import { getUserAccessibleCentres, getVisibleChildIds } from '@/lib/permissions';
 import ReceiptGeneratorClient from '@/features/finance/components/ReceiptGeneratorClient';
 import { stableReceiptNumber } from '@/lib/finance/receipt-number';
@@ -23,6 +23,12 @@ export default async function ReceiptPage(props: { searchParams: Promise<{ payme
     if (userRole !== 'ORG_OWNER' && userRole !== 'MANAGER') {
         return redirect('/dashboard');
     }
+
+    // Fetch real organisation record so receipt headers never fall back to the logged-in user's personal name
+    const orgRecord = await db.query.organisations.findFirst({
+        where: eq(organisations.id, orgId),
+        columns: { id: true, name: true, slug: true },
+    });
 
     // Fetch accessible centres
     const orgCentres = await getUserAccessibleCentres(session.user.id);
@@ -45,6 +51,59 @@ export default async function ReceiptPage(props: { searchParams: Promise<{ payme
         },
         orderBy: (children, { asc }) => [asc(children.firstName)],
     });
+
+    let initialPayment: {
+        id: string;
+        amount: string;
+        method: string;
+        recordedAt: string;
+        receiptNo: string;
+        parentId?: string | null;
+        parentName?: string | null;
+        childId?: string | null;
+        studentName?: string | null;
+        centreId?: string | null;
+        centreName?: string | null;
+        invoiceNumber?: string | null;
+        description?: string | null;
+    } | null = null;
+
+    if (searchParams.paymentId) {
+        const paymentRecord = await db.query.payments.findFirst({
+            where: eq(payments.id, searchParams.paymentId),
+            with: {
+                invoice: {
+                    with: {
+                        parent: true,
+                        child: true,
+                        centre: true,
+                    },
+                },
+            },
+        });
+
+        if (paymentRecord?.invoice && paymentRecord.invoice.organisationId === orgId) {
+            const inv = paymentRecord.invoice;
+            const recordedDateStr = paymentRecord.recordedAt
+                ? new Date(paymentRecord.recordedAt).toISOString().split('T')[0]
+                : new Date().toISOString().split('T')[0];
+            initialPayment = {
+                id: paymentRecord.id,
+                amount: Number(paymentRecord.amount || 0).toFixed(2),
+                method: paymentRecord.method,
+                recordedAt: recordedDateStr,
+                receiptNo: stableReceiptNumber(paymentRecord.id),
+                parentId: inv.parentId,
+                parentName: inv.parent ? `${inv.parent.firstName} ${inv.parent.lastName}`.trim() : null,
+                childId: inv.childId,
+                studentName: inv.child ? `${inv.child.firstName} ${inv.child.lastName}`.trim() : null,
+                centreId: inv.centreId,
+                centreName: inv.centre?.name || null,
+                invoiceNumber: inv.invoiceNumber,
+                description: `Payment for Invoice ${inv.invoiceNumber}`,
+            };
+        }
+    }
 
     return (
         <div className="space-y-6 animate-in fade-in duration-700">
@@ -71,14 +130,15 @@ export default async function ReceiptPage(props: { searchParams: Promise<{ payme
                 <ReceiptGeneratorClient 
                     organisation={{
                         id: orgId,
-                        name: session.user.name || 'AfterSchool Club',
-                        slug: '',
+                        name: orgRecord?.name || 'After-School Club',
+                        slug: orgRecord?.slug || '',
                     }}
                     centres={orgCentres}
                     // eslint-disable-next-line react/no-children-prop
                     children={allChildren}
                     paymentId={searchParams.paymentId}
                     stableReceiptNo={searchParams.paymentId ? stableReceiptNumber(searchParams.paymentId) : undefined}
+                    initialPayment={initialPayment}
                 />
             </div>
         </div>

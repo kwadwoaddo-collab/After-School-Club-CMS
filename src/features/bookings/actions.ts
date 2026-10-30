@@ -17,6 +17,7 @@ import { emailService } from '@/lib/services/email';
 import { resolveOrCreateParent, resolveOrCreateChild } from '@/lib/services/crm';
 import { canUserAccessCentre, getUserAccessibleCentreIds } from '@/lib/permissions';
 import { parseInTimezone, DEFAULT_TIMEZONE } from '@/lib/datetime';
+import { normalizeSchoolYear } from '@/lib/school-year';
 
 export async function updateBookingStatus(bookingId: string, status: 'completed' | 'cancelled' | 'confirmed' | 'rescheduled') {
     const session = await requireTenantSession();
@@ -441,15 +442,21 @@ export async function markAttendeeAttendance(params: {
 
                 if (existingAtt) {
                     finalAttendeeId = existingAtt.id;
+                    const concurrentUpdateFields: AttendeeUpdateFields = {
+                        attendanceStatus: finalStatus,
+                        attendanceNote: note || null,
+                        lateMinutes: lateMinutes || null,
+                        attendanceMarkedAt: new Date(),
+                        attendanceMarkedBy: session.user.id,
+                        updatedAt: new Date()
+                    };
+                    if (status === 'check_out') {
+                        concurrentUpdateFields.checkOutAt = new Date();
+                    } else if (status === 'present' || status === 'late') {
+                        concurrentUpdateFields.checkInAt = new Date();
+                    }
                     await tx.update(bookingAttendees)
-                        .set({
-                            attendanceStatus: finalStatus,
-                            attendanceNote: note || null,
-                            lateMinutes: lateMinutes || null,
-                            attendanceMarkedAt: new Date(),
-                            attendanceMarkedBy: session.user.id,
-                            updatedAt: new Date()
-                        })
+                        .set(concurrentUpdateFields)
                         .where(eq(bookingAttendees.id, finalAttendeeId));
                 } else {
                     // Create Booking Attendee
@@ -461,6 +468,8 @@ export async function markAttendeeAttendance(params: {
                         lateMinutes: lateMinutes || null,
                         attendanceMarkedAt: new Date(),
                         attendanceMarkedBy: session.user.id,
+                        checkInAt: (status === 'present' || status === 'late') ? new Date() : null,
+                        checkOutAt: status === 'check_out' ? new Date() : null,
                     }).returning();
                     finalAttendeeId = newAtt.id;
                 }
@@ -591,10 +600,9 @@ export async function registerWalkInChild(params: {
             parentId: pId,
             organisationId: orgId,
             centreId: centreId,
-            schoolYear: schoolYear,
+            schoolYear: normalizeSchoolYear(schoolYear),
             dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
         });
-
 
         // Calculate booking start time in centre timezone (Europe/London)
         // dateStr is YYYY-MM-DD, sessionTime is HH:MM
@@ -603,7 +611,8 @@ export async function registerWalkInChild(params: {
         const code = Date.now().toString(36).toUpperCase();
         const magicLinkToken = `${code}-${Math.random().toString(36).slice(2)}`;
 
-        // Create Booking
+        // Reuse existing booking for this family/slot if a sibling already checked in, or create a new one
+        let bookingId: string;
         const [newBooking] = await tx.insert(bookings).values({
             centreId: centreId,
             parentId: pId,
@@ -614,16 +623,58 @@ export async function registerWalkInChild(params: {
             confirmationCode: code,
             magicLinkToken,
             communicationsConsent: false,
-        }).returning();
+        })
+        .onConflictDoNothing({
+            target: [bookings.centreId, bookings.modality, bookings.startAt, bookings.parentId]
+        })
+        .returning();
 
-        // Create Booking Attendee & automatically check in
-        await tx.insert(bookingAttendees).values({
-            bookingId: newBooking.id,
-            childId: child.id,
-            attendanceStatus: 'present',
-            attendanceMarkedAt: new Date(),
-            attendanceMarkedBy: session.user.id,
+        if (newBooking) {
+            bookingId = newBooking.id;
+        } else {
+            const existingBooking = await tx.query.bookings.findFirst({
+                where: and(
+                    eq(bookings.centreId, centreId),
+                    eq(bookings.modality, 'in_person'),
+                    eq(bookings.startAt, startAt),
+                    eq(bookings.parentId, pId)
+                ),
+            });
+            if (!existingBooking) {
+                throw new Error('Failed to resolve or create walk-in booking');
+            }
+            bookingId = existingBooking.id;
+        }
+
+        // Create or update Booking Attendee & automatically check in
+        const now = new Date();
+        const existingAttendee = await tx.query.bookingAttendees.findFirst({
+            where: and(
+                eq(bookingAttendees.bookingId, bookingId),
+                eq(bookingAttendees.childId, child.id)
+            ),
         });
+
+        if (existingAttendee) {
+            await tx.update(bookingAttendees)
+                .set({
+                    attendanceStatus: 'present',
+                    checkInAt: now,
+                    attendanceMarkedAt: now,
+                    attendanceMarkedBy: session.user.id,
+                    updatedAt: now,
+                })
+                .where(eq(bookingAttendees.id, existingAttendee.id));
+        } else {
+            await tx.insert(bookingAttendees).values({
+                bookingId,
+                childId: child.id,
+                attendanceStatus: 'present',
+                checkInAt: now,
+                attendanceMarkedAt: now,
+                attendanceMarkedBy: session.user.id,
+            });
+        }
     });
 
     revalidatePath('/dashboard/attendance');
@@ -676,7 +727,8 @@ export async function registerExistingChildWalkIn(params: {
         const code = Date.now().toString(36).toUpperCase();
         const magicLinkToken = `${code}-${Math.random().toString(36).slice(2)}`;
 
-        // Create Booking
+        // Reuse existing booking for this family/slot if a sibling already has a booking, or create a new one
+        let bookingId: string;
         const [newBooking] = await tx.insert(bookings).values({
             centreId: centreId,
             parentId: targetChild.parentId,
@@ -687,16 +739,57 @@ export async function registerExistingChildWalkIn(params: {
             confirmationCode: code,
             magicLinkToken,
             communicationsConsent: false,
-        }).returning();
+        })
+        .onConflictDoNothing({
+            target: [bookings.centreId, bookings.modality, bookings.startAt, bookings.parentId]
+        })
+        .returning();
 
-        // Create Booking Attendee & automatically mark as present
-        await tx.insert(bookingAttendees).values({
-            bookingId: newBooking.id,
-            childId: targetChild.id,
-            attendanceStatus: 'present',
-            attendanceMarkedAt: new Date(),
-            attendanceMarkedBy: session.user.id,
+        if (newBooking) {
+            bookingId = newBooking.id;
+        } else {
+            const existingBooking = await tx.query.bookings.findFirst({
+                where: and(
+                    eq(bookings.centreId, centreId),
+                    eq(bookings.modality, 'in_person'),
+                    eq(bookings.startAt, startAt),
+                    eq(bookings.parentId, targetChild.parentId)
+                ),
+            });
+            if (!existingBooking) {
+                throw new Error('Failed to resolve or create walk-in booking');
+            }
+            bookingId = existingBooking.id;
+        }
+
+        const now = new Date();
+        const existingAttendee = await tx.query.bookingAttendees.findFirst({
+            where: and(
+                eq(bookingAttendees.bookingId, bookingId),
+                eq(bookingAttendees.childId, targetChild.id)
+            ),
         });
+
+        if (existingAttendee) {
+            await tx.update(bookingAttendees)
+                .set({
+                    attendanceStatus: 'present',
+                    checkInAt: now,
+                    attendanceMarkedAt: now,
+                    attendanceMarkedBy: session.user.id,
+                    updatedAt: now,
+                })
+                .where(eq(bookingAttendees.id, existingAttendee.id));
+        } else {
+            await tx.insert(bookingAttendees).values({
+                bookingId,
+                childId: targetChild.id,
+                attendanceStatus: 'present',
+                checkInAt: now,
+                attendanceMarkedAt: now,
+                attendanceMarkedBy: session.user.id,
+            });
+        }
     });
 
     revalidatePath('/dashboard/attendance');

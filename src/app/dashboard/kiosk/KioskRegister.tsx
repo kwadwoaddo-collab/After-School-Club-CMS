@@ -18,6 +18,7 @@ import { useToast } from '@/components/ui/ToastProvider';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { formatSchoolYearLabel } from '@/lib/school-year';
 
 const playChime = (type: 'success' | 'error') => {
     try {
@@ -80,10 +81,13 @@ interface Attendee {
     parentFirstName: string;
     parentLastName: string;
     parentPhone: string | null;
+    parentPhoneLast4?: string | null;
     parentEmail?: string | null;
     attendanceStatus: AttendanceStatus;
     attendanceNote: string | null;
     lateMinutes: number | null;
+    checkInTime?: string | null;
+    checkOutTime?: string | null;
     isCatchUp: boolean;
     bookingId: string | null;
 }
@@ -114,6 +118,7 @@ function StudentCard({
     centreId,
     isLarge,
     onToast,
+    onStatusChange,
 }: {
     attendee: Attendee;
     dateStr: string;
@@ -121,6 +126,7 @@ function StudentCard({
     centreId: string;
     isLarge: boolean;
     onToast: ReturnType<typeof useToast>['toast'];
+    onStatusChange?: (childId: string, status: AttendanceStatus, checkedOut: boolean) => void;
 }) {
     const [curBookingId, setCurBookingId] = useState<string | null>(attendee.bookingId);
     const [curAttendeeId, setCurAttendeeId] = useState<string>(attendee.id);
@@ -128,6 +134,7 @@ function StudentCard({
         attendee.attendanceStatus,
         (state, newStatus) => newStatus
     );
+    const [isCheckedOut, setIsCheckedOut] = useState<boolean>(!!attendee.checkOutTime);
     const [note, setNote] = useState<string>(attendee.attendanceNote || '');
     const [lateMinutes, setLateMinutes] = useState<string>(
         attendee.lateMinutes != null ? attendee.lateMinutes.toString() : ''
@@ -137,14 +144,21 @@ function StudentCard({
     const [flash, setFlash] = useState(false);
     const [pinPadOpen, setPinPadOpen] = useState(false);
     const [pin, setPin] = useState('');
+    const [pinError, setPinError] = useState<string | null>(null);
 
     const executeMark = (s: AttendanceStatus) => {
-        const next = status === s ? null : s;
+        const next = s === 'check_out'
+            ? 'check_out'
+            : (status === s && !isCheckedOut ? null : s);
         if (next === 'late') setShowDetails(true);
 
+        const nextCheckedOut = next === 'check_out';
+        const effectiveStatus: AttendanceStatus = next === 'check_out' ? 'present' : next;
+        setIsCheckedOut(nextCheckedOut);
+        onStatusChange?.(attendee.childId, effectiveStatus, nextCheckedOut);
+
         startTransition(async () => {
-            // Check out becomes present instantly, just visually
-            addOptimisticStatus(next === 'check_out' ? 'present' : next);
+            addOptimisticStatus(effectiveStatus);
             try {
                 let res;
                 if (!navigator.onLine) {
@@ -197,8 +211,10 @@ function StudentCard({
     };
 
     const mark = (s: AttendanceStatus) => {
-        const next = status === s ? null : s;
-        if (next === 'check_out') {
+        if (s === 'check_out') {
+            if (isCheckedOut) return;
+            setPin('');
+            setPinError(null);
             setPinPadOpen(true);
             return;
         }
@@ -209,13 +225,27 @@ function StudentCard({
         if (pin.length < 4) {
             const newPin = pin + num;
             setPin(newPin);
+            setPinError(null);
             if (newPin.length === 4) {
-                // Dummy check - accept any PIN for now or add validation if needed
+                const expectedPin = attendee.parentPhoneLast4 || '0000';
+                if (newPin !== expectedPin) {
+                    playChime('error');
+                    setTimeout(() => {
+                        setPin('');
+                        setPinError(
+                            attendee.parentPhoneLast4
+                                ? 'Incorrect PIN. Enter the last 4 digits of the registered parent phone number.'
+                                : 'Incorrect PIN.'
+                        );
+                    }, 200);
+                    return;
+                }
                 setTimeout(() => {
                     setPinPadOpen(false);
                     setPin('');
+                    setPinError(null);
                     executeMark('check_out');
-                }, 300);
+                }, 200);
             }
         }
     };
@@ -256,10 +286,14 @@ function StudentCard({
         absent:  { ring: 'border-danger/30 bg-danger-soft',        avatar: 'bg-danger-soft text-danger' },
         late:    { ring: 'border-amber-500/30 bg-warning-soft',    avatar: 'bg-warning-soft text-amber-700 dark:text-amber-400' },
         excused: { ring: 'border-blue-500/30 bg-info-soft',        avatar: 'bg-info-soft text-blue-700 dark:text-blue-400' },
-        check_out: { ring: 'border-emerald-500/30 bg-success-soft', avatar: 'bg-success-soft text-emerald-700 dark:text-emerald-400' },
+        check_out: { ring: 'border-border bg-page',               avatar: 'bg-page text-text-muted' },
     };
 
-    const style = status ? statusStyle[status] : { ring: 'bg-surface border-border', avatar: 'bg-page text-text-muted' };
+    const style = isCheckedOut
+        ? statusStyle.check_out
+        : status
+            ? statusStyle[status]
+            : { ring: 'bg-surface border-border', avatar: 'bg-page text-text-muted' };
     const pad = isLarge ? 'p-5' : 'p-4';
     const avatarSize = isLarge ? 'w-14 h-14 text-xl' : 'w-11 h-11 text-base';
     // Note: the min-w floor is gated behind `sm:` so the action-button row (pencil +
@@ -284,6 +318,9 @@ function StudentCard({
                             <p className={`font-semibold text-text truncate ${isLarge ? 'text-lg' : 'text-base'}`}>
                                 {attendee.firstName} {attendee.lastName}
                             </p>
+                            {isCheckedOut && (
+                                <Badge variant="default">Checked out</Badge>
+                            )}
                             {lateMinutes && parseInt(lateMinutes) > 0 && (
                                 <Badge variant="warning">
                                     <Sparkles className="w-2.5 h-2.5" /> Late
@@ -299,7 +336,7 @@ function StudentCard({
                             )}
                         </div>
                         <p className="text-xs text-text-muted mt-1 leading-relaxed">
-                            Year {attendee.schoolYear} · {attendee.parentFirstName} {attendee.parentLastName}
+                            {formatSchoolYearLabel(attendee.schoolYear)} · {attendee.parentFirstName} {attendee.parentLastName}
                             {attendee.parentPhone && ` · ${attendee.parentPhone}`}
                             {lateMinutes && ` · Late: ${lateMinutes}m`}
                             {note && ` · "${note}"`}
@@ -324,14 +361,14 @@ function StudentCard({
                             <Edit2 className="w-4 h-4" />
                         </button>
                         {([
-                            { s: 'present' as const, icon: <CheckCircle2 className="w-4 h-4" />, label: 'In',   active: 'bg-emerald-500 text-white border-emerald-500', inactive: 'bg-page border-border text-text-muted hover:text-emerald-700 dark:hover:text-emerald-400 hover:border-emerald-500/30' },
-                            { s: 'late'    as const, icon: <Clock className="w-4 h-4" />,        label: 'Late', active: 'bg-amber-500 text-white border-amber-500',      inactive: 'bg-page border-border text-text-muted hover:text-amber-700 dark:hover:text-amber-400 hover:border-amber-500/30' },
-                            { s: 'check_out' as const, icon: <XCircle className="w-4 h-4" />,    label: 'Out',  active: 'bg-danger text-white border-danger',            inactive: 'bg-page border-border text-text-muted hover:text-danger hover:border-danger/30' },
-                        ]).map(({ s, icon, label, active, inactive }) => (
+                            { s: 'present' as const, icon: <CheckCircle2 className="w-4 h-4" />, label: 'In',   isActive: status === 'present' && !isCheckedOut, active: 'bg-emerald-500 text-white border-emerald-500', inactive: 'bg-page border-border text-text-muted hover:text-emerald-700 dark:hover:text-emerald-400 hover:border-emerald-500/30' },
+                            { s: 'late'    as const, icon: <Clock className="w-4 h-4" />,        label: 'Late', isActive: status === 'late' && !isCheckedOut,    active: 'bg-amber-500 text-white border-amber-500',      inactive: 'bg-page border-border text-text-muted hover:text-amber-700 dark:hover:text-amber-400 hover:border-amber-500/30' },
+                            { s: 'check_out' as const, icon: <XCircle className="w-4 h-4" />,    label: 'Out',  isActive: isCheckedOut,                          active: 'bg-danger text-white border-danger',            inactive: 'bg-page border-border text-text-muted hover:text-danger hover:border-danger/30' },
+                        ]).map(({ s, icon, label, isActive, active, inactive }) => (
                             <button
                                 key={s}
                                 onClick={() => mark(s)}
-                                className={`${btnSize} border rounded-md font-semibold flex items-center justify-center transition-colors active:scale-95 flex-1 ${status === s ? active : inactive}`}
+                                className={`${btnSize} border rounded-md font-semibold flex items-center justify-center transition-colors active:scale-95 flex-1 ${isActive ? active : inactive}`}
                             >
                                 {icon} <span className="ml-1">{label}</span>
                             </button>
@@ -383,10 +420,13 @@ function StudentCard({
                 <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/50 px-4">
                     <div className="bg-surface border border-border p-6 rounded-lg shadow-[var(--shadow-popover)] max-w-[320px] w-full">
                         <h3 className="text-xl font-bold mb-2 text-center text-text">Confirm Check Out</h3>
-                        <p className="text-center mb-6 text-sm text-text-secondary">
-                            Enter PIN to check out <strong className="text-text">{attendee.firstName} {attendee.lastName}</strong>
+                        <p className="text-center mb-4 text-sm text-text-secondary">
+                            Enter the last 4 digits of the registered parent phone number to check out <strong className="text-text">{attendee.firstName} {attendee.lastName}</strong>
                         </p>
-                        <div className="flex justify-center gap-4 mb-8">
+                        {pinError && (
+                            <p className="text-xs text-danger text-center mb-4 font-medium">{pinError}</p>
+                        )}
+                        <div className="flex justify-center gap-4 mb-6">
                             {[0, 1, 2, 3].map(i => (
                                 <div key={i} className={`w-3.5 h-3.5 rounded-full transition-colors duration-200 ${pin.length > i ? 'bg-accent' : 'bg-page border border-border'}`} />
                             ))}
@@ -395,7 +435,7 @@ function StudentCard({
                             {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
                                 <button key={num} onClick={() => handlePinDigit(num)} className="h-14 text-2xl font-bold bg-page hover:bg-border-subtle rounded-md active:scale-95 transition-all text-text">{num}</button>
                             ))}
-                            <button onClick={() => { setPinPadOpen(false); setPin(''); }} className="h-14 text-sm font-bold bg-danger-soft text-danger hover:opacity-80 rounded-md active:scale-95 transition-all">Cancel</button>
+                            <button onClick={() => { setPinPadOpen(false); setPin(''); setPinError(null); }} className="h-14 text-sm font-bold bg-danger-soft text-danger hover:opacity-80 rounded-md active:scale-95 transition-all">Cancel</button>
                             <button onClick={() => handlePinDigit(0)} className="h-14 text-2xl font-bold bg-page hover:bg-border-subtle rounded-md active:scale-95 transition-all text-text">0</button>
                             <button onClick={() => setPin(prev => prev.slice(0, -1))} className="h-14 text-sm font-bold bg-warning-soft text-amber-700 dark:text-amber-400 hover:opacity-80 rounded-md active:scale-95 transition-all">Del</button>
                         </div>
@@ -416,9 +456,20 @@ export default function KioskRegister({ slots, date, dateStr, centreName, centre
     const [large, setLarge] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [showUnmarkedOnly, setShowUnmarkedOnly] = useState(false);
+    const [optimisticStatuses, setOptimisticStatuses] = useState<Record<string, AttendanceStatus>>({});
+
+    const handleStatusChange = (childId: string, newStatus: AttendanceStatus) => {
+        setOptimisticStatuses(prev => ({ ...prev, [childId]: newStatus }));
+    };
+
+    const getEffectiveStatus = (a: Attendee): AttendanceStatus =>
+        Object.prototype.hasOwnProperty.call(optimisticStatuses, a.childId)
+            ? optimisticStatuses[a.childId]
+            : a.attendanceStatus;
 
     // Derive a dateStr from date prop if not passed separately
     const resolvedDateStr = dateStr || new Date().toISOString().slice(0, 10);
+    const activeSlot = slots.length > 0 ? slots[Math.min(slotIdx, slots.length - 1)] : null;
 
     // Live clock
     useEffect(() => {
@@ -438,14 +489,15 @@ export default function KioskRegister({ slots, date, dateStr, centreName, centre
             const actions = await getUnsyncedActions();
             if (actions.length > 0) {
                 toast({ title: 'You are back online!', message: `Syncing ${actions.length} offline actions...`, variant: 'info' });
+                const fallbackSessionTime = activeSlot?.time || slots[0]?.time || '15:45';
                 for (const action of actions) {
                     try {
                         await markAttendeeAttendance({
                             childId: action.childId,
                             centreId: action.centreId,
-                            status: action.type === 'check_in' ? 'present' : 'check_out', // mapping type back to status
+                            status: action.type === 'check_in' ? 'present' : 'check_out',
                             dateStr: resolvedDateStr,
-                            sessionTime: '15:15', // We'll assume default or try to match, but markAttendeeAttendance doesn't strictly need accurate sessionTime if bookingId is missing but we'd normally pass it. Wait, kiosk requires it. Let's pass a dummy or we need to save sessionTime in the action.
+                            sessionTime: fallbackSessionTime,
                         } as any);
                         await markActionSynced(action.id);
                     } catch (e) {
@@ -459,7 +511,7 @@ export default function KioskRegister({ slots, date, dateStr, centreName, centre
 
         window.addEventListener('online', handleOnline);
         return () => window.removeEventListener('online', handleOnline);
-    }, [router, toast, resolvedDateStr]);
+    }, [router, toast, resolvedDateStr, activeSlot, slots]);
 
     // Sync fullscreen state with browser events (e.g. Esc key)
     useEffect(() => {
@@ -480,16 +532,15 @@ export default function KioskRegister({ slots, date, dateStr, centreName, centre
         }
     };
 
-    // Aggregate stats across all slots
+    // Aggregate stats across all slots (including optimistic status updates)
     const allAttendees = slots.flatMap(s => [...s.regulars, ...s.catchups]);
     const totalCount   = allAttendees.length;
-    const presentCount = allAttendees.filter(a => a.attendanceStatus === 'present').length;
-    const absentCount  = allAttendees.filter(a => a.attendanceStatus === 'absent').length;
-    const lateCount    = allAttendees.filter(a => a.attendanceStatus === 'late').length;
-    const unmarkedCount = allAttendees.filter(a => a.attendanceStatus === null).length;
+    const presentCount = allAttendees.filter(a => getEffectiveStatus(a) === 'present').length;
+    const absentCount  = allAttendees.filter(a => getEffectiveStatus(a) === 'absent').length;
+    const lateCount    = allAttendees.filter(a => getEffectiveStatus(a) === 'late').length;
+    const unmarkedCount = allAttendees.filter(a => getEffectiveStatus(a) === null).length;
     const progressPct  = totalCount > 0 ? Math.round(((totalCount - unmarkedCount) / totalCount) * 100) : 0;
 
-    const activeSlot = slots.length > 0 ? slots[Math.min(slotIdx, slots.length - 1)] : null;
     const rawAttendees = activeSlot
         ? [...activeSlot.regulars, ...activeSlot.catchups]
         : [];
@@ -511,11 +562,11 @@ export default function KioskRegister({ slots, date, dateStr, centreName, centre
     const displayAttendees = [...filteredAttendees]
         .filter(a => {
             if (!showUnmarkedOnly) return true;
-            return a.attendanceStatus === null;
+            return getEffectiveStatus(a) === null;
         })
         .sort((a, b) => {
-            const aUnmarked = a.attendanceStatus === null;
-            const bUnmarked = b.attendanceStatus === null;
+            const aUnmarked = getEffectiveStatus(a) === null;
+            const bUnmarked = getEffectiveStatus(b) === null;
             const aAlert = !!a.notes;
             const bAlert = !!b.notes;
 
@@ -601,8 +652,8 @@ export default function KioskRegister({ slots, date, dateStr, centreName, centre
                 <div className="flex items-center gap-2 px-6 py-3 bg-page border-b border-border-subtle overflow-x-auto flex-shrink-0">
                     {slots.map((slot, i) => {
                         const slotAll = [...slot.regulars, ...slot.catchups];
-                        const slotPresent = slotAll.filter(a => a.attendanceStatus === 'present').length;
-                        const slotDone = slotAll.length > 0 && slotAll.every(a => a.attendanceStatus !== null);
+                        const slotPresent = slotAll.filter(a => getEffectiveStatus(a) === 'present' || getEffectiveStatus(a) === 'late').length;
+                        const slotDone = slotAll.length > 0 && slotAll.every(a => getEffectiveStatus(a) !== null);
                         return (
                             <button key={slot.time} onClick={() => setSlotIdx(i)}
                                 className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-semibold flex-shrink-0 border transition-colors ${
@@ -696,6 +747,7 @@ export default function KioskRegister({ slots, date, dateStr, centreName, centre
                                 centreId={activeCentreId}
                                 isLarge={large}
                                 onToast={toast}
+                                onStatusChange={handleStatusChange}
                             />
                         ))}
                     </div>

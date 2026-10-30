@@ -415,10 +415,18 @@ export const RegistrationTemplate = ({
                         <View style={[styles.col, { width: '60%' }]}>
                             <Text style={styles.label}>Signature</Text>
                             {parentSignature ? (
-                                <View style={styles.signatureBox}>
-                                    {/* eslint-disable-next-line jsx-a11y/alt-text */}
-                                    <Image src={parentSignature} style={styles.signatureImage} />
-                                </View>
+                                parentSignature.startsWith('data:image/') ? (
+                                    <View style={styles.signatureBox}>
+                                        {/* eslint-disable-next-line jsx-a11y/alt-text */}
+                                        <Image src={parentSignature} style={styles.signatureImage} />
+                                    </View>
+                                ) : (
+                                    <View style={[styles.signatureBox, { justifyContent: 'center', paddingHorizontal: 10 }]}>
+                                        <Text style={{ fontSize: 14, fontStyle: 'italic', color: '#0f172a', marginBottom: 4 }}>
+                                            Signed digitally: {parentSignature}
+                                        </Text>
+                                    </View>
+                                )
                             ) : (
                                 <View style={[styles.signatureBox, { justifyContent: 'center', alignItems: 'center' }]}>
                                     <Text style={{ color: '#94a3b8', fontSize: 8, fontStyle: 'italic' }}>No signature captured</Text>

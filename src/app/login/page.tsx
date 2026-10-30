@@ -32,6 +32,9 @@ function LoginForm() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(urlError ? `Authentication error: ${urlError}` : null);
+  const [resendingVerification, setResendingVerification] = useState(false);
+  const [resendMessage, setResendMessage] = useState<string | null>(null);
+  const [resendError, setResendError] = useState<string | null>(null);
 
   // Google Sign-In state — mounted gates the button until hydration
   const [mounted, setMounted] = useState(false);
@@ -45,6 +48,35 @@ function LoginForm() {
   const [staffLoading, setStaffLoading] = useState(false);
   const [staffSent, setStaffSent] = useState(false);
   const [staffError, setStaffError] = useState('');
+
+  const handleResendVerification = async () => {
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
+      setResendError('Please enter your email address below first.');
+      setResendMessage(null);
+      return;
+    }
+    setResendingVerification(true);
+    setResendError(null);
+    setResendMessage(null);
+    try {
+      const res = await fetch('/api/auth/resend-verification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: trimmedEmail }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data.error) {
+        setResendError(data.error || 'Could not resend verification email. Please try again.');
+      } else {
+        setResendMessage(data.message || 'Verification email sent! Please check your inbox.');
+      }
+    } catch {
+      setResendError('Could not resend verification email. Please try again.');
+    } finally {
+      setResendingVerification(false);
+    }
+  };
 
   const handleAdminSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -115,7 +147,17 @@ function LoginForm() {
 
       {registered && !verified && (
         <div className={noticeClass} role="status">
-          Account created successfully! Please check your email to verify your account, then sign in.
+          <p>Account created successfully! Please check your email to verify your account, then sign in.</p>
+          <button
+            type="button"
+            onClick={handleResendVerification}
+            disabled={resendingVerification}
+            className={`${linkClass} mt-2 inline-block text-xs disabled:opacity-50`}
+          >
+            {resendingVerification ? 'Sending verification email…' : 'Didn’t receive it? Resend verification email'}
+          </button>
+          {resendMessage && <p className="mt-1.5 text-xs font-semibold text-[var(--if-accent)]">{resendMessage}</p>}
+          {resendError && <p className="mt-1.5 text-xs font-semibold text-[var(--if-danger)]">{resendError}</p>}
         </div>
       )}
 
@@ -229,7 +271,23 @@ function LoginForm() {
               </div>
 
               {error && (
-                <div className={errorBoxClass} role="alert">{error}</div>
+                <div className={errorBoxClass} role="alert">
+                  <p>{error}</p>
+                  {email.trim() && (
+                    <div className="mt-2 pt-2 border-t border-[var(--if-danger)]/30">
+                      <button
+                        type="button"
+                        onClick={handleResendVerification}
+                        disabled={resendingVerification}
+                        className="text-xs font-semibold underline hover:opacity-80 disabled:opacity-50"
+                      >
+                        {resendingVerification ? 'Sending verification email…' : 'Need to verify your email? Resend verification link'}
+                      </button>
+                      {resendMessage && <p className="mt-1 text-xs font-semibold text-[var(--if-accent)]">{resendMessage}</p>}
+                      {resendError && <p className="mt-1 text-xs font-semibold text-[var(--if-danger)]">{resendError}</p>}
+                    </div>
+                  )}
+                </div>
               )}
 
               <button

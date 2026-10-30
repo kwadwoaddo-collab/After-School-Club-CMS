@@ -38,6 +38,7 @@ export async function getIncidents(centreId: string) {
         description: incidents.description,
         treatment: incidents.treatment,
         witnesses: incidents.witnesses,
+        staffSignature: incidents.staffSignature,
         childId: incidents.childId,
         childFirstName: children.firstName,
         childLastName: children.lastName,

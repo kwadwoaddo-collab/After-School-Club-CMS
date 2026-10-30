@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { formatSchoolYearLabel } from '@/lib/school-year';
 
 interface Props {
     ledger: StudentLedgerEntry[];
@@ -24,6 +25,7 @@ interface Props {
     selectedCentreId: string;
     selectedYear: string;
     academicYears: string[];
+    userRole?: string;
 }
 
 function BalancePill({ balance }: { balance: number }) {
@@ -138,15 +140,15 @@ function ForgivModal({
     );
 }
 
-function LedgerRow({ entry, onRefresh }: { entry: StudentLedgerEntry; onRefresh: () => void }) {
+function LedgerRow({ entry, onRefresh, canForgive }: { entry: StudentLedgerEntry; onRefresh: () => void; canForgive: boolean }) {
     const [expanded, setExpanded] = useState(false);
     const [showForgive, setShowForgive] = useState(false);
 
     const statusColor = entry.netBalance < 0
-        ? 'border-l-4 border-l-danger'
+        ? 'border-amber-500/40'
         : entry.netBalance > 0
-            ? 'border-l-4 border-l-emerald-500'
-            : 'border-l-4 border-l-border';
+            ? 'border-emerald-500/40'
+            : 'border-border';
 
     return (
         <>
@@ -169,7 +171,7 @@ function LedgerRow({ entry, onRefresh }: { entry: StudentLedgerEntry; onRefresh:
                         ) : (
                             <p className="font-semibold text-text text-sm">{entry.firstName} {entry.lastName}</p>
                         )}
-                        <p className="text-xs text-text-muted">Year {entry.schoolYear} · {entry.schedule}</p>
+                        <p className="text-xs text-text-muted">{formatSchoolYearLabel(entry.schoolYear)} · {entry.schedule}</p>
                     </div>
 
                     {/* Stats */}
@@ -264,15 +266,17 @@ function LedgerRow({ entry, onRefresh }: { entry: StudentLedgerEntry; onRefresh:
                             <p className="text-xs text-text-muted font-mono">
                                 {entry.extraSessionsAttended} extras + {entry.forgivenSessions} forgiven − {entry.scheduledAbsences} absences = <span className="font-bold text-text">{entry.netBalance > 0 ? '+' : ''}{entry.netBalance}</span>
                             </p>
-                            <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={e => { e.stopPropagation(); setShowForgive(true); }}
-                                className="text-accent hover:text-accent-hover"
-                            >
-                                <Shield className="w-3.5 h-3.5" />
-                                Forgive Sessions
-                            </Button>
+                            {canForgive && (
+                                <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={e => { e.stopPropagation(); setShowForgive(true); }}
+                                    className="text-accent hover:text-accent-hover"
+                                >
+                                    <Shield className="w-3.5 h-3.5" />
+                                    Forgive Sessions
+                                </Button>
+                            )}
                         </div>
                     </div>
                 )}
@@ -285,7 +289,8 @@ function LedgerRow({ entry, onRefresh }: { entry: StudentLedgerEntry; onRefresh:
     );
 }
 
-export default function LedgerClient({ ledger, centres, selectedCentreId, selectedYear, academicYears }: Props) {
+export default function LedgerClient({ ledger, centres, selectedCentreId, selectedYear, academicYears, userRole }: Props) {
+    const canForgive = userRole === 'ORG_OWNER' || userRole === 'MANAGER';
     const router = useRouter();
     const { setSelectedCentreId } = useCentreFilter();
     const [tab, setTab] = useState<'all' | 'arrears' | 'ahead' | 'even'>('all');
@@ -497,7 +502,7 @@ export default function LedgerClient({ ledger, centres, selectedCentreId, select
                         description="Try changing the filter or selecting a different centre."
                     />
                 ) : (
-                    filtered.map(entry => <LedgerRow key={entry.childId} entry={entry} onRefresh={() => router.refresh()} />)
+                    filtered.map(entry => <LedgerRow key={entry.childId} entry={entry} canForgive={canForgive} onRefresh={() => router.refresh()} />)
                 )}
             </div>
 

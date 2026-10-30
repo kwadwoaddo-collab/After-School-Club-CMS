@@ -3,13 +3,14 @@
 
 import { useState } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
-import { ChevronLeft, Building2, Calendar, CreditCard, Plus, Trash2, Save, AlertTriangle, Loader2 } from 'lucide-react';
+import { ChevronLeft, Building2, Calendar, CreditCard, Plus, Trash2, Save, AlertTriangle, Loader2, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
 import { updateCentreAction } from './actions';
 import { useRouter } from 'next/navigation';
 import { logger } from '@/lib/logger';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { useToast } from '@/components/ui/ToastProvider';
 
 interface SessionSlot {
     name: string;
@@ -39,8 +40,11 @@ const inputCls = 'w-full h-9 px-3 rounded-sm text-sm text-text placeholder:text-
 
 export default function CentreSettingsClient({ centre }: { centre: any }) {
     const router = useRouter();
+    const { toast } = useToast();
     const [activeTab, setActiveTab] = useState<'general' | 'sessions' | 'billing'>('general');
     const [isSaving, setIsSaving] = useState(false);
+    const [hasSavedDefaults, setHasSavedDefaults] = useState(false);
+    const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
     let parsedSessions: SessionSlot[] = [];
     if (centre.sessionSlots) {
@@ -50,6 +54,8 @@ export default function CentreSettingsClient({ centre }: { centre: any }) {
             logger.error('Failed to parse session slots', e);
         }
     }
+
+    const hasUnsavedDefaults = (!centre.sessionSlots || parsedSessions.length === 0) && !hasSavedDefaults;
 
     const { register, control, handleSubmit, reset, formState: { isDirty } } = useForm<CentreFormValues>({
         mode: 'onChange',
@@ -76,12 +82,21 @@ export default function CentreSettingsClient({ centre }: { centre: any }) {
 
     const onSubmit = async (data: CentreFormValues) => {
         setIsSaving(true);
+        setFeedback(null);
         try {
             await updateCentreAction(centre.id, data);
+            setHasSavedDefaults(true);
             reset(data);
+            setFeedback({ type: 'success', message: 'Centre settings saved successfully.' });
+            toast('Centre settings saved', 'Your changes have been saved.', 'success');
             router.refresh();
         } catch (error) {
             logger.error('Failed to update centre', error);
+            const message = error instanceof Error && error.message
+                ? error.message
+                : 'Failed to save centre settings. Please try again.';
+            setFeedback({ type: 'error', message });
+            toast('Failed to save settings', message, 'error');
         } finally {
             setIsSaving(false);
         }
@@ -102,6 +117,24 @@ export default function CentreSettingsClient({ centre }: { centre: any }) {
                 <h1 className="text-page-title text-text">{centre.name}</h1>
                 <p className="text-small-body text-text-secondary mt-1">Centre settings</p>
             </div>
+
+            {feedback && (
+                <div
+                    role="status"
+                    className={`rounded-md px-4 py-3 text-small-body font-medium flex items-center gap-2.5 border ${
+                        feedback.type === 'success'
+                            ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-700 dark:text-emerald-300'
+                            : 'bg-danger-soft border-danger/20 text-danger'
+                    }`}
+                >
+                    {feedback.type === 'success' ? (
+                        <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+                    ) : (
+                        <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                    )}
+                    <span>{feedback.message}</span>
+                </div>
+            )}
 
             <div className="flex bg-page p-1 rounded-md w-full sm:w-fit border border-border-subtle">
                 <button
@@ -334,15 +367,19 @@ export default function CentreSettingsClient({ centre }: { centre: any }) {
             </Card>
 
             {/* Sticky action bar — mirrors StaffProfileForm's "Unsaved changes" bar */}
-            {isDirty && (
+            {(isDirty || hasUnsavedDefaults) && (
                 <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-3rem)] max-w-4xl bg-surface border border-border shadow-[var(--shadow-popover)] rounded-lg p-4 flex items-center justify-between z-40 gap-4 flex-wrap">
                     <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-full bg-accent-soft flex items-center justify-center flex-shrink-0">
                             <AlertTriangle className="w-4 h-4 text-accent" />
                         </div>
                         <div>
-                            <p className="text-small-body font-medium text-text">Unsaved changes</p>
-                            <p className="text-metadata">Don&apos;t forget to save your edits.</p>
+                            <p className="text-small-body font-medium text-text">
+                                {isDirty ? 'Unsaved changes' : 'Default sessions ready to save'}
+                            </p>
+                            <p className="text-metadata">
+                                {isDirty ? "Don't forget to save your edits." : 'Save to persist the default session schedule for this centre.'}
+                            </p>
                         </div>
                     </div>
                     <Button type="submit" disabled={isSaving}>

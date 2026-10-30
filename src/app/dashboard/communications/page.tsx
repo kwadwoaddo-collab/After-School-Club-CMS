@@ -45,7 +45,7 @@ export default async function CommunicationsPage() {
     }
 
     if (!org && !hasError) return redirect('/onboarding');
-    if ((!activeCentreId || activeCentreId === 'all') && !hasError) return redirect('/dashboard');
+    if (!activeCentreId) activeCentreId = 'all';
 
     return (
         <div className="space-y-8 animate-in fade-in duration-700">

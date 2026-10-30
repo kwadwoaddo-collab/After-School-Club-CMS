@@ -173,6 +173,38 @@ function SummarySection({ summary }: { summary: WeeklyReportData['summary'] }) {
 
 // ─── New Registrations ────────────────────────────────────────────────────────
 
+function renderChildLinks(
+    children: { id: string | null; name: string }[] | undefined,
+    fallbackText: string,
+    fallbackHref?: string,
+) {
+    if (!children || children.length === 0) {
+        return fallbackHref ? (
+            <Link href={fallbackHref} className="text-primary hover:underline">
+                {fallbackText}
+            </Link>
+        ) : (
+            fallbackText
+        );
+    }
+    return children.map((child, idx) => (
+        <span key={`${child.id ?? child.name}-${idx}`}>
+            {idx > 0 && ', '}
+            {child.id ? (
+                <Link href={`/dashboard/students/${child.id}`} className="text-primary hover:underline">
+                    {child.name}
+                </Link>
+            ) : fallbackHref ? (
+                <Link href={fallbackHref} className="text-primary hover:underline">
+                    {child.name}
+                </Link>
+            ) : (
+                child.name
+            )}
+        </span>
+    ));
+}
+
 function NewRegistrationsSection({ rows }: { rows: WeeklyReportData['newRegistrations'] }) {
     const headers = ['Child(ren)', 'Parent', 'Contact', 'Centre', 'Start Date', 'Status', 'Days'];
     return (
@@ -184,6 +216,7 @@ function NewRegistrationsSection({ rows }: { rows: WeeklyReportData['newRegistra
                 <TableWrapper headers={headers}>
                     {rows.map((r, i) => {
                         const isOverdue = r.daysSinceSubmitted >= 3;
+                        const regHref = r.regId ? `/dashboard/registrations/${r.regId}` : undefined;
                         return (
                             <tr
                                 key={i}
@@ -192,8 +225,18 @@ function NewRegistrationsSection({ rows }: { rows: WeeklyReportData['newRegistra
                                     : 'hover:bg-secondary/40'
                                 }`}
                             >
-                                <td className="px-4 py-3 font-semibold text-foreground whitespace-nowrap">{r.childNames}</td>
-                                <td className="px-4 py-3 text-foreground/80 whitespace-nowrap">{r.parentName}</td>
+                                <td className="px-4 py-3 font-semibold text-foreground whitespace-nowrap">
+                                    {renderChildLinks(r.children, r.childNames, regHref)}
+                                </td>
+                                <td className="px-4 py-3 text-foreground/80 whitespace-nowrap">
+                                    {r.parentId ? (
+                                        <Link href={`/dashboard/parents/${r.parentId}`} className="text-primary hover:underline">
+                                            {r.parentName}
+                                        </Link>
+                                    ) : (
+                                        r.parentName
+                                    )}
+                                </td>
                                 <td className="px-4 py-3 text-muted-foreground text-xs">
                                     <div>{r.parentEmail}</div>
                                     <div>{r.parentPhone}</div>
@@ -236,8 +279,18 @@ function NewBookingsSection({ rows }: { rows: WeeklyReportData['newBookings'] })
                 <TableWrapper headers={headers}>
                     {rows.map((b, i) => (
                         <tr key={i} className="hover:bg-secondary/40 transition-colors">
-                            <td className="px-4 py-3 font-semibold text-foreground whitespace-nowrap">{b.childNames}</td>
-                            <td className="px-4 py-3 text-foreground/80 whitespace-nowrap">{b.parentName}</td>
+                            <td className="px-4 py-3 font-semibold text-foreground whitespace-nowrap">
+                                {renderChildLinks(b.children, b.childNames)}
+                            </td>
+                            <td className="px-4 py-3 text-foreground/80 whitespace-nowrap">
+                                {b.parentId ? (
+                                    <Link href={`/dashboard/parents/${b.parentId}`} className="text-primary hover:underline">
+                                        {b.parentName}
+                                    </Link>
+                                ) : (
+                                    b.parentName
+                                )}
+                            </td>
                             <td className="px-4 py-3 text-muted-foreground text-xs">{b.parentEmail}</td>
                             <td className="px-4 py-3 text-foreground/80 whitespace-nowrap">{b.centre}</td>
                             <td className="px-4 py-3 text-foreground/80 whitespace-nowrap">{b.sessionDate}</td>
@@ -374,8 +427,15 @@ export default function WeeklyReportTab() {
             if (request !== requestId.current) return;
             setReportData(data);
             setCentreOptions(data.scope?.centres ?? []);
-        } catch {
-            if (request === requestId.current) setError('We couldn’t load this report. Check the selected dates and centre, then refresh the report. No records were changed.');
+        } catch (err) {
+            if (request === requestId.current) {
+                const msg = err instanceof Error && err.message ? err.message : '';
+                setError(
+                    msg && /90 days|invalid date|after start date/i.test(msg)
+                        ? msg
+                        : 'We couldn’t load this report. Check the selected dates and centre, then refresh the report. No records were changed.'
+                );
+            }
         } finally {
             if (request === requestId.current) setIsLoading(false);
         }
@@ -383,8 +443,9 @@ export default function WeeklyReportTab() {
     }, [rangeMode, customStart, customEnd, centreId]);
 
     useEffect(() => {
+        if (rangeMode === 'custom' && (!customStart || !customEnd)) return;
         handlePreview();
-    }, [handlePreview]);
+    }, [handlePreview, rangeMode, customStart, customEnd]);
 
     const handleDownloadPdf = useCallback(async () => {
         if (!reportData) return;

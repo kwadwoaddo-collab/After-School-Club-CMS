@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { CANONICAL_SCHOOL_YEARS, formatSchoolYearLabel } from '@/lib/school-year';
 
 
 type AttendanceStatus = 'present' | 'absent' | 'late' | 'no_show' | 'excused' | null;
@@ -25,6 +26,7 @@ interface Attendee {
     firstName: string;
     lastName: string;
     schoolYear: string;
+    parentId?: string | null;
     parentFirstName: string;
     parentLastName: string;
     parentPhone: string | null;
@@ -187,14 +189,13 @@ export function AttendeeCard({
     const initials = `${(attendee.firstName || '')[0] || ''}${(attendee.lastName || '')[0] || ''}`.toUpperCase() || '??';
 
     // ── Status-driven visual tokens ──────────────────────────────────────────
-    // Left border bar + card background
     const cardClass = isAbsent
-        ? 'border-l-4 border-l-danger bg-danger-soft/40 border border-danger/20'
+        ? 'bg-danger-soft/40 border border-danger/40'
         : (isIn && isOut)
-        ? 'border-l-4 border-l-accent bg-accent-soft/40 border border-accent/20'
+        ? 'bg-accent-soft/40 border border-accent/40'
         : isIn
-        ? 'border-l-4 border-l-emerald-500 bg-success-soft/40 border border-emerald-500/20'
-        : 'border-l-4 border-l-border bg-surface border border-border hover:border-accent/40';
+        ? 'bg-success-soft/40 border border-emerald-500/40'
+        : 'bg-surface border border-border hover:border-accent/40';
 
     const avatarClass = `bg-gradient-to-br ${getAvatarGradient(attendee.firstName)} text-white`;
 
@@ -217,11 +218,18 @@ export function AttendeeCard({
                         )}
                     </div>
                     <div className="flex items-center gap-1.5 text-xs text-text-muted mt-0.5">
-                        <span>Yr {attendee.schoolYear} · </span>
+                        <span>{formatSchoolYearLabel(attendee.schoolYear)} · </span>
                         <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[7px] font-bold text-white bg-gradient-to-br ${getAvatarGradient(attendee.parentFirstName)}`}>
                             {attendee.parentFirstName?.[0]}{attendee.parentLastName?.[0]}
                         </div>
-                        <span>{attendee.parentFirstName} {attendee.parentLastName} {attendee.parentPhone ? `· ${attendee.parentPhone}` : ''}</span>
+                        {attendee.parentId ? (
+                            <Link href={`/dashboard/parents/${attendee.parentId}`} className="hover:text-accent hover:underline transition-colors">
+                                {attendee.parentFirstName} {attendee.parentLastName}
+                            </Link>
+                        ) : (
+                            <span>{attendee.parentFirstName} {attendee.parentLastName}</span>
+                        )}
+                        {attendee.parentPhone ? <span>· {attendee.parentPhone}</span> : null}
                     </div>
                 </div>
             </div>
@@ -827,7 +835,7 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
                                                                     }`}
                                                                 >
                                                                     <div>
-                                                                        <div className="text-text">{student.firstName} {student.lastName} <span className="text-text-muted font-normal">(Yr {student.schoolYear})</span></div>
+                                                                        <div className="text-text">{student.firstName} {student.lastName} <span className="text-text-muted font-normal">({formatSchoolYearLabel(student.schoolYear)})</span></div>
                                                                         <div className="text-xs text-text-muted font-normal mt-0.5">
                                                                             {student.parentFirstName} {student.parentLastName}
                                                                         </div>
@@ -868,8 +876,8 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
                                                 <div>
                                                     <label className={formLabel}>School Year</label>
                                                     <select value={formYear} onChange={e => setFormYear(e.target.value)} className={formInput}>
-                                                        {['Nursery', 'Reception', '1', '2', '3', '4', '5', '6', '7', '8', '9'].map(yr => (
-                                                            <option key={yr} value={yr}>Year {yr}</option>
+                                                        {CANONICAL_SCHOOL_YEARS.map(yr => (
+                                                            <option key={yr} value={yr}>{formatSchoolYearLabel(yr)}</option>
                                                         ))}
                                                     </select>
                                                 </div>

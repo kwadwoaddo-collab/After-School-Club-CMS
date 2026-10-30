@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect } from 'react';
 import Link from 'next/link';
 import { CreditCard, AlertCircle, ArrowRight, RefreshCw, Settings2, Loader2 } from 'lucide-react';
 import GenerateInvoiceModal from './GenerateInvoiceModal';
@@ -9,6 +9,15 @@ import BulkInvoiceConfirmModal from './BulkInvoiceConfirmModal';
 import { useRouter } from 'next/navigation';
 import { generateEligibleDraftFromConfig, skipBillingCycle, unskipBillingCycle } from '@/features/billing/actions';
 import type { BillingCycleRow } from '@/features/billing/queries';
+import { useToast } from '@/components/ui/ToastProvider';
+
+function useOptionalToast() {
+    try {
+        return useToast().toast;
+    } catch {
+        return undefined;
+    }
+}
 
 // ─── Status pill ──────────────────────────────────────────────────────────────
 
@@ -36,10 +45,23 @@ function StatusPill({ status }: { status: BillingCycleRow['cycleStatus'] }) {
 
 function FamilyBillingCard({ cycle, onGenerated }: { cycle: BillingCycleRow; onGenerated: () => void }) {
     const router = useRouter();
+    const toast = useOptionalToast();
     const [showModal, setShowModal] = useState(false);
     const [showSkipModal, setShowSkipModal] = useState(false);
     const [skipReason, setSkipReason] = useState('');
     const [isSkipping, setIsSkipping] = useState(false);
+    const [cycleError, setCycleError] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (!showSkipModal) return;
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape' && !isSkipping) {
+                setShowSkipModal(false);
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [showSkipModal, isSkipping]);
 
     const canGenerate = cycle.cycleStatus === 'draft_due' && cycle.config.agreedMonthlyPence > 0;
 
@@ -54,11 +76,14 @@ function FamilyBillingCard({ cycle, onGenerated }: { cycle: BillingCycleRow; onG
 
     const handleUnskip = async () => {
         setIsSkipping(true);
+        setCycleError(null);
         try {
             await unskipBillingCycle(cycle.config.id, periodStartForSkip);
             onGenerated();
         } catch (err: unknown) {
-            alert(err instanceof Error ? err.message : 'Failed to unskip cycle');
+            const msg = err instanceof Error ? err.message : 'Failed to unskip cycle';
+            setCycleError(msg);
+            toast?.(msg, 'error');
         } finally {
             setIsSkipping(false);
         }
@@ -66,12 +91,15 @@ function FamilyBillingCard({ cycle, onGenerated }: { cycle: BillingCycleRow; onG
 
     const handleSkip = async () => {
         setIsSkipping(true);
+        setCycleError(null);
         try {
             await skipBillingCycle(cycle.config.id, periodStartForSkip, skipReason || 'Skipped by manager');
             setShowSkipModal(false);
             onGenerated();
         } catch (err: unknown) {
-            alert(err instanceof Error ? err.message : 'Failed to skip cycle');
+            const msg = err instanceof Error ? err.message : 'Failed to skip cycle';
+            setCycleError(msg);
+            toast?.(msg, 'error');
         } finally {
             setIsSkipping(false);
         }
@@ -152,6 +180,11 @@ function FamilyBillingCard({ cycle, onGenerated }: { cycle: BillingCycleRow; onG
                                 Set a monthly fee on student profile
                             </p>
                         )}
+                        {cycleError && (
+                            <p role="alert" className="text-xs text-rose-600 dark:text-rose-400 font-semibold pt-1">
+                                {cycleError}
+                            </p>
+                        )}
                     </div>
                 </div>
 
@@ -214,12 +247,26 @@ function FamilyBillingCard({ cycle, onGenerated }: { cycle: BillingCycleRow; onG
             </div>
 
             {showSkipModal && (
-                <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-                    <div className="bg-card border border-border rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
-                        <h3 className="text-lg font-bold text-foreground">Skip Billing Cycle</h3>
+                <div
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby={`skip-modal-title-${cycle.config.id}`}
+                    className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+                    onClick={() => !isSkipping && setShowSkipModal(false)}
+                >
+                    <div
+                        className="bg-card border border-border rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <h3 id={`skip-modal-title-${cycle.config.id}`} className="text-lg font-bold text-foreground">Skip Billing Cycle</h3>
                         <p className="text-sm text-muted-foreground">
                             Skip billing for {cycle.familyName} for period starting {periodStartForSkip}. Any existing draft invoice will be safely discarded.
                         </p>
+                        {cycleError && (
+                            <p role="alert" className="text-xs text-rose-600 dark:text-rose-400 font-semibold">
+                                {cycleError}
+                            </p>
+                        )}
                         <div>
                             <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">
                                 Reason for skip
@@ -339,7 +386,7 @@ export default function BillingCyclesTab({ cycles, centreId }: Props) {
                             onClick={() => setFilter(f)}
                             className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
                                 filter === f
-                                    ? 'bg-primary text-white border-primary shadow-sm'
+                                    ? 'bg-primary text-primary-foreground border-primary shadow-sm'
                                     : 'bg-card text-muted-foreground border-border hover:border-primary/30 hover:text-primary'
                             }`}
                         >
@@ -353,7 +400,7 @@ export default function BillingCyclesTab({ cycles, centreId }: Props) {
                     <button 
                         disabled={isGeneratingAll}
                         onClick={() => setShowBulkConfirm(true)}
-                        className="flex items-center gap-2 h-10 px-4 rounded-xl bg-primary text-white text-xs font-black hover:bg-primary/90 transition-all shadow-sm shadow-primary/20 active:scale-[0.97] disabled:opacity-50"
+                        className="flex items-center gap-2 h-10 px-4 rounded-xl bg-primary text-primary-foreground text-xs font-black hover:bg-primary/90 transition-all shadow-sm shadow-primary/20 active:scale-[0.97] disabled:opacity-50"
                     >
                         {isGeneratingAll ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
                         Prepare eligible drafts ({counts.draft_due})

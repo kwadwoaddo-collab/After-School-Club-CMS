@@ -4,7 +4,7 @@ import {
     organisations, centres, children,
     bookings, bookingAttendees, registrations, registrationChildren, studentNotes
 } from '@/db/schema';
-import { eq, sql, and, gte, lt, lte, inArray, or, asc } from 'drizzle-orm';
+import { eq, sql, and, gte, lt, lte, inArray, or, asc, desc } from 'drizzle-orm';
 import Link from 'next/link';
 import { AttendanceRadial } from '@/components/ui/AttendanceRadial';
 import { CopyableLink } from '@/components/dashboard/CopyableLink';
@@ -83,6 +83,7 @@ export default async function ActivityTab({ searchParams, org, activeCentreId, a
                 id: bookings.id,
                 startAt: bookings.startAt,
                 status: bookings.status,
+                attendanceStatus: bookingAttendees.attendanceStatus,
                 centreName: centres.name,
                 childFirst: children.firstName,
                 childLast: children.lastName,
@@ -127,11 +128,11 @@ export default async function ActivityTab({ searchParams, org, activeCentreId, a
                     and(
                         eq(registrations.organisationId, org.id),
                         registrationsCentreCondition,
-                        gte(registrations.startDate, activeStartDate),
-                        lte(registrations.startDate, activeEndDate)
+                        gte(registrations.submittedAt, activeStartDate),
+                        lte(registrations.submittedAt, activeEndDate)
                     )
                 )
-                .orderBy(asc(registrations.startDate), asc(registrationChildren.submittedFirstName))
+                .orderBy(desc(registrations.submittedAt), asc(registrationChildren.submittedFirstName))
                 .limit(10)
             : Promise.resolve([]),
 

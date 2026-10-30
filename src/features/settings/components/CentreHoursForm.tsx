@@ -188,7 +188,7 @@ export default function CentreHoursForm({ centre }: { centre: CentreHoursFormCen
                 <button
                     type="submit"
                     disabled={saving || !isDirty}
-                    className="px-8 py-3 bg-primary text-foreground rounded-xl text-sm font-bold hover:bg-primary/90 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 shadow-lg shadow-primary/25 disabled:opacity-50 disabled:scale-100"
+                    className="px-8 py-3 bg-primary text-primary-foreground rounded-xl text-sm font-bold hover:bg-primary/90 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 shadow-lg shadow-primary/25 disabled:opacity-50 disabled:scale-100"
                 >
                     {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                     Save Hours

@@ -44,6 +44,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
     const [confirmIssue, setConfirmIssue] = useState(false);
     const [emailStatus, setEmailStatus] = useState<InvoiceEmailStatus | null>(invoice.emailStatus || null);
     const [isDiscardingDraft, setIsDiscardingDraft] = useState(false);
+    const [isDiscardConfirmOpen, setIsDiscardConfirmOpen] = useState(false);
     const [isEditingAmount, setIsEditingAmount] = useState(false);
     const [newAmountValue, setNewAmountValue] = useState(Number(invoice.amount).toFixed(2));
     const [isUpdatingAmount, setIsUpdatingAmount] = useState(false);
@@ -70,10 +71,10 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
     };
 
     const handleDiscardDraft = async () => {
-        if (!confirm('Are you sure you want to discard this draft invoice? This action cannot be undone.')) return;
         setIsDiscardingDraft(true);
         try {
             await discardDraftInvoice(invoice.id);
+            setIsDiscardConfirmOpen(false);
             toast({ title: 'Draft discarded', message: 'Draft invoice has been discarded.', variant: 'success' });
             router.push('/dashboard/finance');
         } catch (err) {
@@ -270,7 +271,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                                 type="button"
                                 disabled={isPending || isIssuingDraft || Number(invoice.amount) <= 0}
                                 onClick={() => setConfirmIssue(true)}
-                                className="flex items-center gap-2 px-6 py-2.5 bg-primary rounded-xl text-sm font-bold text-white hover:bg-primary/90 transition-all shadow-lg shadow-primary/30 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                                className="flex items-center gap-2 px-6 py-2.5 bg-primary rounded-xl text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-all shadow-lg shadow-primary/30 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                                 title={Number(invoice.amount) <= 0 ? "Amount must be greater than £0.00 to issue" : "Issue invoice without emailing"}
                             >
                                 {isIssuingDraft ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
@@ -279,7 +280,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                             <button
                                 type="button"
                                 disabled={isPending || isDiscardingDraft}
-                                onClick={handleDiscardDraft}
+                                onClick={() => setIsDiscardConfirmOpen(true)}
                                 className="flex items-center gap-2 px-5 py-2.5 bg-rose-500/10 border border-rose-500/20 rounded-xl text-sm font-bold text-rose-500 hover:bg-rose-500/20 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {isDiscardingDraft ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
@@ -292,7 +293,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                                 <button
                                     disabled={isPending}
                                     onClick={() => setIsPaymentModalOpen(true)}
-                                    className="flex items-center gap-2 px-6 py-2.5 bg-primary rounded-xl text-sm font-bold text-white hover:bg-primary/90 transition-all shadow-lg shadow-primary/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="flex items-center gap-2 px-6 py-2.5 bg-primary rounded-xl text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-all shadow-lg shadow-primary/30 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     <CreditCard className="w-4 h-4" /> Record Payment
                                 </button>
@@ -386,6 +387,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                                         <button
                                             onClick={handleSaveAmount}
                                             disabled={isUpdatingAmount}
+                                            aria-label="Save amount"
                                             className="p-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 rounded-lg transition-colors"
                                         >
                                             <Check className="w-4 h-4" />
@@ -396,6 +398,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                                                 setNewAmountValue(Number(invoice.amount).toFixed(2));
                                             }}
                                             disabled={isUpdatingAmount}
+                                            aria-label="Cancel amount edit"
                                             className="p-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 rounded-lg transition-colors"
                                         >
                                             <XIcon className="w-4 h-4" />
@@ -407,7 +410,8 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                                         {invoice.status === 'draft' && (
                                             <button
                                                 onClick={() => setIsEditingAmount(true)}
-                                                className="opacity-0 group-hover/amt:opacity-100 p-1.5 hover:bg-secondary rounded-lg transition-all text-muted-foreground hover:text-foreground"
+                                                aria-label="Edit amount"
+                                                className="opacity-80 hover:opacity-100 p-1.5 hover:bg-secondary rounded-lg transition-all text-muted-foreground hover:text-foreground"
                                                 title="Edit Amount"
                                             >
                                                 <Edit2 className="w-4 h-4" />
@@ -423,7 +427,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                                 <p className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-1 flex items-center gap-1">
                                     Issue Date
                                 </p>
-                                {isEditingDate ? (
+                                {invoice.status === 'draft' && isEditingDate ? (
                                     <div className="flex items-center gap-2 mt-1">
                                         <input
                                             type="date"
@@ -435,6 +439,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                                         <button
                                             onClick={handleSaveDate}
                                             disabled={isUpdatingDate}
+                                            aria-label="Save issue date"
                                             className="p-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 rounded-lg transition-colors"
                                         >
                                             <Check className="w-3.5 h-3.5" />
@@ -445,6 +450,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                                                 setNewDateValue(invoice.invoiceDate ? new Date(invoice.invoiceDate).toISOString().split('T')[0] : '');
                                             }}
                                             disabled={isUpdatingDate}
+                                            aria-label="Cancel issue date edit"
                                             className="p-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 rounded-lg transition-colors"
                                         >
                                             <XIcon className="w-3.5 h-3.5" />
@@ -455,13 +461,16 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                                         <p className="text-sm font-bold text-foreground">
                                             {invoice.invoiceDate ? format(new Date(invoice.invoiceDate), 'dd/MM/yyyy') : '-'}
                                         </p>
-                                        <button
-                                            onClick={() => setIsEditingDate(true)}
-                                            className="opacity-0 group-hover/date:opacity-100 p-1 hover:bg-secondary rounded-lg transition-all text-muted-foreground hover:text-foreground"
-                                            title="Edit Issue Date"
-                                        >
-                                            <Edit2 className="w-3.5 h-3.5" />
-                                        </button>
+                                        {invoice.status === 'draft' && (
+                                            <button
+                                                onClick={() => setIsEditingDate(true)}
+                                                aria-label="Edit issue date"
+                                                className="opacity-80 hover:opacity-100 p-1 hover:bg-secondary rounded-lg transition-all text-muted-foreground hover:text-foreground"
+                                                title="Edit Issue Date"
+                                            >
+                                                <Edit2 className="w-3.5 h-3.5" />
+                                            </button>
+                                        )}
                                     </div>
                                 )}
                             </div>
@@ -479,6 +488,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                                         <button
                                             onClick={handleSaveDueDate}
                                             disabled={isUpdatingDueDate}
+                                            aria-label="Save due date"
                                             className="p-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 rounded-lg transition-colors"
                                         >
                                             <Check className="w-3.5 h-3.5" />
@@ -489,6 +499,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                                                 setNewDueDateValue(invoice.dueDate ? new Date(invoice.dueDate).toISOString().split('T')[0] : '');
                                             }}
                                             disabled={isUpdatingDueDate}
+                                            aria-label="Cancel due date edit"
                                             className="p-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 rounded-lg transition-colors"
                                         >
                                             <XIcon className="w-3.5 h-3.5" />
@@ -500,7 +511,8 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                                         {invoice.status === 'draft' && (
                                             <button
                                                 onClick={() => setIsEditingDueDate(true)}
-                                                className="opacity-0 group-hover/due:opacity-100 p-1 hover:bg-secondary rounded-lg transition-all text-muted-foreground hover:text-foreground"
+                                                aria-label="Edit due date"
+                                                className="opacity-80 hover:opacity-100 p-1 hover:bg-secondary rounded-lg transition-all text-muted-foreground hover:text-foreground"
                                                 title="Edit Due Date"
                                             >
                                                 <Edit2 className="w-3.5 h-3.5" />
@@ -623,7 +635,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                                                 <button
                                                     onClick={handleSaveNotes}
                                                     disabled={isUpdatingNotes}
-                                                    className="px-4 py-2 bg-primary rounded-xl text-xs font-bold hover:bg-primary/90 transition-all text-foreground shadow-lg shadow-primary/20 flex items-center gap-1.5"
+                                                    className="px-4 py-2 bg-primary rounded-xl text-xs font-bold hover:bg-primary/90 transition-all text-primary-foreground shadow-lg shadow-primary/20 flex items-center gap-1.5"
                                                 >
                                                     {isUpdatingNotes ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <><Check className="w-3.5 h-3.5" /> Save</>}
                                                 </button>
@@ -709,7 +721,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                             <button
                                 disabled={isPending}
                                 onClick={() => setIsPaymentModalOpen(true)}
-                                className="w-full mt-10 py-4 bg-primary rounded-2xl text-sm font-black text-white hover:bg-primary/90 transition-all shadow-xl shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="w-full mt-10 py-4 bg-primary rounded-2xl text-sm font-black text-primary-foreground hover:bg-primary/90 transition-all shadow-xl shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 Record Received Payment
                             </button>
@@ -736,6 +748,13 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
             )}
 
             {confirmIssue && <IssueInvoiceConfirmation invoice={invoice} pending={isIssuingDraft} onClose={() => setConfirmIssue(false)} onConfirm={handleIssueDraft}/>}
+            <ConfirmActionModal
+                isOpen={isDiscardConfirmOpen}
+                onClose={() => setIsDiscardConfirmOpen(false)}
+                variant="delete"
+                invoiceNumber={invoice.invoiceNumber}
+                onConfirm={handleDiscardDraft}
+            />
             <ConfirmActionModal
                 isOpen={confirmAction !== null}
                 onClose={() => setConfirmAction(null)}

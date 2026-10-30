@@ -43,18 +43,20 @@ export async function rollSchoolYearsAction(): Promise<RollResult> {
         let newYear = child.schoolYear;
         const cleanYear = child.schoolYear.trim().toLowerCase();
 
-        if (cleanYear === 'nursery') {
+        if (cleanYear === 'nursery' || cleanYear === 'nur' || cleanYear === 'n') {
           newYear = 'Reception';
-        } else if (cleanYear === 'reception') {
-          newYear = '1';
+        } else if (cleanYear === 'reception' || cleanYear === 'rec' || cleanYear === 'r' || cleanYear === 'year reception') {
+          newYear = 'Y1';
+        } else if (cleanYear === 'graduated') {
+          continue;
         } else {
           // Parse numeric year
           const numericYear = parseInt(cleanYear.replace(/[^0-9]/g, ''), 10);
           if (!isNaN(numericYear)) {
             if (numericYear >= 13) {
               newYear = 'Graduated';
-            } else {
-              newYear = (numericYear + 1).toString();
+            } else if (numericYear >= 1 && numericYear < 13) {
+              newYear = `Y${numericYear + 1}`;
             }
           }
         }

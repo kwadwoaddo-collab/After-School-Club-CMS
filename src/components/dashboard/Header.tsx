@@ -257,13 +257,13 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                 <div id="header-left" className="flex items-center gap-2 flex-shrink-0" />
             )}
 
-            {/* Middle Section: Tabs Portal or Global Search */}
-            {isListPage ? (
-                <div id="header-middle" className="hidden lg:flex flex-1 justify-center max-w-2xl px-4" />
-            ) : (
-                /* Search Bar */
-                !hideSearch && (
-                    <div className="hidden sm:block flex-1 max-w-xl relative" ref={searchContainerRef}>
+            {/* Middle Section: Tabs Portal and Global Search */}
+            {isListPage && (
+                <div id="header-middle" className="hidden lg:flex justify-center max-w-2xl px-4 empty:hidden" />
+            )}
+            {/* Search Bar */}
+            {!hideSearch && (
+                <div className="hidden sm:block flex-1 max-w-xl relative mx-auto" ref={searchContainerRef}>
                         <form onSubmit={handleSearch} className="relative group w-full flex items-center h-10 bg-page border border-border rounded-md transition-colors focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent">
                             <Search className="ml-3.5 w-4 h-4 text-text-muted flex-shrink-0 transition-colors group-focus-within:text-accent pointer-events-none" />
                             <input
@@ -334,7 +334,6 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                             </div>
                         )}
                     </div>
-                )
             )}
 
             <div className="ml-auto flex items-center gap-2">

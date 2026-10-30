@@ -40,7 +40,10 @@ export interface WeeklyReportData {
     };
 
     newRegistrations: {
+        regId?: string;
         childNames: string;     // may be "Alice B, Bob B" for multi-child registrations
+        children?: { id: string | null; name: string }[];
+        parentId?: string | null;
         parentName: string;
         parentEmail: string;
         parentPhone: string;
@@ -51,7 +54,10 @@ export interface WeeklyReportData {
     }[];
 
     newBookings: {
+        bookingId?: string;
         childNames: string;   // all children in booking, comma-separated
+        children?: { id: string | null; name: string }[];
+        parentId?: string | null;
         parentName: string;
         parentEmail: string;
         centre: string;
@@ -173,8 +179,10 @@ export async function getWeeklyReport(
             submittedAt: registrations.submittedAt,
             createdAt: registrations.createdAt,
             centreName: centres.name,
+            childId: registrationChildren.childId,
             childFirst: registrationChildren.submittedFirstName,
             childLast: registrationChildren.submittedLastName,
+            parentId: registrationParents.parentId,
             parentFirst: registrationParents.submittedFirstName,
             parentLast: registrationParents.submittedLastName,
             parentEmail: registrationParents.submittedEmail,
@@ -213,8 +221,10 @@ export async function getWeeklyReport(
                 startAt: bookings.startAt,
                 status: bookings.status,
                 centreName: centres.name,
+                childId: children.id,
                 childFirst: children.firstName,
                 childLast: children.lastName,
+                parentId: parentAlias.id,
                 parentFirst: parentAlias.firstName,
                 parentLast: parentAlias.lastName,
                 parentEmail: parentAlias.email,
@@ -340,7 +350,10 @@ export async function getWeeklyReport(
     // Shape: New Registrations — deduplicate multi-child registrations
     // ─────────────────────────────────────────────────────────────────────────
     const regMap = new Map<string, {
+        regId: string;
         childNames: string[];
+        children: { id: string | null; name: string }[];
+        parentId: string | null;
         parentName: string;
         parentEmail: string;
         parentPhone: string;
@@ -353,11 +366,17 @@ export async function getWeeklyReport(
 
     for (const r of newRegsRaw) {
         const childName = `${r.childFirst} ${r.childLast}`.trim();
+        const childEntry = { id: (r as any).childId ?? null, name: childName };
         if (regMap.has(r.regId)) {
-            regMap.get(r.regId)!.childNames.push(childName);
+            const existing = regMap.get(r.regId)!;
+            existing.childNames.push(childName);
+            existing.children.push(childEntry);
         } else {
             regMap.set(r.regId, {
+                regId: r.regId,
                 childNames: [childName],
+                children: [childEntry],
+                parentId: (r as any).parentId ?? null,
                 parentName: `${r.parentFirst ?? ''} ${r.parentLast ?? ''}`.trim() || '—',
                 parentEmail: r.parentEmail ?? '—',
                 parentPhone: r.parentPhone ?? '—',
@@ -373,7 +392,10 @@ export async function getWeeklyReport(
     }
 
     const newRegistrations = Array.from(regMap.values()).map(r => ({
+        regId: r.regId,
         childNames: r.childNames.join(', '),
+        children: r.children,
+        parentId: r.parentId,
         parentName: r.parentName,
         parentEmail: r.parentEmail,
         parentPhone: r.parentPhone,
@@ -389,7 +411,10 @@ export async function getWeeklyReport(
     // Attendee join causes fan-out; group so all child names appear in one row
     // ─────────────────────────────────────────────────────────────────────────
     const bookingMap = new Map<string, {
+        bookingId: string;
         childNames: string[];
+        children: { id: string | null; name: string }[];
+        parentId: string | null;
         parentName: string;
         parentEmail: string;
         centre: string;
@@ -400,13 +425,18 @@ export async function getWeeklyReport(
 
     for (const b of newBookingsRaw) {
         const childName = `${b.childFirst} ${b.childLast}`.trim();
+        const childEntry = { id: (b as any).childId ?? null, name: childName };
         if (bookingMap.has(b.bookingId)) {
             const entry = bookingMap.get(b.bookingId)!;
             entry.childNames.push(childName);
+            entry.children.push(childEntry);
             entry.attendanceStatuses.push(b.attendanceStatus);
         } else {
             bookingMap.set(b.bookingId, {
+                bookingId: b.bookingId,
                 childNames: [childName],
+                children: [childEntry],
+                parentId: (b as any).parentId ?? null,
                 parentName: `${b.parentFirst ?? ''} ${b.parentLast ?? ''}`.trim() || '—',
                 parentEmail: b.parentEmail ?? '—',
                 centre: b.centreName,
@@ -427,7 +457,10 @@ export async function getWeeklyReport(
             : absent === total ? '✗ All Absent'
             : `${present}/${total} Present`;
         return {
+            bookingId: b.bookingId,
             childNames: b.childNames.join(', '),
+            children: b.children,
+            parentId: b.parentId,
             parentName: b.parentName,
             parentEmail: b.parentEmail,
             centre: b.centre,

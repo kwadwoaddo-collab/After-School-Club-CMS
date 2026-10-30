@@ -24,6 +24,22 @@ interface Centre {
     name: string;
 }
 
+interface InitialPayment {
+    id: string;
+    amount: string | number;
+    method?: string | null;
+    recordedAt?: string | Date | null;
+    receiptNo?: string | null;
+    parentId?: string | null;
+    parentName?: string | null;
+    childId?: string | null;
+    studentName?: string | null;
+    centreId?: string | null;
+    centreName?: string | null;
+    invoiceNumber?: string | null;
+    description?: string | null;
+}
+
 interface Props {
     organisation: {
         id: string;
@@ -34,9 +50,32 @@ interface Props {
     children: unknown[];
     paymentId?: string;
     stableReceiptNo?: string;
+    initialPayment?: InitialPayment | null;
 }
 
-export default function ReceiptGeneratorClient({ organisation, centres, children: rawChildren, stableReceiptNo }: Props) {
+function mapMethodLabel(method?: string | null): 'Cash' | 'Card' | 'Bank Transfer' | 'Childcare Vouchers' {
+    switch (method) {
+        case 'cash':
+        case 'Cash':
+            return 'Cash';
+        case 'stripe':
+        case 'card':
+        case 'Card':
+            return 'Card';
+        case 'bank_transfer':
+        case 'gocardless':
+        case 'Bank Transfer':
+            return 'Bank Transfer';
+        case 'voucher':
+        case 'tax_free_childcare':
+        case 'Childcare Vouchers':
+            return 'Childcare Vouchers';
+        default:
+            return 'Cash';
+    }
+}
+
+export default function ReceiptGeneratorClient({ organisation, centres, children: rawChildren, stableReceiptNo, initialPayment }: Props) {
     const children = rawChildren as Child[];
     // Generate random receipt number
     const generateReceiptNumber = () => {
@@ -48,21 +87,65 @@ export default function ReceiptGeneratorClient({ organisation, centres, children
         return `MANUAL-${result}`; // clear it's a manual reference
     };
 
-    const [receiptNo, setReceiptNo] = useState('');
-    const [date, setDate] = useState('');
-    const [selectedChildId, setSelectedChildId] = useState('');
-    const [parentName, setParentName] = useState('');
-    const [studentName, setStudentName] = useState('');
-    const [amount, setAmount] = useState('120.00');
-    const [paymentMethod, setPaymentMethod] = useState<'Cash' | 'Card' | 'Bank Transfer' | 'Childcare Vouchers'>('Cash');
-    const [selectedCentreId, setSelectedCentreId] = useState(centres[0]?.id || '');
-    const [description, setDescription] = useState('Weekly Club Sessions');
+    const initialDateStr = initialPayment?.recordedAt
+        ? (typeof initialPayment.recordedAt === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(initialPayment.recordedAt)
+            ? initialPayment.recordedAt
+            : new Date(initialPayment.recordedAt).toISOString().split('T')[0])
+        : '';
+
+    const [receiptNo, setReceiptNo] = useState(initialPayment?.receiptNo || stableReceiptNo || '');
+    const [date, setDate] = useState(initialDateStr);
+    const [selectedChildId, setSelectedChildId] = useState(initialPayment?.childId || '');
+    const [parentName, setParentName] = useState(initialPayment?.parentName || '');
+    const [studentName, setStudentName] = useState(initialPayment?.studentName || '');
+    const [amount, setAmount] = useState(
+        initialPayment?.amount !== undefined && initialPayment?.amount !== null
+            ? Number(initialPayment.amount).toFixed(2)
+            : '120.00'
+    );
+    const [paymentMethod, setPaymentMethod] = useState<'Cash' | 'Card' | 'Bank Transfer' | 'Childcare Vouchers'>(
+        initialPayment?.method ? mapMethodLabel(initialPayment.method) : 'Cash'
+    );
+    const [selectedCentreId, setSelectedCentreId] = useState(initialPayment?.centreId || centres[0]?.id || '');
+    const [description, setDescription] = useState(
+        initialPayment?.description ||
+        (initialPayment?.invoiceNumber ? `Payment for Invoice ${initialPayment.invoiceNumber}` : 'Weekly Club Sessions')
+    );
 
     // Set initial values
     useEffect(() => {
+        if (initialPayment) {
+            setReceiptNo(initialPayment.receiptNo || stableReceiptNo || generateReceiptNumber());
+            if (initialPayment.recordedAt) {
+                const parsedDate = typeof initialPayment.recordedAt === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(initialPayment.recordedAt)
+                    ? initialPayment.recordedAt
+                    : new Date(initialPayment.recordedAt).toISOString().split('T')[0];
+                setDate(parsedDate);
+            } else {
+                setDate(new Date().toISOString().split('T')[0]);
+            }
+            if (initialPayment.childId) setSelectedChildId(initialPayment.childId);
+            if (initialPayment.parentName) setParentName(initialPayment.parentName);
+            if (initialPayment.studentName) setStudentName(initialPayment.studentName);
+            if (initialPayment.amount !== undefined && initialPayment.amount !== null) {
+                setAmount(Number(initialPayment.amount).toFixed(2));
+            }
+            if (initialPayment.method) {
+                setPaymentMethod(mapMethodLabel(initialPayment.method));
+            }
+            if (initialPayment.centreId) {
+                setSelectedCentreId(initialPayment.centreId);
+            }
+            if (initialPayment.description) {
+                setDescription(initialPayment.description);
+            } else if (initialPayment.invoiceNumber) {
+                setDescription(`Payment for Invoice ${initialPayment.invoiceNumber}`);
+            }
+            return;
+        }
         setReceiptNo(stableReceiptNo || generateReceiptNumber());
         setDate(new Date().toISOString().split('T')[0]);
-    }, [stableReceiptNo]);
+    }, [stableReceiptNo, initialPayment]);
 
     // Handle student selection
     const handleStudentChange = (childId: string) => {
@@ -80,7 +163,10 @@ export default function ReceiptGeneratorClient({ organisation, centres, children
         }
     };
 
-    const selectedCentreName = centres.find(c => c.id === selectedCentreId)?.name || 'Main Centre';
+    const selectedCentreName =
+        centres.find(c => c.id === selectedCentreId)?.name ||
+        initialPayment?.centreName ||
+        'Main Centre';
 
     const handlePrint = () => {
         window.print();
@@ -227,7 +313,7 @@ export default function ReceiptGeneratorClient({ organisation, centres, children
                             onClick={() => {
                                 setReceiptNo(generateReceiptNumber());
                             }}
-                            className="flex-1 h-11 rounded-2xl bg-card/5 border border-white/10 hover:bg-card/10 text-foreground text-xs font-bold transition-all"
+                            className="flex-1 h-11 rounded-2xl bg-surface border border-border hover:bg-secondary/60 text-foreground text-xs font-bold transition-all"
                         >
                             Reset / Regenerate
                         </button>
@@ -245,7 +331,7 @@ export default function ReceiptGeneratorClient({ organisation, centres, children
                     </span>
                     <button
                         onClick={handlePrint}
-                        className="flex items-center gap-2 px-5 py-2.5 bg-primary text-foreground text-xs font-bold rounded-2xl hover:bg-primary/90 transition-all shadow-lg shadow-primary/30 glow-btn"
+                        className="flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground text-xs font-bold rounded-2xl hover:bg-primary/90 transition-all shadow-lg shadow-primary/30 glow-btn"
                     >
                         <Printer className="w-4 h-4" />
                         Print / Save PDF
@@ -255,7 +341,7 @@ export default function ReceiptGeneratorClient({ organisation, centres, children
                 {/* Printable Receipt Card */}
                 <div 
                     id="receipt-print-area"
-                    className="w-full max-w-xl bg-card border border-border rounded-[32px] p-8 sm:p-10 shadow-2xl relative text-slate-800 overflow-hidden print-layout"
+                    className="w-full max-w-xl bg-white border border-slate-200 rounded-[32px] p-8 sm:p-10 shadow-2xl relative text-slate-900 overflow-hidden print-layout"
                     style={{
                         minHeight: '620px',
                     }}
@@ -272,7 +358,7 @@ export default function ReceiptGeneratorClient({ organisation, centres, children
                     <div className="flex flex-col sm:flex-row justify-between items-start gap-4 pb-6 border-b border-slate-100">
                         <div>
                             <div className="flex items-center gap-2.5">
-                                <div className="w-8 h-8 rounded-lg bg-slate-900 text-foreground font-extrabold text-xs flex items-center justify-center">
+                                <div className="w-8 h-8 rounded-lg bg-slate-900 text-white font-extrabold text-xs flex items-center justify-center">
                                     {organisation.name.slice(0, 2).toUpperCase()}
                                 </div>
                                 <h2 className="text-base font-extrabold text-slate-900 uppercase tracking-tight">{organisation.name}</h2>

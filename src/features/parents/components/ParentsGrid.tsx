@@ -27,17 +27,21 @@ export default function ParentsGrid({ parents }: ParentsGridProps) {
                 const initials = getInitials(parent.firstName, parent.lastName);
 
                 return (
-                    <Link
+                    <div
                         key={parent.id}
-                        href={`/dashboard/parents/${parent.id}`}
-                        className="block rounded-lg border border-border bg-surface p-4 active:bg-page/60 transition-colors"
+                        className="relative block rounded-lg border border-border bg-surface p-4 active:bg-page/60 transition-colors"
                     >
                         <div className="flex items-start gap-3">
                             <div className="w-9 h-9 rounded-full bg-accent-soft text-accent flex items-center justify-center text-sm font-semibold flex-shrink-0">
                                 {initials}
                             </div>
                             <div className="min-w-0 flex-1">
-                                <p className="text-table-value font-medium text-text truncate">{fullName}</p>
+                                <Link
+                                    href={`/dashboard/parents/${parent.id}`}
+                                    className="text-table-value font-medium text-text hover:text-accent truncate block after:absolute after:inset-0"
+                                >
+                                    {fullName}
+                                </Link>
                                 <div className="flex items-center gap-2 mt-1 flex-wrap">
                                     <span className="text-metadata flex items-center gap-1.5">
                                         <Baby className="w-3 h-3 text-text-muted" />
@@ -74,16 +78,17 @@ export default function ParentsGrid({ parents }: ParentsGridProps) {
                         {parent.childrenList && parent.childrenList.length > 0 && (
                             <div className="mt-3 pt-3 border-t border-border-subtle flex flex-wrap gap-1">
                                 {parent.childrenList.map((child) => (
-                                    <span
+                                    <Link
                                         key={child.id}
-                                        className="inline-flex items-center px-2 py-0.5 rounded-sm bg-page border border-border-subtle text-text-secondary text-xs font-medium whitespace-nowrap"
+                                        href={`/dashboard/students/${child.id}`}
+                                        className="relative z-10 inline-flex items-center px-2 py-0.5 rounded-sm bg-page border border-border-subtle text-text-secondary hover:text-accent hover:border-accent/40 text-xs font-medium whitespace-nowrap transition-colors"
                                     >
                                         {child.first_name} {child.last_name}
-                                    </span>
+                                    </Link>
                                 ))}
                             </div>
                         )}
-                    </Link>
+                    </div>
                 );
             })}
         </div>

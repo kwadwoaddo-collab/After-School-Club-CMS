@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Save, AlertTriangle, Trash2, Loader2 } from 'lucide-react';
 import { useToast } from '@/components/ui/ToastProvider';
@@ -28,6 +28,8 @@ interface StaffProfileFormProps {
     allCentres: Centre[];
     currentAssignments: string[];
     isOwner?: boolean;
+    currentUserId?: string;
+    isSelf?: boolean;
 }
 
 export default function StaffProfileForm({
@@ -37,18 +39,38 @@ export default function StaffProfileForm({
     ownerCount,
     allCentres,
     currentAssignments,
-    isOwner = true
+    isOwner = true,
+    currentUserId,
+    isSelf: isSelfProp,
 }: StaffProfileFormProps) {
     const router = useRouter();
     const { toast } = useToast();
 
+    const [sessionUserId, setSessionUserId] = useState<string | undefined>(currentUserId);
     const [selectedRole, setSelectedRole] = useState(currentRole);
     const [selectedCentres, setSelectedCentres] = useState<string[]>(currentAssignments);
     const [saving, setSaving] = useState(false);
     const [removing, setRemoving] = useState(false);
     const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
 
-    const hasRoleChanged = selectedRole !== currentRole;
+    useEffect(() => {
+        if (!currentUserId && isSelfProp === undefined) {
+            fetch('/api/auth/session')
+                .then(res => (res.ok ? res.json() : null))
+                .then(session => {
+                    if (session?.user?.id) {
+                        setSessionUserId(session.user.id);
+                    }
+                })
+                .catch(() => { /* ignore */ });
+        }
+    }, [currentUserId, isSelfProp]);
+
+    const isSelf = isSelfProp ?? Boolean(sessionUserId && sessionUserId === userId);
+    const isTargetOwner = currentRole === 'ORG_OWNER';
+    const isProtectedProfile = isSelf || isTargetOwner;
+
+    const hasRoleChanged = !isProtectedProfile && selectedRole !== currentRole;
     const hasCentresChanged = JSON.stringify([...selectedCentres].sort()) !== JSON.stringify([...currentAssignments].sort());
     const isDirty = hasRoleChanged || hasCentresChanged;
 
@@ -120,13 +142,18 @@ export default function StaffProfileForm({
 
     return (
         <div className="space-y-5 relative pb-24">
-            <StaffRoleSelector
-                currentRole={currentRole}
-                selectedRole={selectedRole}
-                onRoleChange={setSelectedRole}
-                ownerCount={ownerCount}
-                isOwner={isOwner}
-            />
+            <div
+                className={isProtectedProfile ? 'pointer-events-none opacity-60' : undefined}
+                aria-disabled={isProtectedProfile}
+            >
+                <StaffRoleSelector
+                    currentRole={currentRole}
+                    selectedRole={selectedRole}
+                    onRoleChange={isProtectedProfile ? () => {} : setSelectedRole}
+                    ownerCount={isTargetOwner ? 1 : ownerCount}
+                    isOwner={isOwner}
+                />
+            </div>
 
             {selectedRole !== 'ORG_OWNER' && (
                 <StaffCentreAssignment
@@ -137,19 +164,21 @@ export default function StaffProfileForm({
                 />
             )}
 
-            {/* Remove staff member */}
-            <Card>
-                <div className="p-5">
-                    <button
-                        type="button"
-                        onClick={() => setShowRemoveConfirm(true)}
-                        className="flex items-center gap-2 text-small-body font-medium text-danger hover:opacity-80 transition-opacity"
-                    >
-                        <Trash2 className="w-4 h-4" />
-                        Remove {staffName} from organisation
-                    </button>
-                </div>
-            </Card>
+            {/* Remove staff member — hidden when viewing own profile or an ORG_OWNER */}
+            {!isProtectedProfile && (
+                <Card>
+                    <div className="p-5">
+                        <button
+                            type="button"
+                            onClick={() => setShowRemoveConfirm(true)}
+                            className="flex items-center gap-2 text-small-body font-medium text-danger hover:opacity-80 transition-opacity"
+                        >
+                            <Trash2 className="w-4 h-4" />
+                            Remove {staffName} from organisation
+                        </button>
+                    </div>
+                </Card>
+            )}
 
             {/* Remove confirmation modal — same pattern as the Parents module's
                 destructive-action dialogs (BinActions / DeleteParentButton). */}

@@ -262,7 +262,7 @@ export class BookingService {
         const stripeId = await stripeService.createCustomer({
           email: input.parent.email,
           name: `${input.parent.firstName} ${input.parent.lastName}`,
-          organisationId: input.appointment.centreId || '',
+          organisationId: centre.organisationId,
         });
 
         if (stripeId) {

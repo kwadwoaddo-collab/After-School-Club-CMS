@@ -41,9 +41,10 @@ export default async function IncidentsPage() {
 
     if (!org && !hasError) return redirect('/onboarding');
 
-    // Incidents require a specific centre context — cross-centre aggregate view
-    // is not supported. If the user has no specific centre selected, redirect to
-    // the dashboard so they can select one via the centre picker.
+    if ((!activeCentreId || activeCentreId === 'all') && centreIds.length > 0) {
+        activeCentreId = centreIds[0];
+    }
+
     if ((!activeCentreId || activeCentreId === 'all') && !hasError) {
         return redirect('/dashboard');
     }
@@ -70,7 +71,10 @@ export default async function IncidentsPage() {
             )}
 
             {/* Content */}
-            <IncidentsClient centreId={activeCentreId} />
+            <IncidentsClient
+                centreId={activeCentreId}
+                userRole={String((session.user as { role?: string }).role || '')}
+            />
         </div>
     );
 }

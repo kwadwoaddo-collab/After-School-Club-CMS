@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, CreditCard, Calendar, Check, Loader2, Landmark, Ticket, AlertTriangle, RefreshCw } from 'lucide-react';
 import { recordPayment } from '../actions';
 import { usePaymentIdempotency } from '../hooks/use-payment-idempotency';
@@ -32,6 +32,16 @@ export default function RecordPaymentModal({
     const { toast } = useToast();
     const { idempotencyKey, originalRecordedAt, rotateIdempotencyKey, clearIdempotencyKey } = usePaymentIdempotency(invoiceId);
     
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape' && !isSubmitting) {
+                onClose();
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isSubmitting, onClose]);
+
     const [formData, setFormData] = useState({
         amount: remainingBalance.toString(),
         method: 'bank_transfer' as 'cash' | 'bank_transfer' | 'voucher' | 'other' | 'tax_free_childcare',
@@ -231,7 +241,7 @@ export default function RecordPaymentModal({
                     <button
                         onClick={handleSubmit}
                         disabled={isSubmitting || !formData.amount}
-                        className="px-8 py-3 bg-primary rounded-2xl text-sm font-bold text-foreground hover:bg-primary/90 transition-all shadow-lg shadow-primary/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                        className="px-8 py-3 bg-primary rounded-2xl text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-all shadow-lg shadow-primary/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                     >
                         {isSubmitting ? <><Loader2 className="w-4 h-4 animate-spin" /> Recording...</> : 'Record Payment'}
                     </button>

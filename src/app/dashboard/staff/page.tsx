@@ -57,6 +57,7 @@ export default async function StaffPage() {
                 email: users.email,
                 role: users.role,
                 createdAt: users.createdAt,
+                lastLoginAt: (users as any).lastLoginAt ?? users.updatedAt,
             })
             .from(users)
             .where(eq(users.organisationId, orgId))

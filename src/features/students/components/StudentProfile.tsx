@@ -26,6 +26,7 @@ import BillingSettingsCard from '@/features/billing/components/BillingSettingsCa
 import { generateRegistrationLink, updateRegistrationStatus } from '@/app/dashboard/registrations/actions';
 import type { StudentBillingConfig } from '@/features/billing/queries';
 import { formatDistanceToNow } from 'date-fns';
+import { CANONICAL_SCHOOL_YEARS, normalizeSchoolYear } from '@/lib/school-year';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -79,6 +80,7 @@ interface AssessmentProfileProps {
     billingConfig?: StudentBillingConfig | null;
     siblings?: Sibling[];
     registrationDetail?: RegistrationDetail | null;
+    children?: React.ReactNode;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -139,7 +141,7 @@ const TABS: { id: TabId; label: string; icon: React.ComponentType<{ className?: 
 
 export default function StudentProfile({
     student, initialNotes, currentUserId, currentUserRole,
-    billingConfig, siblings = [], registrationDetail,
+    billingConfig, siblings = [], registrationDetail, children,
 }: AssessmentProfileProps) {
     const fullName = `${student.firstName} ${student.lastName}`;
     const parentFullName = `${student.parent.firstName} ${student.parent.lastName}`;
@@ -160,7 +162,7 @@ export default function StudentProfile({
         firstName: student.firstName,
         lastName: student.lastName,
         dateOfBirth: student.dateOfBirth ? new Date(student.dateOfBirth).toISOString().split('T')[0] : '',
-        schoolYear: student.schoolYear,
+        schoolYear: normalizeSchoolYear(student.schoolYear),
         notes: student.notes ?? '',
     });
 
@@ -318,13 +320,13 @@ export default function StudentProfile({
                     {/* Key metrics */}
                     <div className="flex sm:flex-col gap-2 sm:min-w-[150px]">
                         <div className="flex-1 sm:flex-none flex items-center justify-between gap-3 px-3 py-2 rounded-sm border border-border-subtle bg-page">
-                            <span className="text-metadata">Balance</span>
+                            <span className="text-metadata">Monthly fee</span>
                             <span className={cn('text-small-body font-semibold', billingConfig && billingConfig.agreedMonthlyPence < 0 ? 'text-danger' : 'text-text')}>
                                 {billingConfig ? `£${(billingConfig.agreedMonthlyPence / 100).toFixed(2)}/mo` : '£0.00'}
                             </span>
                         </div>
                         <div className="flex-1 sm:flex-none flex items-center justify-between gap-3 px-3 py-2 rounded-sm border border-border-subtle bg-page">
-                            <span className="text-metadata">30-day attendance</span>
+                            <span className="text-metadata">Attendance rate</span>
                             <span className={cn('text-small-body font-semibold', attendanceRate < 80 && attendanceBreakdown.total > 0 ? 'text-warning' : 'text-text')}>
                                 {attendanceBreakdown.total > 0 ? `${attendanceRate}%` : 'N/A'}
                             </span>
@@ -332,6 +334,8 @@ export default function StudentProfile({
                     </div>
                 </div>
             </Card>
+
+            {children && <div className="space-y-4">{children}</div>}
 
             {/* ── Tabs ────────────────────────────────────────────────────── */}
             <div className="flex border-b border-border gap-1 overflow-x-auto scrollbar-none">
@@ -633,7 +637,7 @@ export default function StudentProfile({
                                                     onChange={e => setEditForm(f => ({ ...f, schoolYear: e.target.value }))}
                                                     className="w-full h-9 px-3 bg-surface border border-border rounded-sm text-small-body font-medium text-text focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent transition-colors"
                                                 >
-                                                    {['Reception','Y1','Y2','Y3','Y4','Y5','Y6','Y7','Y8'].map(y => (
+                                                    {CANONICAL_SCHOOL_YEARS.map(y => (
                                                         <option key={y} value={y}>{y}</option>
                                                     ))}
                                                 </select>

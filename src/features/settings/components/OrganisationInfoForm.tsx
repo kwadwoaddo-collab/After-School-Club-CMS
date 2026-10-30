@@ -160,7 +160,7 @@ export default function OrganisationInfoForm({ org, baseUrl, isOwner = true }: O
                             <input id="org-name" type="text" value={name} onChange={e => setName(e.target.value)}
                                 className={inp} autoFocus disabled={saving} />
                             <button aria-label="Save organisation name" onClick={handleSaveName} disabled={saving}
-                                className="p-2 text-foreground bg-primary hover:bg-primary/90 rounded-xl transition-all disabled:opacity-50">
+                                className="p-2 text-primary-foreground bg-primary hover:bg-primary/90 rounded-xl transition-all disabled:opacity-50">
                                 <Check className="w-3.5 h-3.5" />
                             </button>
                             <button aria-label="Cancel organisation name edit" onClick={() => { setIsEditingName(false); setName(org.name); setError(null); }}
@@ -193,7 +193,7 @@ export default function OrganisationInfoForm({ org, baseUrl, isOwner = true }: O
                                 onChange={e => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
                                 className={`${inp} font-mono`} autoFocus disabled={saving} />
                             <button aria-label="Save organisation slug" onClick={handleSaveSlug} disabled={saving}
-                                className="p-2 text-foreground bg-primary hover:bg-primary/90 rounded-xl transition-all disabled:opacity-50">
+                                className="p-2 text-primary-foreground bg-primary hover:bg-primary/90 rounded-xl transition-all disabled:opacity-50">
                                 <Check className="w-3.5 h-3.5" />
                             </button>
                             <button aria-label="Cancel organisation slug edit" onClick={() => { setIsEditingSlug(false); setSlug(org.slug); setError(null); }}
@@ -252,7 +252,7 @@ export default function OrganisationInfoForm({ org, baseUrl, isOwner = true }: O
                             <span className="text-xs text-muted-foreground pr-3 font-mono">.sprintscaleit.co.uk</span>
                         </div>
                         <button aria-label="Save subdomain" onClick={handleSaveSubdomain} disabled={subdomainSaving}
-                            className="p-2 bg-primary text-foreground rounded-xl hover:bg-primary/90 transition-all disabled:opacity-50">
+                            className="p-2 bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 transition-all disabled:opacity-50">
                             <Check className="w-3.5 h-3.5" />
                         </button>
                         <button aria-label="Cancel subdomain edit" onClick={() => { setIsEditingSubdomain(false); setSubdomain(org.subdomain || ''); setSubdomainError(null); }}
@@ -317,7 +317,7 @@ export default function OrganisationInfoForm({ org, baseUrl, isOwner = true }: O
                                 Cancel
                             </button>
                             <button onClick={handleSaveContact} disabled={saving}
-                                className="px-4 py-1.5 text-xs font-bold bg-primary text-foreground rounded-lg hover:bg-primary/90 transition-all disabled:opacity-50">
+                                className="px-4 py-1.5 text-xs font-bold bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-all disabled:opacity-50">
                                 {saving ? 'Saving…' : 'Save'}
                             </button>
                         </div>

@@ -102,10 +102,11 @@ export default async function ParentsPage({ searchParams }: Props) {
                 LEFT JOIN (
                     SELECT invoice_id, SUM(amount) as paid
                     FROM payments
+                    WHERE status = 'verified'
                     GROUP BY invoice_id
                 ) p ON i.id = p.invoice_id
                 WHERE i.organisation_id = ${orgId}
-                  AND i.status != 'void'
+                  AND i.status NOT IN ('void', 'draft')
                   ${activeCentreId !== 'all' ? sql`AND i.centre_id = ${activeCentreId}` : sql`AND ${visibleCentreSqlI}`}
                 GROUP BY i.parent_id
             ),
@@ -183,9 +184,10 @@ export default async function ParentsPage({ searchParams }: Props) {
                 LEFT JOIN (
                     SELECT invoice_id, SUM(amount) as paid
                     FROM payments
+                    WHERE status = 'verified'
                     GROUP BY invoice_id
                 ) p ON i.id = p.invoice_id
-                WHERE i.organisation_id = ${orgId} AND i.status != 'void'
+                WHERE i.organisation_id = ${orgId} AND i.status NOT IN ('void', 'draft')
                 ${activeCentreId !== 'all' ? sql`AND i.centre_id = ${activeCentreId}` : sql`AND ${visibleCentreSqlI}`}
                 GROUP BY i.parent_id
             )

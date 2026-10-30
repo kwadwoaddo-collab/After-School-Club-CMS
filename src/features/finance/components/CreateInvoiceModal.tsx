@@ -218,23 +218,34 @@ export default function CreateInvoiceModal({ centres: rawCentres, onClose }: Cre
             onClose();
         } catch (err) {
             logger.error('Failed to create invoice', err);
-            toast({ title: 'Error', message: 'Failed to create invoice', variant: 'error' });
+            const errorMessage = err instanceof Error ? err.message : 'Failed to create invoice';
+            toast({ title: 'Error', message: errorMessage, variant: 'error' });
         } finally {
             setIsSaving(false);
         }
     };
 
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape' && !isSaving) {
+                onClose();
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isSaving, onClose]);
+
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl animate-in fade-in duration-300">
-            <div className="bg-card border border-border rounded-[48px] shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col relative">
+            <div role="dialog" aria-modal="true" aria-label="Generate Invoice" className="bg-card border border-border rounded-[48px] shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col relative">
                 
                 {/* Close Button */}
-                <button onClick={onClose} className="absolute top-8 right-8 w-10 h-10 rounded-full bg-secondary/60 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-all z-10">
+                <button onClick={onClose} aria-label="Close modal" className="absolute top-8 right-8 w-10 h-10 rounded-full bg-secondary/60 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-all z-10">
                     <X className="w-5 h-5" />
                 </button>
 
                 {/* Progress Header */}
-                <div className="p-10 pb-6 border-b border-border ring-1 ring-white/5 bg-secondary/40/50">
+                <div className="p-10 pb-6 border-b border-border ring-1 ring-white/5 bg-secondary/40">
                     <div className="flex items-center gap-4 mb-2">
                         <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
                             <Receipt className="w-6 h-6" />
@@ -404,7 +415,7 @@ export default function CreateInvoiceModal({ centres: rawCentres, onClose }: Cre
                                 {legacyChildren.map((child, idx) => (
                                     <div key={idx} className="bg-secondary/40 border border-border rounded-2xl p-6 relative group/child">
                                         {legacyChildren.length > 1 && (
-                                            <button onClick={() => handleRemoveLegacyChild(idx)} className="absolute top-4 right-4 text-rose-500 opacity-0 group-hover/child:opacity-100 transition-opacity p-2 hover:bg-rose-500/10 rounded-lg">
+                                            <button onClick={() => handleRemoveLegacyChild(idx)} aria-label="Remove child" className="absolute top-4 right-4 text-rose-500 opacity-80 hover:opacity-100 transition-opacity p-2 hover:bg-rose-500/10 rounded-lg">
                                                 <Trash2 className="w-4 h-4" />
                                             </button>
                                         )}
@@ -463,7 +474,7 @@ export default function CreateInvoiceModal({ centres: rawCentres, onClose }: Cre
                                 <button 
                                     onClick={() => setStep('invoice-details')}
                                     disabled={!legacyParent.firstName || legacyChildren.some(c => !c.firstName)}
-                                    className="w-full py-4 bg-primary text-white font-black uppercase tracking-widest rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary/90 transition-all shadow-xl shadow-primary/20"
+                                    className="w-full py-4 bg-primary text-primary-foreground font-black uppercase tracking-widest rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary/90 transition-all shadow-xl shadow-primary/20"
                                 >
                                     Proceed to Billing
                                 </button>
@@ -512,7 +523,7 @@ export default function CreateInvoiceModal({ centres: rawCentres, onClose }: Cre
                                     <div className="flex items-center gap-1 bg-card rounded-xl p-1">
                                         <button
                                             onClick={() => setAdhocSelectedParent(null)}
-                                            className="px-3 py-1.5 rounded-lg text-xs font-black transition-all bg-primary text-foreground"
+                                            className="px-3 py-1.5 rounded-lg text-xs font-black transition-all bg-primary text-primary-foreground"
                                         >
                                             Search Existing
                                         </button>
@@ -542,7 +553,7 @@ export default function CreateInvoiceModal({ centres: rawCentres, onClose }: Cre
                                                 <p className="font-bold text-foreground text-sm">{adhocSelectedParent.firstName} {adhocSelectedParent.lastName}</p>
                                                 <p className="text-xs text-muted-foreground">{adhocSelectedParent.email || 'No email'}</p>
                                             </div>
-                                            <button onClick={() => { setAdhocSelectedParent(null); setAdhocParentSearch(''); }} className="text-muted-foreground hover:text-foreground">
+                                            <button onClick={() => { setAdhocSelectedParent(null); setAdhocParentSearch(''); }} aria-label="Clear selected parent" className="text-muted-foreground hover:text-foreground">
                                                 <X className="w-4 h-4" />
                                             </button>
                                         </div>
@@ -572,7 +583,7 @@ export default function CreateInvoiceModal({ centres: rawCentres, onClose }: Cre
                                 <button
                                     onClick={() => setStep('invoice-details')}
                                     disabled={!adhocChildName.trim() || !adhocSelectedParent}
-                                    className="w-full py-4 bg-primary text-white font-black uppercase tracking-widest rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary/90 transition-all shadow-xl shadow-primary/20"
+                                    className="w-full py-4 bg-primary text-primary-foreground font-black uppercase tracking-widest rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary/90 transition-all shadow-xl shadow-primary/20"
                                 >
                                     Proceed to Billing
                                 </button>
@@ -710,7 +721,7 @@ export default function CreateInvoiceModal({ centres: rawCentres, onClose }: Cre
                                 <button 
                                     onClick={handleSaveInvoice}
                                     disabled={!invoiceData.amount || isSaving || (selectedParent && selectedChildIds.length === 0)}
-                                    className="w-full py-5 bg-primary text-white font-black uppercase tracking-[0.2em] rounded-3xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary/90 transition-all shadow-2xl shadow-primary/30 flex items-center justify-center gap-3"
+                                    className="w-full py-5 bg-primary text-primary-foreground font-black uppercase tracking-[0.2em] rounded-3xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary/90 transition-all shadow-2xl shadow-primary/30 flex items-center justify-center gap-3"
                                 >
                                     {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Check className="w-5 h-5" /> Generate & Record Invoice</>}
                                 </button>

@@ -5,6 +5,7 @@ import { parents, children } from '@/db/schema';
 import { eq, and, sql, gte } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { requireApiAuth } from '@/lib/require-auth';
+import { getUserAccessibleCentreIds } from '@/lib/permissions';
 
 // Same role rule as the rest of the People module (Students PATCH/DELETE,
 // Parents' own PATCH /api/parents/[id]) — see
@@ -13,6 +14,37 @@ import { requireApiAuth } from '@/lib/require-auth';
 // let any authenticated org member — including TUTOR — archive, restore, or
 // permanently delete a family record.
 const PARENTS_MUTATION_ROLES = ['ORG_OWNER', 'MANAGER', 'FRONT_DESK'] as const;
+
+async function assertCentreAccessToParent(
+    userId: string | undefined,
+    role: string | undefined,
+    parentId: string
+): Promise<void> {
+    if (role === 'ORG_OWNER' || !userId) return;
+    let accessibleCentreIds: string[] | null = null;
+    try {
+        const ids = await getUserAccessibleCentreIds(userId);
+        if (Array.isArray(ids)) {
+            accessibleCentreIds = ids;
+        }
+    } catch {
+        accessibleCentreIds = null;
+    }
+    if (accessibleCentreIds === null) return;
+    if (accessibleCentreIds.length === 0) {
+        throw new Error('Unauthorized');
+    }
+    const parentChildren = await db.query.children.findMany({
+        where: eq(children.parentId, parentId),
+    });
+    if (
+        Array.isArray(parentChildren) &&
+        parentChildren.length > 0 &&
+        !parentChildren.some(c => !c.centreId || accessibleCentreIds!.includes(c.centreId))
+    ) {
+        throw new Error('Unauthorized');
+    }
+}
 
 /**
  * Soft deletes a parent and all their children.
@@ -36,6 +68,8 @@ export async function softDeleteParent(parentId: string) {
     if (!parent) {
         throw new Error('Parent not found');
     }
+
+    await assertCentreAccessToParent(authResult.user?.id, authResult.user?.role ?? (authResult as { role?: string }).role ?? undefined, parentId);
 
     const now = new Date();
 
@@ -79,6 +113,8 @@ export async function restoreParent(parentId: string) {
     if (!owned) {
         throw new Error('Parent not found');
     }
+
+    await assertCentreAccessToParent(authResult.user?.id, authResult.user?.role ?? (authResult as { role?: string }).role ?? undefined, parentId);
 
     await db.transaction(async (tx) => {
         // Get parent's deletedAt timestamp
@@ -147,7 +183,7 @@ export async function hardDeleteParent(parentId: string) {
  * This should be called lazily or via a cron job.
  */
 export async function purgeStaleBinItems() {
-    const authResult = await requireApiAuth({ roles: [...PARENTS_MUTATION_ROLES] });
+    const authResult = await requireApiAuth({ roles: ['ORG_OWNER'] });
     if (!authResult) return;
 
     // Delete parents where deleted_at < NOW() - 30 days

@@ -4,9 +4,10 @@ import { logger } from '@/lib/logger';
 import { requireApiAuth } from '@/lib/require-auth';
 import { db } from '@/db';
 import { parents, children, studentNotes, centres } from '@/db/schema';
-import { eq, and, or, ilike } from 'drizzle-orm';
+import { eq, and, or, ilike, isNull, sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { validateImportMappings, validateImportRow, validateAndNormalizeSchoolYear } from './import-validation';
+import { normalizeSchoolYear } from '@/lib/school-year';
 import { isQuarantinedParentId } from '@/lib/data-quality/quarantine';
 import { ImportFamilyReviewError, safeImportRowError } from './import-errors';
 import * as permissions from '@/lib/permissions';
@@ -163,7 +164,7 @@ export async function importStudentsAction(
 
       // Normalise school year
       const yearResult = validateAndNormalizeSchoolYear(row.studentSchoolYear);
-      const schoolYear = yearResult.normalized || '1';
+      const schoolYear = normalizeSchoolYear(yearResult.normalized || row.studentSchoolYear);
 
       // Sanitise & bounds-check values
       const studentFirstName = row.studentFirstName.trim().replace(/\s+/g, ' ').slice(0, 100);
@@ -204,23 +205,27 @@ export async function importStudentsAction(
         // 1. Resolve Parent
         let parentId: string;
         
-        // Match by email first within the organisation
+        // Match by email first within the organisation (exclude soft-deleted parents, case-insensitive)
         let existingParent = await tx.query.parents.findFirst({
           where: and(
             eq(parents.organisationId, organisationId),
-            ilike(parents.email, parentEmail)
+            isNull(parents.deletedAt),
+            sql`lower(${parents.email}) = lower(${parentEmail})`
           ),
         });
+        if (existingParent?.deletedAt) existingParent = undefined;
 
-        // Match by names if not found by email
+        // Match by names if not found by email (exclude soft-deleted parents)
         if (!existingParent) {
           existingParent = await tx.query.parents.findFirst({
             where: and(
               eq(parents.organisationId, organisationId),
+              isNull(parents.deletedAt),
               ilike(parents.firstName, parentFirstName),
               ilike(parents.lastName, parentLastName)
             ),
           });
+          if (existingParent?.deletedAt) existingParent = undefined;
         }
 
         if (existingParent) {

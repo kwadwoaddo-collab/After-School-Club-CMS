@@ -3,17 +3,29 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { getIncidents } from '@/features/incidents/actions';
-import { Plus, ShieldAlert, Activity, FileWarning, Search, FileText, AlertTriangle } from 'lucide-react';
+import { Plus, ShieldAlert, Activity, FileWarning, Search, FileText, AlertTriangle, X, Printer } from 'lucide-react';
 import NewIncidentModal from './NewIncidentModal';
 import { logger } from '@/lib/logger';
 
 type Incident = Awaited<ReturnType<typeof getIncidents>>[number];
 
-export default function IncidentsClient({ centreId }: { centreId: string }) {
+export default function IncidentsClient({ centreId, userRole }: { centreId: string; userRole?: string }) {
     const [incidents, setIncidents] = useState<Incident[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
     const [search, setSearch] = useState('');
+
+    useEffect(() => {
+        if (!selectedIncident) return;
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                setSelectedIncident(null);
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [selectedIncident]);
 
     const loadIncidents = useCallback(async () => {
         setIsLoading(true);
@@ -138,7 +150,11 @@ export default function IncidentsClient({ centreId }: { centreId: string }) {
                                 </tr>
                             ) : (
                                 filteredIncidents.map((incident) => (
-                                    <tr key={incident.id} className="hover:bg-page/60 transition-colors">
+                                    <tr
+                                        key={incident.id}
+                                        onClick={() => setSelectedIncident(incident)}
+                                        className="hover:bg-page/60 transition-colors cursor-pointer"
+                                    >
                                         <td className="px-5 py-4">
                                             <div className="flex flex-col gap-1.5">
                                                 <span className="font-medium text-text text-xs">
@@ -156,6 +172,7 @@ export default function IncidentsClient({ centreId }: { centreId: string }) {
                                         <td className="px-5 py-4 font-medium text-text">
                                             <Link
                                                 href={`/dashboard/students/${incident.childId}`}
+                                                onClick={(e) => e.stopPropagation()}
                                                 className="hover:text-accent hover:underline transition-colors"
                                             >
                                                 {incident.childFirstName} {incident.childLastName}
@@ -177,13 +194,140 @@ export default function IncidentsClient({ centreId }: { centreId: string }) {
                 </div>
             </div>
 
-            {/* D1 resolved: "View PDF" dead button removed. No PDF generation
-                infrastructure exists (see milestone-3k-incidents-audit.md, D1).
-                PDF export is documented as out-of-scope debt for a future milestone. */}
+            {/* Incident & Safeguarding Detail Drawer */}
+            {selectedIncident && (
+                <div
+                    className="fixed inset-0 z-50 flex justify-end"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="incident-detail-title"
+                >
+                    <div
+                        className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity"
+                        onClick={() => setSelectedIncident(null)}
+                    />
+                    <div className="relative w-full max-w-lg bg-surface shadow-[var(--shadow-popover)] h-full flex flex-col border-l border-border">
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-border flex-shrink-0">
+                            <div>
+                                <h2 id="incident-detail-title" className="text-base font-bold text-text">
+                                    Incident &amp; Safeguarding Record
+                                </h2>
+                                <p className="text-xs text-text-muted mt-0.5">
+                                    Logged {new Date(selectedIncident.createdAt).toLocaleString('en-GB')}
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setSelectedIncident(null)}
+                                aria-label="Close incident details"
+                                className="p-2 hover:bg-page rounded-md transition-colors text-text-muted hover:text-text"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+
+                        <div className="p-6 flex-1 overflow-y-auto space-y-5">
+                            <div className="flex items-center justify-between gap-4 flex-wrap">
+                                <div>
+                                    <span className="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">
+                                        Student
+                                    </span>
+                                    <Link
+                                        href={`/dashboard/students/${selectedIncident.childId}`}
+                                        className="text-base font-semibold text-accent hover:underline"
+                                    >
+                                        {selectedIncident.childFirstName} {selectedIncident.childLastName}
+                                    </Link>
+                                </div>
+                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${getTypeBadge(selectedIncident.type)}`}>
+                                    {getTypeIcon(selectedIncident.type)}
+                                    <span className="capitalize">{selectedIncident.type}</span>
+                                </span>
+                            </div>
+
+                            <div>
+                                <span className="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">
+                                    Date &amp; Time of Incident
+                                </span>
+                                <p className="text-sm text-text font-medium">
+                                    {new Date(selectedIncident.date).toLocaleString('en-GB', {
+                                        dateStyle: 'full',
+                                        timeStyle: 'short',
+                                    })}
+                                </p>
+                            </div>
+
+                            <div>
+                                <span className="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5">
+                                    Full Description
+                                </span>
+                                <div className="p-4 rounded-lg bg-page border border-border text-sm text-text whitespace-pre-wrap leading-relaxed">
+                                    {selectedIncident.description}
+                                </div>
+                            </div>
+
+                            <div>
+                                <span className="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5">
+                                    Action / First Aid Given
+                                </span>
+                                <div className="p-4 rounded-lg bg-page border border-border text-sm text-text whitespace-pre-wrap leading-relaxed">
+                                    {selectedIncident.treatment || 'None recorded'}
+                                </div>
+                            </div>
+
+                            <div>
+                                <span className="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5">
+                                    Witnesses
+                                </span>
+                                <div className="p-3.5 rounded-lg bg-page border border-border text-sm text-text">
+                                    {selectedIncident.witnesses || 'None recorded'}
+                                </div>
+                            </div>
+
+                            <div>
+                                <span className="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5">
+                                    Recorded Staff Signature
+                                </span>
+                                {(selectedIncident as { staffSignature?: string | null }).staffSignature ? (
+                                    <div className="p-3 rounded-lg bg-white border border-border inline-block">
+                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                        <img
+                                            src={(selectedIncident as { staffSignature?: string | null }).staffSignature!}
+                                            alt="Staff signature"
+                                            className="max-h-24 w-auto object-contain"
+                                        />
+                                    </div>
+                                ) : (
+                                    <p className="text-sm text-text-muted">No signature image attached</p>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="px-6 py-4 border-t border-border flex items-center justify-between gap-3 flex-shrink-0">
+                            <button
+                                type="button"
+                                onClick={() => window.print()}
+                                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-border bg-surface hover:bg-page text-sm font-semibold text-text transition-colors"
+                            >
+                                <Printer className="w-4 h-4" />
+                                Print Incident Report
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setSelectedIncident(null)}
+                                className="px-4 py-2.5 rounded-lg bg-accent text-white text-sm font-semibold hover:bg-accent/90 transition-colors"
+                            >
+                                Done
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {isModalOpen && (
                 <NewIncidentModal
                     centreId={centreId}
+                    userRole={userRole}
                     onClose={() => setIsModalOpen(false)}
                     onSuccess={() => {
                         setIsModalOpen(false);

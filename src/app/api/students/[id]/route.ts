@@ -183,13 +183,19 @@ export async function DELETE(
 
         const { id } = await props.params;
         const role = authResult.user.role;
+        if (!['ORG_OWNER', 'MANAGER'].includes(role ?? '')) {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        }
         const orgId = authResult.organisationId;
 
         const { student, error } = await verifyStudentAccess(id, orgId, role, authResult.user.id);
         if (error) return error;
 
-        // Delete the student (cascade handles notes, attendees, registration links)
-        await db.delete(children).where(eq(children.id, id));
+        // Soft-delete the student so attendance, booking, and billing history are preserved
+        await db
+            .update(children)
+            .set({ deletedAt: new Date(), updatedAt: new Date() })
+            .where(eq(children.id, id));
 
         revalidatePath('/dashboard/students');
         revalidatePath('/dashboard/attendance');

@@ -206,7 +206,7 @@ export async function GET(request: NextRequest) {
         type: 'centre',
         title: c.name,
         subtitle: 'Centre',
-        url: `/dashboard/centres/${c.id}`
+        url: `/dashboard/centres/${c.id}/settings`
       })) : []),
     ];
 

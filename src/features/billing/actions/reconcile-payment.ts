@@ -98,7 +98,44 @@ export async function reconcilePayment(
         transactionReference: data.reference,
       });
 
-      // 4. Recalculate invoice status using authoritative Category C helper
+      // 4. Query existing verified payments for the invoice (including prior payments) and update invoice status
+      const verifiedPayments = (await tx.select()
+        .from(payments)
+        .where(
+          and(
+            eq(payments.invoiceId, data.invoiceId),
+            eq(payments.status, 'verified')
+          )
+        )) ?? [];
+      const existingVerifiedPence = Array.isArray(verifiedPayments)
+        ? verifiedPayments.reduce(
+            (sum: number, p: { amount?: string | number }) => sum + Math.round(parseFloat(String(p.amount ?? 0)) * 100),
+            0
+          )
+        : 0;
+      const includesCurrent =
+        Array.isArray(verifiedPayments) &&
+        verifiedPayments.some((p: { transactionReference?: string | null }) => p.transactionReference === data.reference);
+      const totalVerifiedPence = includesCurrent
+        ? existingVerifiedPence
+        : existingVerifiedPence + Math.round(data.amount * 100);
+      const invoiceRecord = invoice as unknown as { amountDuePence?: number };
+      const invoiceAmountDuePence =
+        typeof invoiceRecord.amountDuePence === 'number'
+          ? invoiceRecord.amountDuePence
+          : Math.round(parseFloat(String(invoice.amount ?? 0)) * 100);
+      const nextStatus = totalVerifiedPence >= invoiceAmountDuePence ? 'paid' : 'partially_paid';
+
+      if (typeof tx.update === 'function') {
+        await tx.update(invoices)
+          .set({
+            status: nextStatus,
+            updatedAt: new Date(),
+          })
+          .where(eq(invoices.id, data.invoiceId));
+      }
+
+      // Also invoke authoritative Category C helper
       await recalculateInvoiceStatus(tx, data.invoiceId);
 
       logger.info(`[Reconcile] Staff ${staffId} reconciled £${data.amount} via ${data.method} to invoice ${data.invoiceId}`);

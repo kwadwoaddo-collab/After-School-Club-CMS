@@ -140,7 +140,7 @@ export function BookingFlow({ registeredChildren: childList, centres, reschedule
     if (success) {
         return (
             <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-                <div className="w-20 h-20 rounded-full bg-tertiary/10 border border-tertiary/30 flex items-center justify-center mb-6 animate-bounce-once">
+                <div className="w-20 h-20 rounded-full bg-tertiary/10 border border-tertiary/30 flex items-center justify-center mb-6 transition-transform duration-300">
                     <CheckCircle2 className="w-10 h-10 text-tertiary" />
                 </div>
                 <h2 className="text-2xl font-bold text-foreground mb-2">

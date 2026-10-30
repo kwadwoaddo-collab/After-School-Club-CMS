@@ -66,6 +66,7 @@ export default async function ReschedulePage({ params }: { params: Promise<{ boo
     // Fetch attendees separately
     const attendees = await db
         .select({
+            childId: children.id,
             childFirstName: children.firstName,
             childLastName: children.lastName,
         })
@@ -88,7 +89,14 @@ export default async function ReschedulePage({ params }: { params: Promise<{ boo
                 <div className="flex-1">
                     <h1 className="text-page-title text-text">Reschedule Booking</h1>
                     <p className="text-text-secondary text-small-body mt-0.5">
-                        Select a new date and time for {firstChild?.childFirstName || 'child'} {firstChild?.childLastName || ''}
+                        Select a new date and time for{' '}
+                        {firstChild?.childId ? (
+                            <Link href={`/dashboard/students/${firstChild.childId}`} className="text-accent hover:underline font-medium">
+                                {firstChild.childFirstName || 'child'} {firstChild.childLastName || ''}
+                            </Link>
+                        ) : (
+                            <span>{firstChild?.childFirstName || 'child'} {firstChild?.childLastName || ''}</span>
+                        )}
                     </p>
                 </div>
             </div>

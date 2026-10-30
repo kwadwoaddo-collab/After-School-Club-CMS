@@ -24,18 +24,29 @@ export default function PDFPreviewModal({ isOpen, onClose, pdfContent, title, fi
                 window.document.body.style.overflow = 'unset';
             }
         }
-        return () => { 
-            if (typeof window !== 'undefined' && window.document.body) {
-                window.document.body.style.overflow = 'unset'; 
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (isOpen && e.key === 'Escape') {
+                onClose();
             }
         };
-    }, [isOpen]);
+        if (typeof window !== 'undefined') {
+            window.addEventListener('keydown', handleKeyDown);
+        }
+        return () => { 
+            if (typeof window !== 'undefined') {
+                window.removeEventListener('keydown', handleKeyDown);
+                if (window.document.body) {
+                    window.document.body.style.overflow = 'unset'; 
+                }
+            }
+        };
+    }, [isOpen, onClose]);
 
     if (!isOpen || !mounted || typeof window === 'undefined' || !window.document.body) return null;
 
     return ReactDom.createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-            <div className="relative w-full max-w-5xl h-[90vh] bg-card rounded-2xl border border-border shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+            <div role="dialog" aria-modal="true" aria-label={title} className="relative w-full max-w-5xl h-[90vh] bg-card rounded-2xl border border-border shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-bottom border-border bg-surface">
                     <div className="flex items-center gap-3">
@@ -52,7 +63,7 @@ export default function PDFPreviewModal({ isOpen, onClose, pdfContent, title, fi
                         <PDFDownloadLink
                             document={pdfContent}
                             fileName={fileName}
-                            className="flex items-center gap-2 px-3 py-1.5 bg-primary rounded-lg text-xs font-bold text-on-primary hover:bg-primary/90 transition-all"
+                            className="flex items-center gap-2 px-3 py-1.5 bg-primary rounded-lg text-xs font-bold text-primary-foreground hover:bg-primary/90 transition-all"
                         >
                             {({ loading }) => (
                                 <>
@@ -64,6 +75,7 @@ export default function PDFPreviewModal({ isOpen, onClose, pdfContent, title, fi
                         
                         <button 
                             onClick={onClose}
+                            aria-label="Close preview"
                             className="p-2 hover:bg-secondary/80 rounded-lg transition-colors text-muted-foreground"
                         >
                             <X className="w-5 h-5" />

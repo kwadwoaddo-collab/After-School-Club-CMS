@@ -76,12 +76,26 @@ export default function FinanceDataGridClient({ invoices = [], totalCount = 0, p
 
     const [selectedInvoices, setSelectedInvoices] = useState<Set<string>>(new Set());
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [isBulkPayModalOpen, setIsBulkPayModalOpen] = useState(false);
+    const [bulkPaymentMethod, setBulkPaymentMethod] = useState<'bank_transfer' | 'cash' | 'card' | 'tax_free_childcare'>('bank_transfer');
+    const [isSubmittingBulkPay, setIsSubmittingBulkPay] = useState(false);
 
     useEffect(() => {
         if (searchParams.get('create') === '1' || searchParams.get('create') === 'true') {
             setIsCreateModalOpen(true);
         }
     }, [searchParams]);
+
+    useEffect(() => {
+        if (!isBulkPayModalOpen) return;
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape' && !isSubmittingBulkPay) {
+                setIsBulkPayModalOpen(false);
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isBulkPayModalOpen, isSubmittingBulkPay]);
 
 
     // KPI Metrics calculation for summary banner (CMS-FINANCE-INCIDENT-1: exclude draft and void from issued receivable totals and overdue counts)
@@ -165,32 +179,61 @@ export default function FinanceDataGridClient({ invoices = [], totalCount = 0, p
 
     const totalPages = Math.ceil(totalCount / pageSize);
 
-    const handleBulkPayment = async () => {
+    const eligibleBulkPayItems = useMemo(() => {
+        return invoices
+            .filter((inv) => selectedInvoices.has(inv.id) && ['sent', 'overdue', 'partially_paid'].includes(inv.status))
+            .map((inv) => {
+                const verifiedPayments = (inv.payments || []).filter(
+                    (p: InvoicePayment) => !p.status || p.status === 'verified'
+                );
+                const totalPaidPence = verifiedPayments.reduce(
+                    (sum: number, p: { amount: string | number }) => sum + parseStoredDecimalToPence(p.amount),
+                    0
+                );
+                const invoiceAmountPence = parseStoredDecimalToPence(inv.amount);
+                const outstandingPence = Math.max(0, invoiceAmountPence - totalPaidPence);
+                return { invoice: inv, outstandingPence };
+            })
+            .filter((item) => item.outstandingPence > 0);
+    }, [invoices, selectedInvoices]);
+
+    const totalBulkPayPence = useMemo(
+        () => eligibleBulkPayItems.reduce((sum, item) => sum + item.outstandingPence, 0),
+        [eligibleBulkPayItems]
+    );
+
+    const handleOpenBulkPayModal = () => {
+        if (eligibleBulkPayItems.length === 0) {
+            addToast('None of the selected invoices are eligible for payment (draft, paid, and void invoices cannot be paid).', 'error');
+            return;
+        }
+        setIsBulkPayModalOpen(true);
+    };
+
+    const handleBulkPay = async () => {
+        if (eligibleBulkPayItems.length === 0) return;
+        setIsSubmittingBulkPay(true);
         try {
-            const selected = invoices.filter((i) => selectedInvoices.has(i.id));
-            for (const invoice of selected) {
-                const payments = invoice.payments || [];
-                const totalPaidPence = payments.reduce((sum: number, p: { amount: string | number }) => sum + parseStoredDecimalToPence(p.amount), 0);
-                const invoiceAmountPence = parseStoredDecimalToPence(invoice.amount);
-                const outstandingPence = invoiceAmountPence - totalPaidPence;
-                if (outstandingPence > 0) {
-                    const res = await recordPayment({
-                        invoiceId: invoice.id,
-                        amount: formatPenceToDecimal(outstandingPence),
-                        method: 'bank_transfer',
-                        recordedAt: new Date(),
-                        operationMode: 'SETTLE_OUTSTANDING'
-                    });
-                    if (!res.success) {
-                        throw new Error(res.error);
-                    }
+            for (const { invoice, outstandingPence } of eligibleBulkPayItems) {
+                const res = await recordPayment({
+                    invoiceId: invoice.id,
+                    amount: formatPenceToDecimal(outstandingPence),
+                    method: bulkPaymentMethod,
+                    recordedAt: new Date(),
+                    operationMode: 'SETTLE_OUTSTANDING'
+                });
+                if (!res.success) {
+                    throw new Error(res.error);
                 }
             }
             addToast('Bulk payments recorded successfully', 'success');
+            setIsBulkPayModalOpen(false);
             setSelectedInvoices(new Set());
             router.refresh();
         } catch (error) {
             addToast(error instanceof Error ? error.message : 'Failed to record bulk payment', 'error');
+        } finally {
+            setIsSubmittingBulkPay(false);
         }
     };
 
@@ -270,35 +313,45 @@ export default function FinanceDataGridClient({ invoices = [], totalCount = 0, p
             <h2 id="invoice-list" className="scroll-mt-24 text-xl font-bold text-foreground">Invoice list</h2>
             {/* Segmented Toolbar */}
             <div className="flex flex-col sm:flex-row justify-between items-center bg-card/80 backdrop-blur-md p-3.5 rounded-3xl border border-border/60 shadow-sm gap-4">
-                <div className="flex bg-secondary/50 p-1.5 rounded-2xl w-full sm:w-auto border border-border/40 gap-1">
-                    {['all', 'draft', 'overdue', 'paid'].map((s) => (
+                <div className="flex flex-wrap bg-secondary/50 p-1.5 rounded-2xl w-full sm:w-auto border border-border/40 gap-1">
+                    {['all', 'draft', 'sent', 'partially_paid', 'overdue', 'paid'].map((s) => (
                         <button
                             key={s}
                             onClick={() => setStatusFilter(s)}
-                            className={`flex-1 sm:flex-none px-5 py-2 text-xs font-bold capitalize rounded-xl transition-all duration-200 ${
+                            className={`flex-1 sm:flex-none px-4 py-2 text-xs font-bold capitalize rounded-xl transition-all duration-200 whitespace-nowrap ${
                                 statusFilter === s
                                     ? 'bg-background shadow-sm text-foreground border border-border/50 scale-[1.02]'
                                     : 'text-muted-foreground hover:text-foreground hover:bg-background/40'
                             }`}
                         >
-                            {s}
+                            {s === 'sent' ? 'Issued' : s === 'partially_paid' ? 'Part-paid' : s}
                         </button>
                     ))}
                 </div>
 
-                <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+                <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto justify-end">
                     {selectedInvoices.size > 0 && (
                         <div className="flex items-center gap-3 bg-primary/10 border border-primary/20 px-3.5 py-1.5 rounded-2xl animate-in fade-in duration-200">
-                            <span className="text-xs font-bold text-primary">{selectedInvoices.size} selected</span>
+                            <span className="text-xs font-bold text-primary">
+                                {selectedInvoices.size} selected ({eligibleBulkPayItems.length} payable)
+                            </span>
                             <button 
-                                onClick={handleBulkPayment}
-                                className="bg-primary text-primary-foreground px-3.5 py-1.5 rounded-xl text-xs font-bold shadow-sm hover:bg-primary/90 transition-all active:scale-95 flex items-center gap-1.5"
+                                onClick={handleOpenBulkPayModal}
+                                disabled={eligibleBulkPayItems.length === 0}
+                                className="bg-primary text-primary-foreground px-3.5 py-1.5 rounded-xl text-xs font-bold shadow-sm hover:bg-primary/90 disabled:opacity-50 transition-all active:scale-95 flex items-center gap-1.5"
                             >
                                 <CreditCard className="w-3.5 h-3.5" />
                                 Lump Sum Payment
                             </button>
                         </div>
                     )}
+
+                    <Link
+                        href="/dashboard/finance/reconciliation"
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-secondary/80 text-foreground border border-border/60 text-xs font-bold hover:bg-secondary transition-all"
+                    >
+                        Reconcile TFC / Bank
+                    </Link>
 
                     {centres.length > 0 && (
                         <button
@@ -471,6 +524,84 @@ export default function FinanceDataGridClient({ invoices = [], totalCount = 0, p
                 )}
             </div>
 
+
+            {isBulkPayModalOpen && (
+                <div
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="bulk-pay-modal-title"
+                    className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200"
+                    onClick={() => !isSubmittingBulkPay && setIsBulkPayModalOpen(false)}
+                >
+                    <div
+                        className="bg-card w-full max-w-md rounded-2xl shadow-2xl border border-border overflow-hidden p-6 space-y-5"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div>
+                            <h3 id="bulk-pay-modal-title" className="text-lg font-bold text-foreground">
+                                Confirm Lump Sum Payment
+                            </h3>
+                            <p className="text-sm text-muted-foreground mt-1">
+                                Review the selected payable invoices and choose the payment method before recording.
+                            </p>
+                        </div>
+
+                        <div className="rounded-xl bg-secondary/40 border border-border p-4 space-y-2 text-sm">
+                            <div className="flex justify-between">
+                                <span className="text-muted-foreground">Eligible payable invoices</span>
+                                <span className="font-bold text-foreground">{eligibleBulkPayItems.length}</span>
+                            </div>
+                            {selectedInvoices.size > eligibleBulkPayItems.length && (
+                                <p className="text-xs text-amber-600 dark:text-amber-400">
+                                    {selectedInvoices.size - eligibleBulkPayItems.length} non-payable invoice(s) (draft, paid, or void) were excluded.
+                                </p>
+                            )}
+                            <div className="flex justify-between border-t border-border pt-2">
+                                <span className="text-muted-foreground">Total remaining balance</span>
+                                <span className="font-black text-foreground tabular-nums">
+                                    £{formatPenceToDecimal(totalBulkPayPence)}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label htmlFor="bulk-payment-method" className="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
+                                Payment Method
+                            </label>
+                            <select
+                                id="bulk-payment-method"
+                                value={bulkPaymentMethod}
+                                onChange={(e) => setBulkPaymentMethod(e.target.value as 'bank_transfer' | 'cash' | 'card' | 'tax_free_childcare')}
+                                className="w-full px-3.5 py-2.5 bg-background border border-border rounded-xl text-sm font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                            >
+                                <option value="bank_transfer">Bank Transfer (BACS)</option>
+                                <option value="cash">Cash</option>
+                                <option value="card">Card</option>
+                                <option value="tax_free_childcare">Tax-Free Childcare (TFC)</option>
+                            </select>
+                        </div>
+
+                        <div className="flex items-center justify-end gap-3 pt-2">
+                            <button
+                                type="button"
+                                disabled={isSubmittingBulkPay}
+                                onClick={() => setIsBulkPayModalOpen(false)}
+                                className="px-4 py-2 rounded-xl border border-border text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                disabled={isSubmittingBulkPay || eligibleBulkPayItems.length === 0}
+                                onClick={handleBulkPay}
+                                className="px-5 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold shadow-sm hover:bg-primary/90 disabled:opacity-50 transition-all"
+                            >
+                                {isSubmittingBulkPay ? 'Recording...' : `Confirm £${formatPenceToDecimal(totalBulkPayPence)} Payment`}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {isCreateModalOpen && (
                 <CreateInvoiceModal 

@@ -58,6 +58,7 @@ import {
   REQUIRED_IMPORT_FIELDS,
   OPTIONAL_IMPORT_FIELDS,
 } from '@/features/students/import-validation';
+import { normalizeSchoolYear } from '@/lib/school-year';
 
 const REQUIRED_FIELDS = REQUIRED_IMPORT_FIELDS;
 const OPTIONAL_FIELDS = OPTIONAL_IMPORT_FIELDS;
@@ -178,7 +179,7 @@ export default function ImportStudentsClient({ centres }: { centres: Centre[] })
       studentFirstName: getVal(row, 'studentFirstName') || '',
       studentLastName: getVal(row, 'studentLastName') || '',
       studentDoB: getVal(row, 'studentDoB'),
-      studentSchoolYear: getVal(row, 'studentSchoolYear') || '1',
+      studentSchoolYear: normalizeSchoolYear(getVal(row, 'studentSchoolYear')),
       studentNotes: getVal(row, 'studentNotes'),
       parentFirstName: getVal(row, 'parentFirstName') || '',
       parentLastName: getVal(row, 'parentLastName') || '',

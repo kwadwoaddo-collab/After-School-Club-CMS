@@ -18,36 +18,52 @@ export function searchHelp(query: string): HelpSearchResult {
   }
 
   const q = query.toLowerCase().trim();
+  const tokens = q.split(/\s+/).filter(Boolean);
 
   const matchingGuides = HELP_GUIDES.filter(g => {
-    return (
-      (g.title && g.title.toLowerCase().includes(q)) ||
-      (g.description && g.description.toLowerCase().includes(q)) ||
-      (g.audience && g.audience.toLowerCase().includes(q)) ||
-      (g.category && g.category.toLowerCase().includes(q)) ||
-      (g.keywords && g.keywords.some(k => k && k.toLowerCase().includes(k ? q : '')))
+    const title = (g.title || '').toLowerCase();
+    const description = (g.description || '').toLowerCase();
+    const audience = (g.audience || '').toLowerCase();
+    const category = (g.category || '').toLowerCase();
+    const keywords = (g.keywords || []).filter(Boolean).map(k => k.toLowerCase());
+
+    return tokens.every(token =>
+      title.includes(token) ||
+      description.includes(token) ||
+      audience.includes(token) ||
+      category.includes(token) ||
+      keywords.some(k => k.includes(token))
     );
   });
 
   const matchingVideos = HELP_VIDEOS.filter(v => {
-    return (
-      (v.title && v.title.toLowerCase().includes(q)) ||
-      (v.description && v.description.toLowerCase().includes(q)) ||
-      (v.audienceLabel && v.audienceLabel.toLowerCase().includes(q)) ||
-      (v.category && v.category.toLowerCase().includes(q))
+    const title = (v.title || '').toLowerCase();
+    const description = (v.description || '').toLowerCase();
+    const audienceLabel = (v.audienceLabel || '').toLowerCase();
+    const category = (v.category || '').toLowerCase();
+
+    return tokens.every(token =>
+      title.includes(token) ||
+      description.includes(token) ||
+      audienceLabel.includes(token) ||
+      category.includes(token)
     );
   });
 
   const matchingPaths = HELP_LEARNING_PATHS.filter(p => {
-    return (
-      (p.title && p.title.toLowerCase().includes(q)) ||
-      (p.description && p.description.toLowerCase().includes(q)) ||
-      (p.audienceLabel && p.audienceLabel.toLowerCase().includes(q)) ||
+    const title = (p.title || '').toLowerCase();
+    const description = (p.description || '').toLowerCase();
+    const audienceLabel = (p.audienceLabel || '').toLowerCase();
+
+    return tokens.every(token =>
+      title.includes(token) ||
+      description.includes(token) ||
+      audienceLabel.includes(token) ||
       p.sections.some(
         s =>
-          (s.title && s.title.toLowerCase().includes(q)) ||
-          (s.description && s.description.toLowerCase().includes(q)) ||
-          s.items.some(it => it.note && it.note.toLowerCase().includes(q))
+          (s.title && s.title.toLowerCase().includes(token)) ||
+          (s.description && s.description.toLowerCase().includes(token)) ||
+          s.items.some(it => it.note && it.note.toLowerCase().includes(token))
       )
     );
   });

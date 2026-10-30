@@ -146,6 +146,7 @@ export default async function BookingPage({
               brandColor={brandColor}
               backToCentresUrl={orgCentres.length > 1 ? `/book/${orgSlug}` : undefined}
               rescheduleData={bookingToReschedule}
+              isPublic={true}
             />
           </div>
         </div>

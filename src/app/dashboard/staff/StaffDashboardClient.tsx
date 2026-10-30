@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
     Users, Mail, Building2, Clock, AlertTriangle, Search, X, Filter,
 } from 'lucide-react';
@@ -45,15 +45,18 @@ interface Props {
     orgCentres: OrgCentre[];
     currentUserId: string;
     error?: boolean;
+    initialTab?: 'ACTIVE' | 'PENDING' | 'invites';
 }
 
-export default function StaffDashboardClient({ staff, pendingInvites, currentUserId, error }: Props) {
+export default function StaffDashboardClient({ staff, pendingInvites, currentUserId, error, initialTab }: Props) {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { toast } = useToast();
     const [isPending, startTransition] = useTransition();
     const [searchQuery, setSearchQuery] = useState('');
     const [roleFilter, setRoleFilter] = useState<string | 'ALL'>('ALL');
-    const [activeTab, setActiveTab] = useState<'ACTIVE' | 'PENDING'>('ACTIVE');
+    const isInvitedRedirect = searchParams?.get('invited') === 'true' || initialTab === 'PENDING' || initialTab === 'invites';
+    const [activeTab, setActiveTab] = useState<'ACTIVE' | 'PENDING'>(isInvitedRedirect ? 'PENDING' : 'ACTIVE');
 
     const handleRevokeInvite = async (inviteId: string) => {
         try {

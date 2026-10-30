@@ -17,7 +17,7 @@ export const childSchema = z.object({
   // Activities', 'Childcare') outright, silently blocking submission
   // whenever a parent picked one of them. See architecture-decisions.md
   // ("booking subjects enum drift").
-  subjects: z.array(z.enum(['Maths', 'English', 'Science', '11+', 'Stem Activities', 'Childcare'])).min(1, 'Please select at least one activity'),
+  subjects: z.array(z.enum(['Maths', 'English', 'Science', '11+', 'Stem Activities', 'Childcare', 'General', 'Other'])).min(1, 'Please select at least one activity'),
   customSubject: z.string().max(100).optional(),
   notes: z.string().max(1000).optional(),
   imageUrl: z.string().url().optional(),
@@ -30,6 +30,25 @@ export const parentSchema = z.object({
   email: z.union([z.string().email('Please enter a valid email address'), z.literal('')]).optional(),
   // Task 1: preferredContact is now optional — no longer a required field
   preferredContact: z.enum(['phone', 'email']).optional(),
+}).superRefine((val, ctx) => {
+  const hasEmail = Boolean(val.email && val.email.trim().length > 0);
+  const hasPhone = Boolean(val.phone && val.phone.trim().length >= 7);
+
+  if (!hasEmail && !hasPhone) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['phone'],
+      message: 'Please provide at least a phone number or an email address',
+    });
+  }
+
+  if (val.preferredContact === 'email' && !hasEmail) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['email'],
+      message: 'Please provide an email address when email is your preferred contact method',
+    });
+  }
 });
 
 export const appointmentSchema = z.object({

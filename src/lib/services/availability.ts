@@ -39,36 +39,37 @@ export class AvailabilityService {
         const { centreId, modality, date, duration, checkGoogleCalendar = false } = query;
 
         const jsDayOfWeek = date.getDay(); // 0 = Sunday, 6 = Saturday
-        const dbDayOfWeek = jsDayOfWeek === 0 ? 6 : jsDayOfWeek - 1; // Map to DB/Python format: 0 = Mon, 6 = Sun
+        const dbDayOfWeek = jsDayOfWeek; // AvailabilityForm stores 0 = Sunday .. 6 = Saturday
 
         let rule: { startTime: string; endTime: string } | null = null;
+        let hasConfiguredRulesForCentre = false;
 
         if (centreId) {
             try {
-                const rules = await db.query.centreAvailabilityRules.findMany({
-                    where: and(
-                        eq(centreAvailabilityRules.centreId, centreId),
-                        eq(centreAvailabilityRules.dayOfWeek, dbDayOfWeek)
-                    ),
+                const allCentreRules = await db.query.centreAvailabilityRules.findMany({
+                    where: eq(centreAvailabilityRules.centreId, centreId),
                 });
 
-                if (rules && rules.length > 0) {
-                    rule = rules[0];
+                if (allCentreRules && allCentreRules.length > 0) {
+                    hasConfiguredRulesForCentre = true;
+                    const matchingRule = allCentreRules.find(r => r.dayOfWeek === dbDayOfWeek);
+                    if (!matchingRule) {
+                        return []; // Centre has configured operating hours and is closed on this day
+                    }
+                    rule = matchingRule;
                 }
             } catch (error) {
                 logger.error('[AvailabilityService] Database query failed, using defaults:', error);
             }
         }
 
-
-        // Use default hours if no rules found
-        if (!rule) {
+        // Use default hours only if the centre has no availability rules configured at all
+        if (!rule && !hasConfiguredRulesForCentre) {
             rule = DEFAULT_HOURS[jsDayOfWeek];
         }
 
-
         if (!rule) {
-            return []; // Day is closed (e.g., Sunday)
+            return []; // Day is closed
         }
 
         const slots: TimeSlot[] = [];

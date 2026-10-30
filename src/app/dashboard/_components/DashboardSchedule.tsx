@@ -10,21 +10,24 @@ import { Card } from '@/components/ui/Card';
 // Only the fields this component actually reads — not the full organisation row.
 export default async function DashboardSchedule({
     org,
+    activeCentreId,
     accessibleCentreIds,
     hasCentres,
 }: {
     org: { id: string };
+    activeCentreId?: string;
     accessibleCentreIds: string[];
     hasCentres: boolean;
 }) {
     const now = new Date();
 
-    // D2 (Milestone 3M): Scope Today's Schedule to the user's accessible centres.
-    // Previously used centres.organisationId = org.id which included all org
-    // centres regardless of the user's centre restriction.
-    const centreScopeCondition = hasCentres
-        ? inArray(bookings.centreId, accessibleCentreIds)
-        : eq(centres.organisationId, org.id); // fallback for zero-centre orgs (owner context)
+    // D2 (Milestone 3M): Scope Today's Schedule to the user's accessible centres
+    // and narrow to the active centre filter when one is selected.
+    const centreScopeCondition = activeCentreId && activeCentreId !== 'all'
+        ? eq(bookings.centreId, activeCentreId)
+        : hasCentres
+            ? inArray(bookings.centreId, accessibleCentreIds)
+            : eq(centres.organisationId, org.id); // fallback for zero-centre orgs (owner context)
 
     const todayBookings = await db.select({
         id: bookings.id,

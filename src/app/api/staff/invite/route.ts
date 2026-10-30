@@ -16,9 +16,12 @@ import { revalidatePath } from 'next/cache';
 const inviteSchema = z.object({
     email: z.string().email().max(255),
     role: z.enum(['MANAGER', 'FRONT_DESK', 'TUTOR']),
-    firstName: z.string().min(1).max(100),
-    lastName: z.string().min(1).max(100),
-    centreId: z.string().uuid().optional(),
+    firstName: z.string().trim().max(100).optional().default(''),
+    lastName: z.string().trim().max(100).optional().default(''),
+    centreId: z.preprocess(
+        (val) => (typeof val === 'string' && val.trim() === '' ? undefined : val),
+        z.string().uuid().optional()
+    ),
 });
 
 export async function POST(request: NextRequest) {
@@ -68,8 +71,14 @@ export async function POST(request: NextRequest) {
 
         const parsed = inviteSchema.safeParse(rawBody);
         if (!parsed.success) {
+            const fieldMessages = parsed.error.issues
+                .map((issue) => `${issue.path.join('.') || 'field'}: ${issue.message}`)
+                .join('; ');
             return NextResponse.json(
-                { error: 'Validation failed', details: parsed.error.flatten().fieldErrors },
+                {
+                    error: fieldMessages ? `Validation failed: ${fieldMessages}` : 'Validation failed',
+                    details: parsed.error.flatten().fieldErrors,
+                },
                 { status: 400 }
             );
         }

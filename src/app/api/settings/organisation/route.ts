@@ -95,28 +95,6 @@ export async function PATCH(request: NextRequest) {
             }
 
             updateData.slug = sanitizedSlug;
-        } else if (updateData.name && !customSlug) {
-            // Only generate new slug from name if the user didn't provide a custom one
-            // and we are updating the name.
-            const baseSlug = updateData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-            let newSlug = baseSlug;
-            let suffix = 1;
-
-            while (true) {
-                const existingOrg = await db.query.organisations.findFirst({
-                    where: (org, { and, eq, not }) => and(
-                        eq(org.slug, newSlug),
-                        not(eq(org.id, organisationId))
-                    )
-                });
-
-                if (!existingOrg) {
-                    break;
-                }
-                newSlug = `${baseSlug}-${suffix}`;
-                suffix++;
-            }
-            updateData.slug = newSlug;
         }
 
         if (Object.keys(updateData).length === 0) {

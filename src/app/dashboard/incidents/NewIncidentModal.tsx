@@ -8,6 +8,7 @@ import { logger } from '@/lib/logger';
 
 type NewIncidentModalProps = {
     centreId: string;
+    userRole?: string;
     onClose: () => void;
     onSuccess: () => void;
 };
@@ -21,7 +22,7 @@ const TYPE_LABELS: Record<typeof INCIDENT_TYPES[number], string> = {
     safeguarding:  'Safeguarding',
 };
 
-export default function NewIncidentModal({ centreId, onClose, onSuccess }: NewIncidentModalProps) {
+export default function NewIncidentModal({ centreId, userRole, onClose, onSuccess }: NewIncidentModalProps) {
     const [centreChildren, setCentreChildren] = useState<{ id: string; firstName: string; lastName: string }[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -33,6 +34,21 @@ export default function NewIncidentModal({ centreId, onClose, onSuccess }: NewIn
     const [treatment, setTreatment] = useState('');
     const [witnesses, setWitnesses] = useState('');
     const sigPad = useRef<SignatureCanvas>(null);
+
+    const canLogSafeguarding = userRole !== 'FRONT_DESK' && userRole !== 'TUTOR';
+    const visibleIncidentTypes = INCIDENT_TYPES.filter(
+        t => t !== 'safeguarding' || canLogSafeguarding
+    );
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                onClose();
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [onClose]);
 
     useEffect(() => {
         setIsLoading(true);
@@ -139,7 +155,7 @@ export default function NewIncidentModal({ centreId, onClose, onSuccess }: NewIn
                                 Record Type *
                             </span>
                             <div className="grid grid-cols-2 gap-2">
-                                {INCIDENT_TYPES.map(t => {
+                                {visibleIncidentTypes.map(t => {
                                     const isSafeguarding = t === 'safeguarding';
                                     const isSelected = type === t;
                                     return (

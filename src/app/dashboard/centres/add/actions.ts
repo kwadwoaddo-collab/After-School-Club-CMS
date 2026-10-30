@@ -5,7 +5,7 @@ import { logger } from '@/lib/logger';
 
 import { requireTenantSession } from '@/lib/session';
 import { db } from '@/db';
-import { centres } from '@/db/schema';
+import { centres, centreMemberships } from '@/db/schema';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 
@@ -41,6 +41,14 @@ export async function createCentre(prevState: any, formData: FormData) {
             timezone: 'Europe/London', // Default for now
         }).returning({ id: centres.id });
         newId = inserted.id;
+
+        if (userRole === 'MANAGER') {
+            await db.insert(centreMemberships).values({
+                userId: session.user.id,
+                centreId: newId,
+                role: 'MANAGER',
+            });
+        }
     } catch (e) {
         logger.error('Failed to create centre:', e);
         return { message: 'Failed to create centre. Please try again.' };

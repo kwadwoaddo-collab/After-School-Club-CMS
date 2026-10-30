@@ -32,25 +32,44 @@ export default async function ParentProfilePage({ params, searchParams }: Parent
     // (including TUTOR) could view a family's contact details and ledger.
     const { session } = await requireAuth({ roles: ['ORG_OWNER', 'MANAGER', 'FRONT_DESK'] });
     const organisationId = (session.user as any).organisationId;
+    const userRole = (session.user as any).role as string | undefined;
 
-    // 1. Fetch Parent & Children
+    // 1. Fetch Parent & Active Children
     const parent = await db.query.parents.findFirst({
         where: and(
             eq(parents.id, id),
-            eq(parents.organisationId, organisationId)
+            eq(parents.organisationId, organisationId),
+            isNull(parents.deletedAt)
         ),
         with: {
-            children: true
+            children: {
+                where: (c, { isNull: isN }) => isN(c.deletedAt),
+            },
         }
     });
 
-    if (!parent) return notFound();
+    if (!parent || (parent as any).deletedAt) return notFound();
 
-    const accessibleCentres=await getUserAccessibleCentres(session.user.id);
-    const canManageBilling=['ORG_OWNER','MANAGER'].includes((session.user as any).role);
-    const activeFamilyChildIds = parent.children
-        .filter(c => !c.deletedAt && c.organisationId === organisationId)
-        .map(c => c.id);
+    const activeChildren = (parent.children ?? []).filter(c => !c.deletedAt && c.organisationId === organisationId);
+
+    const accessibleCentres = await getUserAccessibleCentres(session.user.id);
+    const accessibleCentreIds = accessibleCentres.map(c => c.id);
+
+    if (userRole !== 'ORG_OWNER') {
+        if (
+            accessibleCentreIds.length === 0 ||
+            (activeChildren.length > 0 && !activeChildren.some(c => !c.centreId || accessibleCentreIds.includes(c.centreId)))
+        ) {
+            return notFound();
+        }
+    }
+
+    const visibleChildren = userRole === 'ORG_OWNER'
+        ? activeChildren
+        : activeChildren.filter(c => !c.centreId || accessibleCentreIds.includes(c.centreId));
+
+    const canManageBilling=['ORG_OWNER','MANAGER'].includes(userRole ?? '');
+    const activeFamilyChildIds = visibleChildren.map(c => c.id);
     let childStatusMap: Map<string, { confirmedEnrolment: boolean; lifecycleStatus: string }> | null = null;
     if (canManageBilling && activeFamilyChildIds.length > 0) {
         try {
@@ -84,9 +103,9 @@ export default async function ParentProfilePage({ params, searchParams }: Parent
             }
         }
     }
-    const plans=canManageBilling&&accessibleCentres.length?await db.query.billingConfigs.findMany({where:and(eq(billingConfigs.parentId,id),eq(billingConfigs.organisationId,organisationId),inArray(billingConfigs.centreId,accessibleCentres.map(c=>c.id))),with:{children:{with:{child:true}}}}):[];
+    const plans=canManageBilling&&accessibleCentres.length?await db.query.billingConfigs.findMany({where:and(eq(billingConfigs.parentId,id),eq(billingConfigs.organisationId,organisationId),inArray(billingConfigs.centreId,accessibleCentreIds)),with:{children:{with:{child:true}}}}):[];
     const billingGroups:ParentBillingGroup[]=canManageBilling?accessibleCentres.map(centre=>{
-      const siblings=parent.children.filter(c=>!c.deletedAt&&c.organisationId===organisationId&&c.centreId===centre.id).map(c=>({id:c.id,firstName:c.firstName,lastName:c.lastName,...(childStatusMap?.has(c.id)?childStatusMap.get(c.id):{})}));
+      const siblings=visibleChildren.filter(c=>c.centreId===centre.id).map(c=>({id:c.id,firstName:c.firstName,lastName:c.lastName,...(childStatusMap?.has(c.id)?childStatusMap.get(c.id):{})}));
       const config=plans.find(p=>p.centreId===centre.id);
       return {centreId:centre.id,centreName:centre.name,siblings,config:config?{id:config.id,parentId:config.parentId,centreId:config.centreId,agreedMonthlyPence:config.agreedMonthlyPence,billingAnchorDate:config.billingAnchorDate,billingEndDate:config.billingEndDate??null,invoiceLeadDays:config.invoiceLeadDays,paymentDayOfMonth:config.paymentDayOfMonth,leadTimeUnit:config.leadTimeUnit,leadTimeValue:config.leadTimeValue,status:config.status,notes:config.notes,coveredChildren:config.children.filter(c=>c.child&&!c.child.deletedAt&&c.child.organisationId===organisationId&&c.child.parentId===id&&c.child.centreId===centre.id).map(c=>({childId:c.child.id,childName:c.child.firstName+' '+c.child.lastName}))}:null};
     }).filter(g=>g.siblings.length||g.config):[];
@@ -109,12 +128,12 @@ export default async function ParentProfilePage({ params, searchParams }: Parent
     let activityRecords: Awaited<ReturnType<typeof getFamilyActivityRecords>> = {bookings:[],registrations:[],lifecycle:[],contacts:[],audit:[]};
     let activityUnavailable = false;
     try {
-        activityRecords = await getFamilyActivityRecords(organisationId, id, parent.children.map(child=>child.id), familyInvoices.map(invoice=>invoice.id));
+        activityRecords = await getFamilyActivityRecords(organisationId, id, visibleChildren.map(child=>child.id), familyInvoices.map(invoice=>invoice.id));
     } catch (error) {
         activityUnavailable = true;
         logger.error('[parent] Supplemental family activity unavailable', error);
     }
-    const activity = buildFamilyActivity({children:parent.children,invoices:familyInvoices,...activityRecords});
+    const activity = buildFamilyActivity({children:visibleChildren,invoices:familyInvoices,...activityRecords});
 
     // 3. Calculate Ledger Stats
     // Void and draft invoices are excluded from billing liabilities.
@@ -131,7 +150,7 @@ export default async function ParentProfilePage({ params, searchParams }: Parent
 
     const fullName = `${parent.firstName} ${parent.lastName}`;
     const initials = `${(parent.firstName || '')[0] ?? ''}${(parent.lastName || '')[0] ?? ''}`.toUpperCase();
-    const childCount = parent.children.length;
+    const childCount = visibleChildren.length;
 
     return (
         <div className="max-w-4xl mx-auto space-y-5">
@@ -190,7 +209,7 @@ export default async function ParentProfilePage({ params, searchParams }: Parent
 
             {/* ── Tabs & tab content ──────────────────────────────────────── */}
             <ParentProfileClient
-                parent={parent}
+                parent={{ ...parent, children: visibleChildren }}
                 billingGroups={billingGroups}
                 canManageBilling={canManageBilling}
                 orgId={organisationId}
@@ -201,7 +220,8 @@ export default async function ParentProfilePage({ params, searchParams }: Parent
                     totalPaid,
                     outstanding
                 }}
-                isOwner={(session.user as any).role === 'ORG_OWNER'}
+                isOwner={userRole === 'ORG_OWNER'}
+                userRole={userRole}
             />
         </div>
     );

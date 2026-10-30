@@ -41,11 +41,9 @@ export default function ParentsFilters({ resultsCount = 0 }: ParentsFiltersProps
         const currentStatus = overrides?.newStatus !== undefined ? overrides.newStatus : status;
         if (currentStatus !== 'all') params.set('status', currentStatus);
 
-        if (selectedCentreId !== 'all') params.set('centre', selectedCentreId);
-
         const queryString = params.toString();
         router.push(`/dashboard/parents${queryString ? `?${queryString}` : ''}`);
-    }, [search, status, selectedCentreId, router]);
+    }, [search, status, router]);
 
     const handleSearchChange = useCallback((value: string) => {
         setSearch(value);
@@ -58,10 +56,7 @@ export default function ParentsFilters({ resultsCount = 0 }: ParentsFiltersProps
     const handleClearFilters = () => {
         setSearch('');
         setStatus('all');
-        const params = new URLSearchParams();
-        if (selectedCentreId !== 'all') params.set('centre', selectedCentreId);
-        const queryString = params.toString();
-        router.push(`/dashboard/parents${queryString ? `?${queryString}` : ''}`);
+        router.push('/dashboard/parents');
     };
 
     useEffect(() => {

@@ -19,8 +19,8 @@ export interface Toast extends Required<ToastOptions> {
 
 interface ToastContextValue {
     toasts: Toast[];
-    /** Primary API: toast({ title, message?, variant? }) */
-    toast: (options: ToastOptions | string, variant?: ToastVariant) => void;
+    /** Primary API: toast({ title, message?, variant? }) or toast(title, messageOrVariant?, variant?) */
+    toast: (options: ToastOptions | string, messageOrVariant?: string, variant?: ToastVariant) => void;
 }
 
 // ─── Context ──────────────────────────────────────────────────────────────────
@@ -29,23 +29,36 @@ const ToastContext = createContext<ToastContextValue | null>(null);
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
+const FALLBACK_TOAST_CONTEXT: ToastContextValue = {
+    toasts: [],
+    toast: () => {},
+};
+
 export function useToast() {
     const ctx = useContext(ToastContext);
-    if (!ctx) throw new Error('useToast must be used inside <ToastProvider>');
-    return ctx;
+    return ctx ?? FALLBACK_TOAST_CONTEXT;
 }
 
 // ─── Provider ─────────────────────────────────────────────────────────────────
 
+const VALID_VARIANTS = new Set<string>(['success', 'error', 'warning', 'info']);
+
 export function ToastProvider({ children }: { children: ReactNode }) {
     const [toasts, setToasts] = useState<Toast[]>([]);
 
-    const toast = useCallback((options: ToastOptions | string, variantArg: ToastVariant = 'info') => {
-        // Support legacy string signature: toast('message', 'error')
-        const normalized: Omit<Toast, 'id'> =
-            typeof options === 'string'
-                ? { title: options, message: '', variant: variantArg }
-                : { title: options.title, message: options.message ?? '', variant: options.variant ?? 'info' };
+    const toast = useCallback((options: ToastOptions | string, messageOrVariant?: string, variantArg?: ToastVariant) => {
+        let normalized: Omit<Toast, 'id'>;
+        if (typeof options === 'string') {
+            if (variantArg) {
+                normalized = { title: options, message: messageOrVariant ?? '', variant: variantArg };
+            } else if (messageOrVariant && VALID_VARIANTS.has(messageOrVariant)) {
+                normalized = { title: options, message: '', variant: messageOrVariant as ToastVariant };
+            } else {
+                normalized = { title: options, message: messageOrVariant ?? '', variant: 'info' };
+            }
+        } else {
+            normalized = { title: options.title, message: options.message ?? '', variant: options.variant ?? 'info' };
+        }
 
         const id = Math.random().toString(36).slice(2);
         setToasts(prev => [...prev, { ...normalized, id }]);
@@ -127,7 +140,7 @@ function ToastItem({ toast: t, onDismiss }: { toast: Toast; onDismiss: () => voi
         <div
             className={`
                 pointer-events-auto w-[340px] max-w-[calc(100vw-2rem)]
-                bg-[#1a1d23] border ${cfg.border}
+                bg-surface text-foreground border-border border ${cfg.border}
                 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.45)]
                 transition-all duration-300
                 ${visible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-8'}
@@ -145,7 +158,7 @@ function ToastItem({ toast: t, onDismiss }: { toast: Toast; onDismiss: () => voi
                         {t.title}
                     </p>
                     {t.message && (
-                        <p className="text-[#8c909f] text-xs mt-1 leading-relaxed">
+                        <p className="text-muted-foreground text-xs mt-1 leading-relaxed">
                             {t.message}
                         </p>
                     )}
@@ -153,7 +166,7 @@ function ToastItem({ toast: t, onDismiss }: { toast: Toast; onDismiss: () => voi
 
                 <button
                     onClick={onDismiss}
-                    className="flex-shrink-0 p-1 rounded-lg text-[#8c909f] hover:text-white hover:bg-card/5 transition-all"
+                    className="flex-shrink-0 p-2 min-w-8 min-h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-foreground/10 transition-all"
                     aria-label="Dismiss notification"
                 >
                     <X className="w-4 h-4" />
@@ -187,9 +200,9 @@ function ProgressBar({ duration }: { duration: number }) {
     }, [duration]);
 
     return (
-        <div className="h-0.5 bg-card/5 w-full">
+        <div className="h-0.5 bg-foreground/10 w-full">
             <div
-                className="h-full bg-card/20"
+                className="h-full bg-foreground/20"
                 style={{ width: `${width}%`, transition: 'none' }}
             />
         </div>

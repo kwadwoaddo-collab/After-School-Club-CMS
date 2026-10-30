@@ -9,7 +9,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@
 import { Badge } from '@/components/ui/Badge';
 import { EmptyState } from '@/components/ui/EmptyState';
 import BinActions from '@/features/parents/components/BinActions';
-import { purgeStaleBinItems } from '../bin.actions';
+import { getUserAccessibleCentreIds } from '@/lib/permissions';
 
 export default async function BinPage() {
     // Same role rule as the rest of the Parents module — see
@@ -20,8 +20,52 @@ export default async function BinPage() {
     const userRole = (session.user as any).role;
     const isOwner = userRole === 'ORG_OWNER';
 
-    // Fire-and-forget purge of items older than 30 days
-    await purgeStaleBinItems();
+    let accessibleCentreIds: string[] | null = null;
+    if (!isOwner && session.user?.id) {
+        try {
+            const ids = await getUserAccessibleCentreIds(session.user.id);
+            if (Array.isArray(ids)) {
+                accessibleCentreIds = ids;
+            }
+        } catch {
+            accessibleCentreIds = null;
+        }
+    }
+
+    if (accessibleCentreIds !== null && accessibleCentreIds.length === 0) {
+        return (
+            <div className="space-y-6">
+                <HeaderPortal targetId="header-left">
+                    <div className="flex items-center gap-3">
+                        <Link
+                            href="/dashboard/parents"
+                            className="p-2 -ml-2 text-text-muted hover:text-text hover:bg-page rounded-sm transition-colors"
+                        >
+                            <ArrowLeft className="w-4 h-4" />
+                        </Link>
+                        <div>
+                            <h1 className="text-page-title text-text">Recovery Bin</h1>
+                            <p className="text-metadata">Items are permanently deleted after 30 days</p>
+                        </div>
+                    </div>
+                </HeaderPortal>
+                <EmptyState
+                    icon={<Archive className="w-8 h-8" />}
+                    title="Bin is empty"
+                    description="No recently deleted families found."
+                />
+            </div>
+        );
+    }
+
+    const centreScopeCondition = accessibleCentreIds !== null
+        ? sql`AND EXISTS (
+            SELECT 1 FROM children c_scope
+            WHERE c_scope.parent_id = pa.id
+              AND c_scope.organisation_id = ${orgId}
+              AND c_scope.centre_id IN (${sql.join(accessibleCentreIds.map(id => sql`${id}`), sql`, `)})
+        )`
+        : sql``;
 
     // Fetch soft-deleted parents
     const deletedParents = await db.execute(sql`
@@ -42,6 +86,7 @@ export default async function BinPage() {
         LEFT JOIN ChildCounts cc ON pa.id = cc.parent_id
         WHERE pa.organisation_id = ${orgId}
           AND pa.deleted_at IS NOT NULL
+          ${centreScopeCondition}
         ORDER BY pa.deleted_at DESC
     `);
 

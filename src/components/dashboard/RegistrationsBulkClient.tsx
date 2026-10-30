@@ -7,6 +7,8 @@ import Link from 'next/link';
 import { CheckCircle2, XCircle, Download, Loader2, X, Trash2, AlertTriangle, Mail, ClipboardList, ChevronRight } from 'lucide-react';
 import { assignRegistrationCentre, deleteRegistrations } from '@/app/dashboard/registrations/actions';
 import { format, formatDistanceToNow } from 'date-fns';
+import ConfirmModal from '@/components/ui/ConfirmModal';
+import { useToast } from '@/components/ui/ToastProvider';
 
 type Status = 'awaiting_confirmation' | 'signed_up' | 'not_interested';
 
@@ -43,6 +45,7 @@ interface Props {
     isFiltered?: boolean;
     totalCount?: number;
     error?: boolean;
+    userRole?: string;
 }
 
 const FUNDING_LABELS: Record<string, string> = {
@@ -54,13 +57,15 @@ const FUNDING_LABELS: Record<string, string> = {
     other: 'Other',
 };
 
-export default function RegistrationsBulkClient({ rows, statusBadge, statusLabel, centres, isFiltered = false, totalCount, error }: Props) {
+export default function RegistrationsBulkClient({ rows, statusBadge, statusLabel, centres, isFiltered = false, totalCount, error, userRole }: Props) {
     const [selected, setSelected] = useState<Set<string>>(new Set());
     const [bulkLoading, setBulkLoading] = useState(false);
     const [bulkMessage, setBulkMessage] = useState('');
     const [confirmingDelete, setConfirmingDelete] = useState(false);
+    const [pendingBulkStatus, setPendingBulkStatus] = useState<Status | null>(null);
     const [isPending, startTransition] = useTransition();
     const router = useRouter();
+    const { toast } = useToast();
 
     const allIds = rows.map(r => r.id);
     const allSelected = allIds.length > 0 && allIds.every(id => selected.has(id));
@@ -204,7 +209,14 @@ export default function RegistrationsBulkClient({ rows, statusBadge, statusLabel
     const handleCentreChange = (id: string, e: React.ChangeEvent<HTMLSelectElement>) => {
         const value = e.target.value === 'null' ? null : e.target.value;
         startTransition(async () => {
-            try { await assignRegistrationCentre(id, value); } catch { /* ignore */ }
+            try {
+                await assignRegistrationCentre(id, value);
+                router.refresh();
+            } catch (err) {
+                const message = err instanceof Error ? err.message : 'Failed to assign centre';
+                toast({ title: 'Centre Assignment Failed', message, variant: 'error' });
+                router.refresh();
+            }
         });
     };
 
@@ -241,7 +253,7 @@ export default function RegistrationsBulkClient({ rows, statusBadge, statusLabel
                     <tbody>
                         {rows.length === 0 ? (
                             <tr>
-                                <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
+                                <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">
                                     <div className="flex flex-col items-center justify-center">
                                         <ClipboardList className="w-8 h-8 text-muted-foreground/30 mb-2" />
                                         <p>{isFiltered ? 'No matching registrations' : 'No registrations yet'}</p>
@@ -330,8 +342,8 @@ export default function RegistrationsBulkClient({ rows, statusBadge, statusLabel
                                             <select
                                                 value={r.centreId || 'null'}
                                                 onChange={e => handleCentreChange(r.id, e)}
-                                                disabled={isPending}
-                                                className="text-xs font-semibold bg-transparent border-none focus:ring-0 cursor-pointer hover:text-foreground text-muted-foreground transition-colors w-full p-0"
+                                                disabled={isPending || userRole === 'FRONT_DESK'}
+                                                className="text-xs font-semibold bg-transparent border-none focus:ring-0 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 hover:text-foreground text-muted-foreground transition-colors w-full p-0"
                                             >
                                                 <option value="null">No Centre</option>
                                                 {centres.map(c => (
@@ -378,7 +390,7 @@ export default function RegistrationsBulkClient({ rows, statusBadge, statusLabel
                     <div className="h-4 w-px bg-border mx-1" />
 
                     <button
-                        onClick={() => bulkUpdateStatus('signed_up')}
+                        onClick={() => setPendingBulkStatus('signed_up')}
                         disabled={bulkLoading}
                         className="flex items-center gap-2 px-4 py-2 bg-success/10 border border-success/20 text-success hover:bg-success/20 rounded-xl text-sm font-semibold transition-all disabled:opacity-50"
                     >
@@ -397,7 +409,7 @@ export default function RegistrationsBulkClient({ rows, statusBadge, statusLabel
                     </button>
 
                     <button
-                        onClick={() => bulkUpdateStatus('not_interested')}
+                        onClick={() => setPendingBulkStatus('not_interested')}
                         disabled={bulkLoading}
                         className="flex items-center gap-2 px-4 py-2 bg-destructive/10 border border-destructive/20 text-destructive hover:bg-destructive/20 rounded-xl text-sm font-semibold transition-all disabled:opacity-50"
                     >
@@ -465,6 +477,23 @@ export default function RegistrationsBulkClient({ rows, statusBadge, statusLabel
                     )}
                 </div>
             )}
+
+            <ConfirmModal
+                isOpen={pendingBulkStatus !== null}
+                onClose={() => setPendingBulkStatus(null)}
+                onConfirm={() => {
+                    if (pendingBulkStatus) void bulkUpdateStatus(pendingBulkStatus);
+                }}
+                title={pendingBulkStatus === 'signed_up' ? 'Confirm Joining for Selected' : 'Mark Selected as Not Interested'}
+                description={
+                    pendingBulkStatus === 'signed_up'
+                        ? `Confirm joining for ${selected.size} selected registration${selected.size !== 1 ? 's' : ''}? Associated children will become active students and notification emails will be sent to parents.`
+                        : `Mark ${selected.size} selected registration${selected.size !== 1 ? 's' : ''} as Not Interested?`
+                }
+                confirmText={pendingBulkStatus === 'signed_up' ? 'Confirm Joining' : 'Mark Not Interested'}
+                cancelText="Cancel"
+                variant={pendingBulkStatus === 'signed_up' ? 'info' : 'warning'}
+            />
         </div>
     );
 }

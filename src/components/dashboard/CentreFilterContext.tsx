@@ -70,19 +70,36 @@ export function CentreFilterProvider({
       // ignore
     }
     startTransition(() => {
-      router.refresh();
+      if (searchParams.get('centre')) {
+        const params = new URLSearchParams(searchParams.toString());
+        if (id === 'all') {
+          params.delete('centre');
+        } else {
+          params.set('centre', id);
+        }
+        const search = params.toString();
+        router.push(`${pathname}${search ? `?${search}` : ''}`);
+      } else {
+        router.refresh();
+      }
     });
-  }, [router]);
+  }, [router, searchParams, pathname]);
 
   // Sync from URL search parameter ?centre=XYZ and clean it up
   useEffect(() => {
     const urlCentre = searchParams.get('centre');
     if (urlCentre) {
       const isValid = urlCentre === 'all' || centres.some(c => c.id === urlCentre);
-      if (isValid) {
-        setSelectedCentreId(urlCentre);
+      if (isValid && urlCentre !== selectedCentreId) {
+        setSelectedCentreIdState(urlCentre);
+        setCentreCookie(urlCentre);
+        try {
+          localStorage.setItem(STORAGE_KEY, urlCentre);
+        } catch {
+          // ignore
+        }
       }
-      
+
       // Clean up URL parameter
       const params = new URLSearchParams(searchParams.toString());
       params.delete('centre');
@@ -90,7 +107,7 @@ export function CentreFilterProvider({
       const newUrl = `${pathname}${search ? `?${search}` : ''}`;
       router.replace(newUrl);
     }
-  }, [searchParams, pathname, router, centres, setSelectedCentreId]);
+  }, [searchParams, pathname, router, centres, selectedCentreId]);
 
   return (
     <CentreFilterCtx.Provider value={{ selectedCentreId, setSelectedCentreId, centres }}>

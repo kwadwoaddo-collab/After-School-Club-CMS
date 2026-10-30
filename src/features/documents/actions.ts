@@ -52,7 +52,7 @@ export async function uploadCentreDocument(form: FormData) {
         await lockLiveManager(tx, session.user.id, session.user.organisationId!, centreId);
             await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${`documents:${centreId}`}))`);
             await assertActiveFolder(tx, session.user.organisationId!, centreId, folderId);
-            const [{ count, totalBytes }] = await tx.select({ count: sql<number>`count(*) filter (where ${centreDocuments.removedAt} is null)::int`, totalBytes: sql<number>`coalesce(sum(${centreDocuments.sizeBytes}), 0)::int` }).from(centreDocuments).where(eq(centreDocuments.centreId, centreId));
+            const [{ count, totalBytes }] = await tx.select({ count: sql<number>`count(*) filter (where ${centreDocuments.removedAt} is null)::int`, totalBytes: sql<number>`coalesce(sum(${centreDocuments.sizeBytes}) filter (where ${centreDocuments.removedAt} is null), 0)::int` }).from(centreDocuments).where(and(eq(centreDocuments.centreId, centreId), isNull(centreDocuments.removedAt)));
             if (totalBytes + pdf.sizeBytes > 60 * 1024 * 1024) throw new Error('This centre has reached its 60 MB storage limit, including removed files.');
             if (count >= MAX_CENTRE_DOCUMENTS) throw new Error('This centre already has 20 documents. Remove one before uploading another.');
             const [row] = await tx.insert(centreDocuments).values({ organisationId: session.user.organisationId!, centreId, folderId, name, ...pdf, createdBy: session.user.id }).returning({ id: centreDocuments.id });
@@ -70,7 +70,7 @@ async function mutate(input: { centreId: string; documentId: string; version: nu
         await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${`documents:${centreId}`}))`);
         if ('folderId' in changes) await assertActiveFolder(tx, session.user.organisationId!, centreId, changes.folderId ?? null);
         if (changes.content) {
-            const [{ totalBytes }] = await tx.select({ totalBytes: sql<number>`coalesce(sum(${centreDocuments.sizeBytes}),0)::int` }).from(centreDocuments).where(and(eq(centreDocuments.centreId, centreId), sql`${centreDocuments.id} <> ${documentId}`));
+            const [{ totalBytes }] = await tx.select({ totalBytes: sql<number>`coalesce(sum(${centreDocuments.sizeBytes}) filter (where ${centreDocuments.removedAt} is null),0)::int` }).from(centreDocuments).where(and(eq(centreDocuments.centreId, centreId), isNull(centreDocuments.removedAt), sql`${centreDocuments.id} <> ${documentId}`));
             if (totalBytes + (changes.sizeBytes ?? 0) > 60 * 1024 * 1024) throw new Error('This centre has reached its 60 MB storage limit, including removed files.');
         }
         if (eventType === 'centre_document_restored') {
@@ -134,7 +134,7 @@ export async function createCentreFolder(input: { centreId: string; parentId: st
                 if (!parent) throw new Error('This folder is no longer available.');
                 ancestor = parent.parentId;
             }
-            const [{ count }] = await tx.select({ count: sql<number>`count(*)::int` }).from(centreDocumentFolders).where(eq(centreDocumentFolders.centreId, centreId));
+            const [{ count }] = await tx.select({ count: sql<number>`count(*)::int` }).from(centreDocumentFolders).where(and(eq(centreDocumentFolders.centreId, centreId), isNull(centreDocumentFolders.removedAt)));
             if (count >= 100) throw new Error('This centre has reached its limit of 100 folders, including removed folders.');
             const [row] = await tx.insert(centreDocumentFolders).values({ organisationId: session.user.organisationId!, centreId, parentId, name, createdBy: session.user.id }).returning({ id: centreDocumentFolders.id });
             await tx.insert(auditEvents).values({ organisationId: session.user.organisationId!, userId: session.user.id, eventType: 'centre_document_folder_created', eventData: JSON.stringify({ centreId, folderId: row.id, parentId, name }) });

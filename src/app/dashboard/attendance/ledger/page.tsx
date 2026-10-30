@@ -30,9 +30,12 @@ export default async function AttendanceLedgerPage({
     // Use the same resolver as every other page — reads ?centre= param first,
     // then falls back to the cookie, then to the first centre.
     const centreId = await resolveActiveCentreId(params.centre, centreIds);
+    const effectiveCentreId = (centreId === 'all' && allCentres.length > 0)
+        ? allCentres[0].id
+        : centreId;
 
-    const ledger = centreId && centreId !== 'all'
-        ? await getSessionLedger(centreId, selectedYear)
+    const ledger = effectiveCentreId && effectiveCentreId !== 'all'
+        ? await getSessionLedger(effectiveCentreId, selectedYear)
         : [];
 
     // Build list of academic years (current + last 2)
@@ -44,13 +47,16 @@ export default async function AttendanceLedgerPage({
         `${cy - 2}-${String(cy1 - 1).slice(2)}`,
     ];
 
+    const userRole = (session.user as { role?: string }).role;
+
     return (
         <LedgerClient
             ledger={ledger}
             centres={allCentres.map(c => ({ id: c.id, name: c.name }))}
-            selectedCentreId={centreId}
+            selectedCentreId={effectiveCentreId}
             selectedYear={selectedYear}
             academicYears={academicYears}
+            userRole={userRole}
         />
     );
 }

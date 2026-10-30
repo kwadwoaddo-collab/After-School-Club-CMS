@@ -17,6 +17,7 @@ import {
     Check,
     X,
     LayoutGrid,
+    Plus,
 } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/components/ui/utils';
@@ -25,6 +26,7 @@ import { useToast } from '@/components/ui/ToastProvider';
 import { Card } from '@/components/ui/Card';
 import {ParentBillingSection,type ParentBillingGroup} from '@/features/billing/components/ParentBillingSection';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { formatSchoolYearLabel } from '@/lib/school-year';
 
 interface ParentProfileClientProps {
     parent: any;
@@ -35,6 +37,7 @@ interface ParentProfileClientProps {
         outstanding: number;
     };
     isOwner?: boolean;
+    userRole?: string;
     billingGroups?:ParentBillingGroup[];
     canManageBilling?:boolean;
     orgId?:string;
@@ -52,9 +55,11 @@ function SubPanel({ children, className }: { children: React.ReactNode; classNam
     return <div className={cn('rounded-md border border-border-subtle bg-page p-4', className)}>{children}</div>;
 }
 
-export default function ParentProfileClient({ parent, invoices, stats, isOwner, billingGroups=[],canManageBilling=false,orgId,openBilling=false }: ParentProfileClientProps) {
-    const [activeTab, setActiveTab] = useState<TabId>(openBilling?'finance':'overview');
-    const [billingOpen,setBillingOpen]=useState(openBilling);
+export default function ParentProfileClient({ parent, invoices, stats, isOwner, userRole, billingGroups=[],canManageBilling=false,orgId,openBilling=false }: ParentProfileClientProps) {
+    const hideFinance = userRole === 'FRONT_DESK' || userRole === 'TUTOR';
+    const visibleTabs = hideFinance ? TABS.filter(t => t.id !== 'finance') : TABS;
+    const [activeTab, setActiveTab] = useState<TabId>(openBilling && !hideFinance ? 'finance' : 'overview');
+    const [billingOpen,setBillingOpen]=useState(openBilling && !hideFinance);
     const [billingKey,setBillingKey]=useState(0);
     const router = useRouter();
     const { toast } = useToast();
@@ -98,12 +103,13 @@ export default function ParentProfileClient({ parent, invoices, stats, isOwner, 
         }
     };
 
+
     return (
         <div className="space-y-5">
-            {canManageBilling&&<div className="flex flex-wrap items-center justify-between gap-3"><p className="text-sm text-muted-foreground">Manage this family’s monthly fee and billing schedule.</p><button className="inline-flex min-h-11 items-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" onClick={()=>{setActiveTab('finance');setBillingOpen(true);setBillingKey(k=>k+1);}}>{billingGroups.some(g=>g.config)?'Manage billing cycle':'Set up billing cycle'}</button></div>}
+            {canManageBilling&&!hideFinance&&<div className="flex flex-wrap items-center justify-between gap-3"><p className="text-sm text-muted-foreground">Manage this family’s monthly fee and billing schedule.</p><button className="inline-flex min-h-11 items-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" onClick={()=>{setActiveTab('finance');setBillingOpen(true);setBillingKey(k=>k+1);}}>{billingGroups.some(g=>g.config)?'Manage billing cycle':'Set up billing cycle'}</button></div>}
             {/* ── Tabs ────────────────────────────────────────────────────── */}
             <div className="flex border-b border-border gap-1">
-                {TABS.map(({ id, label, icon: Icon }) => (
+                {visibleTabs.map(({ id, label, icon: Icon }) => (
                     <button
                         key={id}
                         onClick={() => setActiveTab(id)}
@@ -129,7 +135,7 @@ export default function ParentProfileClient({ parent, invoices, stats, isOwner, 
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
                         {/* Left column — contact + children */}
-                        <div className="lg:col-span-2 space-y-4">
+                        <div className={cn('space-y-4', hideFinance ? 'lg:col-span-3' : 'lg:col-span-2')}>
 
                             {/* Contact details (editable) */}
                             <SubPanel>
@@ -271,7 +277,15 @@ export default function ParentProfileClient({ parent, invoices, stats, isOwner, 
 
                             {/* Associated children */}
                             <div>
-                                <p className="text-label text-text-muted mb-2">Associated children</p>
+                                <div className="flex items-center justify-between mb-2">
+                                    <p className="text-label text-text-muted">Associated children</p>
+                                    <Link
+                                        href={`/dashboard/students/add?parentId=${parent.id}`}
+                                        className="inline-flex items-center gap-1 text-metadata font-medium text-accent hover:text-accent-hover transition-colors"
+                                    >
+                                        <Plus className="w-3 h-3" /> Add child
+                                    </Link>
+                                </div>
                                 {parent.children && parent.children.length > 0 ? (
                                     <SubPanel className="p-0 divide-y divide-border-subtle overflow-hidden">
                                         {parent.children.map((child: any) => (
@@ -286,7 +300,7 @@ export default function ParentProfileClient({ parent, invoices, stats, isOwner, 
                                                     </div>
                                                     <div>
                                                         <p className="text-small-body font-medium text-text">{child.firstName} {child.lastName}</p>
-                                                        <p className="text-metadata">{child.schoolYear ? `Year ${child.schoolYear}` : 'Year not set'}</p>
+                                                        <p className="text-metadata">{child.schoolYear ? formatSchoolYearLabel(child.schoolYear) : 'Year not set'}</p>
                                                     </div>
                                                 </div>
                                                 <ChevronRight className="w-4 h-4 text-text-muted group-hover:text-accent transition-colors" />
@@ -305,37 +319,39 @@ export default function ParentProfileClient({ parent, invoices, stats, isOwner, 
                         </div>
 
                         {/* Right column — financial summary */}
-                        <div className="space-y-4">
-                            <SubPanel className="text-center">
-                                <p className="text-label text-text-muted mb-2">Current balance</p>
-                                <p className={cn('text-page-title', stats.outstanding > 0 ? 'text-danger' : 'text-success')}>
-                                    £{stats.outstanding.toFixed(2)}
-                                </p>
-                                <p className="text-metadata mt-1 mb-4">Outstanding amount</p>
-                                <button
-                                    onClick={() => setActiveTab('finance')}
-                                    className="w-full py-2 px-3 bg-accent text-white rounded-sm text-small-body font-medium hover:bg-accent-hover transition-colors inline-flex items-center justify-center gap-1.5"
-                                >
-                                    View full ledger <ChevronRight className="w-3.5 h-3.5" />
-                                </button>
-                            </SubPanel>
+                        {!hideFinance && (
+                            <div className="space-y-4">
+                                <SubPanel className="text-center">
+                                    <p className="text-label text-text-muted mb-2">Current balance</p>
+                                    <p className={cn('text-page-title', stats.outstanding > 0 ? 'text-danger' : 'text-success')}>
+                                        £{stats.outstanding.toFixed(2)}
+                                    </p>
+                                    <p className="text-metadata mt-1 mb-4">Outstanding amount</p>
+                                    <button
+                                        onClick={() => setActiveTab('finance')}
+                                        className="w-full py-2 px-3 bg-accent text-white rounded-sm text-small-body font-medium hover:bg-accent-hover transition-colors inline-flex items-center justify-center gap-1.5"
+                                    >
+                                        View full ledger <ChevronRight className="w-3.5 h-3.5" />
+                                    </button>
+                                </SubPanel>
 
-                            <SubPanel className="space-y-0">
-                                <div className="flex items-center justify-between py-2 border-b border-border-subtle">
-                                    <span className="text-metadata">Total invoiced</span>
-                                    <span className="text-small-body font-medium text-text">£{stats.totalOwed.toFixed(2)}</span>
-                                </div>
-                                <div className="flex items-center justify-between py-2">
-                                    <span className="text-metadata">Total paid</span>
-                                    <span className="text-small-body font-medium text-success">£{stats.totalPaid.toFixed(2)}</span>
-                                </div>
-                            </SubPanel>
-                        </div>
+                                <SubPanel className="space-y-0">
+                                    <div className="flex items-center justify-between py-2 border-b border-border-subtle">
+                                        <span className="text-metadata">Total invoiced</span>
+                                        <span className="text-small-body font-medium text-text">£{stats.totalOwed.toFixed(2)}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between py-2">
+                                        <span className="text-metadata">Total paid</span>
+                                        <span className="text-small-body font-medium text-success">£{stats.totalPaid.toFixed(2)}</span>
+                                    </div>
+                                </SubPanel>
+                            </div>
+                        )}
                     </div>
                 )}
 
                 {/* Finance / Ledger tab */}
-                {activeTab === 'finance' && (
+                {activeTab === 'finance' && !hideFinance && (
                     <div className="space-y-4">
                         {canManageBilling&&orgId&&<ParentBillingSection key={billingKey} groups={billingGroups} familyName={parent.firstName+' '+parent.lastName} parentEmail={parent.email??''} hasInvoices={invoices.length>0} parentId={parent.id} orgId={orgId} openSetup={billingOpen}/> }
                         {/* Stats strip */}

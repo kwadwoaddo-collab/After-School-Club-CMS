@@ -58,13 +58,18 @@ export async function assignRegistrationCentre(registrationId: string, centreId:
     });
     if (!existing) throw new Error('Registration not found');
 
-    // Non-owner managers must have access to the registration's current centre (if set) and target centre
+    // Non-owner managers must have access to the registration's current centre (if set) and target centre (if set)
     if (userRole !== 'ORG_OWNER') {
         const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
-        if ((existing as { centreId?: string | null }).centreId && !accessibleCentreIds.includes((existing as { centreId?: string | null }).centreId!)) {
+        const currentCentreId = (existing as { centreId?: string | null }).centreId;
+        if (currentCentreId && !accessibleCentreIds.includes(currentCentreId)) {
             throw new Error('Forbidden: No access to this centre');
         }
-        if (!centreId || !accessibleCentreIds.includes(centreId)) {
+        if (centreId !== null) {
+            if (!accessibleCentreIds.includes(centreId)) {
+                throw new Error('Forbidden: No access to target centre');
+            }
+        } else if (!currentCentreId) {
             throw new Error('Forbidden: No access to target centre');
         }
     }

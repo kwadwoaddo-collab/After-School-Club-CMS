@@ -25,17 +25,32 @@ interface BookingFormProps {
     brandColor?: string;
     backToCentresUrl?: string;
     rescheduleData?: any;
+    isPublic?: boolean;
 }
 
 interface TimeSlot {
     startAt: string;
     endAt: string;
     available: boolean;
+    time?: string;
+}
+
+function extractTimeHHMM(val: string | undefined): string {
+    if (!val) return '';
+    if (/^\d{2}:\d{2}/.test(val)) return val.slice(0, 5);
+    const d = new Date(val);
+    if (!isNaN(d.getTime())) {
+        const h = String(d.getHours()).padStart(2, '0');
+        const m = String(d.getMinutes()).padStart(2, '0');
+        return `${h}:${m}`;
+    }
+    return val;
 }
 
 function formatAmPm(time: string) {
     if (!time) return '';
-    const [hStr, mStr] = time.split(':');
+    const hhmm = extractTimeHHMM(time);
+    const [hStr, mStr] = hhmm.split(':');
     let h = parseInt(hStr, 10);
     const m = mStr || '00';
     const ampm = h >= 12 ? 'pm' : 'am';
@@ -73,7 +88,7 @@ const SUBJECTS = ['Maths', 'English', 'Science', '11+', 'Stem Activities', 'Chil
 const DEFAULT_DURATION = 60;
 const SCHOOL_YEARS = ['Reception', 'Y1', 'Y2', 'Y3', 'Y4', 'Y5', 'Y6', 'Y7', 'Y8', 'Y9', 'Y10', 'Y11', 'Y12', 'Y13'];
 
-export default function BookingForm({ centreId, centreName, operatingHours, brandColor = '#4F46E5', backToCentresUrl, rescheduleData }: BookingFormProps) {
+export default function BookingForm({ centreId, centreName, operatingHours, brandColor = '#4F46E5', backToCentresUrl, rescheduleData, isPublic = false }: BookingFormProps) {
     const router = useRouter();
     // ... state ...
     const [step, setStep] = useState(1);
@@ -286,7 +301,9 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                     lastName: a.child.lastName,
                     schoolYear: a.child.schoolYear,
                     dateOfBirth: a.child.dateOfBirth ? new Date(a.child.dateOfBirth).toISOString().split('T')[0] : '',
-                    subjects: a.child.subjects.map((s: any) => s.subject),
+                    subjects: a.child.subjects?.length
+                        ? a.child.subjects.map((s: any) => s.subject || s)
+                        : ['General'],
                     notes: a.child.notes || '',
                 }));
                 setValue('children', prefilledChildren);
@@ -369,7 +386,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
 
         // Additional custom validation for step 3 time between min and max limits
         if (step === 3 && daySchedule && daySchedule.open) {
-            const timeVal = data.appointment.startAt;
+            const timeVal = extractTimeHHMM(data.appointment.startAt);
             const currentMinTime = daySchedule.start;
             const currentMaxTime = daySchedule.end;
             
@@ -482,7 +499,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
         return (
             <div className="text-center py-12">
                 {brandStyles}
-                <div className="inline-flex items-center justify-center w-20 h-20 bg-green-100 rounded-full mb-6 animate-bounce">
+                <div className="inline-flex items-center justify-center w-20 h-20 bg-green-100 rounded-full mb-6 transition-transform duration-300">
                     <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
@@ -490,6 +507,13 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                 <h2 className="text-3xl font-bold text-foreground mb-2">
                     {rescheduleData ? 'Reschedule Confirmed!' : 'Booking Confirmed!'}
                 </h2>
+                {confirmationCode && (
+                    <div className="mb-6">
+                        <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-secondary border border-border text-sm font-mono font-bold text-foreground">
+                            Ref: {confirmationCode.startsWith('BK-') ? confirmationCode : `BK-${confirmationCode}`}
+                        </span>
+                    </div>
+                )}
                 <div className="bg-card border border-border shadow-sm rounded-xl p-6 max-w-md mx-auto mb-8 text-left space-y-5 animate-fadeIn">
                     <div className="border-b border-border pb-4">
                         <p className="text-sm font-medium text-muted-foreground mb-1">Child(ren)</p>
@@ -517,15 +541,43 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                 </div>
 
                 <div className="mt-10 flex flex-col items-center gap-4">
-                    <Link
-                        href={backToCentresUrl || '/dashboard/bookings'}
-                        className="brand-btn inline-block py-3 px-12 rounded-lg font-semibold transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-                    >
-                        Done
-                    </Link>
-                    <Link href="/dashboard/bookings" className="text-sm text-muted-foreground hover:text-primary underline">
-                        View all bookings →
-                    </Link>
+                    {isPublic ? (
+                        backToCentresUrl ? (
+                            <Link
+                                href={backToCentresUrl}
+                                className="brand-btn inline-block py-3 px-12 rounded-lg font-semibold transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                            >
+                                Done
+                            </Link>
+                        ) : (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    reset();
+                                    setSelectedDate('');
+                                    setTimeSlots([]);
+                                    setConfirmationCode('');
+                                    setSuccess(false);
+                                    setStep(1);
+                                }}
+                                className="brand-btn inline-block py-3 px-12 rounded-lg font-semibold transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                            >
+                                Book Another Assessment
+                            </button>
+                        )
+                    ) : (
+                        <>
+                            <Link
+                                href={backToCentresUrl || '/dashboard/bookings'}
+                                className="brand-btn inline-block py-3 px-12 rounded-lg font-semibold transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                            >
+                                Done
+                            </Link>
+                            <Link href="/dashboard/bookings" className="text-sm text-muted-foreground hover:text-primary underline">
+                                View all bookings →
+                            </Link>
+                        </>
+                    )}
                 </div>
             </div>
         );
@@ -593,105 +645,110 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                 {/* Step 1: Parent Details */}
                 {step === 1 && (
                     <div className="bg-secondary/40 p-6 rounded-lg space-y-6 animate-fadeIn">
-                        {/* Toggle for New / Existing Family */}
-                        <div className="flex gap-4 mb-6">
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setBookingMode('new');
-                                    setValue('parent', {
-                                        firstName: '',
-                                        lastName: '',
-                                        email: '',
-                                        phone: '',
-                                        preferredContact: 'email',
-                                    });
-                                    setSelectedParentId(null);
-                                    setParentChildrenList([]);
-                                    setValue('children', []);
-                                }}
-                                className={`flex-1 py-3 px-4 rounded-xl border font-semibold text-sm transition-all ${bookingMode === 'new' ? 'bg-primary/20 border-primary/50 text-primary' : 'border-border text-muted-foreground bg-card hover:bg-secondary/40'}`}
-                            >
-                                New Family
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setBookingMode('existing');
-                                    setValue('parent', {
-                                        firstName: '',
-                                        lastName: '',
-                                        email: '',
-                                        phone: '',
-                                        preferredContact: 'email',
-                                    });
-                                    setSelectedParentId(null);
-                                    setParentChildrenList([]);
-                                    setValue('children', []);
-                                }}
-                                className={`flex-1 py-3 px-4 rounded-xl border font-semibold text-sm transition-all ${bookingMode === 'existing' ? 'bg-primary/20 border-primary/50 text-primary' : 'border-border text-muted-foreground bg-card hover:bg-secondary/40'}`}
-                            >
-                                Existing Family
-                            </button>
-                        </div>
-
-                        {bookingMode === 'existing' && (
-                            <div className="relative mb-6">
-                                <label className="block text-sm font-medium text-foreground/80 mb-1">Search Parent <span className="text-destructive ml-0.5">*</span></label>
-                                <div className="relative">
-                                    <input
-                                        type="text"
-                                        placeholder="Type parent name, email or phone..."
-                                        value={parentSearchQuery}
-                                        onChange={(e) => handleParentSearch(e.target.value)}
-                                        className="w-full px-4 py-3 border border-border rounded-lg outline-none focus:ring-2 brand-ring focus:border-transparent text-foreground pr-10"
-                                    />
-                                    {searchingParents && (
-                                        <div className="absolute right-3 top-3.5">
-                                            <Spinner size="sm" />
-                                        </div>
-                                    )}
+                        {/* Toggle for New / Existing Family (Staff only) */}
+                        {!isPublic && (
+                            <>
+                                <div className="flex gap-4 mb-6">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setBookingMode('new');
+                                            setValue('parent', {
+                                                firstName: '',
+                                                lastName: '',
+                                                email: '',
+                                                phone: '',
+                                                preferredContact: 'email',
+                                            });
+                                            setSelectedParentId(null);
+                                            setParentChildrenList([]);
+                                            setValue('children', []);
+                                        }}
+                                        className={`flex-1 py-3 px-4 rounded-xl border font-semibold text-sm transition-all ${bookingMode === 'new' ? 'bg-primary/20 border-primary/50 text-primary' : 'border-border text-muted-foreground bg-card hover:bg-secondary/40'}`}
+                                    >
+                                        New Family
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setBookingMode('existing');
+                                            setValue('parent', {
+                                                firstName: '',
+                                                lastName: '',
+                                                email: '',
+                                                phone: '',
+                                                preferredContact: 'email',
+                                            });
+                                            setSelectedParentId(null);
+                                            setParentChildrenList([]);
+                                            setValue('children', []);
+                                        }}
+                                        className={`flex-1 py-3 px-4 rounded-xl border font-semibold text-sm transition-all ${bookingMode === 'existing' ? 'bg-primary/20 border-primary/50 text-primary' : 'border-border text-muted-foreground bg-card hover:bg-secondary/40'}`}
+                                    >
+                                        Existing Family
+                                    </button>
                                 </div>
-                                
-                                {/* Dropdown search results */}
-                                {parentSearchResults.length > 0 && (
-                                    <div className="absolute z-10 left-0 right-0 mt-1 bg-card border border-border rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                                        {parentSearchResults.map((result: any) => (
-                                            <button
-                                                key={result.id}
-                                                type="button"
-                                                onClick={() => handleSelectParent(result.id)}
-                                                className="w-full px-4 py-3 text-left hover:bg-secondary/40 flex flex-col border-b last:border-b-0"
-                                            >
-                                                <span className="font-semibold text-foreground">{result.title}</span>
-                                                <span className="text-xs text-muted-foreground">{result.subtitle}</span>
-                                            </button>
-                                        ))}
+
+                                {bookingMode === 'existing' && (
+                                    <div className="relative mb-6">
+                                        <label htmlFor="parent-search-input" className="block text-sm font-medium text-foreground/80 mb-1">Search Parent <span className="text-destructive ml-0.5">*</span></label>
+                                        <div className="relative">
+                                            <input
+                                                id="parent-search-input"
+                                                type="text"
+                                                placeholder="Type parent name, email or phone..."
+                                                value={parentSearchQuery}
+                                                onChange={(e) => handleParentSearch(e.target.value)}
+                                                className="w-full px-4 py-3 border border-border rounded-lg outline-none focus:ring-2 brand-ring focus:border-transparent text-foreground pr-10"
+                                            />
+                                            {searchingParents && (
+                                                <div className="absolute right-3 top-3.5">
+                                                    <Spinner size="sm" />
+                                                </div>
+                                            )}
+                                        </div>
+                                        
+                                        {/* Dropdown search results */}
+                                        {parentSearchResults.length > 0 && (
+                                            <div className="absolute z-10 left-0 right-0 mt-1 bg-card border border-border rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                                                {parentSearchResults.map((result: any) => (
+                                                    <button
+                                                        key={result.id}
+                                                        type="button"
+                                                        onClick={() => handleSelectParent(result.id)}
+                                                        className="w-full px-4 py-3 text-left hover:bg-secondary/40 flex flex-col border-b last:border-b-0"
+                                                    >
+                                                        <span className="font-semibold text-foreground">{result.title}</span>
+                                                        <span className="text-xs text-muted-foreground">{result.subtitle}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
                                 )}
-                            </div>
+                            </>
                         )}
 
                         <h2 className="text-xl font-semibold text-foreground">Parent Details {selectedParentId && <span className="text-xs font-normal text-emerald-500 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/25">✓ Linked</span>}</h2>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-sm font-medium text-foreground/80 mb-1">First Name <span className="text-destructive ml-0.5">*</span></label>
-                                <input {...register('parent.firstName')} className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-foreground bg-card" placeholder="Enter first name" />
+                                <label htmlFor="parent-firstName" className="block text-sm font-medium text-foreground/80 mb-1">First Name <span className="text-destructive ml-0.5">*</span></label>
+                                <input id="parent-firstName" {...register('parent.firstName')} className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-foreground bg-card" placeholder="Enter first name" />
                                 {errors.parent?.firstName && <p className="text-red-600 text-sm mt-1">{errors.parent.firstName.message}</p>}
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-foreground/80 mb-1">Last Name <span className="text-destructive ml-0.5">*</span></label>
-                                <input {...register('parent.lastName')} className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-foreground bg-card" placeholder="Enter last name" />
+                                <label htmlFor="parent-lastName" className="block text-sm font-medium text-foreground/80 mb-1">Last Name <span className="text-destructive ml-0.5">*</span></label>
+                                <input id="parent-lastName" {...register('parent.lastName')} className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-foreground bg-card" placeholder="Enter last name" />
                                 {errors.parent?.lastName && <p className="text-red-600 text-sm mt-1">{errors.parent.lastName.message}</p>}
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-foreground/80 mb-1">Email <span className="text-muted-foreground font-normal">(Optional)</span></label>
-                                <input type="email" {...register('parent.email')} className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-foreground bg-card" placeholder="email@example.com" />
+                                <label htmlFor="parent-email" className="block text-sm font-medium text-foreground/80 mb-1">Email <span className="text-muted-foreground font-normal">(Optional)</span></label>
+                                <input id="parent-email" type="email" {...register('parent.email')} className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-foreground bg-card" placeholder="email@example.com" />
                                 {errors.parent?.email && <p className="text-red-600 text-sm mt-1">{errors.parent.email.message}</p>}
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-foreground/80 mb-1">Phone <span className="text-destructive ml-0.5">*</span></label>
-                                <input type="tel" {...register('parent.phone')} placeholder="07xxx xxxxxx" className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-foreground bg-card" />
+                                <label htmlFor="parent-phone" className="block text-sm font-medium text-foreground/80 mb-1">Phone <span className="text-destructive ml-0.5">*</span></label>
+                                <input id="parent-phone" type="tel" {...register('parent.phone')} placeholder="07xxx xxxxxx" className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-foreground bg-card" />
                                 {errors.parent?.phone && <p className="text-red-600 text-sm mt-1">{errors.parent.phone.message}</p>}
                             </div>
                             <div className="md:col-span-2">
@@ -780,8 +837,9 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                                                                 )}
                                                             </div>
                                                             <div>
-                                                                <label className="block text-sm font-semibold text-foreground/80 mb-1">Additional Notes (Optional)</label>
+                                                                <label htmlFor={`existing-child-${childFormIndex}-notes`} className="block text-sm font-semibold text-foreground/80 mb-1">Additional Notes (Optional)</label>
                                                                 <textarea
+                                                                    id={`existing-child-${childFormIndex}-notes`}
                                                                     {...register(`children.${childFormIndex}.notes`)}
                                                                     rows={2}
                                                                     placeholder="Any specific goals or information..."
@@ -808,19 +866,20 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                                         </div>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div>
-                                                <label className="block text-sm font-medium text-foreground/80 mb-1">First Name <span className="text-destructive ml-0.5">*</span></label>
-                                                <input {...register(`children.${index}.firstName`)} className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-foreground bg-card" placeholder="Child's first name" />
+                                                <label htmlFor={`child-${index}-firstName`} className="block text-sm font-medium text-foreground/80 mb-1">First Name <span className="text-destructive ml-0.5">*</span></label>
+                                                <input id={`child-${index}-firstName`} {...register(`children.${index}.firstName`)} className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-foreground bg-card" placeholder="Child's first name" />
                                                 {errors.children?.[index]?.firstName && <p className="text-red-600 text-sm mt-1">{errors.children[index]?.firstName?.message}</p>}
                                             </div>
                                             <div>
-                                                <label className="block text-sm font-medium text-foreground/80 mb-1">Last Name <span className="text-destructive ml-0.5">*</span></label>
-                                                <input {...register(`children.${index}.lastName`)} className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-foreground bg-card" placeholder="Child's last name" />
+                                                <label htmlFor={`child-${index}-lastName`} className="block text-sm font-medium text-foreground/80 mb-1">Last Name <span className="text-destructive ml-0.5">*</span></label>
+                                                <input id={`child-${index}-lastName`} {...register(`children.${index}.lastName`)} className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-foreground bg-card" placeholder="Child's last name" />
                                                 {errors.children?.[index]?.lastName && <p className="text-red-600 text-sm mt-1">{errors.children[index]?.lastName?.message}</p>}
                                             </div>
                                             <div className="md:col-span-2">
-                                                <label className="block text-sm font-medium text-foreground/80 mb-1">Photo (Optional)</label>
+                                                <label htmlFor={`child-${index}-photo`} className="block text-sm font-medium text-foreground/80 mb-1">Photo (Optional)</label>
                                                 <div className="flex items-center gap-4">
                                                     <input 
+                                                        id={`child-${index}-photo`}
                                                         type="file" 
                                                         accept="image/*"
                                                         onChange={(e) => handleImageUpload(index, e)}
@@ -833,13 +892,13 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                                                 </div>
                                             </div>
                                             <div className="hidden">
-                                                <label className="block text-sm font-medium text-foreground/80 mb-1">Date of Birth</label>
-                                                <input type="date" {...register(`children.${index}.dateOfBirth`)} max={today} className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-foreground bg-card" />
+                                                <label htmlFor={`child-${index}-dob`} className="block text-sm font-medium text-foreground/80 mb-1">Date of Birth</label>
+                                                <input id={`child-${index}-dob`} type="date" {...register(`children.${index}.dateOfBirth`)} max={today} className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-foreground bg-card" />
                                                 {errors.children?.[index]?.dateOfBirth && <p className="text-red-600 text-sm mt-1">{errors.children[index]?.dateOfBirth?.message}</p>}
                                             </div>
                                             <div>
-                                                <label className="block text-sm font-medium text-foreground/80 mb-1">School Year <span className="text-destructive ml-0.5">*</span></label>
-                                                <select {...register(`children.${index}.schoolYear`)} className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-foreground bg-card">
+                                                <label htmlFor={`child-${index}-schoolYear`} className="block text-sm font-medium text-foreground/80 mb-1">School Year <span className="text-destructive ml-0.5">*</span></label>
+                                                <select id={`child-${index}-schoolYear`} {...register(`children.${index}.schoolYear`)} className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-foreground bg-card">
                                                     <option value="Reception">Reception</option>
                                                     {SCHOOL_YEARS.filter(y => y !== 'Reception').map(y => <option key={y} value={y}>{y}</option>)}
                                                 </select>
@@ -873,20 +932,11 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                                                         </div>
                                                     )}
                                                 />
-                                                {/* The "specify a custom subject" input used to show here when
-                                                    'Other' was selected. Commit f1832a8 removed 'Other' from the
-                                                    SUBJECTS list above without removing this check, so it has been
-                                                    unreachable dead code ever since — 'Other' can no longer be
-                                                    selected, so this condition was always false. Removed rather
-                                                    than fixed in place: reintroducing a working "custom subject"
-                                                    option is a product decision (which activities are offered)
-                                                    outside this milestone's scope. See architecture-decisions.md
-                                                    ("booking subjects enum drift"). */}
                                                 {errors.children?.[index]?.subjects && <p className="text-red-600 text-sm mt-2">{errors.children[index]?.subjects?.message}</p>}
                                             </div>
                                             <div className="md:col-span-2">
-                                                <label className="block text-sm font-medium text-foreground/80 mb-1">Additional Notes (Optional)</label>
-                                                <textarea {...register(`children.${index}.notes`)} rows={2} placeholder="Any additional information..." className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-foreground bg-card" />
+                                                <label htmlFor={`child-${index}-notes`} className="block text-sm font-medium text-foreground/80 mb-1">Additional Notes (Optional)</label>
+                                                <textarea id={`child-${index}-notes`} {...register(`children.${index}.notes`)} rows={2} placeholder="Any additional information..." className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-foreground bg-card" />
                                             </div>
                                         </div>
                                     </div>
@@ -936,8 +986,9 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
 
                             <div>
                                 {/* Task 4: Date is now mandatory — label updated and helptext added */}
-                                <label className="block text-sm font-medium text-foreground/80 mb-2">Select Date <span className="text-destructive ml-0.5">*</span></label>
+                                <label htmlFor="appointment-date" className="block text-sm font-medium text-foreground/80 mb-2">Select Date <span className="text-destructive ml-0.5">*</span></label>
                                 <input
+                                    id="appointment-date"
                                     type="date"
                                     value={selectedDate}
                                     onChange={(e) => {
@@ -949,16 +1000,51 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                                     min={today}
                                     max={maxDate}
                                     className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-foreground bg-card"
-                                /></div>
+                                />
+                            </div>
 
                             {selectedDate && (
                                 <div>
-                                    <label className="block text-sm font-medium text-foreground/80 mb-2">Available Times</label>
+                                    <label htmlFor="appointment-startAt" className="block text-sm font-medium text-foreground/80 mb-2">Available Times</label>
                                     {daySchedule && !daySchedule.open ? (
                                         <div className="text-center py-8 text-muted-foreground bg-secondary/60 rounded-lg"><p>The centre is closed on this day.</p></div>
                                     ) : (
-                                        <div className="mt-2">
+                                        <div className="mt-2 space-y-3">
+                                            {loadingSlots ? (
+                                                <div className="flex items-center gap-2 py-4 text-sm text-muted-foreground">
+                                                    <Spinner size="sm" />
+                                                    <span>Loading available time slots...</span>
+                                                </div>
+                                            ) : timeSlots.length > 0 ? (
+                                                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
+                                                    {timeSlots.map((slot, idx) => {
+                                                        const slotTime = extractTimeHHMM(slot.time || slot.startAt);
+                                                        const isSelected = extractTimeHHMM(watchedStartAt) === slotTime && Boolean(slotTime);
+                                                        return (
+                                                            <button
+                                                                key={`${slotTime}-${idx}`}
+                                                                type="button"
+                                                                disabled={!slot.available}
+                                                                onClick={() => {
+                                                                    setValue('appointment.startAt', slotTime, { shouldValidate: true });
+                                                                }}
+                                                                className={`py-2.5 px-3 rounded-lg border text-sm font-semibold transition-all ${
+                                                                    !slot.available
+                                                                        ? 'border-border bg-secondary/40 text-muted-foreground opacity-50 cursor-not-allowed line-through'
+                                                                        : isSelected
+                                                                            ? 'brand-bg brand-border text-white shadow-sm'
+                                                                            : 'bg-card border-border text-foreground hover:border-primary/50 hover:bg-secondary/30'
+                                                                }`}
+                                                            >
+                                                                {formatAmPm(slotTime)}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            ) : null}
+
                                             <input
+                                                id="appointment-startAt"
                                                 type="time"
                                                 {...register('appointment.startAt')}
                                                 min={daySchedule?.start || '00:00'}
@@ -968,6 +1054,9 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                                             <p className="mt-2 text-sm text-muted-foreground font-medium">
                                                 Centre hours: <span className="text-foreground font-semibold">{formatAmPm(daySchedule?.start || '00:00')} - {formatAmPm(daySchedule?.end || '23:59')}</span>
                                             </p>
+                                            {errors.appointment?.startAt && (
+                                                <p className="text-red-600 text-sm mt-1">{errors.appointment.startAt.message}</p>
+                                            )}
                                         </div>
                                     )}
                                 </div>
@@ -1025,7 +1114,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                                 // Only enforce time bounds when operating hours ARE configured AND the centre is open that day.
                                 // If daySchedule is null/undefined (no hours set), allow any time.
                                 !!(daySchedule && daySchedule.open && (
-                                    watchedStartAt < daySchedule.start || watchedStartAt > daySchedule.end
+                                    extractTimeHHMM(watchedStartAt) < daySchedule.start || extractTimeHHMM(watchedStartAt) > daySchedule.end
                                 ))
                             ))}
                             className="flex-1 brand-btn py-3 px-6 rounded-lg font-semibold transition-all shadow-md disabled:opacity-40 disabled:cursor-not-allowed"

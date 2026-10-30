@@ -399,7 +399,8 @@ export async function processBroadcastDeliveries(options: {
 
     try {
       const recipientGreeting = delivery.recipientName ? `Dear ${escapeHtml(delivery.recipientName)},` : 'Hello,';
-      const emailHtml = `<p>${recipientGreeting}</p><p>${escapeHtml(broadcast.message)}</p>`;
+      const formattedMessage = escapeHtml(broadcast.message).replace(/\r?\n/g, '<br/>');
+      const emailHtml = `<p>${recipientGreeting}</p><p>${formattedMessage}</p>`;
 
       const result = await sendEmail({
         to: delivery.recipientEmail,

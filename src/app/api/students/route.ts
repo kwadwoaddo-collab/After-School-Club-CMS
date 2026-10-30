@@ -3,11 +3,12 @@ import { logger } from '@/lib/logger';
 import { requireApiAuth } from '@/lib/require-auth';
 import { db } from '@/db';
 import { parents, children, centres, auditEvents } from '@/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, isNull, sql } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import * as permissions from '@/lib/permissions';
+import { normalizeSchoolYear } from '@/lib/school-year';
 
 const schema = z.object({
     existingEnrolled: z.boolean().default(false),
@@ -89,20 +90,22 @@ export async function POST(req: Request) {
 
         const result = await db.transaction(async (tx) => {
             let pId: string;
+            const normalizedEmail = data.parentEmail.trim().toLowerCase();
             const existingParent = await tx.query.parents.findFirst({
                 where: and(
-                    eq(parents.email, data.parentEmail),
-                    eq(parents.organisationId, orgId)
+                    sql`lower(${parents.email}) = lower(${normalizedEmail})`,
+                    eq(parents.organisationId, orgId),
+                    isNull(parents.deletedAt)
                 ),
             });
 
-            if (existingParent) {
+            if (existingParent && !existingParent.deletedAt) {
                 pId = existingParent.id;
             } else {
                 const [newParent] = await tx.insert(parents).values({
                     firstName: data.parentFirstName,
                     lastName: data.parentLastName,
-                    email: data.parentEmail,
+                    email: normalizedEmail,
                     phone: data.parentPhone,
                     organisationId: orgId,
                     preferredContact: 'email',
@@ -118,7 +121,7 @@ export async function POST(req: Request) {
                 firstName: data.firstName,
                 lastName: data.lastName,
                 dateOfBirth: new Date(data.dateOfBirth),
-                schoolYear: data.schoolYear,
+                schoolYear: normalizeSchoolYear(data.schoolYear),
                 source: 'registration',
                 isRegistered: data.existingEnrolled,
                 registeredAt: data.existingEnrolled ? new Date() : null,

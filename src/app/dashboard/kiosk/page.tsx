@@ -87,25 +87,25 @@ export default async function KioskPage(props: {
         ? orgCentres.find(c => c.id === activeCentreId)?.name ?? 'All Centres'
         : 'All Centres';
 
-    // Privacy scrub for Kiosk
+    // Privacy scrub for Kiosk (retaining only last 4 digits of phone for check-out PIN verification)
+    const scrubAttendee = (att: any) => {
+        const digits = (att.parentPhone || '').replace(/\D/g, '');
+        const parentPhoneLast4 = digits.length >= 4 ? digits.slice(-4) : null;
+        return {
+            ...att,
+            lastName: att.lastName ? att.lastName.charAt(0) + '.' : '',
+            parentLastName: att.parentLastName ? att.parentLastName.charAt(0) + '.' : '',
+            parentPhone: null,
+            parentPhoneLast4,
+            parentEmail: null,
+            notes: null
+        };
+    };
+
     const scrubbedSlots = sortedSlots.map(slot => ({
         ...slot,
-        regulars: slot.regulars.map((att: any) => ({
-            ...att,
-            lastName: att.lastName ? att.lastName.charAt(0) + '.' : '',
-            parentLastName: att.parentLastName ? att.parentLastName.charAt(0) + '.' : '',
-            parentPhone: null,
-            parentEmail: null,
-            notes: null
-        })),
-        catchups: slot.catchups.map((att: any) => ({
-            ...att,
-            lastName: att.lastName ? att.lastName.charAt(0) + '.' : '',
-            parentLastName: att.parentLastName ? att.parentLastName.charAt(0) + '.' : '',
-            parentPhone: null,
-            parentEmail: null,
-            notes: null
-        }))
+        regulars: slot.regulars.map(scrubAttendee),
+        catchups: slot.catchups.map(scrubAttendee)
     }));
 
     return (

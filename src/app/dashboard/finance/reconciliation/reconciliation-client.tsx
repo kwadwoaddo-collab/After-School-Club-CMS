@@ -14,6 +14,9 @@ type InvoiceDto = {
   invoiceNumber: string;
   billingPeriodStart?: string | Date | null;
   billingPeriodEnd?: string | Date | null;
+  amountDuePence?: number;
+  paidAmountPence?: number;
+  remainingBalancePence?: number;
   totalAmount: number;
   remainingBalance: number;
   status: string;
@@ -23,6 +26,7 @@ type InvoiceDto = {
   parentLastName: string | null;
   childTfcRef: string | null;
   childFirstName: string | null;
+  childLastName?: string | null;
 };
 
 const METHODS: { id: 'tax_free_childcare' | 'voucher' | 'bank_transfer'; label: string; icon: typeof Landmark }[] = [
@@ -93,7 +97,12 @@ export function ReconciliationClient({
               type="button"
               disabled={isPending}
               aria-pressed={selectedInvoice === inv.id}
-              onClick={() => { setSelectedInvoice(inv.id); setAmount(''); setReference(''); setConfirmed(false); }}
+              onClick={() => {
+                setSelectedInvoice(inv.id);
+                setAmount(inv.remainingBalancePence !== undefined ? (inv.remainingBalancePence / 100).toFixed(2) : '');
+                setReference('');
+                setConfirmed(false);
+              }}
               className={`text-left p-4 border rounded-2xl transition-all ${
                 selectedInvoice === inv.id
                   ? 'border-primary bg-primary/5 ring-1 ring-primary'
@@ -103,8 +112,34 @@ export function ReconciliationClient({
               <div className="flex justify-between items-start mb-2 gap-3">
                 <div className="min-w-0">
                   <div className="font-bold text-foreground truncate">
-                    {inv.parentFirstName} {inv.parentLastName}
+                    {inv.parentId ? (
+                      <Link
+                        href={`/dashboard/parents/${inv.parentId}`}
+                        onClick={e => e.stopPropagation()}
+                        className="hover:text-primary hover:underline transition-colors"
+                      >
+                        {inv.parentFirstName} {inv.parentLastName}
+                      </Link>
+                    ) : (
+                      <span>{inv.parentFirstName} {inv.parentLastName}</span>
+                    )}
                   </div>
+                  {inv.childFirstName && (
+                    <div className="text-xs font-medium text-muted-foreground truncate">
+                      Student:{' '}
+                      {inv.childId ? (
+                        <Link
+                          href={`/dashboard/students/${inv.childId}`}
+                          onClick={e => e.stopPropagation()}
+                          className="hover:text-primary hover:underline transition-colors"
+                        >
+                          {inv.childFirstName} {inv.childLastName ?? ''}
+                        </Link>
+                      ) : (
+                        <span>{inv.childFirstName} {inv.childLastName ?? ''}</span>
+                      )}
+                    </div>
+                  )}
                   <div className="text-sm text-muted-foreground">
                     {inv.invoiceNumber}
                   </div>
@@ -153,6 +188,18 @@ export function ReconciliationClient({
                   )}{' '}
                   ({invoice?.invoiceNumber})
                 </div>
+                {invoice?.childFirstName && (
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Student:{' '}
+                    {invoice.childId ? (
+                      <Link href={`/dashboard/students/${invoice.childId}`} className="text-primary hover:underline transition-colors">
+                        {invoice.childFirstName} {invoice.childLastName ?? ''}
+                      </Link>
+                    ) : (
+                      <span>{invoice.childFirstName} {invoice.childLastName ?? ''}</span>
+                    )}
+                  </p>
+                )}
                 <p className="mt-2 text-sm text-foreground">Billing period: {formatInvoicePeriod(invoice?.billingPeriodStart, invoice?.billingPeriodEnd)}</p>
                 <p className="mt-1 text-sm text-muted-foreground tabular-nums">Invoice total £{invoice?.totalAmount.toFixed(2)} · Remaining £{invoice?.remainingBalance.toFixed(2)}</p>
               </div>

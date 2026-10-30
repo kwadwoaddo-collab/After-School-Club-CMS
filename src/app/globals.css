@@ -47,6 +47,10 @@
   --color-destructive: hsl(var(--destructive));
   /* on-surface-variant — semantic label/secondary-text token used across components */
   --color-on-surface-variant: var(--on-surface-variant);
+  --color-on-surface: hsl(var(--foreground));
+  --color-surface-dim: hsl(var(--secondary));
+  --color-on-primary: hsl(var(--primary-foreground));
+  --color-primary-dim: hsl(var(--primary));
 }
 
 :root {
@@ -569,7 +573,7 @@ select:user-valid {
 .fade-in { animation: fade-in 0.3s ease-out; }
 .slide-up { animation: slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
 .fade-scale { animation: fade-scale 0.25s cubic-bezier(0.16, 1, 0.3, 1); }
-.bounce-in { animation: bounce-in 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+.bounce-in { animation: fade-scale 0.25s cubic-bezier(0.22, 1, 0.36, 1); }
 .slide-in-from-top-2 { animation: slide-in-from-top 0.15s ease-out; }
 
 @keyframes scroll-left {
@@ -694,17 +698,7 @@ figcaption {
 /* Animated eyebrow label — respects prefers-reduced-motion */
 @media (prefers-reduced-motion: no-preference) {
   .animated-eyebrow {
-    background: linear-gradient(
-      90deg,
-      hsl(var(--primary)) 0%,
-      hsl(var(--secondary)) 50%,
-      hsl(var(--primary)) 100%
-    );
-    background-size: 200% auto;
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    animation: gradient-shift 4s ease infinite;
+    color: hsl(var(--primary));
   }
 }
 
@@ -747,7 +741,7 @@ figcaption {
 
 /* Card & Panels override - Soft Squircles & Shadows */
 @layer components {
-  .card, .glassmorphic-card, .kpi-card, .bg-card, .bg-surface, .bg-surface-container, .bg-surface-container-high, .bg-surface-container-low, .bg-surface-container-highest, .bg-surface-container-lowest {
+  .card, .glassmorphic-card, .kpi-card, .bento-item, .stat-card, .feature-card, .pricing-card {
     border-radius: 24px; /* rounded-3xl (Apple squircle) */
     border: 1px solid var(--card-border);
     box-shadow: var(--shadow-card);
@@ -804,9 +798,8 @@ body:not(.landing-page-active) :is(.hover\:bg-white\/10):hover {
 
 @media (prefers-reduced-motion: reduce) {
   *, ::before, ::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+    animation: none !important;
+    transition: none !important;
     scroll-behavior: auto !important;
   }
 }

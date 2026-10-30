@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { redirect } from 'next/navigation';
 import { requireAuth } from '@/lib/require-auth';
+import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { db } from '@/db';
 import { organisations, centres, bookings } from '@/db/schema';
 import { eq, and, gte, lt, sql, inArray } from 'drizzle-orm';
@@ -16,6 +17,7 @@ import { Button } from '@/components/ui/Button';
 
 export default async function CentresPage() {
     const { session } = await requireAuth({ roles: ['ORG_OWNER', 'MANAGER'] });
+    const userRole = (session.user as any).role;
 
     let hasError = false;
     let org = null;
@@ -36,11 +38,24 @@ export default async function CentresPage() {
         org = foundOrg;
 
         if (org) {
-            // Fetch all centres for this organisation
-            centresList = await db
-                .select()
-                .from(centres)
-                .where(eq(centres.organisationId, org.id));
+            if (userRole === 'MANAGER') {
+                const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
+                centresList = accessibleCentreIds.length > 0
+                    ? await db
+                        .select()
+                        .from(centres)
+                        .where(and(
+                            eq(centres.organisationId, org.id),
+                            inArray(centres.id, accessibleCentreIds)
+                        ))
+                    : [];
+            } else {
+                // Fetch all centres for this organisation (ORG_OWNER)
+                centresList = await db
+                    .select()
+                    .from(centres)
+                    .where(eq(centres.organisationId, org.id));
+            }
 
             centreIds = centresList.map(c => c.id);
 

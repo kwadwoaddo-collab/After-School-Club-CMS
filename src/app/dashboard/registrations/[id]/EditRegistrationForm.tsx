@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import Link from 'next/link';
 import { updateRegistrationDetails, UpdateRegistrationPayload } from '../actions';
 import { Pencil, X, Save, Loader2, CheckCircle2 } from 'lucide-react';
 
@@ -241,14 +242,37 @@ export default function EditRegistrationForm({ reg, pars, kids, centreSessionSlo
                 <div className="space-y-6">
                     {childrenState.map((c, i) => (
                         <div key={c.id} className="border border-border/50 rounded-xl p-4 bg-secondary/20">
-                            <p className="text-muted-foreground text-xs uppercase tracking-wide mb-3">Child {i + 1}</p>
+                            <div className="flex items-center justify-between mb-3">
+                                <p className="text-muted-foreground text-xs uppercase tracking-wide">
+                                    Child {i + 1}
+                                    {c.childId && editingSection !== 'children' && (
+                                        <>
+                                            {' · '}
+                                            <Link href={`/dashboard/students/${c.childId}`} className="text-primary hover:underline font-semibold normal-case">
+                                                {c.firstName} {c.lastName}
+                                            </Link>
+                                        </>
+                                    )}
+                                </p>
+                                {c.childId && (
+                                    <Link href={`/dashboard/students/${c.childId}#enrolment-follow-up`} className="text-xs text-primary hover:text-primary/80 transition-colors">
+                                        Enrolment / follow-up →
+                                    </Link>
+                                )}
+                            </div>
                             <div className="grid grid-cols-2 gap-4 mb-4">
                                 <div>
                                     <label className={label}>First Name <span className="text-destructive ml-0.5">*</span></label>
                                     {editingSection === 'children' ? (
                                         <input className={input} value={c.firstName} onChange={e => updateChild(i, 'firstName', e.target.value)} />
                                     ) : (
-                                        <p className="text-sm text-foreground">{c.firstName}</p>
+                                        <p className="text-sm text-foreground">
+                                            {c.childId ? (
+                                                <Link href={`/dashboard/students/${c.childId}`} className="hover:text-primary hover:underline transition-colors">
+                                                    {c.firstName}
+                                                </Link>
+                                            ) : c.firstName}
+                                        </p>
                                     )}
                                 </div>
                                 <div>
@@ -256,7 +280,13 @@ export default function EditRegistrationForm({ reg, pars, kids, centreSessionSlo
                                     {editingSection === 'children' ? (
                                         <input className={input} value={c.lastName} onChange={e => updateChild(i, 'lastName', e.target.value)} />
                                     ) : (
-                                        <p className="text-sm text-foreground">{c.lastName}</p>
+                                        <p className="text-sm text-foreground">
+                                            {c.childId ? (
+                                                <Link href={`/dashboard/students/${c.childId}`} className="hover:text-primary hover:underline transition-colors">
+                                                    {c.lastName}
+                                                </Link>
+                                            ) : c.lastName}
+                                        </p>
                                     )}
                                 </div>
                                 <div>
@@ -311,11 +341,31 @@ export default function EditRegistrationForm({ reg, pars, kids, centreSessionSlo
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label className={label}>First Name <span className="text-destructive ml-0.5">*</span></label>
-                                {editingSection === `parent-${i}` ? <input className={input} value={p.firstName} onChange={e => updateParent(i, 'firstName', e.target.value)} /> : <p className="text-sm text-foreground">{p.firstName}</p>}
+                                {editingSection === `parent-${i}` ? (
+                                    <input className={input} value={p.firstName} onChange={e => updateParent(i, 'firstName', e.target.value)} />
+                                ) : (
+                                    <p className="text-sm text-foreground">
+                                        {p.parentId ? (
+                                            <Link href={`/dashboard/parents/${p.parentId}`} className="text-primary hover:underline transition-colors">
+                                                {p.firstName}
+                                            </Link>
+                                        ) : p.firstName}
+                                    </p>
+                                )}
                             </div>
                             <div>
                                 <label className={label}>Last Name <span className="text-destructive ml-0.5">*</span></label>
-                                {editingSection === `parent-${i}` ? <input className={input} value={p.lastName} onChange={e => updateParent(i, 'lastName', e.target.value)} /> : <p className="text-sm text-foreground">{p.lastName}</p>}
+                                {editingSection === `parent-${i}` ? (
+                                    <input className={input} value={p.lastName} onChange={e => updateParent(i, 'lastName', e.target.value)} />
+                                ) : (
+                                    <p className="text-sm text-foreground">
+                                        {p.parentId ? (
+                                            <Link href={`/dashboard/parents/${p.parentId}`} className="text-primary hover:underline transition-colors">
+                                                {p.lastName}
+                                            </Link>
+                                        ) : p.lastName}
+                                    </p>
+                                )}
                             </div>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
@@ -353,7 +403,7 @@ export default function EditRegistrationForm({ reg, pars, kids, centreSessionSlo
                                 <p className="text-sm text-foreground leading-relaxed">
                                     {p.addressLine1}<br/>
                                     {p.addressLine2 && <>{p.addressLine2}<br/></>}
-                                    {p.city}, {p.postcode}
+                                    {p.city}{p.city && p.postcode ? ', ' : ''}{p.postcode}
                                 </p>
                             )}
                         </div>
@@ -370,7 +420,7 @@ export default function EditRegistrationForm({ reg, pars, kids, centreSessionSlo
                         {editingSection === 'medical' ? (
                             <div className="flex gap-3 mt-2 mb-3">
                                 {[{ v: false, l: 'No' }, { v: true, l: 'Yes' }].map(opt => (
-                                    <button key={String(opt.v)} onClick={() => setHasSpecialNeeds(opt.v)} className={`px-4 py-2 rounded-lg text-sm font-medium border transition-all ${hasSpecialNeeds === opt.v ? 'border-primary bg-primary/10 text-white' : 'border-white/10 text-white/50 hover:border-white/20'}`}>
+                                    <button key={String(opt.v)} onClick={() => setHasSpecialNeeds(opt.v)} className={`px-4 py-2 rounded-lg text-sm font-medium border transition-all ${hasSpecialNeeds === opt.v ? 'border-primary bg-primary/15 text-primary font-semibold' : 'border-border text-muted-foreground hover:border-primary/40 hover:text-foreground'}`}>
                                         {opt.l}
                                     </button>
                                 ))}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Trash2, Ban, AlertTriangle, Loader2 } from 'lucide-react';
 
 interface ConfirmActionModalProps {
@@ -21,6 +21,17 @@ export default function ConfirmActionModal({
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    useEffect(() => {
+        if (!isOpen) return;
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape' && !isLoading) {
+                onClose();
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isOpen, isLoading, onClose]);
+
     if (!isOpen) return null;
 
     const isDelete = variant === 'delete';
@@ -32,7 +43,7 @@ export default function ConfirmActionModal({
               title: 'Delete Draft Invoice',
               confirmLabel: 'Discard Permanently',
               confirmClass:
-                  'bg-error hover:bg-red-700 text-foreground shadow-lg shadow-error/20',
+                  'bg-error hover:bg-red-700 text-white shadow-lg shadow-error/20',
               description: `Draft invoice ${invoiceNumber} will be permanently removed from the database. This action cannot be undone.`,
           }
         : {
@@ -41,7 +52,7 @@ export default function ConfirmActionModal({
               title: 'Void Invoice',
               confirmLabel: 'Void Invoice',
               confirmClass:
-                  'bg-amber-500 hover:bg-amber-600 text-foreground shadow-lg shadow-amber-500/20',
+                  'bg-amber-500 hover:bg-amber-600 text-white shadow-lg shadow-amber-500/20',
               description: `Invoice ${invoiceNumber} will be marked as VOID. All payment records will be preserved for audit purposes, but this invoice will be excluded from revenue reports.`,
           };
 
@@ -61,11 +72,12 @@ export default function ConfirmActionModal({
 
     return (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl animate-in fade-in duration-200">
-            <div className="bg-card border border-border rounded-[40px] shadow-2xl w-full max-w-md p-10 relative animate-in zoom-in-95 duration-200">
+            <div role="dialog" aria-modal="true" aria-label={config.title} className="bg-card border border-border rounded-[40px] shadow-2xl w-full max-w-md p-10 relative animate-in zoom-in-95 duration-200">
                 {/* Close */}
                 <button
                     onClick={onClose}
                     disabled={isLoading}
+                    aria-label="Close modal"
                     className="absolute top-6 right-6 w-9 h-9 rounded-full bg-secondary/60 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-all"
                 >
                     <X className="w-4 h-4" />

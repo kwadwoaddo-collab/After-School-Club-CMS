@@ -142,7 +142,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                     <Suspense fallback={<OverviewSkeleton />}>
                         {/* D2 (Milestone 3M): pass accessibleCentreIds+hasCentres so the schedule
                             respects the user's centre restriction, not org-wide access. */}
-                        <DashboardSchedule org={org} accessibleCentreIds={accessibleCentreIds} hasCentres={hasCentres} />
+                        <DashboardSchedule org={org} activeCentreId={activeCentreId} accessibleCentreIds={accessibleCentreIds} hasCentres={hasCentres} />
                     </Suspense>
                 </div>
                 <div className="lg:col-span-2">

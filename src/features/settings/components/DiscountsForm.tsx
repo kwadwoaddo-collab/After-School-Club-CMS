@@ -133,7 +133,7 @@ function RuleCard({
                                 onClick={() => onChange({ ...rule, valueType: 'percent' })}
                                 className={`px-3 py-1.5 transition-colors ${
                                     rule.valueType === 'percent'
-                                        ? 'bg-primary text-foreground font-bold'
+                                        ? 'bg-primary text-primary-foreground font-bold'
                                         : 'text-muted-foreground hover:text-foreground'
                                 }`}
                             >
@@ -144,7 +144,7 @@ function RuleCard({
                                 onClick={() => onChange({ ...rule, valueType: 'fixed' })}
                                 className={`px-3 py-1.5 transition-colors ${
                                     rule.valueType === 'fixed'
-                                        ? 'bg-primary text-foreground font-bold'
+                                        ? 'bg-primary text-primary-foreground font-bold'
                                         : 'text-muted-foreground hover:text-foreground'
                                 }`}
                             >
@@ -323,7 +323,7 @@ export default function DiscountsForm({ initialRules = [] }: { initialRules?: Di
                 <button
                     onClick={handleSave}
                     disabled={saving}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-primary text-foreground text-sm font-bold rounded-xl hover:bg-primary/90 disabled:opacity-50 transition-all"
+                    className="flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground text-sm font-bold rounded-xl hover:bg-primary/90 disabled:opacity-50 transition-all"
                 >
                     {saving ? (
                         <Loader2 className="w-4 h-4 animate-spin" />

@@ -2,6 +2,7 @@
 
 import { logger } from '@/lib/logger';
 import { useState } from 'react';
+import { signOut } from 'next-auth/react';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -18,6 +19,7 @@ type OnboardingInput = z.infer<typeof onboardingSchema>;
 export default function OnboardingForm() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
+    const [orgCreated, setOrgCreated] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     const {
@@ -62,20 +64,23 @@ export default function OnboardingForm() {
         setError(null);
 
         try {
-            // 1. Create organisation, centre, and initial membership
-            const res = await fetch('/api/onboarding', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    organisationName: data.organisationName,
-                    centreName: data.centreName,
-                    brandColor: data.brandColor,
-                }),
-            });
+            // 1. Create organisation, centre, and initial membership (if not already created on an earlier attempt)
+            if (!orgCreated) {
+                const res = await fetch('/api/onboarding', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        organisationName: data.organisationName,
+                        centreName: data.centreName,
+                        brandColor: data.brandColor,
+                    }),
+                });
 
-            if (!res.ok) {
-                const errorData = await res.json();
-                throw new Error(errorData.error || 'Setup failed');
+                if (!res.ok) {
+                    const errorData = await res.json();
+                    throw new Error(errorData.error || 'Setup failed');
+                }
+                setOrgCreated(true);
             }
 
             // 2. If a logo file was selected, upload via scoped onboarding logo endpoint
@@ -88,11 +93,17 @@ export default function OnboardingForm() {
                         body: formData,
                     });
                     if (!logoRes.ok) {
-                        const logoErr = await logoRes.json();
-                        logger.warn('Non-blocking onboarding logo upload failed:', logoErr);
+                        const logoErr = await logoRes.json().catch(() => ({}));
+                        logger.warn('Onboarding logo upload failed:', logoErr);
+                        setError(logoErr.error || 'Failed to upload logo. Please try another file or continue without a logo.');
+                        setIsSubmitting(false);
+                        return;
                     }
                 } catch (logoErr) {
-                    logger.warn('Non-blocking onboarding logo upload error:', logoErr);
+                    logger.warn('Onboarding logo upload error:', logoErr);
+                    setError(logoErr instanceof Error ? logoErr.message : 'Failed to upload logo. Please try again.');
+                    setIsSubmitting(false);
+                    return;
                 }
             }
 
@@ -106,9 +117,18 @@ export default function OnboardingForm() {
 
     return (
         <div className="w-full max-w-lg mx-auto bg-card rounded-2xl shadow-xl border border-outline-variant/10 overflow-hidden">
-            <div className="bg-secondary/40 px-8 py-6 border-b border-outline-variant/10">
-                <h2 className="text-2xl font-bold text-foreground">Let&apos;s get you set up</h2>
-                <p className="text-muted-foreground mt-1">Create your organisation and first centre.</p>
+            <div className="bg-secondary/40 px-8 py-6 border-b border-outline-variant/10 flex items-start justify-between gap-4">
+                <div>
+                    <h2 className="text-2xl font-bold text-foreground">Let&apos;s get you set up</h2>
+                    <p className="text-muted-foreground mt-1">Create your organisation and first centre.</p>
+                </div>
+                <button
+                    type="button"
+                    onClick={() => signOut({ callbackUrl: '/login' })}
+                    className="text-xs font-semibold text-muted-foreground hover:text-foreground px-3 py-1.5 rounded-lg border border-outline-variant/20 hover:bg-secondary/60 transition-colors whitespace-nowrap"
+                >
+                    Sign out / Switch account
+                </button>
             </div>
 
             <form onSubmit={handleSubmit(onSubmit)} className="p-8 space-y-6">
@@ -116,9 +136,22 @@ export default function OnboardingForm() {
                     <div
                         role="alert"
                         aria-live="polite"
-                        className="p-4 bg-red-500/15 text-red-300 rounded-lg text-sm border border-red-500/30"
+                        className="p-4 bg-red-500/15 text-red-700 dark:text-red-300 rounded-lg text-sm border border-red-500/30 space-y-2"
                     >
-                        {error}
+                        <p>{error}</p>
+                        {orgCreated && selectedLogoFile && (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setSelectedLogoFile(null);
+                                    setValue('logoUrl', '');
+                                    window.location.assign('/pending-approval');
+                                }}
+                                className="text-xs font-semibold underline hover:opacity-80 block"
+                            >
+                                Skip logo and continue →
+                            </button>
+                        )}
                     </div>
                 )}
 

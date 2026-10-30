@@ -73,7 +73,7 @@ export default async function RegistrationsPage(props: {
         org = fetchedOrg;
 
         const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://after-school-club-live.vercel.app';
-        fullRegistrationUrl = org ? `${baseUrl}/r/${org.slug}` : null;
+        fullRegistrationUrl = org ? `${baseUrl}/register/${org.slug}` : null;
 
         // Get accessible centres
         orgCentres = await getUserAccessibleCentres(session.user.id);
@@ -285,6 +285,7 @@ export default async function RegistrationsPage(props: {
                     isFiltered={isFiltered}
                     totalCount={totalCount}
                     error={hasError}
+                    userRole={(session.user as any).role}
                 />
             )}
         </div>

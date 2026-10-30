@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useTransition } from 'react';
+import { useEffect, useMemo, useState, useTransition } from 'react';
 import { X, Check, AlertTriangle, FileText, Users, History } from 'lucide-react';
 import { penceToPounds, poundsToPence } from '@/lib/billing';
 import {
@@ -124,6 +124,16 @@ export default function GenerateInvoiceModal({
     const [isPending, start]            = useTransition();
     const [invoiceId, setInvoiceId]     = useState('');
 
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape' && !isPending) {
+                onClose();
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isPending, onClose]);
+
     const handleFeeChange = (val: string) => {
         setEditedFee(val);
         const pence = poundsToPence(val);
@@ -167,7 +177,7 @@ export default function GenerateInvoiceModal({
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm">
-            <div className="bg-card rounded-2xl shadow-2xl w-full max-w-md overflow-hidden max-h-[92vh] overflow-y-auto">
+            <div role="dialog" aria-modal="true" aria-label={`Generate Draft Invoice for ${familyName}`} className="bg-card rounded-2xl shadow-2xl w-full max-w-md overflow-hidden max-h-[92vh] overflow-y-auto">
                 {/* Header */}
                 <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-border">
                     <div className="flex items-center gap-3">
@@ -181,7 +191,8 @@ export default function GenerateInvoiceModal({
                     </div>
                     <button
                         onClick={onClose}
-                        className="w-8 h-8 rounded-xl hover:bg-secondary/60 flex items-center justify-center text-muted-foreground hover:text-muted-foreground transition-all"
+                        aria-label="Close modal"
+                        className="w-8 h-8 rounded-xl hover:bg-secondary/60 flex items-center justify-center text-muted-foreground hover:text-foreground transition-all"
                     >
                         <X className="w-4 h-4" />
                     </button>
@@ -344,7 +355,7 @@ export default function GenerateInvoiceModal({
                             <button
                                 onClick={handleGenerate}
                                 disabled={isPending}
-                                className="flex-1 h-11 rounded-xl bg-primary text-white text-sm font-black hover:bg-primary/90 transition-all disabled:opacity-60 active:scale-[0.98] flex items-center justify-center gap-2"
+                                className="flex-1 h-11 rounded-xl bg-primary text-primary-foreground text-sm font-black hover:bg-primary/90 transition-all disabled:opacity-60 active:scale-[0.98] flex items-center justify-center gap-2"
                             >
                                 {isPending ? (
                                     <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Generating…</>
@@ -377,7 +388,7 @@ export default function GenerateInvoiceModal({
                             {invoiceId && (
                                 <a
                                     href={`/dashboard/finance/invoices/${invoiceId}`}
-                                    className="px-5 h-10 rounded-xl bg-primary text-white text-sm font-black hover:bg-primary/90 transition-all flex items-center gap-1.5"
+                                    className="px-5 h-10 rounded-xl bg-primary text-primary-foreground text-sm font-black hover:bg-primary/90 transition-all flex items-center gap-1.5"
                                 >
                                     <FileText className="w-4 h-4" />
                                     Review & Issue Draft

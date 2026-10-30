@@ -512,15 +512,16 @@ export async function POST(req: NextRequest) {
                     prefillChildIds.includes(c.childId)
                 );
  
+                let canUpdateChild = isAuthorizedChild;
                 if (c.firstName && c.lastName && primaryParentId) {
-                    let existing;
+                    let existing: { id: string; isRegistered?: boolean | null; registeredAt?: Date | null } | undefined;
                     if (c.childId) {
                         existing = await tx.query.children.findFirst({
                             where: and(
                                 eq(children.id, c.childId),
                                 eq(children.parentId, primaryParentId)
                             ),
-                            columns: { id: true }
+                            columns: { id: true, isRegistered: true, registeredAt: true }
                         });
                     } else {
                         existing = await tx.query.children.findFirst({
@@ -529,10 +530,12 @@ export async function POST(req: NextRequest) {
                                 ilike(children.lastName, c.lastName.trim()),
                                 eq(children.parentId, primaryParentId)
                             ),
-                            columns: { id: true }
+                            columns: { id: true, isRegistered: true, registeredAt: true }
                         });
                     }
                     childMatched = !!existing;
+                    const existingChildIsAlreadyEnrolled = Boolean(existing?.isRegistered || existing?.registeredAt);
+                    canUpdateChild = isAuthorizedChild || !existingChildIsAlreadyEnrolled;
  
                     const child = await resolveOrCreateChild(tx, {
                         id: isAuthorizedChild ? c.childId : (existing?.id || null),
@@ -556,7 +559,7 @@ export async function POST(req: NextRequest) {
                         photoConsent: c.photoConsent,
                         sunCreamConsent: c.sunCreamConsent,
                         firstAidConsent: c.firstAidConsent,
-                    }, { allowUpdate: isAuthorizedChild });
+                    }, { allowUpdate: canUpdateChild });
                     childId = child.id;
                 }
  
@@ -572,9 +575,9 @@ export async function POST(req: NextRequest) {
                 });
 
                 // ── 4.5 Save authorised collectors for this child ─────────────
-                // Only mutate authorised collectors if this is a newly created child or caller has verified token authority!
-                // Anonymous submissions matching an existing child MUST NOT delete or replace existing authorised collectors.
-                if (childId && authorisedCollectors?.length && (!childMatched || isAuthorizedChild)) {
+                // Only mutate authorised collectors if this is a newly created child, not yet enrolled, or caller has verified token authority!
+                // Anonymous submissions matching an already-enrolled child MUST NOT delete or replace existing authorised collectors.
+                if (childId && authorisedCollectors?.length && (!childMatched || canUpdateChild)) {
                     await tx.delete(authorisedCollectorsTable).where(eq(authorisedCollectorsTable.childId, childId));
                     for (const collector of authorisedCollectors) {
                         await tx.insert(authorisedCollectorsTable).values({

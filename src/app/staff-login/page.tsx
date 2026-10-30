@@ -9,8 +9,8 @@ const focusRing =
 
 function BrandLockup() {
     return (
-        <a
-            href="https://sprintscaleit.co.uk"
+        <Link
+            href="/"
             className={`inline-flex items-center gap-2.5 min-h-[44px] text-[var(--if-text)] ${focusRing}`}
             aria-label="After-School Club CMS · by SprintScale IT"
         >
@@ -19,7 +19,7 @@ function BrandLockup() {
                 <span className="font-bold text-sm">After-School Club CMS</span>
                 <span className="text-xs text-[var(--if-text-muted)]">by SprintScale IT</span>
             </span>
-        </a>
+        </Link>
     );
 }
 

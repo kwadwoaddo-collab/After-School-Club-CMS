@@ -605,6 +605,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                                 const { first, rest, firstId } = getStudentList(booking);
                                                 const targetId = firstId || booking.attendees?.[0]?.child?.id || booking.child?.id;
                                                 return (
+                                                    <div className="min-w-0 flex flex-col">
                                                     <div className="flex items-center gap-2 flex-wrap min-w-0">
                                                         <BookingStudentLink
                                                             studentId={targetId}
@@ -649,6 +650,16 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                                                 </div>
                                                             </div>
                                                         )}
+                                                    </div>
+                                                    {booking.parent?.id && (booking.parent.firstName || booking.parent.lastName) && (
+                                                        <Link
+                                                            href={`/dashboard/parents/${booking.parent.id}`}
+                                                            onClick={(e) => e.stopPropagation()}
+                                                            className="text-metadata text-text-muted hover:text-accent hover:underline truncate block mt-0.5"
+                                                        >
+                                                            {booking.parent.firstName} {booking.parent.lastName}
+                                                        </Link>
+                                                    )}
                                                     </div>
                                                 );
                                             })()}

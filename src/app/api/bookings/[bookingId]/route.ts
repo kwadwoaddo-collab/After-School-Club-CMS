@@ -51,6 +51,9 @@ export async function DELETE(_request: NextRequest, { params }: RouteContext) {
         // (POST /api/bookings/bulk-delete) for this identical action; this
         // single-booking DELETE was missing it.
         const userRole = (session.user as any).role as string | undefined;
+        if (!['ORG_OWNER', 'MANAGER', 'FRONT_DESK'].includes(userRole ?? '')) {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        }
         if (userRole !== 'ORG_OWNER' && booking.centreId) {
             const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
             if (!accessibleCentreIds.includes(booking.centreId)) {
