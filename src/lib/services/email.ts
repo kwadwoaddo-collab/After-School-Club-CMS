@@ -748,7 +748,7 @@ export class EmailService {
       const { subject, html: htmlContent } = renderBookingRescheduleMessage(data);
 
       const { data: result, error } = await resend.emails.send({
-        from: `${FROM_NAME} <${FROM_EMAIL}>`,
+        from: `${data.centreName || FROM_NAME} via SprintScale <${FROM_EMAIL}>`,
         to: data.parentEmail,
         subject,
         html: htmlContent,
@@ -993,27 +993,28 @@ export class EmailService {
       return { success: false, error: 'Email service not configured' };
     }
 
+    const primaryClub = data.centreName || data.orgName;
     const statusConfig = {
       awaiting_confirmation: {
-        subject: `Your registration is under review — ${data.orgName}`,
+        subject: `Your registration is under review — ${primaryClub}`,
         heading: 'Registration Under Review',
         headingColor: '#f59e0b',
         iconEmoji: '⏳',
-        body: `Your registration has been placed back under review. A member of the team will be in touch shortly to confirm the next steps.`,
+        body: `Your registration has been placed back under review. A member of the team at ${primaryClub} will be in touch shortly to confirm the next steps.`,
       },
       signed_up: {
-        subject: `Congratulations — your registration is confirmed! 🎉 — ${data.orgName}`,
+        subject: `Congratulations — your registration is confirmed! 🎉 — ${primaryClub}`,
         heading: 'Registration Confirmed!',
         headingColor: '#10b981',
         iconEmoji: '✅',
-        body: `Great news! Your registration has been confirmed. We're looking forward to welcoming your child${data.childNames.length > 1 ? 'ren' : ''} to ${data.centreName || data.orgName}.`,
+        body: `Great news! Your registration has been confirmed. We're looking forward to welcoming your child${data.childNames.length > 1 ? 'ren' : ''} to ${primaryClub}.`,
       },
       not_interested: {
-        subject: `An update on your registration — ${data.orgName}`,
+        subject: `An update on your registration — ${primaryClub}`,
         heading: 'Registration Update',
         headingColor: '#64748b',
         iconEmoji: '📋',
-        body: `We've updated the status of your registration. If you believe this is a mistake or would like to discuss further, please don't hesitate to get in touch with us directly.`,
+        body: `We've updated the status of your registration. If you believe this is a mistake or would like to discuss further, please don't hesitate to get in touch with ${primaryClub} directly.`,
       },
     };
 
@@ -1028,7 +1029,7 @@ export class EmailService {
     <div style="background:linear-gradient(135deg,#1e293b,#334155);padding:40px 32px;text-align:center;">
       <div style="font-size:40px;margin-bottom:12px;">${config.iconEmoji}</div>
       <h1 style="color:#fff;font-size:22px;font-weight:700;margin:0;">${config.heading}</h1>
-      <p style="color:rgba(255,255,255,0.7);margin:8px 0 0;font-size:14px;">${data.orgName}</p>
+      <p style="color:rgba(255,255,255,0.7);margin:8px 0 0;font-size:14px;">${primaryClub}</p>
     </div>
     <div style="padding:40px 32px;">
       <p style="color:#374151;font-size:16px;margin:0 0 8px;">Hi ${data.parentFirstName},</p>
@@ -1041,7 +1042,7 @@ export class EmailService {
       </div>
 
       <div style="background:#fffbeb;border-left:4px solid #f59e0b;padding:16px 20px;border-radius:6px;">
-        <p style="color:#92400e;font-size:13px;margin:0;">If you have any questions, please contact the team at ${data.orgName} directly.</p>
+        <p style="color:#92400e;font-size:13px;margin:0;">If you have any questions, please contact the team at ${primaryClub} directly.</p>
       </div>
     </div>
     <div style="background:#f9fafb;padding:20px 32px;text-align:center;border-top:1px solid #e5e7eb;">
@@ -1053,7 +1054,7 @@ export class EmailService {
 
     try {
       const { data: result, error } = await resend.emails.send({
-        from: `${data.orgName} via SprintScale <${FROM_EMAIL}>`,
+        from: `${primaryClub} via SprintScale <${FROM_EMAIL}>`,
         to: data.parentEmail,
         subject: config.subject,
         html,
@@ -1139,6 +1140,7 @@ export class EmailService {
       `<tr><td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;">${c.firstName} ${c.lastName}</td><td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;">${c.schoolYear}</td></tr>`
     ).join('');
 
+    const primaryClub = data.centreName || data.orgName;
     const html = `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Registration Received</title></head>
@@ -1146,7 +1148,7 @@ export class EmailService {
   <div style="max-width:560px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
     <div style="background:linear-gradient(135deg,#3b82f6,#7c3aed);padding:40px 32px;text-align:center;">
       <h1 style="color:#fff;font-size:24px;font-weight:700;margin:0;">Registration Received</h1>
-      <p style="color:rgba(255,255,255,0.8);margin:8px 0 0;font-size:15px;">${data.orgName}</p>
+      <p style="color:rgba(255,255,255,0.8);margin:8px 0 0;font-size:15px;">${primaryClub}</p>
     </div>
     <div style="padding:40px 32px;">
       <p style="color:#374151;font-size:16px;margin:0 0 8px;">Hi ${primaryParent.firstName},</p>
@@ -1174,7 +1176,7 @@ export class EmailService {
       </div>
 
       <div style="background:#fffbeb;border-left:4px solid #f59e0b;padding:16px 20px;border-radius:6px;">
-        <p style="color:#92400e;font-size:14px;margin:0;">The team at ${data.orgName} will be in touch to confirm your place and provide next steps.</p>
+        <p style="color:#92400e;font-size:14px;margin:0;">The team at ${primaryClub} will be in touch to confirm your place and provide next steps.</p>
       </div>
     </div>
     <div style="background:#f9fafb;padding:20px 32px;text-align:center;border-top:1px solid #e5e7eb;">
@@ -1204,9 +1206,9 @@ export class EmailService {
       const filename = `registration-${primaryParent.lastName.toLowerCase()}-${primaryParent.firstName.toLowerCase()}.pdf`.replace(/\s+/g, '-');
 
       const { data: result, error } = await resend.emails.send({
-        from: `${data.orgName} via SprintScale <${FROM_EMAIL}>`,
+        from: `${primaryClub} via SprintScale <${FROM_EMAIL}>`,
         to: primaryParent.email,
-        subject: `Registration received — ${data.orgName}`,
+        subject: `Registration received — ${primaryClub}`,
         html,
         attachments: [
           {

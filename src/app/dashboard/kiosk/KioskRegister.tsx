@@ -7,9 +7,9 @@ import { useState, useTransition, useOptimistic, useEffect } from 'react';
 import { markAttendeeAttendance } from '@/features/bookings/actions';
 import { queueOfflineAction, getUnsyncedActions, markActionSynced } from '@/lib/offline-sync';
 import {
-    CheckCircle2, XCircle, Clock, AlertTriangle,
+    CheckCircle2, XCircle, Clock,
     Loader2, ChevronLeft, ChevronRight, LayoutGrid, LayoutList, Users,
-    Maximize2, Minimize2, RefreshCw, Stethoscope, Edit2, Sparkles, Search
+    Maximize2, Minimize2, RefreshCw, Stethoscope, Edit2, Sparkles, Search, Building2
 } from 'lucide-react';
 import Link from 'next/link';
 import { format } from 'date-fns';
@@ -250,6 +250,23 @@ function StudentCard({
         }
     };
 
+    useEffect(() => {
+        if (!pinPadOpen) return;
+        const onKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                setPinPadOpen(false);
+                setPin('');
+                setPinError(null);
+            } else if (e.key === 'Backspace') {
+                setPin(prev => prev.slice(0, -1));
+            } else if (/^[0-9]$/.test(e.key)) {
+                handlePinDigit(parseInt(e.key, 10));
+            }
+        };
+        window.addEventListener('keydown', onKeyDown);
+        return () => window.removeEventListener('keydown', onKeyDown);
+    });
+
     const saveDetails = () => {
         startTransition(async () => {
             try {
@@ -417,9 +434,14 @@ function StudentCard({
 
             {/* PIN Pad Modal */}
             {pinPadOpen && (
-                <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/50 px-4">
+                <div
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby={`kiosk-pin-title-${attendee.id}`}
+                    className="fixed inset-0 z-[300] flex items-center justify-center bg-black/50 px-4"
+                >
                     <div className="bg-surface border border-border p-6 rounded-lg shadow-[var(--shadow-popover)] max-w-[320px] w-full">
-                        <h3 className="text-xl font-bold mb-2 text-center text-text">Confirm Check Out</h3>
+                        <h3 id={`kiosk-pin-title-${attendee.id}`} className="text-xl font-bold mb-2 text-center text-text">Confirm Check Out</h3>
                         <p className="text-center mb-4 text-sm text-text-secondary">
                             Enter the last 4 digits of the registered parent phone number to check out <strong className="text-text">{attendee.firstName} {attendee.lastName}</strong>
                         </p>
@@ -588,8 +610,14 @@ export default function KioskRegister({ slots, date, dateStr, centreName, centre
             {/* ── TOP BAR ─────────────────────────────────────────────────── */}
             <div className="flex items-center justify-between px-6 py-4 bg-surface border-b border-border-subtle flex-shrink-0">
                 <div>
-                    <h1 className="text-text font-bold text-lg leading-tight tracking-tight">Daily Register</h1>
-                    <p className="text-text-muted text-xs mt-0.5 font-medium">{date} · {centreName}</p>
+                    <div className="flex items-center gap-2.5 flex-wrap">
+                        <h1 className="text-text font-bold text-lg leading-tight tracking-tight">Daily Register</h1>
+                        <Badge variant="info">
+                            <Building2 className="w-3 h-3" />
+                            {centreName}
+                        </Badge>
+                    </div>
+                    <p className="text-text-muted text-xs mt-0.5 font-medium">{date}</p>
                 </div>
 
                 <div className="text-text font-bold text-4xl tabular-nums tracking-tight">

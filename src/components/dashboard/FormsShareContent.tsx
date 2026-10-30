@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Check, Copy, ExternalLink, Code, Eye, Laptop, Smartphone, ArrowRight, Share2, ClipboardList, Calendar, Link2, ChevronDown } from 'lucide-react';
+import { Building2, Check, Copy, ExternalLink, Code, Eye, Laptop, Smartphone, Share2, ClipboardList, Calendar, Link2, ChevronDown } from 'lucide-react';
 
 interface Organisation {
     id: string;
@@ -19,18 +19,20 @@ interface Centre {
 interface Props {
     organisation: Organisation;
     centres: Centre[];
+    initialCentreSlug?: string;
 }
 
 type EmbedSize = 'small' | 'medium' | 'large' | 'custom';
 type PortalType = 'booking' | 'registration';
 
-export default function FormsShareContent({ organisation, centres }: Props) {
+export default function FormsShareContent({ organisation, centres, initialCentreSlug }: Props) {
     const [activeTab, setActiveTab] = useState<PortalType>('booking');
     const [selectedCentre, setSelectedCentre] = useState<string>(
-        centres?.length === 1 ? centres[0].slug : ''
+        initialCentreSlug ?? (centres?.length === 1 ? centres[0].slug : '')
     );
     const [copiedLink, setCopiedLink] = useState(false);
     const [copiedEmbed, setCopiedEmbed] = useState(false);
+    const [copiedCentreKey, setCopiedCentreKey] = useState<string | null>(null);
     const [embedSize, setEmbedSize] = useState<EmbedSize>('large');
     const [customHeight, setCustomHeight] = useState('800');
     const [showPreview, setShowPreview] = useState(false);
@@ -155,7 +157,7 @@ export default function FormsShareContent({ organisation, centres }: Props) {
             {/* ── Portal Type Switcher ─────────────────────────────────── */}
             <div className="inline-flex bg-secondary/60 p-1 rounded-2xl gap-1">
                 <button
-                    onClick={() => { setActiveTab('booking'); setSelectedCentre(centres?.length === 1 ? centres[0].slug : ''); }}
+                    onClick={() => setActiveTab('booking')}
                     className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${
                         activeTab === 'booking'
                             ? 'bg-surface text-text shadow-sm'
@@ -166,7 +168,7 @@ export default function FormsShareContent({ organisation, centres }: Props) {
                     Booking Portal
                 </button>
                 <button
-                    onClick={() => { setActiveTab('registration'); setSelectedCentre(centres?.length === 1 ? centres[0].slug : ''); }}
+                    onClick={() => setActiveTab('registration')}
                     className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${
                         activeTab === 'registration'
                             ? 'bg-surface text-text shadow-sm'
@@ -177,6 +179,80 @@ export default function FormsShareContent({ organisation, centres }: Props) {
                     Registration Form
                 </button>
             </div>
+
+            {/* ── Quick Copy: Direct Links per Centre ──────────────────── */}
+            {centres.length > 0 && (
+                <div className="glassmorphic-card rounded-3xl p-6 shadow-sm space-y-4">
+                    <div className="flex items-center justify-between flex-wrap gap-2 pb-4 border-b border-border">
+                        <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-xl bg-accent-soft flex items-center justify-center">
+                                <Building2 className="w-4 h-4 text-accent" />
+                            </div>
+                            <div>
+                                <h2 className="text-base font-bold text-text">Direct Centre Links (Share with Parents)</h2>
+                                <p className="text-xs text-text-muted">Centre-first links pre-select the specific club so parents always see the right centre details.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {centres.map(c => {
+                            const regUrl = `${baseUrl}/register/${organisation.slug}/${c.slug}`;
+                            const bookUrl = `${baseUrl}/book/${organisation.slug}/${c.slug}`;
+                            const isRegCopied = copiedCentreKey === `reg:${c.id}`;
+                            const isBookCopied = copiedCentreKey === `book:${c.id}`;
+                            return (
+                                <div key={c.id} className="p-4 rounded-2xl bg-surface border border-border space-y-3">
+                                    <div className="flex items-center justify-between gap-2">
+                                        <span className="inline-flex items-center gap-1.5 font-bold text-sm text-text">
+                                            <Building2 className="w-3.5 h-3.5 text-accent" />
+                                            {c.name}
+                                        </span>
+                                        {selectedCentre === c.slug && (
+                                            <span className="px-2 py-0.5 rounded-full bg-accent-soft text-accent text-[10px] font-bold">
+                                                Active in preview
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                navigator.clipboard.writeText(regUrl);
+                                                setCopiedCentreKey(`reg:${c.id}`);
+                                                setTimeout(() => setCopiedCentreKey(null), 2000);
+                                            }}
+                                            className={`flex-1 min-w-[140px] h-9 px-3 rounded-xl border text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${
+                                                isRegCopied
+                                                    ? 'bg-success-soft border-success/30 text-success'
+                                                    : 'bg-page border-border text-text hover:border-accent/40'
+                                            }`}
+                                        >
+                                            {isRegCopied ? <Check className="w-3.5 h-3.5" /> : <ClipboardList className="w-3.5 h-3.5 text-accent" />}
+                                            {isRegCopied ? 'Registration Copied!' : 'Copy Registration'}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                navigator.clipboard.writeText(bookUrl);
+                                                setCopiedCentreKey(`book:${c.id}`);
+                                                setTimeout(() => setCopiedCentreKey(null), 2000);
+                                            }}
+                                            className={`flex-1 min-w-[140px] h-9 px-3 rounded-xl border text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${
+                                                isBookCopied
+                                                    ? 'bg-success-soft border-success/30 text-success'
+                                                    : 'bg-page border-border text-text hover:border-accent/40'
+                                            }`}
+                                        >
+                                            {isBookCopied ? <Check className="w-3.5 h-3.5" /> : <Calendar className="w-3.5 h-3.5 text-accent" />}
+                                            {isBookCopied ? 'Booking Copied!' : 'Copy Booking'}
+                                        </button>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
@@ -199,11 +275,12 @@ export default function FormsShareContent({ organisation, centres }: Props) {
                         {/* Centre selector */}
                         {centres.length > 1 && (
                             <div className="space-y-1.5">
-                                <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider">
+                                <label htmlFor="share-target-centre" className="block text-xs font-semibold text-text-muted uppercase tracking-wider">
                                     Target Centre
                                 </label>
                                 <div className="relative">
                                     <select
+                                        id="share-target-centre"
                                         value={selectedCentre}
                                         onChange={(e) => setSelectedCentre(e.target.value)}
                                         className="w-full h-11 pl-4 pr-10 rounded-xl bg-surface border border-border text-text text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent/50 transition-all appearance-none"

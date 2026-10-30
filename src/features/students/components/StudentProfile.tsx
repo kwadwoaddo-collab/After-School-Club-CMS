@@ -2,14 +2,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
     Phone, Mail, Calendar, GraduationCap, AlertTriangle, Clock, User,
     ChevronLeft, ChevronRight, CheckCircle, XCircle, MinusCircle,
     Loader2, Edit2, Check, X, Link2, Copy, LayoutGrid, BookOpen,
     ClipboardList, CreditCard, ShieldAlert, HeartHandshake, Info,
-    CheckCircle2, Banknote,
+    CheckCircle2, Banknote, Building2,
 } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/components/ui/utils';
@@ -60,6 +60,7 @@ interface AssessmentProfileProps {
         registeredSessions?: string[] | null;
         registrationId?: string | null;
         centreId?: string | null;
+        centreName?: string | null;
         organisationId?: string | null;
         sessionSlots?: string | null;
         parent: { id: string; firstName: string; lastName: string; phone: string | null; email: string | null; };
@@ -165,6 +166,15 @@ export default function StudentProfile({
         schoolYear: normalizeSchoolYear(student.schoolYear),
         notes: student.notes ?? '',
     });
+
+    useEffect(() => {
+        if (!showPrefillModal) return;
+        const onKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') setShowPrefillModal(false);
+        };
+        window.addEventListener('keydown', onKeyDown);
+        return () => window.removeEventListener('keydown', onKeyDown);
+    }, [showPrefillModal]);
 
     const handleSaveDetails = async () => {
         setIsSavingDetails(true);
@@ -298,6 +308,12 @@ export default function StudentProfile({
                     <div className="flex-1 min-w-0">
                         <h1 className="text-page-title text-text truncate">{fullName}</h1>
                         <div className="flex flex-wrap items-center gap-2 mt-1.5">
+                            {student.centreName && (
+                                <Badge variant="info">
+                                    <Building2 className="w-3 h-3" />
+                                    {student.centreName}
+                                </Badge>
+                            )}
                             {student.schoolYear && (
                                 <Badge variant={yearVariant}>
                                     <GraduationCap className="w-3 h-3" />
@@ -666,9 +682,13 @@ export default function StudentProfile({
                                                 {student.dateOfBirth ? new Date(student.dateOfBirth).toLocaleDateString('en-GB') : '—'}
                                             </span>
                                         </div>
-                                        <div className="flex items-center justify-between py-2">
+                                        <div className="flex items-center justify-between py-2 border-b border-border-subtle">
                                             <span className="text-metadata">School year</span>
                                             <span className="text-small-body font-medium text-text">{student.schoolYear}</span>
+                                        </div>
+                                        <div className="flex items-center justify-between py-2">
+                                            <span className="text-metadata">Centre</span>
+                                            <span className="text-small-body font-medium text-text">{student.centreName || 'Unassigned'}</span>
                                         </div>
                                     </div>
                                 )}
@@ -731,9 +751,13 @@ export default function StudentProfile({
                                             booking.status
                                         );
                                         return (
-                                            <div key={booking.id} className="p-3 rounded-sm bg-surface border border-border-subtle flex items-center justify-between gap-3">
+                                            <Link
+                                                key={booking.id}
+                                                href={`/dashboard/bookings/${booking.id}`}
+                                                className="p-3 rounded-sm bg-surface border border-border-subtle hover:border-accent/40 transition-colors flex items-center justify-between gap-3 group"
+                                            >
                                                 <div className="min-w-0 flex-1">
-                                                    <p className="text-small-body font-medium text-text">
+                                                    <p className="text-small-body font-medium text-text group-hover:text-accent transition-colors">
                                                         {new Date(booking.startAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
                                                     </p>
                                                     <p className="text-metadata flex items-center gap-1 mt-0.5 truncate">
@@ -750,7 +774,7 @@ export default function StudentProfile({
                                                 )}>
                                                     {resolved.label}
                                                 </span>
-                                            </div>
+                                            </Link>
                                         );
                                     })}
                                 </div>
@@ -988,12 +1012,18 @@ export default function StudentProfile({
 
             {/* ── Prefill modal ────────────────────────────────────────────── */}
             {showPrefillModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
+                <div
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="prefill-modal-title"
+                    className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40"
+                >
                     <div className="bg-surface rounded-lg border border-border shadow-[var(--shadow-popover)] max-w-md w-full p-6 space-y-4">
                         <div className="flex items-center justify-between">
-                            <h3 className="text-section-title text-text">Prefilled registration link</h3>
+                            <h3 id="prefill-modal-title" className="text-section-title text-text">Prefilled registration link</h3>
                             <button
                                 onClick={() => setShowPrefillModal(false)}
+                                aria-label="Close modal"
                                 className="w-7 h-7 rounded-full hover:bg-page flex items-center justify-center text-text-muted transition-colors"
                             >
                                 <X className="w-4 h-4" />

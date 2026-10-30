@@ -13,7 +13,7 @@ import RegistrationsBulkClient from '@/components/dashboard/RegistrationsBulkCli
 import RegistrationsFilters from '@/features/registration/components/RegistrationsFilters';
 import { getUserAccessibleCentres } from '@/lib/permissions';
 import { resolveActiveCentreId } from '@/lib/centre-filter';
-import { Share2 } from 'lucide-react';
+import { Building2, Share2 } from 'lucide-react';
 import HeaderPortal from '@/components/dashboard/HeaderPortal';
 
 const STATUS_BADGE: Record<string, string> = {
@@ -73,13 +73,20 @@ export default async function RegistrationsPage(props: {
         org = fetchedOrg;
 
         const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://after-school-club-live.vercel.app';
-        fullRegistrationUrl = org ? `${baseUrl}/register/${org.slug}` : null;
 
         // Get accessible centres
         orgCentres = await getUserAccessibleCentres(session.user.id);
         centreIds = orgCentres.map(c => c.id);
 
         activeCentreId = await resolveActiveCentreId(searchParams.centre, centreIds);
+        const activeCentreObj = activeCentreId !== 'all'
+            ? orgCentres.find(c => c.id === activeCentreId)
+            : null;
+        fullRegistrationUrl = org
+            ? activeCentreObj?.slug
+                ? `${baseUrl}/register/${org.slug}/${activeCentreObj.slug}`
+                : `${baseUrl}/register/${org.slug}`
+            : null;
 
         const centreScopeCondition = activeCentreId !== 'all'
             ? eq(registrations.centreId, activeCentreId)
@@ -170,16 +177,26 @@ export default async function RegistrationsPage(props: {
         activeCentreId !== 'all'
     );
 
+    const activeCentreName = activeCentreId !== 'all'
+        ? orgCentres.find(c => c.id === activeCentreId)?.name ?? null
+        : null;
+
     return (
         <div className="space-y-4 animate-in fade-in duration-700">
             <JoiningJourneyGuide />
             {/* Header Portals — Fuses page header into the global header bar */}
             <HeaderPortal targetId="header-left">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                     <h1 className="text-base sm:text-lg font-black text-foreground tracking-tight">Registrations</h1>
                     <span className="px-2 py-0.5 rounded-full bg-secondary border border-border text-muted-foreground text-[10px] font-bold">
                         {isFiltered ? `${rows.length} of ${totalCount}` : totalCount}
                     </span>
+                    {activeCentreName && (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-[11px] font-bold">
+                            <Building2 className="w-3 h-3" />
+                            {activeCentreName}
+                        </span>
+                    )}
                 </div>
             </HeaderPortal>
 

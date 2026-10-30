@@ -58,11 +58,11 @@ export default async function CentrePortalBook({ params }: Props) {
                     </Link>
                     <div className="flex items-center gap-3">
                         {org.logoUrl && (
-                            <img src={org.logoUrl} alt={org.name} className="h-8 w-auto object-contain rounded-lg" />
+                            <img src={org.logoUrl} alt={centre.name} className="h-8 w-auto object-contain rounded-lg" />
                         )}
                         <div>
-                            <h1 className="text-white font-bold text-lg leading-tight">Book a Session</h1>
-                            <p className="text-white/50 text-xs">{centre.name}</p>
+                            <h1 className="text-white font-bold text-lg leading-tight">{centre.name} — Book a Session</h1>
+                            <p className="text-white/50 text-xs">{centre.address || org.name}</p>
                         </div>
                     </div>
                 </div>

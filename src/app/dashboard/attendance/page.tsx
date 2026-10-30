@@ -11,13 +11,14 @@ import { getUserAccessibleCentres } from '@/lib/permissions';
 import { resolveActiveCentreId } from '@/lib/centre-filter';
 import { startOfDay, endOfDay, addDays, subDays, format } from 'date-fns';
 import Link from 'next/link';
-import { ChevronLeft, ChevronRight, Users, CheckCircle2, CalendarCheck, Download, AlertTriangle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Users, CheckCircle2, CalendarCheck, Download, AlertTriangle, Building2 } from 'lucide-react';
 import AttendanceRollCall from './AttendanceRollCall';
 import { compileDailyRegisterSlots } from '@/lib/attendance';
 import { logger } from '@/lib/logger';
 import HeaderPortal from '@/components/dashboard/HeaderPortal';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
 
 export default async function AttendancePage(props: {
     searchParams: Promise<{ date?: string; centre?: string }>;
@@ -104,11 +105,24 @@ export default async function AttendancePage(props: {
     }
 
     const attendanceRate = totalStudents > 0 ? Math.round((present / totalStudents) * 100) : 0;
+    const activeCentreName = activeCentreId !== 'all'
+        ? orgCentres.find(c => c.id === activeCentreId)?.name ?? null
+        : orgCentres.length === 1
+            ? orgCentres[0].name
+            : null;
 
     return (
         <div className="space-y-6">
             <HeaderPortal targetId="header-left">
-                <h1 className="text-page-title text-text">Attendance</h1>
+                <div className="flex items-center gap-2.5 flex-wrap">
+                    <h1 className="text-page-title text-text">Attendance</h1>
+                    {activeCentreName && (
+                        <Badge variant="info">
+                            <Building2 className="w-3 h-3" />
+                            {activeCentreName}
+                        </Badge>
+                    )}
+                </div>
             </HeaderPortal>
 
             <HeaderPortal targetId="header-right-actions">

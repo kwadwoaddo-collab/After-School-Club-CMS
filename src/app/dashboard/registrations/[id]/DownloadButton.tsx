@@ -8,6 +8,10 @@ import { Download, Loader2 } from 'lucide-react';
 interface DownloadButtonProps {
     orgName: string;
     centreName: string | null;
+    centreAddress?: string | null;
+    centrePhone?: string | null;
+    centreEmail?: string | null;
+    ofstedId?: string | null;
     startDate: string | Date | null;
     submittedAt: string | Date;
     parents: {
@@ -74,6 +78,10 @@ export default function DownloadButton(props: DownloadButtonProps) {
                 <RegistrationTemplate
                     orgName={props.centreName || props.orgName}
                     centreName={props.centreName}
+                    centreAddress={props.centreAddress}
+                    centrePhone={props.centrePhone}
+                    centreEmail={props.centreEmail}
+                    ofstedId={props.ofstedId}
                     startDate={props.startDate}
                     submittedAt={props.submittedAt}
                     parents={props.parents}

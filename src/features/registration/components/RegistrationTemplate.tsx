@@ -204,6 +204,10 @@ interface SpecialNeedsData {
 export interface RegistrationTemplateProps {
     orgName: string;
     centreName?: string | null;
+    centreAddress?: string | null;
+    centrePhone?: string | null;
+    centreEmail?: string | null;
+    ofstedId?: string | null;
     startDate?: string | Date | null;
     registeredChildren: ChildData[];
     parents: ParentData[];
@@ -226,6 +230,10 @@ const fundingLabelMap: Record<string, string> = {
 export const RegistrationTemplate = ({
     orgName,
     centreName,
+    centreAddress,
+    centrePhone,
+    centreEmail,
+    ofstedId,
     startDate,
     registeredChildren,
     parents,
@@ -237,6 +245,12 @@ export const RegistrationTemplate = ({
 }: RegistrationTemplateProps) => {
     const primaryHeading = centreName || orgName || 'After School Club';
     const showParentOrgSubtitle = Boolean(centreName && orgName && centreName.trim().toLowerCase() !== orgName.trim().toLowerCase());
+    const centreMetaParts = [
+        centreAddress,
+        centrePhone ? `Tel: ${centrePhone}` : null,
+        centreEmail,
+        ofstedId ? `Ofsted: ${ofstedId}` : null,
+    ].filter(Boolean);
 
     const formattedStartDate = startDate
         ? format(new Date(startDate), 'dd MMMM yyyy')
@@ -261,6 +275,11 @@ export const RegistrationTemplate = ({
                         <Text style={styles.docSubtitle}>
                             {showParentOrgSubtitle ? 'Registered Centre · Student Registration Details' : 'Student Registration Details'}
                         </Text>
+                        {centreMetaParts.length > 0 && (
+                            <Text style={{ fontSize: 7.5, color: '#64748b', marginTop: 2 }}>
+                                {centreMetaParts.join(' · ')}
+                            </Text>
+                        )}
                     </View>
                     <View style={styles.headerRight}>
                         <View style={styles.headerInfoRow}>

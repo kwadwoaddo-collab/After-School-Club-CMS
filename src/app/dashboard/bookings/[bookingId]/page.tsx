@@ -134,8 +134,20 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
                         <ChevronLeft className="w-5 h-5" />
                     </Link>
                     <div className="min-w-0">
-                        <h1 className="text-page-title text-text">Booking Details</h1>
-                        <p className="text-text-secondary text-small-body mt-0.5">View and manage booking</p>
+                        <div className="flex items-center gap-2.5 flex-wrap">
+                            <h1 className="text-page-title text-text">Booking Details</h1>
+                            {booking.centre?.name && (
+                                <Badge variant="info">
+                                    <MapPin className="w-3 h-3" />
+                                    {booking.centre.name}
+                                </Badge>
+                            )}
+                        </div>
+                        <p className="text-text-secondary text-small-body mt-0.5">
+                            {booking.startAt
+                                ? `${format(new Date(booking.startAt), 'EEEE, d MMM yyyy · h:mm a')}`
+                                : 'View and manage booking'}
+                        </p>
                     </div>
                 </div>
                 <div className="flex items-center gap-3 flex-wrap">

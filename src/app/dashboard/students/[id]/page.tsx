@@ -51,6 +51,7 @@ export default async function StudentProfilePage(
             notes: children.notes,
             registeredSessions: children.registeredSessions,
             centreId: children.centreId,
+            centreName: centres.name,
             sessionSlots: centres.sessionSlots,
             organisationId: children.organisationId,
             parentId: children.parentId,

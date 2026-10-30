@@ -6,7 +6,7 @@ import { db } from '@/db';
 import { registrations, registrationChildren, registrationParents, organisations, centres, children, authorisedCollectors } from '@/db/schema';
 import { eq, and, inArray } from 'drizzle-orm';
 import Link from 'next/link';
-import { Check, ChevronLeft } from 'lucide-react';
+import { Building2, Check, ChevronLeft } from 'lucide-react';
 import RegistrationStatusUpdater from './StatusUpdater';
 import DownloadButton from './DownloadButton';
 import EditRegistrationForm from './EditRegistrationForm';
@@ -70,14 +70,29 @@ export default async function RegistrationDetailPage({ params }: { params: Promi
     if (!reg) notFound();
 
     let centreName: string | null = null;
+    let centreAddress: string | null = null;
+    let centrePhone: string | null = null;
+    let centreEmail: string | null = null;
+    let centreOfstedId: string | null = null;
     let centreSessionSlots: string[] | undefined;
     if (reg.centreId) {
         const centre = await db.query.centres.findFirst({
             where: eq(centres.id, reg.centreId),
-            columns: { name: true, sessionSlots: true },
+            columns: {
+                name: true,
+                address: true,
+                billingPhone: true,
+                billingEmail: true,
+                ofstedId: true,
+                sessionSlots: true,
+            },
         });
         if (centre) {
             centreName = centre.name;
+            centreAddress = centre.address ?? null;
+            centrePhone = centre.billingPhone ?? null;
+            centreEmail = centre.billingEmail ?? null;
+            centreOfstedId = centre.ofstedId ?? null;
             if (centre.sessionSlots) {
                 try { centreSessionSlots = JSON.parse(centre.sessionSlots); } catch { /* ignore */ }
             }
@@ -116,12 +131,31 @@ export default async function RegistrationDetailPage({ params }: { params: Promi
             {/* Header */}
             <div className="flex items-start justify-between mb-8 flex-wrap gap-4">
                 <div>
-                    <h1 className="text-2xl font-black text-foreground">
-                        {primary ? `${primary.submittedFirstName} ${primary.submittedLastName}` : 'Registration'}
-                    </h1>
+                    <div className="flex items-center gap-2.5 flex-wrap">
+                        <h1 className="text-2xl font-black text-foreground">
+                            {primary ? (
+                                primary.parentId ? (
+                                    <Link
+                                        href={`/dashboard/parents/${primary.parentId}`}
+                                        className="hover:text-primary hover:underline underline-offset-4 transition-colors"
+                                    >
+                                        {primary.submittedFirstName} {primary.submittedLastName}
+                                    </Link>
+                                ) : (
+                                    `${primary.submittedFirstName} ${primary.submittedLastName}`
+                                )
+                            ) : 'Registration'}
+                        </h1>
+                        {centreName && (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 text-xs font-bold">
+                                <Building2 className="w-3.5 h-3.5" />
+                                {centreName}
+                                {centreOfstedId && <span className="text-primary/70 font-normal">· Ofsted: {centreOfstedId}</span>}
+                            </span>
+                        )}
+                    </div>
                     <p className="text-muted-foreground text-sm mt-1">
                         Submitted {new Date(reg.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                        {centreName && <span className="ml-2 text-muted-foreground/50">· {centreName}</span>}
                     </p>
                 </div>
                 <div className="flex items-center gap-3 flex-wrap">
@@ -132,6 +166,10 @@ export default async function RegistrationDetailPage({ params }: { params: Promi
                     <DownloadButton
                         orgName={orgName}
                         centreName={centreName}
+                        centreAddress={centreAddress}
+                        centrePhone={centrePhone}
+                        centreEmail={centreEmail}
+                        ofstedId={centreOfstedId}
                         startDate={reg.startDate}
                         submittedAt={reg.submittedAt || reg.createdAt}
                         parents={pars.map(p => ({
