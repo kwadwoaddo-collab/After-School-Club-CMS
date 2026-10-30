@@ -13,6 +13,14 @@ interface Centre {
 
 interface StudentFormProps {
     accessibleCentres: Centre[];
+    initialParent?: {
+        id: string;
+        firstName: string;
+        lastName: string;
+        email: string;
+        phone: string;
+    };
+    defaultCentreId?: string;
 }
 
 function FormField({
@@ -30,7 +38,7 @@ function FormField({
     );
 }
 
-export default function StudentForm({ accessibleCentres }: StudentFormProps) {
+export default function StudentForm({ accessibleCentres, initialParent, defaultCentreId }: StudentFormProps) {
     const router = useRouter();
 
     const [formData, setFormData] = useState({
@@ -38,11 +46,11 @@ export default function StudentForm({ accessibleCentres }: StudentFormProps) {
         lastName: '',
         dateOfBirth: '',
         schoolYear: '',
-        parentFirstName: '',
-        parentLastName: '',
-        parentEmail: '',
-        parentPhone: '',
-        centreId: accessibleCentres.length === 1 ? accessibleCentres[0].id : '',
+        parentFirstName: initialParent?.firstName || '',
+        parentLastName: initialParent?.lastName || '',
+        parentEmail: initialParent?.email || '',
+        parentPhone: initialParent?.phone || '',
+        centreId: defaultCentreId || (accessibleCentres.length === 1 ? accessibleCentres[0].id : ''),
     });
 
     const [existingEnrolled, setExistingEnrolled] = useState(false);
@@ -145,10 +153,15 @@ export default function StudentForm({ accessibleCentres }: StudentFormProps) {
                     <h3 className="text-section-title text-text mb-1">Student added</h3>
                     <p className="text-small-body text-text-secondary">The student record has been saved. Billing eligibility requires confirmed enrolment.</p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center justify-center gap-3">
                     <Button asChild>
                         <Link href={`/dashboard/students/${createdStudentId}`}>View student profile →</Link>
                     </Button>
+                    {initialParent && (
+                        <Button asChild variant="secondary">
+                            <Link href={`/dashboard/parents/${initialParent.id}`}>Back to family profile</Link>
+                        </Button>
+                    )}
                     <Button
                         variant="secondary"
                         onClick={() => {
@@ -159,11 +172,11 @@ export default function StudentForm({ accessibleCentres }: StudentFormProps) {
                                 lastName: '',
                                 dateOfBirth: '',
                                 schoolYear: '',
-                                parentFirstName: '',
-                                parentLastName: '',
-                                parentEmail: '',
-                                parentPhone: '',
-                                centreId: accessibleCentres.length === 1 ? accessibleCentres[0].id : '',
+                                parentFirstName: initialParent?.firstName || '',
+                                parentLastName: initialParent?.lastName || '',
+                                parentEmail: initialParent?.email || '',
+                                parentPhone: initialParent?.phone || '',
+                                centreId: defaultCentreId || (accessibleCentres.length === 1 ? accessibleCentres[0].id : ''),
                             });
                         }}
                     >
@@ -252,6 +265,11 @@ export default function StudentForm({ accessibleCentres }: StudentFormProps) {
 
             {/* Parent details */}
             <div className="space-y-3 pt-5 border-t border-border-subtle">
+                {initialParent && (
+                    <div className="p-3 bg-info/10 border border-info/20 rounded-sm text-small-body text-text-secondary">
+                        Adding a child to <span className="font-semibold text-text">{initialParent.firstName} {initialParent.lastName}&apos;s</span> family — parent contact details have been pre-filled.
+                    </div>
+                )}
                 <h3 className="text-section-title text-text">Parent / guardian details</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <FormField label="First name" required error={errors.parentFirstName}>
@@ -277,7 +295,7 @@ export default function StudentForm({ accessibleCentres }: StudentFormProps) {
             </div>
             <div className="flex flex-wrap items-center justify-end gap-3 pt-5 border-t border-border-subtle">
                 <Button asChild variant="secondary" type="button">
-                    <Link href="/dashboard/students">Cancel</Link>
+                    <Link href={initialParent ? `/dashboard/parents/${initialParent.id}` : '/dashboard/students'}>Cancel</Link>
                 </Button>
                 <Button type="submit" disabled={isSubmitting || accessibleCentres.length === 0}>
                     {isSubmitting ? 'Saving…' : 'Add student'}

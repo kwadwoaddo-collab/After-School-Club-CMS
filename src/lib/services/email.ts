@@ -266,6 +266,7 @@ function renderBookingConfirmationMessage(data: BookingEmailData, opts: Confirma
     <div class="container">
       <div class="header">
         <h1>Booking Confirmed!</h1>
+        ${data.centreName ? `<p style="margin: 8px 0 0; font-size: 15px; color: rgba(255,255,255,0.9); font-weight: 600;">${data.centreName}</p>` : ''}
       </div>
       <div class="content">
         <div class="greeting">Hi ${data.parentFirstName},</div>
@@ -433,7 +434,7 @@ export class EmailService {
       const { subject, html: htmlContent } = renderBookingConfirmationMessage(data);
 
       const { data: result, error } = await resend.emails.send({
-        from: `${FROM_NAME} <${FROM_EMAIL}>`,
+        from: `${data.centreName || FROM_NAME} via SprintScale <${FROM_EMAIL}>`,
         to: data.parentEmail,
         subject,
         html: htmlContent,
@@ -1266,9 +1267,9 @@ export class EmailService {
 
     try {
       const { data: result, error } = await resend.emails.send({
-        from: `${FROM_NAME} <${FROM_EMAIL}>`,
+        from: `${data.centreName || FROM_NAME} via SprintScale <${FROM_EMAIL}>`,
         to: data.parentEmail,
-        subject: `New Invoice ${data.invoiceNumber} — £${data.amount.toFixed(2)} due ${formattedDue}`,
+        subject: `New Invoice ${data.invoiceNumber} — £${data.amount.toFixed(2)} due ${formattedDue}${data.centreName ? ` — ${data.centreName}` : ''}`,
         html,
       });
       if (error) return { success: false, error: error.message, outcome: 'unknown' };
@@ -1498,11 +1499,12 @@ export class EmailService {
       }
     }
 
+    const primaryClub = data.centreName || data.orgName;
     try {
       const { data: result, error } = await resend.emails.send({
-        from: `${data.orgName} via SprintScale <${FROM_EMAIL}>`,
+        from: `${primaryClub} via SprintScale <${FROM_EMAIL}>`,
         to: data.parentEmail,
-        subject: `📊 Assessment Feedback for ${data.childFirstName} — ${data.orgName}`,
+        subject: `📊 Assessment Feedback for ${data.childFirstName} — ${primaryClub}`,
         html,
         attachments,
       });

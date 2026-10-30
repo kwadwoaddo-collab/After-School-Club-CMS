@@ -84,25 +84,37 @@ export default async function AvailabilityPage() {
                 {centresList.map(centre => (
                     <div key={centre.id} className="glass-card rounded-3xl overflow-hidden">
                         {/* Card Header */}
-                        <div className="flex items-center justify-between px-6 py-5 border-b border-border">
+                        <div className="flex flex-wrap items-center justify-between gap-4 px-6 py-5 border-b border-border">
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-primary/10 rounded-2xl flex items-center justify-center">
+                                <div className="w-10 h-10 bg-primary/10 rounded-2xl flex items-center justify-center shrink-0">
                                     <MapPin className="w-5 h-5 text-primary" />
                                 </div>
                                 <div>
                                     <h2 className="font-bold text-foreground capitalize">{centre.name}</h2>
-                                    {centre.timezone && (
-                                        <p className="text-xs text-muted-foreground font-medium">{centre.timezone}</p>
-                                    )}
+                                    <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground font-medium">
+                                        {centre.address && <span>{centre.address}</span>}
+                                        {centre.address && (centre.managerName || centre.timezone) && <span>·</span>}
+                                        {centre.managerName && <span>Manager: {centre.managerName}</span>}
+                                        {centre.managerName && centre.timezone && <span>·</span>}
+                                        {centre.timezone && <span>{centre.timezone}</span>}
+                                    </div>
                                 </div>
                             </div>
-                            <Link
-                                href={`/dashboard/availability/${centre.id}`}
-                                className="flex items-center gap-2 px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-2xl text-sm font-bold transition-all"
-                            >
-                                <Settings className="w-4 h-4" />
-                                Edit Hours
-                            </Link>
+                            <div className="flex items-center gap-2">
+                                <Link
+                                    href={`/dashboard/centres/${centre.id}/settings`}
+                                    className="flex items-center gap-2 px-4 py-2 bg-secondary hover:bg-secondary/80 text-foreground rounded-2xl text-sm font-semibold transition-all border border-border"
+                                >
+                                    Centre Settings
+                                </Link>
+                                <Link
+                                    href={`/dashboard/availability/${centre.id}`}
+                                    className="flex items-center gap-2 px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-2xl text-sm font-bold transition-all"
+                                >
+                                    <Settings className="w-4 h-4" />
+                                    Edit Hours
+                                </Link>
+                            </div>
                         </div>
 
                         {/* Weekly Schedule Grid */}

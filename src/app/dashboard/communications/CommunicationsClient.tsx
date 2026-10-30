@@ -62,9 +62,11 @@ function getStatusBadge(b: Broadcast) {
 
 export default function CommunicationsClient({
     centreId,
+    centreName,
     requireConfirmation,
 }: {
     centreId: string;
+    centreName?: string | null;
     requireConfirmation?: boolean;
 }) {
     const shouldConfirm = requireConfirmation ?? (typeof process === 'undefined' || !process.env.VITEST);
@@ -89,6 +91,17 @@ export default function CommunicationsClient({
     const [isSending, setIsSending] = useState(false);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [sendResult, setSendResult] = useState<{ success: boolean; count: number; sent: number; failed: number; status?: string; error?: string } | null>(null);
+
+    useEffect(() => {
+        if (!selectedBroadcast) return;
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                setSelectedBroadcast(null);
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [selectedBroadcast]);
 
     const loadData = useCallback(async () => {
         const request = ++loadRequest.current;
@@ -225,7 +238,14 @@ export default function CommunicationsClient({
             {activeTab === 'compose' && (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div className="lg:col-span-2 bg-card border border-border rounded-3xl p-6 md:p-8 shadow-sm">
-                        <h2 className="text-xl font-bold text-foreground mb-6">Compose Message</h2>
+                        <div className="flex flex-wrap items-center justify-between gap-2 mb-6">
+                            <h2 className="text-xl font-bold text-foreground">Compose Message</h2>
+                            {centreName && (
+                                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
+                                    Sending for: {centreName}
+                                </span>
+                            )}
+                        </div>
                         
                         {sendResult && sendResult.success && (
                             <div className="mb-6 p-4 rounded-xl bg-success/10 border border-success/20 text-success text-sm font-medium">
@@ -241,8 +261,9 @@ export default function CommunicationsClient({
 
                         <form onSubmit={handleSend} className="space-y-5">
                             <div>
-                                <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Subject</label>
+                                <label htmlFor="broadcast-subject" className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Subject</label>
                                 <input
+                                    id="broadcast-subject"
                                     type="text"
                                     value={subject}
                                     onChange={(e) => setSubject(e.target.value)}
@@ -252,8 +273,9 @@ export default function CommunicationsClient({
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Message Body</label>
+                                <label htmlFor="broadcast-message" className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Message Body</label>
                                 <textarea
+                                    id="broadcast-message"
                                     value={message}
                                     onChange={(e) => setMessage(e.target.value)}
                                     rows={8}
@@ -288,8 +310,9 @@ export default function CommunicationsClient({
                             </div>
                             
                             <div className="mb-6">
-                                <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Target Class</label>
+                                <label htmlFor="broadcast-target-class" className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Target Class</label>
                                 <select 
+                                    id="broadcast-target-class"
                                     value={selectedClassId}
                                     onChange={(e) => setSelectedClassId(e.target.value)}
                                     className="w-full px-4 py-3 bg-secondary/30 border border-border rounded-xl text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer"
@@ -381,7 +404,12 @@ export default function CommunicationsClient({
 
             {/* Slide-out History Drawer */}
             {selectedBroadcast && (
-                <div className="fixed inset-0 z-50 flex justify-end">
+                <div
+                    className="fixed inset-0 z-50 flex justify-end"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="broadcast-details-title"
+                >
                     <div 
                         className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" 
                         onClick={() => setSelectedBroadcast(null)} 
@@ -389,11 +417,13 @@ export default function CommunicationsClient({
                     <div className="relative w-full max-w-lg bg-card shadow-2xl h-full flex flex-col animate-in slide-in-from-right duration-300 border-l border-border">
                         <div className="flex items-center justify-between p-6 border-b border-border">
                             <div>
-                                <h2 className="text-lg font-bold text-foreground">Broadcast Details</h2>
+                                <h2 id="broadcast-details-title" className="text-lg font-bold text-foreground">Broadcast Details</h2>
                                 <p className="text-xs text-muted-foreground mt-0.5">Delivery audit and recipient ledger</p>
                             </div>
                             <button 
+                                type="button"
                                 onClick={() => setSelectedBroadcast(null)}
+                                aria-label="Close broadcast details"
                                 className="p-2 hover:bg-secondary/80 rounded-full transition-colors text-muted-foreground hover:text-foreground"
                             >
                                 <X className="w-5 h-5" />

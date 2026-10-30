@@ -1,8 +1,8 @@
 import { redirect } from 'next/navigation';
 import { db } from '@/db';
-import { organisations } from '@/db/schema';
+import { organisations, centres } from '@/db/schema';
 import { eq } from 'drizzle-orm';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Building2 } from 'lucide-react';
 import CommunicationsClient from './CommunicationsClient';
 import { resolveActiveCentreId } from '@/lib/centre-filter';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
@@ -27,6 +27,7 @@ export default async function CommunicationsPage() {
     let org = null;
     let centreIds: string[] = [];
     let activeCentreId = 'all';
+    let activeCentre: { name: string } | null = null;
     let hasError = false;
 
     try {
@@ -39,6 +40,13 @@ export default async function CommunicationsPage() {
         
         centreIds = await getUserAccessibleCentreIds(session.user.id);
         activeCentreId = await resolveActiveCentreId(undefined, centreIds);
+        if (activeCentreId && activeCentreId !== 'all') {
+            const foundCentre = await db.query.centres.findFirst({
+                where: eq(centres.id, activeCentreId),
+                columns: { name: true },
+            });
+            activeCentre = foundCentre ?? null;
+        }
     } catch (e) {
         logger.error("Error fetching communications data", e);
         hasError = true;
@@ -52,6 +60,10 @@ export default async function CommunicationsPage() {
             {/* Page Header */}
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
                 <div>
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold mb-2">
+                        <Building2 className="w-3.5 h-3.5" />
+                        <span>{activeCentre?.name || 'All Accessible Centres'}</span>
+                    </div>
                     <h1 className="text-2xl sm:text-3xl font-black text-foreground tracking-tight">
                         Broadcast Messaging
                     </h1>
@@ -69,7 +81,7 @@ export default async function CommunicationsPage() {
             )}
 
             {/* Content */}
-            <CommunicationsClient centreId={activeCentreId} />
+            <CommunicationsClient centreId={activeCentreId} centreName={activeCentre?.name || null} />
         </div>
     );
 }

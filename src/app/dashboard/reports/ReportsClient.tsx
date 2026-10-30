@@ -297,8 +297,9 @@ export default function ReportsClient() {
                                         <button onClick={() => setShowCustomRangeBooking(false)} className="text-xs font-semibold text-primary hover:text-primary/90 transition-colors">Cancel</button>
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Start Date</label>
+                                        <label htmlFor="booking-start-date" className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Start Date</label>
                                         <input
+                                            id="booking-start-date"
                                             type="date"
                                             value={startDateBooking}
                                             onChange={(e) => setStartDateBooking(e.target.value)}
@@ -306,8 +307,9 @@ export default function ReportsClient() {
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">End Date</label>
+                                        <label htmlFor="booking-end-date" className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">End Date</label>
                                         <input
+                                            id="booking-end-date"
                                             type="date"
                                             value={endDateBooking}
                                             onChange={(e) => setEndDateBooking(e.target.value)}
@@ -384,8 +386,9 @@ export default function ReportsClient() {
                                         <button onClick={() => setShowCustomRangeStudent(false)} className="text-xs font-semibold text-primary hover:text-primary/90 transition-colors">Cancel</button>
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Start Date</label>
+                                        <label htmlFor="student-start-date" className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Start Date</label>
                                         <input
+                                            id="student-start-date"
                                             type="date"
                                             value={startDateStudent}
                                             onChange={(e) => setStartDateStudent(e.target.value)}
@@ -393,8 +396,9 @@ export default function ReportsClient() {
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">End Date</label>
+                                        <label htmlFor="student-end-date" className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">End Date</label>
                                         <input
+                                            id="student-end-date"
                                             type="date"
                                             value={endDateStudent}
                                             onChange={(e) => setEndDateStudent(e.target.value)}

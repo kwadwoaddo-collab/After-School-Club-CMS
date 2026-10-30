@@ -93,23 +93,60 @@ export function InvoiceTable({
                                     </td>
                                     <td className="py-4 px-4">
                                         <div className="flex flex-col">
-                                            {invoice.child ? (
-                                                <Link
-                                                    href={`/dashboard/students/${invoice.child.id || invoice.childId}`}
-                                                    onClick={(e) => e.stopPropagation()}
-                                                    className="text-sm font-bold text-foreground hover:text-primary hover:underline transition-colors w-fit"
-                                                >
-                                                    {invoice.child.firstName} {invoice.child.lastName}
-                                                </Link>
-                                            ) : invoice.parent ? (
-                                                <Link
-                                                    href={`/dashboard/parents/${invoice.parent.id || invoice.parentId}`}
-                                                    onClick={(e) => e.stopPropagation()}
-                                                    className="text-sm font-bold text-foreground hover:text-primary hover:underline transition-colors w-fit"
-                                                >
-                                                    {`${invoice.parent.firstName} ${invoice.parent.lastName} Family`}
-                                                </Link>
-                                            ) : null}
+                                            {(() => {
+                                                const covered = Array.isArray(invoice.coveredChildrenJson) && invoice.coveredChildrenJson.length > 0
+                                                    ? invoice.coveredChildrenJson
+                                                    : null;
+                                                if (covered) {
+                                                    return (
+                                                        <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                                                            {covered.map((c: any, idx: number) => {
+                                                                const childId = c.id || c.childId;
+                                                                const childName = c.name || `${c.firstName || ''} ${c.lastName || ''}`.trim();
+                                                                return (
+                                                                    <span key={childId || idx} className="inline-flex items-center">
+                                                                        {childId ? (
+                                                                            <Link
+                                                                                href={`/dashboard/students/${childId}`}
+                                                                                onClick={(e) => e.stopPropagation()}
+                                                                                className="text-sm font-bold text-foreground hover:text-primary hover:underline transition-colors w-fit"
+                                                                            >
+                                                                                {childName}
+                                                                            </Link>
+                                                                        ) : (
+                                                                            <span className="text-sm font-bold text-foreground">{childName}</span>
+                                                                        )}
+                                                                        {idx < covered.length - 1 && <span className="text-muted-foreground mr-0.5">,</span>}
+                                                                    </span>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    );
+                                                }
+                                                if (invoice.child) {
+                                                    return (
+                                                        <Link
+                                                            href={`/dashboard/students/${invoice.child.id || invoice.childId}`}
+                                                            onClick={(e) => e.stopPropagation()}
+                                                            className="text-sm font-bold text-foreground hover:text-primary hover:underline transition-colors w-fit"
+                                                        >
+                                                            {invoice.child.firstName} {invoice.child.lastName}
+                                                        </Link>
+                                                    );
+                                                }
+                                                if (invoice.parent) {
+                                                    return (
+                                                        <Link
+                                                            href={`/dashboard/parents/${invoice.parent.id || invoice.parentId}`}
+                                                            onClick={(e) => e.stopPropagation()}
+                                                            className="text-sm font-bold text-foreground hover:text-primary hover:underline transition-colors w-fit"
+                                                        >
+                                                            {`${invoice.parent.firstName} ${invoice.parent.lastName} Family`}
+                                                        </Link>
+                                                    );
+                                                }
+                                                return null;
+                                            })()}
                                             <span className="text-xs text-muted-foreground">{invoice.centre?.name}</span>
                                         </div>
                                     </td>
@@ -148,6 +185,7 @@ export function InvoiceTable({
                                                         onClick={() => setConfirmTarget({ id: invoice.id, invoiceNumber: invoice.invoiceNumber, action: 'void' })}
                                                         className="p-2 bg-warning/10 text-amber-700 dark:text-amber-400 hover:bg-warning/20 rounded-lg transition-all border border-warning/20 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed active:scale-90 duration-100"
                                                         title="Void Invoice"
+                                                        aria-label="Void Invoice"
                                                     >
                                                         <Ban className="w-4 h-4" />
                                                     </button>
@@ -159,6 +197,7 @@ export function InvoiceTable({
                                                         onClick={() => setConfirmTarget({ id: invoice.id, invoiceNumber: invoice.invoiceNumber, action: 'delete' })}
                                                         className="p-2 bg-destructive/10 text-destructive hover:bg-destructive/20 rounded-lg transition-all border border-destructive/20 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed active:scale-90 duration-100"
                                                         title="Delete Draft"
+                                                        aria-label="Delete Draft"
                                                     >
                                                         <Trash2 className="w-4 h-4" />
                                                     </button>

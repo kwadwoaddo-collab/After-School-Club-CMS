@@ -1,9 +1,9 @@
 import { redirect } from 'next/navigation';
 import { requireAuth } from '@/lib/require-auth';
 import { db } from '@/db';
-import { organisations } from '@/db/schema';
+import { organisations, centres } from '@/db/schema';
 import { eq } from 'drizzle-orm';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Building2 } from 'lucide-react';
 import IncidentsClient from './IncidentsClient';
 import { resolveActiveCentreId } from '@/lib/centre-filter';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
@@ -22,6 +22,7 @@ export default async function IncidentsPage() {
     let org = null;
     let centreIds: string[] = [];
     let activeCentreId = 'all';
+    let activeCentre: { name: string; ofstedId: string | null } | null = null;
     let hasError = false;
 
     try {
@@ -34,6 +35,16 @@ export default async function IncidentsPage() {
 
         centreIds = await getUserAccessibleCentreIds(session.user.id);
         activeCentreId = await resolveActiveCentreId(undefined, centreIds);
+        if ((!activeCentreId || activeCentreId === 'all') && centreIds.length > 0) {
+            activeCentreId = centreIds[0];
+        }
+        if (activeCentreId && activeCentreId !== 'all') {
+            const foundCentre = await db.query.centres.findFirst({
+                where: eq(centres.id, activeCentreId),
+                columns: { name: true, ofstedId: true },
+            });
+            activeCentre = foundCentre ?? null;
+        }
     } catch (e) {
         logger.error('Error fetching incidents data', e);
         hasError = true;
@@ -49,11 +60,19 @@ export default async function IncidentsPage() {
         return redirect('/dashboard');
     }
 
+    const centreName = activeCentre?.name || undefined;
+
     return (
         <div className="space-y-8 animate-in fade-in duration-700">
             {/* Page Header */}
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
                 <div>
+                    {centreName && (
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-accent/10 border border-accent/20 text-accent text-xs font-bold mb-2">
+                            <Building2 className="w-3.5 h-3.5" />
+                            <span>{centreName}{activeCentre?.ofstedId ? ` · Ofsted ${activeCentre.ofstedId}` : ''}</span>
+                        </div>
+                    )}
                     <h1 className="text-2xl sm:text-3xl font-black text-text tracking-tight">
                         Incident &amp; Accident Records
                     </h1>
@@ -73,6 +92,7 @@ export default async function IncidentsPage() {
             {/* Content */}
             <IncidentsClient
                 centreId={activeCentreId}
+                centreName={centreName}
                 userRole={String((session.user as { role?: string }).role || '')}
             />
         </div>

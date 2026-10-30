@@ -9,7 +9,7 @@ import { logger } from '@/lib/logger';
 
 type Incident = Awaited<ReturnType<typeof getIncidents>>[number];
 
-export default function IncidentsClient({ centreId, userRole }: { centreId: string; userRole?: string }) {
+export default function IncidentsClient({ centreId, centreName, userRole }: { centreId: string; centreName?: string; userRole?: string }) {
     const [incidents, setIncidents] = useState<Incident[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -213,7 +213,7 @@ export default function IncidentsClient({ centreId, userRole }: { centreId: stri
                                     Incident &amp; Safeguarding Record
                                 </h2>
                                 <p className="text-xs text-text-muted mt-0.5">
-                                    Logged {new Date(selectedIncident.createdAt).toLocaleString('en-GB')}
+                                    {centreName ? `${centreName} · ` : ''}Logged {new Date(selectedIncident.createdAt).toLocaleString('en-GB')}
                                 </p>
                             </div>
                             <button
@@ -227,6 +227,14 @@ export default function IncidentsClient({ centreId, userRole }: { centreId: stri
                         </div>
 
                         <div className="p-6 flex-1 overflow-y-auto space-y-5">
+                            {centreName && (
+                                <div>
+                                    <span className="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">
+                                        Centre
+                                    </span>
+                                    <p className="text-sm font-semibold text-text">{centreName}</p>
+                                </div>
+                            )}
                             <div className="flex items-center justify-between gap-4 flex-wrap">
                                 <div>
                                     <span className="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">

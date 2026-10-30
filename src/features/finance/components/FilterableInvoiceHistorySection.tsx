@@ -21,10 +21,18 @@ export default function FilterableInvoiceHistorySection({ initialInvoices, isOwn
     today.setUTCHours(0, 0, 0, 0);
 
     const filtered = initialInvoices.filter(invoice => {
+        const q = searchQuery.toLowerCase();
+        const coveredMatches = Array.isArray(invoice.coveredChildrenJson)
+            ? invoice.coveredChildrenJson.some((c: { name?: string; firstName?: string; lastName?: string }) =>
+                  (c.name || `${c.firstName || ''} ${c.lastName || ''}`).toLowerCase().includes(q)
+              )
+            : false;
         const matchesSearch =
-            invoice.invoiceNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            `${invoice.parent?.firstName} ${invoice.parent?.lastName}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            `${invoice.child?.firstName} ${invoice.child?.lastName}`.toLowerCase().includes(searchQuery.toLowerCase());
+            invoice.invoiceNumber?.toLowerCase().includes(q) ||
+            `${invoice.parent?.firstName} ${invoice.parent?.lastName}`.toLowerCase().includes(q) ||
+            `${invoice.child?.firstName} ${invoice.child?.lastName}`.toLowerCase().includes(q) ||
+            invoice.centre?.name?.toLowerCase().includes(q) ||
+            coveredMatches;
 
         const dueDate = invoice.dueDate ? new Date(invoice.dueDate) : null;
         const isOverdue = Boolean(
@@ -49,7 +57,8 @@ export default function FilterableInvoiceHistorySection({ initialInvoices, isOwn
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                     <input
                         type="search"
-                        placeholder="Search by invoice #, parent, or child…"
+                        aria-label="Search invoices"
+                        placeholder="Search by invoice #, parent, child, or centre…"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="h-10 pl-9 pr-4 w-full bg-secondary/40 border border-border rounded-2xl text-sm font-medium text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-transparent transition-all"
