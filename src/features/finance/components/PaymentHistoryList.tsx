@@ -5,9 +5,10 @@ import {CorrectPaymentDialog} from './CorrectPaymentDialog';
 import {correctableMethods} from '../domain/payment-correction';
 import { format } from 'date-fns';
 import { useToast } from '@/components/ui/ToastProvider';
-import { CreditCard, Landmark, Ticket, HelpCircle, Check, X, Clock, AlertCircle, RotateCcw } from 'lucide-react';
-import { useState } from 'react';
+import { CreditCard, Landmark, Ticket, HelpCircle, Check, X, Clock, AlertCircle, RotateCcw, Eye, FileText } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { verifyPayment, failPayment, reversePayment } from '../actions';
 
 interface Payment {
@@ -30,9 +31,10 @@ interface PaymentHistoryListProps {
     canSendReceipt?: boolean;
     receiptRecipient?: string;
     onPaymentReversed?: () => void;
+    onPreviewReceipt?: (payment: Payment) => void;
 }
 
-export default function PaymentHistoryList({ payments, canReverse, canCorrect=canReverse, canSendReceipt=false, receiptRecipient='', onPaymentReversed }: PaymentHistoryListProps) {
+export default function PaymentHistoryList({ payments, canReverse, canCorrect=canReverse, canSendReceipt=false, receiptRecipient='', onPaymentReversed, onPreviewReceipt }: PaymentHistoryListProps) {
     const [correcting,setCorrecting]=useState<Payment|null>(null);
     const [processingId, setProcessingId] = useState<string | null>(null);
     const [reversalModalPayment, setReversalModalPayment] = useState<Payment | null>(null);
@@ -40,6 +42,17 @@ export default function PaymentHistoryList({ payments, canReverse, canCorrect=ca
     const [isReversingId, setIsReversingId] = useState<string | null>(null);
     const { toast } = useToast();
     const router = useRouter();
+
+    useEffect(() => {
+        if (!reversalModalPayment) return;
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape' && isReversingId !== reversalModalPayment.id) {
+                setReversalModalPayment(null);
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [reversalModalPayment, isReversingId]);
 
     if (payments.length === 0) {
         return (
@@ -190,21 +203,40 @@ export default function PaymentHistoryList({ payments, canReverse, canCorrect=ca
                                         </button>
                                     </div>
                                 )}
-                                {payment.status === 'verified' && canReverse && (
+                                {payment.status === 'verified' && !payment.reversedAt && (
                                     <div className="flex flex-wrap items-center gap-2">
+                                        {onPreviewReceipt && (
+                                            <button
+                                                type="button"
+                                                onClick={() => onPreviewReceipt(payment)}
+                                                className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-sm font-semibold text-emerald-600 hover:bg-emerald-500/20 transition-colors"
+                                            >
+                                                <Eye className="w-4 h-4" />
+                                                <span>View / Download Receipt</span>
+                                            </button>
+                                        )}
+                                        <Link
+                                            href={`/dashboard/finance/receipt?paymentId=${payment.id}`}
+                                            className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm font-semibold text-foreground hover:bg-secondary/60 transition-colors"
+                                        >
+                                            <FileText className="w-4 h-4 text-emerald-600" />
+                                            <span>Printable Cash Receipt</span>
+                                        </Link>
                                         {canSendReceipt && <SendReceiptButton paymentId={payment.id} recipient={receiptRecipient} recordedStatus={payment.receiptEmailStatus?.status} />}
                                         {canCorrect&&correctableMethods.includes(payment.method)&&<button onClick={()=>setCorrecting(payment)} className="min-h-11 rounded-lg border border-border px-3 py-2 text-sm font-semibold text-primary">Correct payment details</button>}
-                                        <button
-                                            onClick={() => {
-                                                setReversalModalPayment(payment);
-                                                setReversalReason('');
-                                            }}
-                                            disabled={processingId === payment.id || isReversingId === payment.id}
-                                            className="inline-flex min-h-11 items-center gap-2 px-3 py-2 rounded-lg bg-slate-500/10 text-slate-500 hover:bg-slate-500/20 transition-colors disabled:opacity-50"
-                                            title="Reverse Payment"
-                                        >
-                                            <RotateCcw className="w-4 h-4" /><span className="text-sm">Reverse payment entry</span>
-                                        </button>
+                                        {canReverse && (
+                                            <button
+                                                onClick={() => {
+                                                    setReversalModalPayment(payment);
+                                                    setReversalReason('');
+                                                }}
+                                                disabled={processingId === payment.id || isReversingId === payment.id}
+                                                className="inline-flex min-h-11 items-center gap-2 px-3 py-2 rounded-lg bg-slate-500/10 text-slate-500 hover:bg-slate-500/20 transition-colors disabled:opacity-50"
+                                                title="Reverse Payment"
+                                            >
+                                                <RotateCcw className="w-4 h-4" /><span className="text-sm">Reverse payment entry</span>
+                                            </button>
+                                        )}
                                     </div>
                                 )}
                             </div>
@@ -214,11 +246,16 @@ export default function PaymentHistoryList({ payments, canReverse, canCorrect=ca
             {correcting&&<CorrectPaymentDialog payment={correcting} onClose={()=>setCorrecting(null)} onSaved={()=>{setCorrecting(null);router.refresh();onPaymentReversed?.();toast({title:'Payment corrected',message:'The date/reference is saved. Your paid balance is unchanged. Open Receipt to download the corrected receipt.',variant:'success'});}}/>}
             {reversalModalPayment && (
                 <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-card border border-border rounded-[32px] p-8 max-w-md w-full shadow-2xl relative">
+                    <div
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="reverse-payment-title"
+                        className="bg-card border border-border rounded-[32px] p-8 max-w-md w-full shadow-2xl relative"
+                    >
                         <div className="absolute top-0 right-0 w-32 h-32 bg-slate-500/10 rounded-full blur-[40px]" />
 
                         <div className="relative">
-                            <h3 className="text-xl font-black text-foreground mb-6">Reverse this payment entry?</h3>
+                            <h3 id="reverse-payment-title" className="text-xl font-black text-foreground mb-6">Reverse this payment entry?</h3>
 
                             <p className="mb-4 text-sm text-muted-foreground">This removes the entry from paid totals and can reopen the invoice. It does not refund money. For a date or reference typo, use Correct payment details.</p>
                             <div className="bg-secondary/40 rounded-xl p-4 mb-6 space-y-2 border border-border">
@@ -241,10 +278,11 @@ export default function PaymentHistoryList({ payments, canReverse, canCorrect=ca
                             </p>
 
                             <div className="mb-8">
-                                <label className="block text-xs font-black text-muted-foreground uppercase tracking-widest mb-2">
+                                <label htmlFor="reverse-payment-reason" className="block text-xs font-black text-muted-foreground uppercase tracking-widest mb-2">
                                     Correction reason (required)
                                 </label>
                                 <textarea
+                                    id="reverse-payment-reason"
                                     value={reversalReason}
                                     onChange={(e) => setReversalReason(e.target.value)}
                                     maxLength={500}

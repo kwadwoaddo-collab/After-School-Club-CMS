@@ -72,7 +72,7 @@ export default function DownloadButton(props: DownloadButtonProps) {
         <PDFDownloadLink
             document={
                 <RegistrationTemplate
-                    orgName={props.orgName}
+                    orgName={props.centreName || props.orgName}
                     centreName={props.centreName}
                     startDate={props.startDate}
                     submittedAt={props.submittedAt}

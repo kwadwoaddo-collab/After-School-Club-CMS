@@ -18,14 +18,14 @@ export default async function PortalBookPage({ searchParams }: Props) {
 
     const { reschedule: rescheduleBookingId } = await searchParams;
 
-    // Find unique centre IDs from parent's existing booking history
-    const bookingCentreIds = Array.from(
-        new Set(
-            (parent.bookings || [])
-                .map((b: any) => b.centreId)
-                .filter(Boolean) as string[]
-        )
-    );
+    // Find unique centre IDs from both enrolled children and existing booking history
+    const childCentreIds = (parent.children || [])
+        .map((c: any) => c.centreId)
+        .filter(Boolean) as string[];
+    const bookingCentreIds = (parent.bookings || [])
+        .map((b: any) => b.centreId)
+        .filter(Boolean) as string[];
+    const familyCentreIds = Array.from(new Set([...childCentreIds, ...bookingCentreIds]));
 
     let parentCentres: {
         id: string;
@@ -34,7 +34,7 @@ export default async function PortalBookPage({ searchParams }: Props) {
         sessionSlots: string | null;
     }[] = [];
 
-    if (bookingCentreIds.length > 0) {
+    if (familyCentreIds.length > 0) {
         parentCentres = await db
             .select({
                 id: centres.id,
@@ -43,7 +43,7 @@ export default async function PortalBookPage({ searchParams }: Props) {
                 sessionSlots: centres.sessionSlots,
             })
             .from(centres)
-            .where(inArray(centres.id, bookingCentreIds));
+            .where(inArray(centres.id, familyCentreIds));
     } else {
         parentCentres = await db
             .select({
@@ -61,6 +61,7 @@ export default async function PortalBookPage({ searchParams }: Props) {
         firstName: c.firstName,
         lastName: c.lastName,
         schoolYear: c.schoolYear,
+        centreId: c.centreId ?? null,
     }));
 
     // ── Resolve booking being rescheduled ─────────────────────────────────────
@@ -106,24 +107,24 @@ export default async function PortalBookPage({ searchParams }: Props) {
     const isRescheduling = !!rescheduleBooking;
 
     return (
-        <div className="min-h-screen bg-surface text-on-surface pb-12">
+        <div className="min-h-screen bg-background text-foreground pb-12">
             {/* Header */}
-            <header className="bg-card border-b border-outline-variant/10 sticky top-0 z-20">
+            <header className="bg-card border-b border-border sticky top-0 z-20">
                 <div className="max-w-3xl mx-auto px-4 py-4 flex items-center gap-4">
                     <Link
                         href="/portal"
-                        className="p-2 -ml-2 rounded-lg hover:bg-card transition-colors text-on-surface-variant"
+                        className="p-2 -ml-2 rounded-lg hover:bg-card transition-colors text-muted-foreground hover:text-foreground"
                     >
                         <ArrowLeft className="w-5 h-5" />
                     </Link>
                     <div>
-                        <h1 className="text-lg font-bold text-on-surface flex items-center gap-2">
+                        <h1 className="text-lg font-bold text-foreground flex items-center gap-2">
                             {isRescheduling
-                                ? <><CalendarClock className="w-5 h-5 text-amber-400" /> Reschedule Booking</>
+                                ? <><CalendarClock className="w-5 h-5 text-amber-500" /> Reschedule Booking</>
                                 : <><CalendarPlus className="w-5 h-5 text-primary" /> Book a Session</>
                             }
                         </h1>
-                        <p className="text-xs text-on-surface-variant">
+                        <p className="text-xs text-muted-foreground">
                             {parent.firstName} · {parentCentres.length === 1 ? parentCentres[0].name : `${parentCentres.length} centres available`}
                         </p>
                     </div>
@@ -132,9 +133,9 @@ export default async function PortalBookPage({ searchParams }: Props) {
 
             <main className="max-w-3xl mx-auto px-4 py-8">
                 {parentCentres.length === 0 ? (
-                    <div className="bg-card p-10 rounded-2xl border border-dashed border-outline-variant/20 text-center">
-                        <p className="text-on-surface-variant mb-2">No centres are associated with your account yet.</p>
-                        <p className="text-xs text-on-surface-variant">Please contact your club admin to get set up.</p>
+                    <div className="bg-card p-10 rounded-2xl border border-dashed border-border text-center">
+                        <p className="text-muted-foreground mb-2">No centres are associated with your account yet.</p>
+                        <p className="text-xs text-muted-foreground">Please contact your club admin to get set up.</p>
                     </div>
                 ) : (
                     <BookingFlow

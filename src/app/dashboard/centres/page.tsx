@@ -153,18 +153,34 @@ export default async function CentresPage() {
                                     <TableHead>Address</TableHead>
                                     <TableHead>Ofsted ID</TableHead>
                                     <TableHead>7-day forecast</TableHead>
-                                    <TableHead align="right"><span className="sr-only">View</span></TableHead>
+                                    <TableHead align="right"><span className="sr-only">Actions</span></TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {centresWithStats.map((centre) => (
                                     <TableRow key={centre.id} clickable>
                                         <TableCell>
-                                            <Link href={`/dashboard/centres/${centre.id}/settings`} className="flex items-center gap-3 focus:outline-none">
-                                                <div className="w-8 h-8 rounded-full bg-accent-soft text-accent flex items-center justify-center flex-shrink-0">
+                                            <Link href={`/dashboard/centres/${centre.id}/settings`} className="flex items-start gap-3 focus:outline-none">
+                                                <div className="w-8 h-8 rounded-full bg-accent-soft text-accent flex items-center justify-center flex-shrink-0 mt-0.5">
                                                     <Building2 className="w-4 h-4" />
                                                 </div>
-                                                <span className="text-table-value font-medium text-text">{centre.name}</span>
+                                                <div className="min-w-0">
+                                                    <span className="text-table-value font-medium text-text block">{centre.name}</span>
+                                                    {(centre.managerName || centre.billingPhone) && (
+                                                        <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                                                            {centre.managerName && (
+                                                                <span className="text-xs px-2 py-0.5 rounded-sm border border-border-subtle bg-page text-text-secondary">
+                                                                    Manager: {centre.managerName}
+                                                                </span>
+                                                            )}
+                                                            {centre.billingPhone && (
+                                                                <span className="text-xs px-2 py-0.5 rounded-sm border border-border-subtle bg-page text-text-secondary">
+                                                                    {centre.billingPhone}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </Link>
                                         </TableCell>
                                         <TableCell className="text-text-secondary">
@@ -191,8 +207,9 @@ export default async function CentresPage() {
                                         <TableCell align="right">
                                             <Link
                                                 href={`/dashboard/centres/${centre.id}/settings`}
-                                                className="inline-flex p-1.5 text-text-muted hover:text-text transition-colors focus:outline-none"
+                                                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-sm text-xs font-medium text-accent hover:text-accent-hover hover:bg-accent-soft transition-colors focus:outline-none"
                                             >
+                                                <span>Settings &amp; Billing</span>
                                                 <ChevronRight className="w-4 h-4" />
                                             </Link>
                                         </TableCell>
@@ -227,6 +244,20 @@ export default async function CentresPage() {
                                             ) : (
                                                 <span className="text-metadata">No Ofsted ID</span>
                                             )}
+                                            {centre.managerName && (
+                                                <span className="text-xs px-2 py-1 rounded-sm border border-border-subtle bg-page text-text-secondary">
+                                                    Manager: {centre.managerName}
+                                                </span>
+                                            )}
+                                            {centre.billingPhone && (
+                                                <span className="text-xs px-2 py-1 rounded-sm border border-border-subtle bg-page text-text-secondary">
+                                                    {centre.billingPhone}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div className="mt-2.5 inline-flex items-center gap-1 text-xs font-medium text-accent">
+                                            <span>Settings &amp; Billing</span>
+                                            <ChevronRight className="w-3.5 h-3.5" />
                                         </div>
                                     </div>
                                     <ChevronRight className="w-4 h-4 text-text-muted flex-shrink-0 mt-1" />

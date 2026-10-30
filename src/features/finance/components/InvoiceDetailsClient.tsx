@@ -366,7 +366,14 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                             <div>
                                 <div className="text-primary font-black tracking-widest text-xs uppercase mb-2">Invoice Details</div>
                                 <h1 className="text-4xl font-black text-foreground tracking-tight mb-2">{invoice.invoiceNumber}</h1>
-                                {getStatusBadge(invoice.status)}
+                                <div className="flex flex-wrap items-center gap-2">
+                                    {getStatusBadge(invoice.status)}
+                                    {invoice.centre?.name && (
+                                        <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-bold ring-1 ring-primary/20">
+                                            {invoice.centre.name}
+                                        </span>
+                                    )}
+                                </div>
                             </div>
                             <div className="text-right flex flex-col items-end">
                                 <div className="text-muted-foreground font-black tracking-widest text-xs uppercase mb-2">Total Amount</div>
@@ -668,6 +675,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                             canCorrect={invoice.status!=='void'&&(userRole==='ORG_OWNER'||userRole==='MANAGER')}
                             canReverse={userRole === 'ORG_OWNER' || userRole === 'MANAGER'}
                             onPaymentReversed={() => router.refresh()}
+                            onPreviewReceipt={() => setPreviewType('receipt')}
                         />
                     </div>
                 </div>

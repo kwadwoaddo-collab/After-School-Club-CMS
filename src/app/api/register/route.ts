@@ -608,7 +608,7 @@ export async function POST(req: NextRequest) {
         const primaryParent = submittedParents[0];
         if (primaryParent?.email) {
             await emailService.sendRegistrationConfirmation({
-                orgName: org.name,
+                orgName: centreName || org.name,
                 centreName,
                 startDate: startDate ? new Date(startDate) : null,
                 parents: submittedParents.map((p: any) => ({

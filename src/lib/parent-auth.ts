@@ -88,6 +88,9 @@ export const getCurrentParent = cache(async () => {
             with: {
                 children: {
                     where: isNull(children.deletedAt), // S-4: exclude soft-deleted children
+                    with: {
+                        centre: true,
+                    },
                 },
                 bookings: {
                     with: {

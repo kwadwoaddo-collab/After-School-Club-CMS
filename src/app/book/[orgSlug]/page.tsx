@@ -83,9 +83,9 @@ export default async function OrgBookingPage({
                             {org.name.charAt(0)}
                         </div>
                     )}
-                    <h1 className="text-2xl font-bold text-on-surface mb-1">Select a Centre</h1>
+                    <h1 className="text-2xl font-bold text-on-surface mb-1">Select your local centre</h1>
                     <p className="text-on-surface-variant text-sm">
-                        Choose a location to book with <strong className="text-on-surface">{org.name}</strong>.
+                        Choose your local centre below to book an assessment or club session.
                     </p>
                 </div>
 
@@ -109,9 +109,21 @@ export default async function OrgBookingPage({
                                 >
                                     <MapPin className="w-5 h-5" style={{ color: brandColor }} />
                                 </div>
-                                <span className="flex-1 font-semibold text-on-surface group-hover:text-[var(--brand-color)] transition-colors">
-                                    {centre.name}
-                                </span>
+                                <div className="flex-1 min-w-0">
+                                    <p className="font-semibold text-on-surface group-hover:text-[var(--brand-color)] transition-colors">
+                                        {centre.name}
+                                    </p>
+                                    {centre.address && (
+                                        <p className="text-xs text-on-surface-variant truncate mt-0.5">
+                                            {centre.address}
+                                        </p>
+                                    )}
+                                    {centre.billingPhone && (
+                                        <p className="text-xs text-on-surface-variant mt-0.5">
+                                            {centre.billingPhone}
+                                        </p>
+                                    )}
+                                </div>
                                 <ArrowRight className="w-4 h-4 text-on-surface-variant group-hover:text-[var(--brand-color)] group-hover:translate-x-1 transition-all duration-200" />
                             </Link>
                         ))

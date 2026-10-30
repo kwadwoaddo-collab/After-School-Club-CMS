@@ -44,6 +44,9 @@ export default async function ParentProfilePage({ params, searchParams }: Parent
         with: {
             children: {
                 where: (c, { isNull: isN }) => isN(c.deletedAt),
+                with: {
+                    centre: true,
+                },
             },
         }
     });

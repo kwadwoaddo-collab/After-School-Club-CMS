@@ -154,7 +154,7 @@ export async function PATCH(
                 );
 
                 await emailService.sendRegistrationStatusUpdate({
-                    orgName: org?.name || 'After School Club',
+                    orgName: centre?.name || org?.name || 'After School Club',
                     centreName: centre?.name ?? null,
                     parentFirstName: primaryParent.submittedFirstName,
                     parentEmail: primaryParent.submittedEmail,

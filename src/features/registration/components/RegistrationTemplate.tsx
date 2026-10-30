@@ -235,6 +235,9 @@ export const RegistrationTemplate = ({
     submittedAt = new Date(),
     parentSignature,
 }: RegistrationTemplateProps) => {
+    const primaryHeading = centreName || orgName || 'After School Club';
+    const showParentOrgSubtitle = Boolean(centreName && orgName && centreName.trim().toLowerCase() !== orgName.trim().toLowerCase());
+
     const formattedStartDate = startDate
         ? format(new Date(startDate), 'dd MMMM yyyy')
         : 'To be confirmed';
@@ -249,21 +252,17 @@ export const RegistrationTemplate = ({
     };
 
     return (
-        <Document title={`Registration-${orgName.replace(/\s+/g, '-')}`}>
+        <Document title={`Registration-${primaryHeading.replace(/\s+/g, '-')}`}>
             <Page size="A4" style={styles.page}>
                 {/* Header */}
                 <View style={styles.header}>
                     <View>
-                        <Text style={styles.orgTitle}>{orgName}</Text>
-                        <Text style={styles.docSubtitle}>Student Registration Details</Text>
+                        <Text style={styles.orgTitle}>{primaryHeading}</Text>
+                        <Text style={styles.docSubtitle}>
+                            {showParentOrgSubtitle ? 'Registered Centre · Student Registration Details' : 'Student Registration Details'}
+                        </Text>
                     </View>
                     <View style={styles.headerRight}>
-                        {centreName && (
-                            <View style={styles.headerInfoRow}>
-                                <Text style={styles.headerInfoLabel}>Centre:</Text>
-                                <Text style={styles.headerInfoValue}>{centreName}</Text>
-                            </View>
-                        )}
                         <View style={styles.headerInfoRow}>
                             <Text style={styles.headerInfoLabel}>Submitted At:</Text>
                             <Text style={styles.headerInfoValue}>{formattedSubmittedDate}</Text>
@@ -444,7 +443,7 @@ export const RegistrationTemplate = ({
 
                 {/* Footer */}
                 <View style={styles.footer}>
-                    <Text>{orgName} Student Registration Form</Text>
+                    <Text>{primaryHeading} · Confidential — GDPR Protected</Text>
                     <Text>Powered by SprintScale &middot; support@sprintscaleit.co.uk</Text>
                 </View>
             </Page>

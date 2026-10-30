@@ -55,8 +55,11 @@ export async function generateMetadata({
     return { title: 'Centre Not Found' };
   }
 
+  const centre = org.centres[0];
+
   return {
-    title: `Book Session at ${org.centres[0].name} - ${org.name}`,
+    title: `Book a Session — ${centre.name}`,
+    description: `Book an assessment or club session at ${centre.name}${centre.address ? ` (${centre.address})` : ''}.`,
   };
 }
 
@@ -132,8 +135,8 @@ export default async function BookingPage({
                 <img src={org.logoUrl} alt="Logo" className="h-10 w-auto object-contain" />
               )}
               <div>
-                <h1 className="text-2xl font-bold text-on-surface">Book a Session</h1>
-                <p className="text-sm text-on-surface-variant">{centre.name}</p>
+                <h1 className="text-xl font-bold text-text">{centre.name}</h1>
+                <p className="text-xs text-text-muted">Book an Assessment or Club Session{centre.address ? ` · ${centre.address}` : ''}</p>
               </div>
             </div>
           </div>

@@ -101,7 +101,7 @@ export default function RegisterPage() {
     const centreSlugFromUrl = params?.slug?.[1];
     const [orgInfo, setOrgInfo] = useState<{
         name: string; logoUrl?: string; registrationTerms?: string; sessionSlots?: string[] | null; pricing?: { selfFinanceRate: number; taxCreditRate: number },
-        centres?: { id: string; name: string; address: string | null; slug: string; operatingHours: string | null; sessionSlots: string | null; feeSelfFinance: string | null; feeAssistedFinance: string | null }[]
+        centres: { id: string; name: string; address: string | null; slug: string; operatingHours: string | null; sessionSlots: string | null; feeSelfFinance: string | null; feeAssistedFinance: string | null }[]
     } | null>(null);
     const [orgLoading, setOrgLoading] = useState(true);
     const [orgNotFound, setOrgNotFound] = useState(false);
@@ -110,6 +110,9 @@ export default function RegisterPage() {
     const [step, setStep] = useState(1);
     const TOTAL_STEPS = 4;
     const [isClient, setIsClient] = useState(false);
+
+    const selectedCentre = orgInfo?.centres.find(c => c.id === selectedCentreId) || (orgInfo?.centres.length === 1 ? orgInfo.centres[0] : null);
+    const primaryClubName = selectedCentre?.name || orgInfo?.name || 'After School Club';
 
     useEffect(() => {
         setIsClient(true);
@@ -143,22 +146,32 @@ export default function RegisterPage() {
             })
             .then(data => {
                 if (data) {
-                    setOrgInfo(data);
-                    // Set browser tab title to the org name for trust/professionalism
-                    if (data.name) {
-                        document.title = `${data.name} — Student Registration`;
+                    const normalized = { ...data, centres: data.centres || [] };
+                    setOrgInfo(normalized);
+                    let initialCentre = null;
+                    if (normalized.centres && centreSlugFromUrl) {
+                        const preselected = normalized.centres.find((c: any) => c.slug === centreSlugFromUrl);
+                        if (preselected) {
+                            setSelectedCentreId(preselected.id);
+                            initialCentre = preselected;
+                        }
+                    } else if (normalized.centres && normalized.centres.length === 1) {
+                        setSelectedCentreId(normalized.centres[0].id);
+                        initialCentre = normalized.centres[0];
                     }
-                    if (data.centres && centreSlugFromUrl) {
-                        const preselected = data.centres.find((c: any) => c.slug === centreSlugFromUrl);
-                        if (preselected) setSelectedCentreId(preselected.id);
-                    } else if (data.centres && data.centres.length === 1) {
-                        setSelectedCentreId(data.centres[0].id);
-                    }
+                    const clubTitle = initialCentre?.name || normalized.name || 'After School Club';
+                    document.title = `${clubTitle} — Student Registration`;
                 }
             })
             .catch(() => { setOrgNotFound(true); })
             .finally(() => setOrgLoading(false));
     }, [orgSlug, centreSlugFromUrl]);
+
+    useEffect(() => {
+        if (orgInfo) {
+            document.title = `${primaryClubName} — Student Registration`;
+        }
+    }, [orgInfo, selectedCentreId, primaryClubName]);
 
     // Fetch pre-fill data if token is provided
     useEffect(() => {
@@ -482,7 +495,7 @@ export default function RegisterPage() {
                     <div className="max-w-2xl mx-auto flex items-center gap-3">
                         {orgInfo?.logoUrl && <img src={orgInfo.logoUrl} alt="" className="w-8 h-8 rounded-lg object-cover" />}
                         <button onClick={resetToStart} className="text-left group cursor-pointer">
-                            <p className="text-foreground font-semibold text-sm group-hover:text-primary transition-colors">{orgInfo?.name}</p>
+                            <p className="text-foreground font-semibold text-sm group-hover:text-primary transition-colors">{primaryClubName}</p>
                             <p className="text-muted-foreground text-xs">Student Registration Form</p>
                         </button>
                     </div>
@@ -596,15 +609,15 @@ export default function RegisterPage() {
                         </svg>
                     </div>
                     <h2 className="text-3xl font-bold text-foreground mb-3">Registration Submitted!</h2>
-                    <p className="text-muted-foreground mb-4">Thank you for registering with <strong className="text-foreground">{orgInfo?.name}</strong>.</p>
+                    <p className="text-muted-foreground mb-4">Thank you for registering with <strong className="text-foreground">{primaryClubName}</strong>.</p>
                     <p className="text-muted-foreground text-sm mb-6">A confirmation copy has been sent to your email. The team will be in touch to confirm your place.</p>
                     {isClient && (
                         <div className="flex flex-col gap-3">
                             <PDFDownloadLink
                                 document={
                                     <RegistrationTemplate
-                                        orgName={orgInfo?.name || 'SprintScale'}
-                                        centreName={orgInfo?.centres?.find(c => c.id === selectedCentreId)?.name || null}
+                                        orgName={primaryClubName}
+                                        centreName={selectedCentre?.name || null}
                                         startDate={startDate}
                                         parents={parentList.map(p => ({
                                             firstName: p.firstName,
@@ -658,13 +671,17 @@ export default function RegisterPage() {
     return (
         <div className="min-h-screen bg-background text-foreground">
             {/* Header */}
-            <div className="bg-card border-b border-border px-6 py-4">
+            <div className="sticky top-0 z-10 bg-card border-b border-border px-6 py-4">
                 <div className="max-w-2xl mx-auto flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         {orgInfo?.logoUrl && <img src={orgInfo.logoUrl} alt="" className="w-8 h-8 rounded-lg object-cover" />}
                         <button onClick={resetToStart} className="text-left group cursor-pointer flex flex-col justify-center">
-                            <p className="text-foreground font-semibold text-sm group-hover:text-primary transition-colors leading-tight">{orgInfo?.name ?? '...'}</p>
-                            <p className="text-muted-foreground text-[10px] uppercase tracking-widest mt-0.5">{orgInfo?.centres?.find(c => c.id === selectedCentreId)?.name ?? 'Student Registration Form'}</p>
+                            <h1 className="text-base font-bold text-foreground leading-tight">{primaryClubName}</h1>
+                            {(selectedCentre && (orgInfo?.centres.length ?? 0) > 1) ? (
+                                <p className="text-muted-foreground text-[10px] uppercase tracking-widest mt-0.5">Student Registration Form</p>
+                            ) : (
+                                <p className="text-muted-foreground text-[10px] uppercase tracking-widest mt-0.5">Student Registration Form</p>
+                            )}
                         </button>
                     </div>
                 </div>

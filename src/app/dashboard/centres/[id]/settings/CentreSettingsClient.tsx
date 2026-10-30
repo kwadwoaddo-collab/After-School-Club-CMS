@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
-import { ChevronLeft, Building2, Calendar, CreditCard, Plus, Trash2, Save, AlertTriangle, Loader2, CheckCircle2 } from 'lucide-react';
+import { ChevronLeft, Building2, Calendar, CreditCard, Plus, Trash2, Save, AlertTriangle, Loader2, CheckCircle2, Copy, Check, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 import { updateCentreAction } from './actions';
 import { useRouter } from 'next/navigation';
@@ -41,13 +41,32 @@ const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
 
 const inputCls = 'w-full h-9 px-3 rounded-sm text-sm text-text placeholder:text-text-muted focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent transition-colors border border-border bg-surface';
 
-export default function CentreSettingsClient({ centre }: { centre: any }) {
+export default function CentreSettingsClient({ centre, orgSlug = '' }: { centre: any; orgSlug?: string }) {
     const router = useRouter();
     const { toast } = useToast();
     const [activeTab, setActiveTab] = useState<'general' | 'sessions' | 'billing'>('general');
     const [isSaving, setIsSaving] = useState(false);
     const [hasSavedDefaults, setHasSavedDefaults] = useState(false);
     const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+    const [origin, setOrigin] = useState('');
+    const [copiedKey, setCopiedKey] = useState<'register' | 'book' | null>(null);
+
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            setOrigin(window.location.origin);
+        }
+    }, []);
+
+    const handleCopyLink = async (url: string, key: 'register' | 'book') => {
+        try {
+            await navigator.clipboard.writeText(url);
+            setCopiedKey(key);
+            toast('Link copied', 'Public centre link copied to clipboard.', 'success');
+            setTimeout(() => setCopiedKey(null), 2000);
+        } catch {
+            toast('Copy failed', 'Could not copy link automatically.', 'error');
+        }
+    };
 
     let parsedSessions: SessionSlot[] = [];
     if (centre.sessionSlots) {
@@ -108,6 +127,9 @@ export default function CentreSettingsClient({ centre }: { centre: any }) {
         }
     };
 
+    const registerUrl = `${origin}/register/${orgSlug}/${centre.slug}`;
+    const bookingUrl = `${origin}/book/${orgSlug}/${centre.slug}`;
+
     return (
         <form onSubmit={handleSubmit(onSubmit)} className="max-w-4xl mx-auto pb-24 space-y-5">
             {/* Header & Tabs */}
@@ -165,6 +187,79 @@ export default function CentreSettingsClient({ centre }: { centre: any }) {
                     <CreditCard className="w-3.5 h-3.5" /> Billing
                 </button>
             </div>
+
+            {orgSlug && centre.slug && (
+                <Card>
+                    <div className="p-5 sm:p-6 space-y-4">
+                        <div>
+                            <h2 className="text-card-heading text-text">Direct Centre Links (Share with Parents)</h2>
+                            <p className="text-small-body text-text-secondary mt-1">
+                                Share these direct links with parents so their registration or assessment booking goes straight to {centre.name}.
+                            </p>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="p-4 rounded-md border border-border-subtle bg-page space-y-2.5">
+                                <p className="text-label text-text-muted">Centre Registration Link</p>
+                                <p className="font-mono text-xs text-text break-all bg-surface px-3 py-2 rounded-sm border border-border">
+                                    {registerUrl}
+                                </p>
+                                <div className="flex items-center gap-2 pt-1">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => handleCopyLink(registerUrl, 'register')}
+                                    >
+                                        {copiedKey === 'register' ? (
+                                            <><Check className="w-3.5 h-3.5 text-success" /> Copied</>
+                                        ) : (
+                                            <><Copy className="w-3.5 h-3.5" /> Copy Link</>
+                                        )}
+                                    </Button>
+                                    <Link
+                                        href={`/register/${orgSlug}/${centre.slug}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-sm border border-border bg-surface text-xs font-medium text-text hover:border-accent transition-colors"
+                                    >
+                                        <ExternalLink className="w-3.5 h-3.5" /> Open
+                                    </Link>
+                                </div>
+                            </div>
+
+                            <div className="p-4 rounded-md border border-border-subtle bg-page space-y-2.5">
+                                <p className="text-label text-text-muted">Centre Assessment / Booking Link</p>
+                                <p className="font-mono text-xs text-text break-all bg-surface px-3 py-2 rounded-sm border border-border">
+                                    {bookingUrl}
+                                </p>
+                                <div className="flex items-center gap-2 pt-1">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => handleCopyLink(bookingUrl, 'book')}
+                                    >
+                                        {copiedKey === 'book' ? (
+                                            <><Check className="w-3.5 h-3.5 text-success" /> Copied</>
+                                        ) : (
+                                            <><Copy className="w-3.5 h-3.5" /> Copy Link</>
+                                        )}
+                                    </Button>
+                                    <Link
+                                        href={`/book/${orgSlug}/${centre.slug}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-sm border border-border bg-surface text-xs font-medium text-text hover:border-accent transition-colors"
+                                    >
+                                        <ExternalLink className="w-3.5 h-3.5" /> Open
+                                    </Link>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </Card>
+            )}
 
             {/* Tab Content */}
             <Card>

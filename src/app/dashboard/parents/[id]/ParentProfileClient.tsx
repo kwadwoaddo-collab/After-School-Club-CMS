@@ -294,16 +294,26 @@ export default function ParentProfileClient({ parent, invoices, stats, isOwner, 
                                                 href={`/dashboard/students/${child.id}`}
                                                 className="flex items-center justify-between px-4 py-3 hover:bg-surface transition-colors group"
                                             >
-                                                <div className="flex items-center gap-3">
+                                                <div className="flex items-center gap-3 min-w-0">
                                                     <div className="w-8 h-8 rounded-full bg-success-soft text-success flex items-center justify-center flex-shrink-0">
                                                         <Baby className="w-4 h-4" />
                                                     </div>
-                                                    <div>
+                                                    <div className="min-w-0">
                                                         <p className="text-small-body font-medium text-text">{child.firstName} {child.lastName}</p>
-                                                        <p className="text-metadata">{child.schoolYear ? formatSchoolYearLabel(child.schoolYear) : 'Year not set'}</p>
+                                                        <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+                                                            <span className="text-metadata">{child.schoolYear ? formatSchoolYearLabel(child.schoolYear) : 'Year not set'}</span>
+                                                            {child.centre?.name && (
+                                                                <>
+                                                                    <span className="text-metadata text-text-muted" aria-hidden="true">·</span>
+                                                                    <span className="inline-flex items-center px-2 py-0.5 rounded-sm bg-accent-soft text-accent text-xs font-medium">
+                                                                        {child.centre.name}
+                                                                    </span>
+                                                                </>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </div>
-                                                <ChevronRight className="w-4 h-4 text-text-muted group-hover:text-accent transition-colors" />
+                                                <ChevronRight className="w-4 h-4 text-text-muted group-hover:text-accent transition-colors flex-shrink-0" />
                                             </Link>
                                         ))}
                                     </SubPanel>

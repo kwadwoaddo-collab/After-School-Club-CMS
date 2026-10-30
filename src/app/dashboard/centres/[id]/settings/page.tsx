@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import { requireAuth } from '@/lib/require-auth';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { db } from '@/db';
-import { centres } from '@/db/schema';
+import { centres, organisations } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import CentreSettingsClient from './CentreSettingsClient';
 
@@ -38,5 +38,10 @@ export default async function CentreSettingsPage({ params }: { params: Promise<{
         return redirect('/dashboard/centres');
     }
 
-    return <CentreSettingsClient centre={centre} />;
+    const org = await db.query.organisations.findFirst({
+        where: eq(organisations.id, session.user.organisationId),
+        columns: { slug: true, name: true },
+    });
+
+    return <CentreSettingsClient centre={centre} orgSlug={org?.slug || ''} />;
 }

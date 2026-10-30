@@ -88,6 +88,60 @@ export default function AddCentreForm() {
                                 placeholder="Full address of the centre"
                             />
                         </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label htmlFor="managerName" className="block text-label text-text-muted mb-1.5">
+                                    Centre manager name <span className="text-text-muted font-normal">(optional)</span>
+                                </label>
+                                <input
+                                    id="managerName"
+                                    name="managerName"
+                                    type="text"
+                                    className={inputCls}
+                                    placeholder="e.g. Margaret Ampadu"
+                                />
+                            </div>
+                            <div>
+                                <label htmlFor="ofstedId" className="block text-label text-text-muted mb-1.5">
+                                    Ofsted registration ID <span className="text-text-muted font-normal">(optional)</span>
+                                </label>
+                                <input
+                                    id="ofstedId"
+                                    name="ofstedId"
+                                    type="text"
+                                    className={`${inputCls} font-mono`}
+                                    placeholder="e.g. EY123456"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label htmlFor="billingPhone" className="block text-label text-text-muted mb-1.5">
+                                    Centre phone <span className="text-text-muted font-normal">(optional)</span>
+                                </label>
+                                <input
+                                    id="billingPhone"
+                                    name="billingPhone"
+                                    type="tel"
+                                    className={inputCls}
+                                    placeholder="e.g. 07456 490797"
+                                />
+                            </div>
+                            <div>
+                                <label htmlFor="billingEmail" className="block text-label text-text-muted mb-1.5">
+                                    Centre email <span className="text-text-muted font-normal">(optional)</span>
+                                </label>
+                                <input
+                                    id="billingEmail"
+                                    name="billingEmail"
+                                    type="email"
+                                    className={inputCls}
+                                    placeholder="e.g. dagenham@yourclub.co.uk"
+                                />
+                            </div>
+                        </div>
                     </CardContent>
 
                     <CardFooter className="justify-between">

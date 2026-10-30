@@ -22,6 +22,10 @@ export async function createCentre(prevState: any, formData: FormData) {
 
     const name = formData.get('name') as string;
     const address = formData.get('address') as string;
+    const managerName = (formData.get('managerName') as string | null)?.trim() || null;
+    const ofstedId = (formData.get('ofstedId') as string | null)?.trim() || null;
+    const billingPhone = (formData.get('billingPhone') as string | null)?.trim() || null;
+    const billingEmail = (formData.get('billingEmail') as string | null)?.trim() || null;
 
     if (!name || name.length < 3) {
         return { message: 'Name must be at least 3 characters long.' };
@@ -37,6 +41,10 @@ export async function createCentre(prevState: any, formData: FormData) {
             organisationId: session.user.organisationId,
             name,
             address: address || null,
+            managerName,
+            ofstedId,
+            billingPhone,
+            billingEmail,
             slug,
             timezone: 'Europe/London', // Default for now
         }).returning({ id: centres.id });
