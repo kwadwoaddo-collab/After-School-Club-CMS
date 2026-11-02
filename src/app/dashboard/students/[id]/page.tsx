@@ -226,6 +226,8 @@ export default async function StudentProfilePage(
         db.query.studentEnrolmentEvents.findMany({ where: and(eq(studentEnrolmentEvents.childId, id), eq(studentEnrolmentEvents.organisationId, session.user.organisationId)), orderBy: [desc(studentEnrolmentEvents.effectiveDate), desc(studentEnrolmentEvents.createdAt), desc(studentEnrolmentEvents.id)] }),
         db.query.studentFollowUpContacts.findMany({ where: and(eq(studentFollowUpContacts.childId, id), eq(studentFollowUpContacts.organisationId, session.user.organisationId)), orderBy: [desc(studentFollowUpContacts.contactedAt), desc(studentFollowUpContacts.id)], limit: 100 }),
     ]);
+    const today = enrolmentBusinessDate();
+    const currentEffectiveEvent = enrolmentEvents.find(event => event.effectiveDate <= today);
     return (
         <StudentProfile
             student={{
@@ -240,7 +242,17 @@ export default async function StudentProfilePage(
             registrationDetail={registrationDetail}
         >
             {!student.registrationId && !confirmedEnrolment && ['ORG_OWNER', 'MANAGER'].includes(userRole ?? '') && <ConfirmExistingEnrolment childId={id} />}
-            <StudentLifecyclePanel enrolmentStart={enrolmentStart} childId={id} today={enrolmentBusinessDate()} canChangeStatus={['ORG_OWNER', 'MANAGER'].includes(userRole ?? '')} confirmed={Boolean(confirmedEnrolment)} events={enrolmentEvents.map(event => ({ ...event, createdAt: event.createdAt.toISOString() }))} contacts={followUpContacts.map(contact => ({ ...contact, contactedAt: contact.contactedAt.toISOString(), createdAt: contact.createdAt.toISOString() }))} />
+            <StudentLifecyclePanel
+                enrolmentStart={enrolmentStart}
+                childId={id}
+                today={today}
+                canChangeStatus={['ORG_OWNER', 'MANAGER'].includes(userRole ?? '')}
+                confirmed={Boolean(confirmedEnrolment)}
+                effectiveDate={currentEffectiveEvent?.effectiveDate ?? null}
+                reason={currentEffectiveEvent?.reason ?? null}
+                events={enrolmentEvents.map(event => ({ ...event, createdAt: event.createdAt.toISOString() }))}
+                contacts={followUpContacts.map(contact => ({ ...contact, contactedAt: contact.contactedAt.toISOString(), createdAt: contact.createdAt.toISOString() }))}
+            />
         </StudentProfile>
     );
 }

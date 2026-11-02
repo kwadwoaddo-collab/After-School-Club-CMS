@@ -5,6 +5,12 @@ import { children } from '@/db/schema';
 export function studentLifecycleStatusSql(onDate = enrolmentBusinessDate()) {
     return sql<string>`COALESCE((SELECT e.status FROM student_enrolment_events e WHERE e.child_id = ${children.id} AND e.organisation_id = ${children.organisationId} AND e.effective_date <= ${onDate}::date ORDER BY e.effective_date DESC, e.created_at DESC, e.id DESC LIMIT 1), 'active')`;
 }
+export function studentLifecycleEffectiveDateSql(onDate = enrolmentBusinessDate()) {
+    return sql<string | null>`(SELECT e.effective_date::text FROM student_enrolment_events e WHERE e.child_id = ${children.id} AND e.organisation_id = ${children.organisationId} AND e.effective_date <= ${onDate}::date ORDER BY e.effective_date DESC, e.created_at DESC, e.id DESC LIMIT 1)`;
+}
+export function studentLifecycleReasonSql(onDate = enrolmentBusinessDate()) {
+    return sql<string | null>`(SELECT e.reason FROM student_enrolment_events e WHERE e.child_id = ${children.id} AND e.organisation_id = ${children.organisationId} AND e.effective_date <= ${onDate}::date ORDER BY e.effective_date DESC, e.created_at DESC, e.id DESC LIMIT 1)`;
+}
 export function studentLastContactSql() {
     return sql<Date | null>`(SELECT max(c.contacted_at) FROM student_follow_up_contacts c WHERE c.child_id = ${children.id} AND c.organisation_id = ${children.organisationId})`;
 }

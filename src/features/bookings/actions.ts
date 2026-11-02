@@ -18,6 +18,7 @@ import { resolveOrCreateParent, resolveOrCreateChild } from '@/lib/services/crm'
 import { canUserAccessCentre, getUserAccessibleCentreIds } from '@/lib/permissions';
 import { parseInTimezone, DEFAULT_TIMEZONE } from '@/lib/datetime';
 import { normalizeSchoolYear } from '@/lib/school-year';
+import { initializeBookingEnrolmentOutcomeOnCompletion } from '@/lib/services/booking-outcome-sync';
 
 export async function updateBookingStatus(bookingId: string, status: 'completed' | 'cancelled' | 'confirmed' | 'rescheduled') {
     const session = await requireTenantSession();
@@ -59,6 +60,12 @@ export async function updateBookingStatus(bookingId: string, status: 'completed'
             updatedAt: new Date()
         })
         .where(and(eq(bookings.id, bookingId), eq(bookings.centreId, booking.centre.id)));
+
+    if (status === 'completed') {
+        await initializeBookingEnrolmentOutcomeOnCompletion(db, bookingId, {
+            actorUserId: session.user.id,
+        });
+    }
 
     revalidatePath('/dashboard/bookings');
     revalidatePath(`/dashboard/bookings/${bookingId}`); // Revalidate specific booking page
@@ -310,6 +317,13 @@ export async function markAttendeeAttendance(params: {
             .set(updateFields)
             .where(eq(bookingAttendees.id, attendeeId!));
 
+        // 2. If all attendees now have attendance recorded with at least one present/late,
+        //    complete the booking and initialize enrolmentOutcome ('signed_up' if already registered, else 'awaiting_outcome')
+        await initializeBookingEnrolmentOutcomeOnCompletion(db, bookingId!, {
+            checkAllAttendeesMarked: true,
+            actorUserId: session.user.id,
+        });
+
         revalidatePath(`/dashboard/bookings/${bookingId}`);
         revalidatePath('/dashboard/bookings');
         revalidatePath('/dashboard/attendance');
@@ -474,6 +488,11 @@ export async function markAttendeeAttendance(params: {
                     finalAttendeeId = newAtt.id;
                 }
             }
+
+            await initializeBookingEnrolmentOutcomeOnCompletion(tx, finalBookingId, {
+                checkAllAttendeesMarked: true,
+                actorUserId: session.user.id,
+            });
 
             return { bookingId: finalBookingId, attendeeId: finalAttendeeId };
         });

@@ -125,7 +125,7 @@ export async function fetchBillingCycles(
         columns: { billingConfigId: true, periodStart: true },
     }) : [];
 
-    const enriched = await Promise.all(configs.map(async (config) => {
+    const rawEnriched = await Promise.all(configs.map(async (config): Promise<BillingCycleRow | null> => {
         const parent = config.parent;
         const centre = config.centre;
 
@@ -181,14 +181,24 @@ export async function fetchBillingCycles(
             periodEndStr       = schedule.periodEnd.toISOString().split('T')[0];
         } catch { /* malformed config */ }
 
-        const coveredChildren: CoveredChild[] = (config.children ?? []).filter(cc => eligibleIds.has(cc.child.id)).map(cc => ({
+        const configChildIds = (config.children ?? []).map(cc => cc.child.id);
+        const periodEligibleIds = (periodStartStr && periodEndStr && configChildIds.length > 0)
+            ? await getFinanceEligibleChildIds(orgId, configChildIds, db, undefined, { startDate: periodStartStr, endDate: periodEndStr })
+            : eligibleIds;
+        const isEligibleForCycle = (childId: string) => eligibleIds.has(childId) && periodEligibleIds.has(childId);
+
+        if (!configChildIds.some(isEligibleForCycle)) {
+            return null;
+        }
+
+        const coveredChildren: CoveredChild[] = (config.children ?? []).filter(cc => isEligibleForCycle(cc.child.id)).map(cc => ({
             childId:   cc.child.id,
             childName: `${cc.child.firstName} ${cc.child.lastName}`,
         }));
 
         // Determine status (§26, B7)
         let cycleStatus: BillingCycleRow['cycleStatus'] = 'needs_setup';
-        if ((config.children ?? []).some(cc => !eligibleIds.has(cc.child.id)) || (config.parentId && isQuarantinedParentId(config.parentId))) {
+        if ((config.children ?? []).some(cc => !isEligibleForCycle(cc.child.id)) || (config.parentId && isQuarantinedParentId(config.parentId))) {
             cycleStatus = 'data_review_required';
         } else if (config.status === 'paused') {
             cycleStatus = 'paused';
@@ -241,6 +251,7 @@ export async function fetchBillingCycles(
             periodEndStr:       periodEndStr || null,
         } satisfies BillingCycleRow;
     }));
+    const enriched = rawEnriched.filter((row): row is BillingCycleRow => row !== null);
 
     // Append unconfigured registered families (Issue D)
     const configKeySet = new Set(configs.map(c => `${c.parentId}:${c.centreId}`));
@@ -464,7 +475,9 @@ export async function fetchBillingSetupRequired(orgId: string, centreId: string 
         },
     });
 
-    const activeConfigs = configs.filter(c => !c.parent?.deletedAt);
+    const eligibleIds = configs.length > 0 ? await getFinanceEligibleChildIds(orgId) : new Set<string>();
+    const activeConfigs = configs.filter(c => !c.parent?.deletedAt &&
+        (c.children ?? []).some(cc => eligibleIds.has(cc.child.id)));
 
     // Also include active registered children with no billing config (Issue D)
     const allOrgConfigs = await db.query.billingConfigs.findMany({

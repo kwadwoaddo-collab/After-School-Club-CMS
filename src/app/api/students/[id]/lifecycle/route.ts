@@ -7,6 +7,7 @@ import { auditEvents, children, studentEnrolmentEvents, studentFollowUpContacts 
 import { requireApiAuth } from '@/lib/require-auth';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { confirmedEnrolmentChildSql } from '@/lib/enrolment/finance-eligibility';
+import { enrolmentBusinessDate } from '@/lib/enrolment/business-date';
 import { lifecycleInput } from '@/features/students/lifecycle-validation';
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -27,13 +28,46 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
             if (accessibleIds && (!child.centreId || !accessibleIds.includes(child.centreId))) return { error: 'Forbidden: No access to this centre', status: 403 };
             if (data.action === 'status') {
                 const [confirmed] = await tx.select({ id: children.id }).from(children).where(and(eq(children.id, id), eq(children.organisationId, auth.organisationId), confirmedEnrolmentChildSql())).limit(1);
-                if (!confirmed) return { error: 'Confirm signed up on the registration or confirm existing enrolment first', status: 409 };
+                const previous = data.status === 'active'
+                    ? await tx.query.studentEnrolmentEvents.findFirst({ where: and(eq(studentEnrolmentEvents.childId, id), eq(studentEnrolmentEvents.organisationId, auth.organisationId), lte(studentEnrolmentEvents.effectiveDate, data.effectiveDate)), orderBy: [desc(studentEnrolmentEvents.effectiveDate), desc(studentEnrolmentEvents.createdAt), desc(studentEnrolmentEvents.id)] })
+                    : null;
+                const isReactivatingStopped = data.status === 'active' && previous?.status === 'stopped';
+                if (!confirmed && data.status !== 'stopped' && !isReactivatingStopped) {
+                    return { error: 'Confirm signed up on the registration or confirm existing enrolment first', status: 409 };
+                }
                 if (data.status === 'active') {
-                    const previous = await tx.query.studentEnrolmentEvents.findFirst({ where: and(eq(studentEnrolmentEvents.childId, id), eq(studentEnrolmentEvents.organisationId, auth.organisationId), lte(studentEnrolmentEvents.effectiveDate, data.effectiveDate)), orderBy: [desc(studentEnrolmentEvents.effectiveDate), desc(studentEnrolmentEvents.createdAt), desc(studentEnrolmentEvents.id)] });
                     if (!previous || previous.status === 'active') return { error: 'This student is already active for that date', status: 409 };
                 }
-                await tx.insert(studentEnrolmentEvents).values({ childId: id, organisationId: auth.organisationId, status: data.status, effectiveDate: data.effectiveDate, reason: data.reason, expectedRestartDate: data.expectedRestartDate ?? null, nextContactDate: data.nextContactDate ?? null, feeReviewConfirmed: false, createdBy: auth.user.id });
-                await tx.insert(auditEvents).values({ organisationId: auth.organisationId, userId: auth.user.id, eventType: 'student_enrolment_status_changed', eventData: JSON.stringify({ childId: id, ...data, feeReviewConfirmed: false }) });
+                const feeReviewConfirmed = isReactivatingStopped ? Boolean(data.feeReviewConfirmed ?? true) : false;
+                await tx.insert(studentEnrolmentEvents).values({
+                    childId: id,
+                    organisationId: auth.organisationId,
+                    status: data.status,
+                    effectiveDate: data.effectiveDate,
+                    reason: data.reason,
+                    expectedRestartDate: data.expectedRestartDate ?? null,
+                    nextContactDate: data.nextContactDate ?? null,
+                    feeReviewConfirmed,
+                    ...(feeReviewConfirmed ? { billingReviewedFrom: data.effectiveDate } : {}),
+                    createdBy: auth.user.id,
+                });
+                await tx.insert(auditEvents).values({ organisationId: auth.organisationId, userId: auth.user.id, eventType: 'student_enrolment_status_changed', eventData: JSON.stringify({ childId: id, ...data, feeReviewConfirmed }) });
+                if (data.status === 'stopped' && child.parentId && typeof (tx as { update?: unknown }).update === 'function') {
+                    const { applyStoppedBillingSideEffects } = await import('@/features/students/actions');
+                    await applyStoppedBillingSideEffects(tx, {
+                        childId: id,
+                        parentId: child.parentId,
+                        organisationId: auth.organisationId,
+                        effectiveDate: data.effectiveDate,
+                        today: enrolmentBusinessDate(),
+                    });
+                } else if (isReactivatingStopped && feeReviewConfirmed && typeof (tx as { update?: unknown }).update === 'function') {
+                    const { applyReactivatedBillingSideEffects } = await import('@/features/students/actions');
+                    await applyReactivatedBillingSideEffects(tx, {
+                        childId: id,
+                        organisationId: auth.organisationId,
+                    });
+                }
             } else {
                 const contactedAt = new Date();
                 await tx.insert(studentFollowUpContacts).values({ childId: id, organisationId: auth.organisationId, contactedAt, notes: data.notes, nextContactDate: data.nextContactDate ?? null, createdBy: auth.user.id });

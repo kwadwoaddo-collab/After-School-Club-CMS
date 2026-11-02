@@ -18,6 +18,7 @@ import { requiresAssessmentOutcome } from '../assessment-outcome';
 import ReassignCentreModal from './ReassignCentreModal';
 import { BookingStudentLink } from './BookingStudentLink';
 import { BookingActionsPopover } from './BookingActionsPopover';
+import BookingOutcomeActions from './BookingOutcomeActions';
 
 interface BookingsTableProps {
     bookings: unknown[];
@@ -566,6 +567,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                         <SortIcon active={sortConfig.key === 'status'} direction={sortConfig.direction} />
                                     </button>
                                 </TableHead>
+                                <TableHead>Enrolment Outcome</TableHead>
                                 <TableHead align="right" className="sticky right-0 z-10 bg-surface">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -703,6 +705,30 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                     </TableCell>
                                     <TableCell>
                                         <StatusBadge status={booking.status} startAt={booking.startAt} attendanceStatuses={(booking.attendees ?? []).map((a: { attendanceStatus?: string | null }) => a.attendanceStatus)} />
+                                    </TableCell>
+                                    <TableCell onClick={(e) => e.stopPropagation()}>
+                                        <BookingOutcomeActions
+                                            compact
+                                            bookingId={booking.id}
+                                            status={booking.status}
+                                            enrolmentOutcome={booking.enrolmentOutcome ?? null}
+                                            enrolmentOutcomeReason={booking.enrolmentOutcomeReason ?? null}
+                                            linkedRegistrationId={booking.linkedRegistrationId ?? null}
+                                            onOutcomeUpdated={(outcome, reason, newStatus) => {
+                                                setBookings((prev) =>
+                                                    prev.map((b) =>
+                                                        b.id === booking.id
+                                                            ? {
+                                                                  ...b,
+                                                                  enrolmentOutcome: outcome,
+                                                                  enrolmentOutcomeReason: reason,
+                                                                  status: newStatus,
+                                                              }
+                                                            : b
+                                                    )
+                                                );
+                                            }}
+                                        />
                                     </TableCell>
                                     <TableCell align="right" className={`sticky right-0 bg-surface ${activeDropdown === booking.id ? 'z-30' : 'z-10'}`}>
                                         <div className="flex items-center justify-end gap-1">
@@ -884,7 +910,29 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                 </div>
                             )}
 
-                            <div className="flex mt-3 pl-8">
+                            <div className="flex flex-col gap-2 mt-3 pl-8" onClick={(e) => e.stopPropagation()}>
+                                <BookingOutcomeActions
+                                    compact
+                                    bookingId={booking.id}
+                                    status={booking.status}
+                                    enrolmentOutcome={booking.enrolmentOutcome ?? null}
+                                    enrolmentOutcomeReason={booking.enrolmentOutcomeReason ?? null}
+                                    linkedRegistrationId={booking.linkedRegistrationId ?? null}
+                                    onOutcomeUpdated={(outcome, reason, newStatus) => {
+                                        setBookings((prev) =>
+                                            prev.map((b) =>
+                                                b.id === booking.id
+                                                    ? {
+                                                          ...b,
+                                                          enrolmentOutcome: outcome,
+                                                          enrolmentOutcomeReason: reason,
+                                                          status: newStatus,
+                                                      }
+                                                    : b
+                                            )
+                                        );
+                                    }}
+                                />
                                 <Button variant="secondary" size="sm" className="w-full" asChild>
                                     <Link href={`/dashboard/bookings/${booking.id}`}>
                                         <Eye className="w-4 h-4" />

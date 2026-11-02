@@ -8,11 +8,13 @@ import {
     registrations, registrationChildren, registrationParents,
     studentNotes,
     authorisedCollectors as authorisedCollectorsTable,
+    bookings,
 } from '@/db/schema';
 import { eq, and, ilike, inArray, sql, isNull } from 'drizzle-orm';
 import { emailService } from '@/lib/services/email';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { resolveOrCreateParent, resolveOrCreateChild } from '@/lib/services/crm';
+import { resolveBookingForRegistration } from '@/lib/services/booking-outcome-sync';
 import { z } from 'zod';
 import { apiRateLimit, checkRateLimit, getClientIP } from '@/lib/rate-limit';
 import { notifyOwners } from '@/lib/db-notifications';
@@ -24,6 +26,7 @@ const registerSchema = z.object({
     orgSlug: z.string().min(1).max(100),
     prefillToken: z.preprocess(emptyToNull, z.string().optional().nullable()),
     centreId: z.preprocess(emptyToNull, z.string().uuid().optional().nullable()),
+    bookingId: z.preprocess(emptyToNull, z.string().uuid().optional().nullable()),
     startDate: z.preprocess(
         (v) => {
             if (!v || v === '') return null;
@@ -130,6 +133,7 @@ export async function POST(req: NextRequest) {
             orgSlug,
             prefillToken,
             centreId,
+            bookingId: submittedBookingId,
             startDate,
             children: submittedChildren,
             parents: submittedParents,
@@ -144,6 +148,7 @@ export async function POST(req: NextRequest) {
         // Verify prefillToken if present
         let prefillParentId: string | null = null;
         let prefillCentreId: string | null = null;
+        let prefillBookingId: string | null = null;
         let prefillChildIds: string[] = [];
         if (prefillToken) {
             try {
@@ -152,6 +157,7 @@ export async function POST(req: NextRequest) {
                 const result = await jwtVerify(prefillToken, secret);
                 prefillParentId = (result.payload.parentId as string) || null;
                 prefillCentreId = (result.payload.centreId as string) || null;
+                prefillBookingId = (result.payload.bookingId as string) || null;
                 prefillChildIds = Array.isArray(result.payload.childIds) ? (result.payload.childIds as string[]) : [];
             } catch (err) {
                 logger.error('[Registration API] Token verification failed:', err);
@@ -241,8 +247,12 @@ export async function POST(req: NextRequest) {
         }
 
         // ── 2c. Guard against unrelated child injection ───────────────────
+        // Parents using a prefill link may add additional sibling children (!c.childId)
+        // alongside the invited prefillChildIds, while any supplied childId must belong
+        // to prefillChildIds and all invited prefillChildIds must remain present.
         if (prefillToken && prefillChildIds.length > 0) {
-            if (submittedChildren.length > prefillChildIds.length) {
+            const submittedWithId = submittedChildren.filter(c => Boolean(c.childId));
+            if (submittedWithId.length > prefillChildIds.length) {
                 return NextResponse.json(
                     { error: 'Submitted children exceed invitation scope' },
                     { status: 400 }
@@ -250,7 +260,8 @@ export async function POST(req: NextRequest) {
             }
             const submittedChildIdSet = new Set<string>();
             for (const c of submittedChildren) {
-                if (!c.childId || !prefillChildIds.includes(c.childId)) {
+                if (!c.childId) continue;
+                if (!prefillChildIds.includes(c.childId)) {
                     return NextResponse.json(
                         { error: 'Unrelated child injection detected' },
                         { status: 400 }
@@ -263,6 +274,13 @@ export async function POST(req: NextRequest) {
                     );
                 }
                 submittedChildIdSet.add(c.childId);
+            }
+            const allInvitedPresent = prefillChildIds.every(id => submittedChildIdSet.has(id));
+            if (!allInvitedPresent) {
+                return NextResponse.json(
+                    { error: 'Unrelated child injection detected' },
+                    { status: 400 }
+                );
             }
         }
 
@@ -502,6 +520,7 @@ export async function POST(req: NextRequest) {
 
 
             const primaryParentId = resolvedParents[0]?.parentId;
+            const resolvedChildIds: string[] = [];
  
             for (const c of submittedChildren) {
                 let childMatched = false;
@@ -561,6 +580,7 @@ export async function POST(req: NextRequest) {
                         firstAidConsent: c.firstAidConsent,
                     }, { allowUpdate: canUpdateChild });
                     childId = child.id;
+                    if (childId) resolvedChildIds.push(childId);
                 }
  
                 await tx.insert(registrationChildren).values({
@@ -591,6 +611,35 @@ export async function POST(req: NextRequest) {
                 }
 
             }
+
+            // ── 4.6 Link registration <-> booking (explicit or auto-resolved) ──
+            const resolvedBookingId = await resolveBookingForRegistration(tx, {
+                organisationId: org.id,
+                centreId: validatedCentreId,
+                parentId: primaryParentId,
+                childIds: resolvedChildIds,
+                childNames: submittedChildren.map((c: any) => ({
+                    firstName: c.firstName,
+                    lastName: c.lastName,
+                })),
+                explicitBookingId: submittedBookingId || prefillBookingId || null,
+            });
+
+            if (resolvedBookingId && reg?.id) {
+                await tx
+                    .update(registrations)
+                    .set({ bookingId: resolvedBookingId, updatedAt: new Date() })
+                    .where(eq(registrations.id, reg.id));
+
+                await tx
+                    .update(bookings)
+                    .set({
+                        linkedRegistrationId: reg.id,
+                        updatedAt: new Date(),
+                    })
+                    .where(eq(bookings.id, resolvedBookingId));
+            }
+
             return { isDuplicate: false };
         });
 

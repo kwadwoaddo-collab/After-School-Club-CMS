@@ -7,6 +7,7 @@ import {
 } from '@/db/schema';
 import { eq, desc, asc, sql, and, gte, lt, lte, inArray, isNull } from 'drizzle-orm';
 import { startOfDay, endOfDay, addDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subWeeks, subMonths, isSameDay, subDays } from 'date-fns';
+import { currentLifecycleStatusChildSql } from '@/lib/enrolment/finance-eligibility';
 
 export const getStudentKpis = cache(async (orgId: string, centreCondition: any, activeStart: string, activeEnd: string, prevStart: string, prevEnd: string) => {
     return db.select({ 
@@ -16,7 +17,13 @@ export const getStudentKpis = cache(async (orgId: string, centreCondition: any, 
     })
     .from(children)
     .innerJoin(parents, eq(children.parentId, parents.id))
-    .where(and(eq(parents.organisationId, orgId), centreCondition, isNull(parents.deletedAt), isNull(children.deletedAt)));
+    .where(and(
+        eq(parents.organisationId, orgId),
+        centreCondition,
+        isNull(parents.deletedAt),
+        isNull(children.deletedAt),
+        sql`${currentLifecycleStatusChildSql()} <> 'stopped'`
+    ));
 });
 
 export const getBookingKpis = cache(async (hasCentres: boolean, centreCondition: any, activeStart: string, activeEnd: string, prevStart: string, prevEnd: string, targetMonthStart: string, targetMonthEnd: string, targetWeekStart: string, targetWeekEnd: string) => {

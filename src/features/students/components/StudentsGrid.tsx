@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { followUpBucket, FOLLOW_UP_LABELS } from '../follow-up-queue';
 import { AlertTriangle, Shield, Mail, Phone, Calendar } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
-import type { StudentRow } from './StudentsTable';
+import { formatShortDate, type StudentRow } from './StudentsTable';
 
 /* ------------------------------------------------------------------ */
 /*  Mobile record card — InvoiceFlow's "tables collapse to stacked      */
@@ -48,7 +48,20 @@ export default function StudentsGrid({ students, followUpMode = false, today = '
                                         <span className="w-1.5 h-1.5 rounded-full bg-success flex-shrink-0" title="Registered" />
                                     )}
                                 </div>
-                                {(student.enrolmentStatus === 'paused' || student.enrolmentStatus === 'stopped') && <Badge variant="warning">{student.enrolmentStatus === 'paused' ? 'Paused' : 'Stopped'}</Badge>}
+                                {(() => {
+                                    const status = student.lifecycleStatus ?? student.enrolmentStatus;
+                                    if (status === 'stopped') {
+                                        return (
+                                            <Badge variant="default" className="tabular-nums">
+                                                Stopped{student.lifecycleEffectiveDate ? ' · ' + formatShortDate(student.lifecycleEffectiveDate) : ''}
+                                            </Badge>
+                                        );
+                                    }
+                                    if (status === 'paused') {
+                                        return <Badge variant="warning">Paused</Badge>;
+                                    }
+                                    return null;
+                                })()}
                                 {(student.lastContactAt || student.nextContactDate) && <p className="text-xs text-text-muted mt-1">Last contact: {student.lastContactAt ? new Date(student.lastContactAt).toLocaleDateString('en-GB', { timeZone: 'Europe/London' }) : 'Not recorded'}{student.nextContactDate ? ` · Next call: ${student.nextContactDate}` : ''}</p>}
                                 {followUpMode && <p className="mt-2 text-sm text-text"><Badge variant={['overdue', 'today'].includes(followUpBucket(student.nextContactDate, today)) ? 'warning' : 'default'}>{FOLLOW_UP_LABELS[followUpBucket(student.nextContactDate, today)]}</Badge><span className="ml-2 text-primary">Record call / next date →</span></p>}
                                 <div className="flex items-center gap-2 mt-1 flex-wrap">

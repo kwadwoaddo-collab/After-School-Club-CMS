@@ -5,6 +5,7 @@ import { db } from '@/db';
 import { parents, children, centres } from '@/db/schema';
 import { and, eq, isNull } from 'drizzle-orm';
 import { jwtVerify } from 'jose';
+import { resolveBookingForRegistration } from '@/lib/services/booking-outcome-sync';
 
 export async function GET(req: NextRequest) {
     try {
@@ -26,7 +27,8 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ error: 'Invalid or expired prefill token' }, { status: 400 });
         }
 
-        const { parentId, centreId, childIds } = payload;
+        const { parentId, centreId, childIds, bookingId: tokenBookingId } = payload;
+        const queryBookingId = searchParams.get('bookingId');
         if (!parentId || !centreId) {
             return NextResponse.json({ error: 'Malformed token payload' }, { status: 400 });
         }
@@ -114,10 +116,20 @@ export async function GET(req: NextRequest) {
             firstAidConsent: c.firstAidConsent ?? false,
         }));
 
+        const resolvedBookingId = await resolveBookingForRegistration(db, {
+            organisationId: centre.organisationId,
+            centreId,
+            parentId,
+            childIds: parentChildren.map(c => c.id),
+            childNames: parentChildren.map(c => ({ firstName: c.firstName, lastName: c.lastName })),
+            explicitBookingId: tokenBookingId || queryBookingId || null,
+        });
+
         return NextResponse.json({
             success: true,
             parentId,
             centreId,
+            bookingId: resolvedBookingId,
             parents: transformedParents,
             children: transformedChildren,
         });

@@ -4,7 +4,7 @@
 
 import { db } from '@/db';
 import { bookingAttendees, bookings, children, sessionCredits, users } from '@/db/schema';
-import { eq, and, gte, lte, inArray, isNull } from 'drizzle-orm';
+import { eq, and, gte, lte, inArray, isNull, sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { requireTenantSession } from '@/lib/session';
 import { format } from 'date-fns';
@@ -15,6 +15,8 @@ import {
 } from './utils';
 import { parseInTimezone } from '@/lib/datetime';
 import { canUserAccessCentre } from '@/lib/permissions';
+import { enrolmentBusinessDate } from '@/lib/enrolment/business-date';
+import { studentLifecycleStatusSql } from '@/features/students/lifecycle-queries';
 
 // ─── Update attendance with check-in/out times ────────────────────────────────
 
@@ -122,13 +124,18 @@ export async function getSessionLedger(
     const { start, end } = getAcademicYearRange(year);
 
     // ── Option B: start from ALL active registered children at this centre ────
-    const allChildren = await db.query.children.findMany({
+    const dateStr = enrolmentBusinessDate();
+    const rawChildren = await db.query.children.findMany({
         where: and(
             eq(children.centreId, centreId),
             isNull(children.deletedAt),
             eq(children.isRegistered, true),
+            sql`${studentLifecycleStatusSql(dateStr)} <> 'stopped'`,
         ),
     });
+    const allChildren = rawChildren.filter(
+        (c: any) => c.effectiveEnrolmentStatus !== 'stopped' && c.lifecycleStatus !== 'stopped'
+    );
 
     // Build ledger map seeded with every child (balance starts at 0)
     const ledgerMap = new Map<string, StudentLedgerEntry>();

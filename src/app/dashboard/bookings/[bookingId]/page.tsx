@@ -9,6 +9,7 @@ import { ChevronLeft, Calendar, Clock, MapPin, User, Mail, Phone, CheckCircle2, 
 import { format } from 'date-fns';
 import { requiresAssessmentOutcome } from '@/features/bookings/assessment-outcome';
 import MarkAttendedButton from '@/features/bookings/components/MarkAttendedButton';
+import BookingOutcomeActions from '@/features/bookings/components/BookingOutcomeActions';
 import InternalNotesTimeline from '@/features/students/components/InternalNotesTimeline';
 import { getStudentNotes } from '@/features/students/notes.actions';
 import { getUserAccessibleCentres, getUserAccessibleCentreIds } from '@/lib/permissions';
@@ -95,6 +96,10 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
     const student = getStudentInfo();
     const initialNotes = student.id ? await getStudentNotes(student.id) : [];
 
+    const isSignedUpOutcome = booking.enrolmentOutcome === 'signed_up' || booking.status === 'signed_up';
+    const isDidNotSignUpOutcome = booking.enrolmentOutcome === 'did_not_sign_up';
+    const isOutcomeDecided = isSignedUpOutcome || isDidNotSignUpOutcome;
+
     // Booking lifecycle timeline steps
     const timelineSteps = [
         {
@@ -114,9 +119,20 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
         {
             label: booking.status === 'cancelled' ? 'Cancelled' : booking.status === 'rescheduled' ? 'Rescheduled' : 'Attended',
             date: booking.startAt ? format(new Date(booking.startAt), 'MMM d, yyyy') : null,
-            done: ['completed', 'cancelled', 'rescheduled'].includes(booking.status),
+            done: ['completed', 'cancelled', 'rescheduled', 'signed_up'].includes(booking.status),
             icon: booking.status === 'cancelled' ? XCircle : booking.status === 'rescheduled' ? RefreshCw : CheckCircle2,
-            colour: booking.status === 'completed' ? 'text-accent' : booking.status === 'cancelled' ? 'text-text-muted' : booking.status === 'rescheduled' ? 'text-accent' : 'text-text-muted',
+            colour: booking.status === 'completed' || booking.status === 'signed_up' ? 'text-accent' : booking.status === 'cancelled' ? 'text-text-muted' : booking.status === 'rescheduled' ? 'text-accent' : 'text-text-muted',
+        },
+        {
+            label: isSignedUpOutcome
+                ? 'Signed Up'
+                : isDidNotSignUpOutcome
+                ? 'Did Not Sign Up'
+                : 'Awaiting Outcome',
+            date: booking.enrolmentOutcomeAt ? format(new Date(booking.enrolmentOutcomeAt), 'MMM d, yyyy') : null,
+            done: isOutcomeDecided,
+            icon: isDidNotSignUpOutcome ? XCircle : CheckCircle2,
+            colour: isSignedUpOutcome ? 'text-success' : isDidNotSignUpOutcome ? 'text-text-muted' : 'text-text-muted',
         },
     ];
 
@@ -165,6 +181,30 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
                     <strong>Assessment outcome required</strong>
                     <p className="text-sm mt-1">The appointment date has passed. Record attendance below or reschedule. Attendance does not confirm enrolment: returned registration forms remain awaiting confirmation until staff confirm signed up.</p>
                 </div>
+            )}
+
+            {booking.status !== 'cancelled' && (
+                <Card className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-border">
+                    <div>
+                        <p className="text-label text-text-muted">Enrolment Outcome</p>
+                        <p className="text-small-body font-medium text-text mt-0.5">
+                            {isSignedUpOutcome
+                                ? 'Student is confirmed as Signed Up and eligible for billing.'
+                                : isDidNotSignUpOutcome
+                                ? 'Family decided not to sign up after this assessment.'
+                                : booking.status === 'completed'
+                                ? 'Assessment attended — did this student sign up for regular sessions?'
+                                : 'Record whether the student signed up once the assessment takes place.'}
+                        </p>
+                    </div>
+                    <BookingOutcomeActions
+                        bookingId={bookingId}
+                        status={booking.status}
+                        enrolmentOutcome={booking.enrolmentOutcome}
+                        enrolmentOutcomeReason={booking.enrolmentOutcomeReason}
+                        linkedRegistrationId={booking.linkedRegistrationId}
+                    />
+                </Card>
             )}
             {/* Booking Lifecycle Timeline */}
             <Card className="p-6">

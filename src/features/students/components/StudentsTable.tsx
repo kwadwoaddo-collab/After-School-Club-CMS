@@ -15,8 +15,22 @@ import StudentActions from '@/features/students/components/StudentActions';
 /*  Row shape – pre-enriched by the server component                   */
 /* ------------------------------------------------------------------ */
 
+export function formatShortDate(dateStr?: string | null): string {
+  if (!dateStr) return '';
+  const parsed = new Date(`${dateStr.slice(0, 10)}T00:00:00Z`);
+  if (Number.isNaN(parsed.getTime())) return dateStr;
+  return parsed.toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
+}
+
 export interface StudentRow {
   enrolmentStatus?: string;
+  lifecycleStatus?: string;
+  lifecycleEffectiveDate?: string | null;
   lastContactAt?: string | null;
   nextContactDate?: string | null;
   id: string;
@@ -154,7 +168,20 @@ export default function StudentsTable({ students, error, hasActiveFilters, follo
                             />
                           )}
                         </div>
-                        {(student.enrolmentStatus === 'paused' || student.enrolmentStatus === 'stopped') && <Badge variant="warning">{student.enrolmentStatus === 'paused' ? 'Paused' : 'Stopped'}</Badge>}
+                        {(() => {
+                          const status = student.lifecycleStatus ?? student.enrolmentStatus;
+                          if (status === 'stopped') {
+                            return (
+                              <Badge variant="default" className="tabular-nums">
+                                Stopped{student.lifecycleEffectiveDate ? ' · ' + formatShortDate(student.lifecycleEffectiveDate) : ''}
+                              </Badge>
+                            );
+                          }
+                          if (status === 'paused') {
+                            return <Badge variant="warning">Paused</Badge>;
+                          }
+                          return null;
+                        })()}
                         {!followUpMode && (student.lastContactAt || student.nextContactDate) && <p className="text-xs text-text-muted mt-1">Last contact: {student.lastContactAt ? new Date(student.lastContactAt).toLocaleDateString('en-GB', { timeZone: 'Europe/London' }) : 'Not recorded'}{student.nextContactDate ? ` · Next call: ${student.nextContactDate}` : ''}</p>}
                       </div>
                     </div>
@@ -240,6 +267,8 @@ export default function StudentsTable({ students, error, hasActiveFilters, follo
                     {followUpMode ? <Link href={`/dashboard/students/${student.id}#enrolment-follow-up`} onClick={event => event.stopPropagation()} className="text-primary underline underline-offset-4 text-sm">Record call / next date</Link> : <StudentActions
                       studentId={student.id}
                       studentName={`${student.firstName} ${student.lastName}`}
+                      enrolmentStatus={student.lifecycleStatus ?? student.enrolmentStatus}
+                      today={today}
                     />}
                   </TableCell>
                 </TableRow>

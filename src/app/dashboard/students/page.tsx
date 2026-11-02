@@ -2,7 +2,7 @@ import { parseSummaryRange, summaryRangeSql } from '@/features/dashboard/summary
 import SummaryRangeNotice from '@/features/dashboard/SummaryRangeNotice';
 import { enrolmentBusinessDate } from '@/lib/enrolment/business-date';
 import { normalizeFollowUpFilter } from '@/features/students/follow-up-queue';
-import { studentLifecycleStatusSql, studentLastContactSql, studentNextContactSql, studentFollowUpFilterSql, studentFollowUpOrderSql, studentRestartBillingReviewSql } from '@/features/students/lifecycle-queries';
+import { studentLifecycleStatusSql, studentLifecycleEffectiveDateSql, studentLastContactSql, studentNextContactSql, studentFollowUpFilterSql, studentFollowUpOrderSql, studentRestartBillingReviewSql } from '@/features/students/lifecycle-queries';
 import { redirect } from 'next/navigation';
 import { requireAuth } from '@/lib/require-auth';
 import { db } from '@/db';
@@ -25,6 +25,7 @@ import { logger } from '@/lib/logger';
 type StudentsStats = {
     totalCount: number;
     registeredCount: number;
+    stoppedCount?: number;
     leadCount: number;
     medicalAlertCount: number;
     lowAttendanceCount: number;
@@ -154,7 +155,13 @@ export default async function StudentsPage(props: {
             conditions.push(studentFollowUpFilterSql(followUpFilter, today));
         }
         if (searchParams.status === 'billing-review') conditions.push(studentRestartBillingReviewSql(today));
-        if (searchParams.status && searchParams.status !== 'billing-review' && searchParams.status !== 'all' && searchParams.status !== 'follow-ups' && !showLowAttendance) {
+        if (searchParams.status === 'active') {
+            conditions.push(sql`${studentLifecycleStatusSql(today)} = 'active'`);
+        } else if (searchParams.status === 'paused') {
+            conditions.push(sql`${studentLifecycleStatusSql(today)} = 'paused'`);
+        } else if (searchParams.status === 'stopped') {
+            conditions.push(sql`${studentLifecycleStatusSql(today)} = 'stopped'`);
+        } else if (searchParams.status === 'registered' || searchParams.status === 'unregistered') {
             conditions.push(eq(children.isRegistered, searchParams.status === 'registered'));
         }
 
@@ -205,8 +212,9 @@ export default async function StudentsPage(props: {
         const statsQuery = db
             .select({
                 totalCount: sql<number>`count(*)::int`,
-                registeredCount: sql<number>`count(*) filter (where ${children.isRegistered} = true)::int`,
-                leadCount: sql<number>`count(*) filter (where ${children.isRegistered} = false)::int`,
+                registeredCount: sql<number>`count(*) filter (where ${children.isRegistered} = true AND ${studentLifecycleStatusSql(today)} <> 'stopped')::int`,
+                stoppedCount: sql<number>`count(*) filter (where ${studentLifecycleStatusSql(today)} = 'stopped')::int`,
+                leadCount: sql<number>`count(*) filter (where ${children.isRegistered} = false AND ${studentLifecycleStatusSql(today)} <> 'stopped')::int`,
                 medicalAlertCount: sql<number>`count(*) filter (where ${hasMedicalNotesQuery} = true OR ${hasSafeguardingNotesQuery} = true)::int`,
                 lowAttendanceCount: sql<number>`count(*) filter (where ${pastCountQuery} >= 3 AND (${presentCountQuery}::float / ${pastCountQuery}::float) < 0.75)::int`,
             })
@@ -237,6 +245,7 @@ export default async function StudentsPage(props: {
                 dateOfBirth: children.dateOfBirth,
                 schoolYear: children.schoolYear,
                 enrolmentStatus: studentLifecycleStatusSql(),
+                lifecycleEffectiveDate: studentLifecycleEffectiveDateSql(),
                 lastContactAt: studentLastContactSql(),
                 nextContactDate: studentNextContactSql(),
                 isRegistered: children.isRegistered,
@@ -285,6 +294,8 @@ export default async function StudentsPage(props: {
                 dateOfBirth: student.dateOfBirth ? student.dateOfBirth.toISOString() : null,
                 schoolYear: student.schoolYear ?? null,
                 enrolmentStatus: student.enrolmentStatus,
+                lifecycleStatus: student.enrolmentStatus,
+                lifecycleEffectiveDate: student.lifecycleEffectiveDate ?? null,
                 lastContactAt: student.lastContactAt ? new Date(student.lastContactAt).toISOString() : null,
                 nextContactDate: student.nextContactDate,
                 isRegistered: !!student.isRegistered,

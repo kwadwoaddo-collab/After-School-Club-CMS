@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, text, timestamp, pgEnum, boolean, integer, unique, numeric, index, date, uniqueIndex, jsonb, customType, foreignKey } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, text, timestamp, pgEnum, boolean, integer, unique, numeric, index, date, uniqueIndex, jsonb, customType, foreignKey, type AnyPgColumn } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
 
 // ==================== DISCOUNT RULE TYPE ====================
@@ -14,6 +14,7 @@ export type DiscountRule = {
 // ==================== ENUMS ====================
 export const userRoleEnum = pgEnum('user_role', ['ORG_OWNER', 'MANAGER', 'FRONT_DESK', 'TUTOR']);
 export const bookingStatusEnum = pgEnum('booking_status', ['confirmed', 'cancelled', 'rescheduled', 'completed', 'pending', 'signed_up']);
+export const bookingEnrolmentOutcomeEnum = pgEnum('booking_enrolment_outcome', ['awaiting_outcome', 'signed_up', 'did_not_sign_up']);
 export const modalityEnum = pgEnum('modality', ['in_person', 'online']);
 export const preferredContactEnum = pgEnum('preferred_contact', ['phone', 'email']);
 export const subjectEnum = pgEnum('subject', ['Maths', 'English', 'Science', 'Other']);
@@ -406,6 +407,11 @@ export const bookings = pgTable('bookings', {
   googleCalendarEventId: varchar('google_calendar_event_id', { length: 255 }),
   communicationsConsent: boolean('communications_consent').default(false).notNull(),
   communicationVersion: integer('communication_version').default(1).notNull(),
+  enrolmentOutcome: bookingEnrolmentOutcomeEnum('enrolment_outcome'),
+  enrolmentOutcomeReason: text('enrolment_outcome_reason'),
+  enrolmentOutcomeAt: timestamp('enrolment_outcome_at', { withTimezone: true }),
+  enrolmentOutcomeBy: uuid('enrolment_outcome_by').references(() => users.id, { onDelete: 'set null' }),
+  linkedRegistrationId: uuid('linked_registration_id').references((): AnyPgColumn => registrations.id, { onDelete: 'set null' }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
@@ -413,6 +419,7 @@ export const bookings = pgTable('bookings', {
   centreIdx: index('bookings_centre_idx').on(table.centreId),
   parentIdx: index('bookings_parent_idx').on(table.parentId),
   centreStatusStartIdx: index('bookings_centre_status_start_idx').on(table.centreId, table.status, table.startAt),
+  enrolmentOutcomeIdx: index('bookings_enrolment_outcome_idx').on(table.centreId, table.enrolmentOutcome),
   createdAtIdx: index('bookings_created_at_idx').on(table.createdAt),
 }));
 
@@ -574,6 +581,7 @@ export const registrations = pgTable('registrations', {
   id: uuid('id').defaultRandom().primaryKey(),
   organisationId: uuid('organisation_id').references(() => organisations.id, { onDelete: 'cascade' }).notNull(),
   centreId: uuid('centre_id').references(() => centres.id, { onDelete: 'cascade' }), // Can be null for backwards compatibility to existing incomplete registrations
+  bookingId: uuid('booking_id').references((): AnyPgColumn => bookings.id, { onDelete: 'set null' }),
 
   // Status
   status: registrationStatusEnum2('status').default('awaiting_confirmation').notNull(),

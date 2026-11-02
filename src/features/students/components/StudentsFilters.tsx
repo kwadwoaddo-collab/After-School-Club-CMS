@@ -44,6 +44,9 @@ export default function StudentsFilters({ centres, resultsCount = 0 }: StudentsF
 
     const statusOptions = [
         { value: 'all', label: 'All statuses' },
+        { value: 'active', label: 'Active' },
+        { value: 'paused', label: 'Paused' },
+        { value: 'stopped', label: 'Stopped' },
         { value: 'follow-ups', label: 'Follow-ups (paused / stopped)' },
         { value: 'billing-review', label: 'Restart billing review' },
         { value: 'registered', label: 'Registered' },

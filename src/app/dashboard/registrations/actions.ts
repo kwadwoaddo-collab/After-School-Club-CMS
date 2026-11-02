@@ -12,6 +12,7 @@ import { emailService } from '@/lib/services/email';
 import { createRegistrationNotification } from '@/app/portal/notifications/actions';
 import { getTrustedApplicationUrl } from '@/lib/base-url';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
+import { resolveBookingForRegistration, syncBookingOutcomeFromRegistration } from '@/lib/services/booking-outcome-sync';
 
 export async function deleteRegistrations(ids: string[]) {
     const session = await requireTenantSession();
@@ -250,7 +251,7 @@ export async function updateRegistrationDetails(payload: UpdateRegistrationPaylo
     return { success: true };
 }
 
-export async function generateRegistrationLink(parentId: string, centreId: string, childIds?: string[]) {
+export async function generateRegistrationLink(parentId: string, centreId: string, childIds?: string[], bookingId?: string) {
     const session = await requireTenantSession();
     if (!session?.user?.organisationId) throw new Error('Unauthorized');
     const orgId = session.user.organisationId;
@@ -297,9 +298,20 @@ export async function generateRegistrationLink(parentId: string, centreId: strin
     if (!centre) throw new Error('Centre not found');
 
     // Create secure prefill token
+    const resolvedBookingId = bookingId || (await resolveBookingForRegistration(db, {
+        organisationId: orgId,
+        centreId: targetCentreId,
+        parentId,
+        childIds,
+    }));
     const jose = await import('jose');
     const secret = new TextEncoder().encode(process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || 'fallback-secret-at-least-32-chars-long');
-    const token = await new jose.SignJWT({ parentId, centreId: targetCentreId, childIds })
+    const token = await new jose.SignJWT({
+        parentId,
+        centreId: targetCentreId,
+        childIds,
+        ...(resolvedBookingId ? { bookingId: resolvedBookingId } : {}),
+    })
         .setProtectedHeader({ alg: 'HS256' })
         .setExpirationTime('30d') // prefill link expires in 30 days
         .sign(secret);
@@ -382,8 +394,17 @@ export async function updateRegistrationStatus(
 
         await tx.insert(auditEvents).values({ organisationId: orgId, userId: session.user.id,
             eventType: 'registration_status_changed', eventData: JSON.stringify({ registrationId, previousStatus: existing.status, status: newStatus, startDate: existing.startDate, confirmedAt: new Date().toISOString() }) });
+
+        await syncBookingOutcomeFromRegistration(tx, {
+            registrationId,
+            centreId: existing.centreId,
+            organisationId: orgId,
+            status: newStatus,
+            actorUserId: session.user.id,
+        });
     });
     revalidatePath('/dashboard/finance');
+    revalidatePath('/dashboard/bookings');
     revalidatePath('/dashboard/registrations');
     revalidatePath(`/dashboard/registrations/${registrationId}`);
     revalidatePath('/dashboard/students');

@@ -81,10 +81,15 @@ export default async function AttendancePage(props: {
         hasError = true;
     }
 
+    const activeOrPausedChildrenAtCentre = allChildrenAtCentre.filter(
+        c => (c.effectiveEnrolmentStatus ?? c.lifecycleStatus ?? 'active') !== 'stopped'
+    );
+    const expectedIds = expectedRosterIds(activeOrPausedChildrenAtCentre);
+
     const sortedSlots = compileDailyRegisterSlots({
         targetDate,
-        allChildrenAtCentre,
-        expectedChildIds: expectedRosterIds(allChildrenAtCentre),
+        allChildrenAtCentre: activeOrPausedChildrenAtCentre,
+        expectedChildIds: expectedIds,
         dayBookings,
     });
 
@@ -228,7 +233,7 @@ export default async function AttendancePage(props: {
                 slots={sortedSlots as any}
                 centreId={activeCentreId}
                 dateStr={targetStr}
-                allStudents={allChildrenAtCentre.map(c => ({
+                allStudents={activeOrPausedChildrenAtCentre.map(c => ({
                     id: c.id,
                     firstName: c.firstName,
                     lastName: c.lastName,

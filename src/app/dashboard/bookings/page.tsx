@@ -191,10 +191,19 @@ export default async function BookingsPage(props: {
         }
     }
 
-    if (searchParams.outcome === 'required') {
+    if (searchParams.outcome === 'required' || searchParams.outcome === 'needs_attendance') {
         const outcomeCondition = assessmentOutcomeRequiredSql();
         conds.push(outcomeCondition);
-        aggConds.push(outcomeCondition);
+    } else if (searchParams.outcome === 'awaiting_outcome') {
+        conds.push(
+            sql`${bookings.status} <> 'cancelled' AND (${bookings.enrolmentOutcome} = 'awaiting_outcome' OR (${bookings.status} = 'completed' AND ${bookings.enrolmentOutcome} IS NULL))`
+        );
+    } else if (searchParams.outcome === 'signed_up') {
+        conds.push(
+            sql`(${bookings.enrolmentOutcome} = 'signed_up' OR ${bookings.status} = 'signed_up')`
+        );
+    } else if (searchParams.outcome === 'did_not_sign_up') {
+        conds.push(sql`${bookings.enrolmentOutcome} = 'did_not_sign_up'`);
     }
 
     if (effectiveFrom) {
@@ -222,10 +231,18 @@ export default async function BookingsPage(props: {
 
     let totalRecords = 0;
     let statusCountsAgg: { status: string; count: number }[] = [];
+    let outcomeCounts = {
+        all: 0,
+        needsAttendance: 0,
+        awaitingOutcome: 0,
+        signedUp: 0,
+        didNotSignUp: 0,
+    };
 
     if (!searchActiveAndNoResults) {
         try {
-            const [aggRows, [totalRes], rows] = await Promise.all([
+            const needsAttendanceExpr = assessmentOutcomeRequiredSql();
+            const [aggRows, [outcomeAggRow], [totalRes], rows] = await Promise.all([
                 // Retrieve aggregations for accurate top-level bubbles (excludes status filter)
                 db.select({
                     status: bookings.status,
@@ -234,6 +251,17 @@ export default async function BookingsPage(props: {
                 .from(bookings)
                 .where(aggWhere)
                 .groupBy(bookings.status),
+
+                // Retrieve live counts for Enrolment Outcome filter pills
+                db.select({
+                    allCount: sql<number>`count(*)::int`,
+                    needsAttendanceCount: sql<number>`count(*) FILTER (WHERE ${needsAttendanceExpr})::int`,
+                    awaitingOutcomeCount: sql<number>`count(*) FILTER (WHERE ${bookings.status} <> 'cancelled' AND (${bookings.enrolmentOutcome} = 'awaiting_outcome' OR (${bookings.status} = 'completed' AND ${bookings.enrolmentOutcome} IS NULL)))::int`,
+                    signedUpCount: sql<number>`count(*) FILTER (WHERE ${bookings.enrolmentOutcome} = 'signed_up' OR ${bookings.status} = 'signed_up')::int`,
+                    didNotSignUpCount: sql<number>`count(*) FILTER (WHERE ${bookings.enrolmentOutcome} = 'did_not_sign_up')::int`,
+                })
+                .from(bookings)
+                .where(aggWhere),
 
                 // Set total records for the active filters (includes status filter)
                 db
@@ -254,6 +282,7 @@ export default async function BookingsPage(props: {
                                 id: true,
                                 bookingId: true,
                                 childId: true,
+                                attendanceStatus: true,
                                 feedbackNotes: true,
                                 feedbackScore: true,
                                 feedbackAttachmentMime: true,
@@ -268,6 +297,15 @@ export default async function BookingsPage(props: {
                 }),
             ]);
             statusCountsAgg = aggRows;
+            if (outcomeAggRow) {
+                outcomeCounts = {
+                    all: outcomeAggRow.allCount || 0,
+                    needsAttendance: outcomeAggRow.needsAttendanceCount || 0,
+                    awaitingOutcome: outcomeAggRow.awaitingOutcomeCount || 0,
+                    signedUp: outcomeAggRow.signedUpCount || 0,
+                    didNotSignUp: outcomeAggRow.didNotSignUpCount || 0,
+                };
+            }
             totalRecords = totalRes?.count || 0;
             bookingsData = rows;
         } catch (error) {
@@ -278,7 +316,7 @@ export default async function BookingsPage(props: {
     }
 
     const isFiltered = !!(
-        searchParams.outcome === 'required' ||
+        (searchParams.outcome && searchParams.outcome !== 'all') ||
         searchParams.search ||
         (searchParams.status && searchParams.status !== 'all') ||
         effectiveFrom ||
@@ -347,6 +385,7 @@ export default async function BookingsPage(props: {
                         resultsCount={totalRecords}
                         statusCounts={statusCounts}
                         totalAggCount={totalAggCount}
+                        outcomeCounts={outcomeCounts}
                     />
                 </Suspense>
             </div>

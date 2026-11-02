@@ -7,6 +7,7 @@ import { db } from '@/db';
 import { children, registrationChildren, auditEvents } from '@/db/schema';
 import { requireApiAuth } from '@/lib/require-auth';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
+import { syncBookingOutcomeFromRegistration } from '@/lib/services/booking-outcome-sync';
 
 const input = z.object({ reason: z.string().trim().min(5).max(1000), startDate: z.string().refine(isValidEnrolmentStartDate, 'Invalid start date') });
 
@@ -31,8 +32,17 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         const currentLink = await tx.query.registrationChildren.findFirst({ where: eq(registrationChildren.childId, id) });
         if (currentLink) throw new Error('A registration was linked during confirmation. Confirm signed up on that registration instead.');
         await tx.insert(auditEvents).values({ organisationId: auth.organisationId, userId: auth.user.id, eventType: 'manual_student_enrolment_confirmed', eventData: JSON.stringify({ childId: id, ...parsed.data, confirmedAt: new Date().toISOString() }) });
+        await syncBookingOutcomeFromRegistration(tx, {
+            childId: id,
+            centreId: child.centreId,
+            organisationId: auth.organisationId,
+            status: 'signed_up',
+            actorUserId: auth.user.id,
+            reason: parsed.data.reason,
+        });
     });
     revalidatePath(`/dashboard/students/${id}`);
+    revalidatePath('/dashboard/bookings');
     revalidatePath('/dashboard/finance');
     return NextResponse.json({ success: true });
 }

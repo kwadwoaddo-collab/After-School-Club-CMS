@@ -8,6 +8,7 @@ import { and, eq, inArray, ne, sql } from 'drizzle-orm';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { emailService } from '@/lib/services/email';
 import { revalidatePath } from 'next/cache';
+import { syncBookingOutcomeFromRegistration } from '@/lib/services/booking-outcome-sync';
 
 const VALID_STATUSES = ['awaiting_confirmation', 'signed_up', 'not_interested'] as const;
 type RegistrationStatus = typeof VALID_STATUSES[number];
@@ -128,6 +129,14 @@ export async function PATCH(
 
     await tx.insert(auditEvents).values({ organisationId: session.user.organisationId!, userId: session.user.id,
         eventType: 'registration_status_changed', eventData: JSON.stringify({ registrationId: id, previousStatus: reg.status, status, startDate: reg.startDate, confirmedAt: new Date().toISOString() }) });
+
+    await syncBookingOutcomeFromRegistration(tx, {
+        registrationId: id,
+        centreId: reg.centreId,
+        organisationId: session.user.organisationId!,
+        status: status as RegistrationStatus,
+        actorUserId: session.user.id,
+    });
     });
 
     // ── 6. Fire status change email (non-blocking) ──────────────────────────
@@ -168,6 +177,7 @@ export async function PATCH(
     }
 
     revalidatePath('/dashboard/finance');
+    revalidatePath('/dashboard/bookings');
     revalidatePath('/dashboard/registrations');
     revalidatePath(`/dashboard/registrations/${id}`);
     revalidatePath('/dashboard/students');

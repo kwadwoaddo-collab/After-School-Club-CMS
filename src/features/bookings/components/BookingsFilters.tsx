@@ -6,14 +6,23 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useCentreFilter } from '@/components/dashboard/CentreFilterContext';
 import { Button } from '@/components/ui/Button';
 
+export interface BookingOutcomeCounts {
+    all: number;
+    needsAttendance: number;
+    awaitingOutcome: number;
+    signedUp: number;
+    didNotSignUp: number;
+}
+
 interface BookingsFiltersProps {
     centres: { id: string; name: string }[];
     resultsCount?: number;
     statusCounts?: Record<string, number>;
     totalAggCount?: number;
+    outcomeCounts?: BookingOutcomeCounts;
 }
 
-export default function BookingsFilters({ centres, resultsCount = 0, statusCounts, totalAggCount = 0 }: BookingsFiltersProps) {
+export default function BookingsFilters({ centres, resultsCount = 0, statusCounts, totalAggCount = 0, outcomeCounts }: BookingsFiltersProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { selectedCentreId, setSelectedCentreId } = useCentreFilter();
@@ -28,6 +37,15 @@ export default function BookingsFilters({ centres, resultsCount = 0, statusCount
     useEffect(() => { setStatus(urlStatus); }, [urlStatus]);
 
     const isToday = searchParams.get('today') === 'true';
+    const activeOutcome = searchParams.get('outcome') || 'all';
+
+    const outcomeFilterPills = [
+        { value: 'all', label: 'All', count: outcomeCounts?.all ?? totalAggCount },
+        { value: 'required', label: 'Needs Attendance', count: outcomeCounts?.needsAttendance ?? 0 },
+        { value: 'awaiting_outcome', label: 'Awaiting Outcome', count: outcomeCounts?.awaitingOutcome ?? 0 },
+        { value: 'signed_up', label: 'Signed Up', count: outcomeCounts?.signedUp ?? 0 },
+        { value: 'did_not_sign_up', label: 'Did Not Sign Up', count: outcomeCounts?.didNotSignUp ?? 0 },
+    ];
 
     const statusOptionsWithCounts = [
         { value: 'all', label: 'All', count: totalAggCount },
@@ -45,7 +63,7 @@ export default function BookingsFilters({ centres, resultsCount = 0, statusCount
         fromDate ||
         toDate ||
         searchParams.get('today') ||
-        searchParams.get('outcome') === 'required' ||
+        (searchParams.get('outcome') && searchParams.get('outcome') !== 'all') ||
         selectedCentreId !== 'all'
     );
 
@@ -73,7 +91,7 @@ export default function BookingsFilters({ centres, resultsCount = 0, statusCount
         }
         if (selectedCentreId !== 'all') params.set('centre', selectedCentreId);
         const outcome = overrides?.newOutcome !== undefined ? overrides.newOutcome : searchParams.get('outcome');
-        if (outcome === 'required') params.set('outcome', 'required');
+        if (outcome && outcome !== 'all') params.set('outcome', outcome);
 
         const currentSearch = overrides?.newSearch !== undefined ? overrides.newSearch : search;
         if (currentSearch) params.set('search', currentSearch);
@@ -104,7 +122,49 @@ export default function BookingsFilters({ centres, resultsCount = 0, statusCount
                     aria-hidden="true"
                 />
             )}
-            <button type="button" aria-pressed={searchParams.get('outcome') === 'required'} onClick={() => { setStatus('all'); setFromDate(''); setToDate(''); applyFilters({ newOutcome: searchParams.get('outcome') === 'required' ? '' : 'required', newStatus: 'all', newToday: '', newFrom: '', newTo: '' }); }} className="rounded-md border border-border px-3 py-2 text-sm text-foreground hover:bg-secondary focus-visible:outline-2 focus-visible:outline-primary">{searchParams.get('outcome') === 'required' ? 'Showing assessments needing an outcome — show all' : 'Outcomes to record'}</button>
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+                <div className="flex items-center gap-1.5 overflow-x-auto max-w-full scrollbar-none py-0.5" role="group" aria-label="Filter by enrolment outcome">
+                    {outcomeFilterPills.map((pill) => {
+                        const isActive = activeOutcome === pill.value || (pill.value === 'all' && !searchParams.get('outcome'));
+                        return (
+                            <button
+                                key={pill.value}
+                                type="button"
+                                aria-pressed={isActive}
+                                onClick={() => {
+                                    setStatus('all');
+                                    setFromDate('');
+                                    setToDate('');
+                                    applyFilters({
+                                        newOutcome: pill.value === 'all' ? '' : pill.value,
+                                        newStatus: 'all',
+                                        newToday: '',
+                                        newFrom: '',
+                                        newTo: '',
+                                    });
+                                }}
+                                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors whitespace-nowrap border ${
+                                    isActive
+                                        ? 'bg-accent text-white border-accent'
+                                        : 'bg-surface text-text-secondary border-border hover:text-text hover:bg-page'
+                                }`}
+                            >
+                                <span>{pill.label}</span>
+                                <span
+                                    className={`px-1.5 py-0.5 rounded-full text-[11px] tabular-nums ${
+                                        isActive
+                                            ? 'bg-white/20 text-white'
+                                            : 'bg-page text-text-muted'
+                                    }`}
+                                >
+                                    {pill.count}
+                                </span>
+                            </button>
+                        );
+                    })}
+                </div>
+                <button type="button" aria-pressed={searchParams.get('outcome') === 'required'} onClick={() => { setStatus('all'); setFromDate(''); setToDate(''); applyFilters({ newOutcome: searchParams.get('outcome') === 'required' ? '' : 'required', newStatus: 'all', newToday: '', newFrom: '', newTo: '' }); }} className="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-secondary focus-visible:outline-2 focus-visible:outline-primary">{searchParams.get('outcome') === 'required' ? 'Showing assessments needing an outcome — show all' : 'Outcomes to record'}</button>
+            </div>
             {/* Desktop toolbar */}
             <div className="hidden lg:flex items-center justify-between gap-3 flex-wrap">
                 <div className="flex bg-page p-1 rounded-md border border-border-subtle overflow-x-auto max-w-full scrollbar-none gap-1">

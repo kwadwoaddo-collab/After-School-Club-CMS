@@ -8,6 +8,7 @@ import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { revalidatePath } from 'next/cache';
+import { initializeBookingEnrolmentOutcomeOnCompletion } from '@/lib/services/booking-outcome-sync';
 
 // Must match the bookingStatusEnum in schema.ts: confirmed | cancelled | rescheduled | completed | pending | signed_up
 const statusSchema = z.object({
@@ -70,9 +71,29 @@ export async function PATCH(request: Request, { params }: RouteContext) {
         // Perform the update
         const [updated] = await db
             .update(bookings)
-            .set({ status, updatedAt: new Date() })
+            .set({
+                status,
+                ...(status === 'signed_up'
+                    ? {
+                          enrolmentOutcome: 'signed_up' as const,
+                          enrolmentOutcomeAt: new Date(),
+                          enrolmentOutcomeBy: session.user.id,
+                      }
+                    : {}),
+                updatedAt: new Date(),
+            })
             .where(eq(bookings.id, bookingId))
-            .returning({ id: bookings.id, status: bookings.status });
+            .returning({ id: bookings.id, status: bookings.status, enrolmentOutcome: bookings.enrolmentOutcome });
+
+        let finalOutcome = updated?.enrolmentOutcome ?? null;
+        if (status === 'completed') {
+            const initRes = await initializeBookingEnrolmentOutcomeOnCompletion(db, bookingId, {
+                actorUserId: session.user.id,
+            });
+            if (initRes.enrolmentOutcome) {
+                finalOutcome = initRes.enrolmentOutcome;
+            }
+        }
 
         revalidatePath('/dashboard/bookings');
         revalidatePath(`/dashboard/bookings/${bookingId}`);
@@ -81,7 +102,10 @@ export async function PATCH(request: Request, { params }: RouteContext) {
             revalidatePath(`/dashboard/centres/${booking.centreId}`);
         }
 
-        return NextResponse.json({ success: true, booking: updated });
+        return NextResponse.json({
+            success: true,
+            booking: { ...updated, enrolmentOutcome: finalOutcome },
+        });
     } catch (error) {
         logger.error('[PATCH /api/bookings/[bookingId]/status]', error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
