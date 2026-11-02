@@ -430,7 +430,7 @@ export async function recordBookingEnrolmentOutcome(
                     .update(children)
                     .set({
                         isRegistered: true,
-                        registeredAt: sql`COALESCE(${children.registeredAt}, ${now})`,
+                        registeredAt: sql`COALESCE(${children.registeredAt}, ${now.toISOString()}::timestamptz)`,
                         source: sql`CASE WHEN ${children.source} = 'assessment' THEN 'both'::student_source ELSE ${children.source} END`,
                         updatedAt: now,
                     })

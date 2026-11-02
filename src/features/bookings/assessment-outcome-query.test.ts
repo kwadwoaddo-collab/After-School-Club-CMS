@@ -12,6 +12,6 @@ describe('assessment outcome queue', () => {
         expect(requiresAssessmentOutcome('confirmed', '2026-10-27', now, [])).toBe(false);
         const query = new PgDialect().sqlToQuery(assessmentOutcomeRequiredSql(now));
         expect(query.sql).toContain("IN ('confirmed', 'pending')"); expect(query.sql).toContain('NOT EXISTS'); expect(query.sql).toContain('attendance_status IS NULL');
-        expect(query.params).toContain(now);
+        expect(query.params).toContain(now.toISOString());
     });
 });
