@@ -273,7 +273,22 @@ export default async function RegistrationsPage(props: {
             </div>
 
             {/* Empty state or list */}
-            {rows.length === 0 ? (
+            {hasError && rows.length === 0 ? (
+                <div role="alert" className="flex flex-col items-center justify-center py-16 text-center bg-card border border-border rounded-2xl">
+                    <h3 className="text-foreground font-bold mb-2">
+                        Temporary error loading registrations
+                    </h3>
+                    <p className="text-muted-foreground text-sm max-w-md mb-4">
+                        Your registration records are safe, but the page query could not complete. Please refresh the page.
+                    </p>
+                    <Link
+                        href="/dashboard/registrations"
+                        className="inline-flex items-center gap-2 px-5 py-2.5 bg-secondary text-foreground hover:bg-secondary/80 text-xs font-bold rounded-xl transition-all border border-border"
+                    >
+                        Refresh Registrations
+                    </Link>
+                </div>
+            ) : rows.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-20 text-center bg-card border border-border rounded-2xl animate-in fade-in duration-300">
                     <div className="w-16 h-16 rounded-2xl bg-secondary flex items-center justify-center mb-4 text-3xl">📋</div>
                     <h3 className="text-foreground font-bold mb-2">
