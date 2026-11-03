@@ -84,11 +84,11 @@ export default async function DashboardSchedule({
                         </span>
                         <span className="text-xs text-text-muted truncate hidden sm:block">{booking.centreName}</span>
                         <span className={cn('text-xs font-semibold px-2 py-0.5 rounded-sm border',
-                            booking.status === 'confirmed' ? 'bg-success-soft text-success border-success/20' :
-                            booking.status === 'pending' ? 'bg-warning-soft text-warning border-warning/20' :
+                            booking.status === 'confirmed' || booking.status === 'completed' || booking.status === 'signed_up' ? 'bg-success-soft text-success border-success/20' :
+                            booking.status === 'pending' || booking.status === 'did_not_attend' ? 'bg-warning-soft text-warning border-warning/20' :
                             booking.status === 'cancelled' ? 'bg-danger-soft text-danger border-danger/20' :
                             'bg-page text-text-muted border-border'
-                        )}>{booking.status}</span>
+                        )}>{booking.status === 'did_not_attend' ? 'Did Not Attend' : booking.status === 'completed' ? 'Attended' : booking.status === 'confirmed' ? 'Booked' : booking.status}</span>
                         <ChevronRight className="size-4 text-text-muted flex-shrink-0" />
                     </Link>
                     ))}

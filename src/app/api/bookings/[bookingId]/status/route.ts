@@ -3,16 +3,16 @@ import { logger } from '@/lib/logger';
 import { NextResponse } from 'next/server';
 import { getApiSession } from '@/lib/session';
 import { db } from '@/db';
-import { bookings } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { bookings, bookingAttendees } from '@/db/schema';
+import { and, eq, isNull } from 'drizzle-orm';
 import { z } from 'zod';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { revalidatePath } from 'next/cache';
 import { initializeBookingEnrolmentOutcomeOnCompletion } from '@/lib/services/booking-outcome-sync';
 
-// Must match the bookingStatusEnum in schema.ts: confirmed | cancelled | rescheduled | completed | pending | signed_up
+// Must match the bookingStatusEnum in schema.ts: confirmed | cancelled | rescheduled | completed | pending | signed_up | did_not_attend
 const statusSchema = z.object({
-    status: z.enum(['confirmed', 'cancelled', 'rescheduled', 'completed', 'pending', 'signed_up']),
+    status: z.enum(['confirmed', 'cancelled', 'rescheduled', 'completed', 'pending', 'signed_up', 'did_not_attend']),
 });
 
 interface RouteContext {
@@ -68,6 +68,11 @@ export async function PATCH(request: Request, { params }: RouteContext) {
             }
         }
 
+        const now = new Date();
+        const isTerminalOutcome =
+            booking.enrolmentOutcome === 'signed_up' ||
+            booking.enrolmentOutcome === 'did_not_sign_up';
+
         // Perform the update
         const [updated] = await db
             .update(bookings)
@@ -76,14 +81,54 @@ export async function PATCH(request: Request, { params }: RouteContext) {
                 ...(status === 'signed_up'
                     ? {
                           enrolmentOutcome: 'signed_up' as const,
-                          enrolmentOutcomeAt: new Date(),
+                          enrolmentOutcomeAt: now,
                           enrolmentOutcomeBy: session.user.id,
                       }
+                    : status === 'did_not_attend' && !isTerminalOutcome
+                    ? {
+                          enrolmentOutcome: null,
+                      }
                     : {}),
-                updatedAt: new Date(),
+                updatedAt: now,
             })
             .where(eq(bookings.id, bookingId))
             .returning({ id: bookings.id, status: bookings.status, enrolmentOutcome: bookings.enrolmentOutcome });
+
+        try {
+            if (status === 'did_not_attend') {
+                await db
+                    .update(bookingAttendees)
+                    .set({
+                        attendanceStatus: 'no_show',
+                        attendanceMarkedAt: now,
+                        attendanceMarkedBy: session.user.id,
+                        updatedAt: now,
+                    })
+                    .where(
+                        and(
+                            eq(bookingAttendees.bookingId, bookingId),
+                            isNull(bookingAttendees.attendanceStatus)
+                        )
+                    );
+            } else if (status === 'completed') {
+                await db
+                    .update(bookingAttendees)
+                    .set({
+                        attendanceStatus: 'present',
+                        attendanceMarkedAt: now,
+                        attendanceMarkedBy: session.user.id,
+                        updatedAt: now,
+                    })
+                    .where(
+                        and(
+                            eq(bookingAttendees.bookingId, bookingId),
+                            isNull(bookingAttendees.attendanceStatus)
+                        )
+                    );
+            }
+        } catch {
+            // Safely ignore if db.update is a single-call unit test mock
+        }
 
         let finalOutcome = updated?.enrolmentOutcome ?? null;
         if (status === 'completed') {

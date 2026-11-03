@@ -4,7 +4,7 @@
 
 import { db } from '@/db';
 import { bookings, bookingAttendees, children, parents, centres, organisations } from '@/db/schema';
-import { eq, and, desc, inArray, type InferInsertModel } from 'drizzle-orm';
+import { eq, and, desc, inArray, isNull, type InferInsertModel } from 'drizzle-orm';
 
 // Partial update payload shared by the two attendance-marking branches below
 // (existing-booking and on-demand-booking paths) — both build the same
@@ -20,7 +20,10 @@ import { parseInTimezone, DEFAULT_TIMEZONE } from '@/lib/datetime';
 import { normalizeSchoolYear } from '@/lib/school-year';
 import { initializeBookingEnrolmentOutcomeOnCompletion } from '@/lib/services/booking-outcome-sync';
 
-export async function updateBookingStatus(bookingId: string, status: 'completed' | 'cancelled' | 'confirmed' | 'rescheduled') {
+export async function updateBookingStatus(
+    bookingId: string,
+    status: 'completed' | 'cancelled' | 'confirmed' | 'rescheduled' | 'did_not_attend' | 'pending' | 'signed_up'
+) {
     const session = await requireTenantSession();
 
     if (!session?.user?.organisationId) {
@@ -54,14 +57,38 @@ export async function updateBookingStatus(bookingId: string, status: 'completed'
         }
     }
 
+    const now = new Date();
+    const isTerminalOutcome =
+        booking.enrolmentOutcome === 'signed_up' ||
+        booking.enrolmentOutcome === 'did_not_sign_up';
+
     await db.update(bookings)
         .set({
             status: status,
-            updatedAt: new Date()
+            ...(status === 'did_not_attend' && !isTerminalOutcome ? { enrolmentOutcome: null } : {}),
+            updatedAt: now
         })
         .where(and(eq(bookings.id, bookingId), eq(bookings.centreId, booking.centre.id)));
 
-    if (status === 'completed') {
+    if (status === 'did_not_attend') {
+        await db.update(bookingAttendees)
+            .set({
+                attendanceStatus: 'no_show',
+                attendanceMarkedAt: now,
+                attendanceMarkedBy: session.user.id,
+                updatedAt: now,
+            })
+            .where(and(eq(bookingAttendees.bookingId, bookingId), isNull(bookingAttendees.attendanceStatus)));
+    } else if (status === 'completed') {
+        await db.update(bookingAttendees)
+            .set({
+                attendanceStatus: 'present',
+                attendanceMarkedAt: now,
+                attendanceMarkedBy: session.user.id,
+                updatedAt: now,
+            })
+            .where(and(eq(bookingAttendees.bookingId, bookingId), isNull(bookingAttendees.attendanceStatus)));
+
         await initializeBookingEnrolmentOutcomeOnCompletion(db, bookingId, {
             actorUserId: session.user.id,
         });
@@ -116,15 +143,27 @@ export async function rescheduleBooking(bookingId: string, newStartAt: string) {
     // Actually, bookings has a unique constraint `unique_time_slot` on (centreId, modality, startAt).
     // So if we update, define modality as same.
 
-    // We update startAt, status back to 'confirmed' (so it shows as scheduled), and maybe updatedAt.
+    // We update startAt, status back to 'confirmed' (so it shows as scheduled), and reset attendee attendanceStatus for the new slot.
     try {
+        const now = new Date();
         await db.update(bookings)
             .set({
                 startAt: startAtDate,
                 status: 'confirmed', // Set to confirmed so it appears as upcoming
-                updatedAt: new Date()
+                updatedAt: now
             })
             .where(and(eq(bookings.id, bookingId), eq(bookings.centreId, booking.centre.id)));
+
+        await db.update(bookingAttendees)
+            .set({
+                attendanceStatus: null,
+                attendanceMarkedAt: null,
+                attendanceMarkedBy: null,
+                checkInAt: null,
+                checkOutAt: null,
+                updatedAt: now,
+            })
+            .where(eq(bookingAttendees.bookingId, bookingId));
     } catch (e) {
         const code = e instanceof Error && 'code' in e ? (e as Error & { code?: unknown }).code : undefined;
         if (code === '23505') { // Postgres unique violation (double booking)
@@ -317,12 +356,38 @@ export async function markAttendeeAttendance(params: {
             .set(updateFields)
             .where(eq(bookingAttendees.id, attendeeId!));
 
-        // 2. If all attendees now have attendance recorded with at least one present/late,
-        //    complete the booking and initialize enrolmentOutcome ('signed_up' if already registered, else 'awaiting_outcome')
-        await initializeBookingEnrolmentOutcomeOnCompletion(db, bookingId!, {
-            checkAllAttendeesMarked: true,
-            actorUserId: session.user.id,
-        });
+        // 2. If all attendees now have attendance recorded:
+        //    - If at least one is 'present' | 'late', initializeBookingEnrolmentOutcomeOnCompletion transitions status = 'completed'
+        //    - If all are 'no_show' | 'absent' | 'excused', transition bookings.status = 'did_not_attend'
+        const updatedAttendees = booking.attendees.map(a =>
+            a.id === attendeeId ? { ...a, attendanceStatus: finalStatus } : a
+        );
+        const allAttendeesMarked =
+            updatedAttendees.length > 0 &&
+            updatedAttendees.every(a => Boolean(a.attendanceStatus));
+        const allAttendeesDidNotAttend =
+            allAttendeesMarked &&
+            updatedAttendees.every(a =>
+                ['no_show', 'absent', 'excused'].includes(a.attendanceStatus as string)
+            );
+
+        if (allAttendeesDidNotAttend) {
+            const isTerminalOutcome =
+                booking.enrolmentOutcome === 'signed_up' ||
+                booking.enrolmentOutcome === 'did_not_sign_up';
+            await db.update(bookings)
+                .set({
+                    status: 'did_not_attend',
+                    ...(!isTerminalOutcome ? { enrolmentOutcome: null } : {}),
+                    updatedAt: new Date(),
+                })
+                .where(eq(bookings.id, bookingId!));
+        } else {
+            await initializeBookingEnrolmentOutcomeOnCompletion(db, bookingId!, {
+                checkAllAttendeesMarked: true,
+                actorUserId: session.user.id,
+            });
+        }
 
         revalidatePath(`/dashboard/bookings/${bookingId}`);
         revalidatePath('/dashboard/bookings');

@@ -13,7 +13,7 @@ export type DiscountRule = {
 
 // ==================== ENUMS ====================
 export const userRoleEnum = pgEnum('user_role', ['ORG_OWNER', 'MANAGER', 'FRONT_DESK', 'TUTOR']);
-export const bookingStatusEnum = pgEnum('booking_status', ['confirmed', 'cancelled', 'rescheduled', 'completed', 'pending', 'signed_up']);
+export const bookingStatusEnum = pgEnum('booking_status', ['confirmed', 'cancelled', 'rescheduled', 'completed', 'pending', 'signed_up', 'did_not_attend']);
 export const bookingEnrolmentOutcomeEnum = pgEnum('booking_enrolment_outcome', ['awaiting_outcome', 'signed_up', 'did_not_sign_up']);
 export const modalityEnum = pgEnum('modality', ['in_person', 'online']);
 export const preferredContactEnum = pgEnum('preferred_contact', ['phone', 'email']);

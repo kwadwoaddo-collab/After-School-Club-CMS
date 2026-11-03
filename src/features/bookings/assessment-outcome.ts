@@ -1,5 +1,12 @@
 /** Past appointments need a staff-recorded outcome; time alone never implies attendance. */
-export function requiresAssessmentOutcome(status: string, startsAt: Date | string | null | undefined, now = new Date(), attendanceStatuses: Array<string | null | undefined> = []): boolean {
+export function requiresAssessmentOutcome(
+    status: string,
+    startsAt: Date | string | null | undefined,
+    now = new Date(),
+    attendanceStatuses: Array<string | null | undefined> = [],
+    enrolmentOutcome?: string | null
+): boolean {
+    if (enrolmentOutcome === 'signed_up' || enrolmentOutcome === 'did_not_sign_up') return false;
     if (attendanceStatuses.length > 0 && attendanceStatuses.every(Boolean)) return false;
     if (!['confirmed', 'pending'].includes(status) || !startsAt) return false;
     const timestamp = new Date(startsAt).getTime();

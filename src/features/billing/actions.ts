@@ -28,6 +28,7 @@ import { financeEligibleChildSql, getFinanceEligibleChildIds, assertEligibleBill
 import { isValidEnrolmentStartDate } from '@/lib/enrolment/start-date';
 import { assertNotQuarantined } from '@/lib/data-quality/quarantine';
 import { recurringInvoiceOverlapSql } from '@/lib/billing/invoice-overlap';
+import { syncBookingOutcomeFromRegistration } from '@/lib/services/booking-outcome-sync';
 
 // ─── Auth helper ──────────────────────────────────────────────────────────────
 
@@ -261,6 +262,14 @@ async function confirmChildrenEnrolmentInTx(
                 reason,
                 confirmedAt,
             }),
+        });
+        await syncBookingOutcomeFromRegistration(tx, {
+            childId,
+            centreId,
+            organisationId: orgId,
+            status: 'signed_up',
+            actorUserId: actorId,
+            reason: 'Confirmed inline during billing setup',
         });
     }
 }

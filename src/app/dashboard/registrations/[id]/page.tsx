@@ -27,8 +27,8 @@ const STATUS_BADGE: Record<string, string> = {
 };
 
 const STATUS_LABEL: Record<string, string> = {
-    awaiting_confirmation: 'Form received — awaiting confirmation',
-    signed_up: 'Joining confirmed',
+    awaiting_confirmation: 'Awaiting Confirmation',
+    signed_up: 'Signed Up',
     not_interested: 'Not Interested',
 };
 
@@ -151,6 +151,22 @@ export default async function RegistrationDetailPage({ params }: { params: Promi
                                 <Building2 className="w-3.5 h-3.5" />
                                 {centreName}
                                 {centreOfstedId && <span className="text-primary/70 font-normal">· Ofsted: {centreOfstedId}</span>}
+                            </span>
+                        )}
+                        {reg.bookingId ? (
+                            <Link
+                                href={`/dashboard/bookings/${reg.bookingId}`}
+                                title="View linked assessment booking"
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors text-xs font-bold"
+                            >
+                                Via Assessment
+                            </Link>
+                        ) : (
+                            <span
+                                title="Skipped free assessment — registered directly"
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-secondary text-muted-foreground border border-border text-xs font-medium"
+                            >
+                                Direct Registration (Skipped Assessment)
                             </span>
                         )}
                     </div>

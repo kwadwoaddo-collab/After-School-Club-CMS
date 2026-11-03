@@ -17,7 +17,7 @@ import { children, parents, centres, bookings, bookingAttendees } from '@/db/sch
 export type AttendanceStatus = 'present' | 'absent' | 'late' | 'no_show' | 'excused';
 
 // The legacy booking-level statuses
-export type BookingStatus = 'confirmed' | 'cancelled' | 'rescheduled' | 'completed' | 'pending' | 'signed_up';
+export type BookingStatus = 'confirmed' | 'cancelled' | 'rescheduled' | 'completed' | 'pending' | 'signed_up' | 'did_not_attend';
 
 /** A resolved attendance record ready for display */
 export interface ResolvedAttendance {
@@ -57,6 +57,8 @@ export function resolveAttendanceStatus(
   switch (bookingStatus) {
     case 'completed':
       return { status: 'present', label: 'Attended', source: 'inferred' };
+    case 'did_not_attend':
+      return { status: 'no_show', label: 'Did Not Attend', source: 'inferred' };
     case 'cancelled':
       return { status: 'cancelled', label: 'Cancelled', source: 'inferred' };
     case 'rescheduled':

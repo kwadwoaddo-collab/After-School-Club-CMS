@@ -18,6 +18,7 @@ interface RegistrationRow {
     createdAt: Date;
     startDate: Date | null;
     centreId: string | null;
+    bookingId?: string | null;
     fundingTypes: string[] | null;
     emergencyContactName: string | null;
     registrationChildren: {
@@ -282,26 +283,47 @@ export default function RegistrationsBulkClient({ rows, statusBadge, statusLabel
                                             <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-black flex-shrink-0 bg-gradient-to-br ${getAvatarGradient(r.registrationChildren[0]?.submittedFirstName || 'A')} text-white`}>
                                                 {(r.registrationChildren[0]?.submittedFirstName?.charAt(0) || '') + (r.registrationChildren[0]?.submittedLastName?.charAt(0) || '')}
                                             </div>
-                                            <p className="font-semibold text-foreground truncate max-w-[200px]">
-                                                {r.registrationChildren.length > 0 ? (
-                                                    r.registrationChildren.map((c, i) => (
-                                                        <span key={i}>
-                                                            {c.childId ? (
-                                                                <Link href={`/dashboard/students/${c.childId}`} className="hover:underline hover:text-primary transition-colors" onClick={(e) => e.stopPropagation()}>
-                                                                    {c.submittedFirstName} {c.submittedLastName}
-                                                                </Link>
-                                                            ) : (
-                                                                <Link href={`/dashboard/registrations/${r.id}`} className="hover:underline hover:text-primary transition-colors" onClick={(e) => e.stopPropagation()}>
-                                                                    {c.submittedFirstName} {c.submittedLastName}
-                                                                </Link>
-                                                            )}
-                                                            {i < r.registrationChildren.length - 1 && ', '}
+                                            <div>
+                                                <p className="font-semibold text-foreground truncate max-w-[200px]">
+                                                    {r.registrationChildren.length > 0 ? (
+                                                        r.registrationChildren.map((c, i) => (
+                                                            <span key={i}>
+                                                                {c.childId ? (
+                                                                    <Link href={`/dashboard/students/${c.childId}`} className="hover:underline hover:text-primary transition-colors" onClick={(e) => e.stopPropagation()}>
+                                                                        {c.submittedFirstName} {c.submittedLastName}
+                                                                    </Link>
+                                                                ) : (
+                                                                    <Link href={`/dashboard/registrations/${r.id}`} className="hover:underline hover:text-primary transition-colors" onClick={(e) => e.stopPropagation()}>
+                                                                        {c.submittedFirstName} {c.submittedLastName}
+                                                                    </Link>
+                                                                )}
+                                                                {i < r.registrationChildren.length - 1 && ', '}
+                                                            </span>
+                                                        ))
+                                                    ) : (
+                                                        'None'
+                                                    )}
+                                                </p>
+                                                <div className="mt-1">
+                                                    {r.bookingId ? (
+                                                        <Link
+                                                            href={`/dashboard/bookings/${r.bookingId}`}
+                                                            title="View linked assessment booking"
+                                                            onClick={(e) => e.stopPropagation()}
+                                                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors"
+                                                        >
+                                                            Via Assessment
+                                                        </Link>
+                                                    ) : (
+                                                        <span
+                                                            title="Skipped free assessment — registered directly"
+                                                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-secondary text-muted-foreground border border-border"
+                                                        >
+                                                            Direct Registration
                                                         </span>
-                                                    ))
-                                                ) : (
-                                                    'None'
-                                                )}
-                                            </p>
+                                                    )}
+                                                </div>
+                                            </div>
                                         </div>
                                         </td>
                                         <td className="px-4 py-3 align-middle">
@@ -395,7 +417,7 @@ export default function RegistrationsBulkClient({ rows, statusBadge, statusLabel
                         className="flex items-center gap-2 px-4 py-2 bg-success/10 border border-success/20 text-success hover:bg-success/20 rounded-xl text-sm font-semibold transition-all disabled:opacity-50"
                     >
                         {bulkLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
-                        Confirm joining for selected
+                        Confirm Signed Up
                     </button>
 
                     <button
@@ -484,13 +506,13 @@ export default function RegistrationsBulkClient({ rows, statusBadge, statusLabel
                 onConfirm={() => {
                     if (pendingBulkStatus) void bulkUpdateStatus(pendingBulkStatus);
                 }}
-                title={pendingBulkStatus === 'signed_up' ? 'Confirm Joining for Selected' : 'Mark Selected as Not Interested'}
+                title={pendingBulkStatus === 'signed_up' ? 'Confirm Signed Up for Selected' : 'Mark Selected as Not Interested'}
                 description={
                     pendingBulkStatus === 'signed_up'
-                        ? `Confirm joining for ${selected.size} selected registration${selected.size !== 1 ? 's' : ''}? Associated children will become active students and notification emails will be sent to parents.`
+                        ? `Confirm Signed Up for ${selected.size} selected registration${selected.size !== 1 ? 's' : ''}? Associated children will become active students and notification emails will be sent to parents.`
                         : `Mark ${selected.size} selected registration${selected.size !== 1 ? 's' : ''} as Not Interested?`
                 }
-                confirmText={pendingBulkStatus === 'signed_up' ? 'Confirm Joining' : 'Mark Not Interested'}
+                confirmText={pendingBulkStatus === 'signed_up' ? 'Confirm Signed Up' : 'Mark Not Interested'}
                 cancelText="Cancel"
                 variant={pendingBulkStatus === 'signed_up' ? 'info' : 'warning'}
             />

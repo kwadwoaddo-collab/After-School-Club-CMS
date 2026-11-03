@@ -1,6 +1,6 @@
 import { parseSummaryRange, summaryRangeSql } from '@/features/dashboard/summary-links';
 import SummaryRangeNotice from '@/features/dashboard/SummaryRangeNotice';
-import { assessmentOutcomeRequiredSql } from '@/features/bookings/assessment-outcome-query';
+import { assessmentOutcomeRequiredSql, bookingDidNotAttendFollowUpSql } from '@/features/bookings/assessment-outcome-query';
 import JoiningJourneyGuide from '@/features/students/components/JoiningJourneyGuide';
 import { logger } from '@/lib/logger';
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -23,7 +23,7 @@ import { getUserAccessibleCentres } from '@/lib/permissions';
 import { resolveActiveCentreId } from '@/lib/centre-filter';
 import { startOfDay, endOfDay, format } from 'date-fns';
 
-const VALID_BOOKING_STATUSES = ['confirmed', 'cancelled', 'rescheduled', 'completed', 'pending', 'signed_up'] as const;
+const VALID_BOOKING_STATUSES = ['confirmed', 'cancelled', 'rescheduled', 'completed', 'pending', 'signed_up', 'did_not_attend'] as const;
 
 export default async function BookingsPage(props: {
     searchParams: Promise<{
@@ -194,9 +194,11 @@ export default async function BookingsPage(props: {
     if (searchParams.outcome === 'required' || searchParams.outcome === 'needs_attendance') {
         const outcomeCondition = assessmentOutcomeRequiredSql();
         conds.push(outcomeCondition);
+    } else if (searchParams.outcome === 'did_not_attend') {
+        conds.push(bookingDidNotAttendFollowUpSql());
     } else if (searchParams.outcome === 'awaiting_outcome') {
         conds.push(
-            sql`${bookings.status} <> 'cancelled' AND (${bookings.enrolmentOutcome} = 'awaiting_outcome' OR (${bookings.status} = 'completed' AND ${bookings.enrolmentOutcome} IS NULL))`
+            sql`${bookings.status} NOT IN ('cancelled', 'did_not_attend') AND (${bookings.enrolmentOutcome} = 'awaiting_outcome' OR (${bookings.status} = 'completed' AND ${bookings.enrolmentOutcome} IS NULL))`
         );
     } else if (searchParams.outcome === 'signed_up') {
         conds.push(
@@ -234,6 +236,7 @@ export default async function BookingsPage(props: {
     let outcomeCounts = {
         all: 0,
         needsAttendance: 0,
+        didNotAttendFollowUp: 0,
         awaitingOutcome: 0,
         signedUp: 0,
         didNotSignUp: 0,
@@ -242,6 +245,7 @@ export default async function BookingsPage(props: {
     if (!searchActiveAndNoResults) {
         try {
             const needsAttendanceExpr = assessmentOutcomeRequiredSql();
+            const didNotAttendFollowUpExpr = bookingDidNotAttendFollowUpSql();
             const [aggRows, [outcomeAggRow], [totalRes], rows] = await Promise.all([
                 // Retrieve aggregations for accurate top-level bubbles (excludes status filter)
                 db.select({
@@ -256,7 +260,8 @@ export default async function BookingsPage(props: {
                 db.select({
                     allCount: sql<number>`count(*)::int`,
                     needsAttendanceCount: sql<number>`count(*) FILTER (WHERE ${needsAttendanceExpr})::int`,
-                    awaitingOutcomeCount: sql<number>`count(*) FILTER (WHERE ${bookings.status} <> 'cancelled' AND (${bookings.enrolmentOutcome} = 'awaiting_outcome' OR (${bookings.status} = 'completed' AND ${bookings.enrolmentOutcome} IS NULL)))::int`,
+                    didNotAttendFollowUpCount: sql<number>`count(*) FILTER (WHERE ${didNotAttendFollowUpExpr})::int`,
+                    awaitingOutcomeCount: sql<number>`count(*) FILTER (WHERE ${bookings.status} NOT IN ('cancelled', 'did_not_attend') AND (${bookings.enrolmentOutcome} = 'awaiting_outcome' OR (${bookings.status} = 'completed' AND ${bookings.enrolmentOutcome} IS NULL)))::int`,
                     signedUpCount: sql<number>`count(*) FILTER (WHERE ${bookings.enrolmentOutcome} = 'signed_up' OR ${bookings.status} = 'signed_up')::int`,
                     didNotSignUpCount: sql<number>`count(*) FILTER (WHERE ${bookings.enrolmentOutcome} = 'did_not_sign_up')::int`,
                 })
@@ -301,6 +306,7 @@ export default async function BookingsPage(props: {
                 outcomeCounts = {
                     all: outcomeAggRow.allCount || 0,
                     needsAttendance: outcomeAggRow.needsAttendanceCount || 0,
+                    didNotAttendFollowUp: outcomeAggRow.didNotAttendFollowUpCount || 0,
                     awaitingOutcome: outcomeAggRow.awaitingOutcomeCount || 0,
                     signedUp: outcomeAggRow.signedUpCount || 0,
                     didNotSignUp: outcomeAggRow.didNotSignUpCount || 0,
@@ -335,15 +341,23 @@ export default async function BookingsPage(props: {
     // evidenced fix: complete the map to match VALID_BOOKING_STATUSES, no new
     // status or business rule introduced.
     const statusCounts = {
-        confirmed:   statusCountsAgg.find(s => s.status === 'confirmed')?.count || 0,
-        signed_up:   statusCountsAgg.find(s => s.status === 'signed_up')?.count || 0,
-        pending:     statusCountsAgg.find(s => s.status === 'pending')?.count || 0,
-        completed:   statusCountsAgg.find(s => s.status === 'completed')?.count || 0,
-        cancelled:   statusCountsAgg.find(s => s.status === 'cancelled')?.count || 0,
-        rescheduled: statusCountsAgg.find(s => s.status === 'rescheduled')?.count || 0,
+        confirmed:      statusCountsAgg.find(s => s.status === 'confirmed')?.count || 0,
+        signed_up:      statusCountsAgg.find(s => s.status === 'signed_up')?.count || 0,
+        pending:        statusCountsAgg.find(s => s.status === 'pending')?.count || 0,
+        completed:      statusCountsAgg.find(s => s.status === 'completed')?.count || 0,
+        did_not_attend: statusCountsAgg.find(s => s.status === 'did_not_attend')?.count || 0,
+        cancelled:      statusCountsAgg.find(s => s.status === 'cancelled')?.count || 0,
+        rescheduled:    statusCountsAgg.find(s => s.status === 'rescheduled')?.count || 0,
     };
 
-    const totalAggCount = statusCounts.confirmed + statusCounts.signed_up + statusCounts.pending + statusCounts.completed + statusCounts.cancelled + statusCounts.rescheduled;
+    const totalAggCount =
+        statusCounts.confirmed +
+        statusCounts.signed_up +
+        statusCounts.pending +
+        statusCounts.completed +
+        statusCounts.did_not_attend +
+        statusCounts.cancelled +
+        statusCounts.rescheduled;
     const totalPages = Math.ceil(totalRecords / PAGE_SIZE);
 
     return (

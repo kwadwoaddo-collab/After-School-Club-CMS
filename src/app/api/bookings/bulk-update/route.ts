@@ -11,7 +11,7 @@ import { revalidatePath } from 'next/cache';
 
 const bulkUpdateSchema = z.object({
     bookingIds: z.array(z.string().uuid()),
-    status: z.enum(['confirmed', 'cancelled', 'rescheduled', 'completed', 'pending', 'signed_up']),
+    status: z.enum(['confirmed', 'cancelled', 'rescheduled', 'completed', 'pending', 'signed_up', 'did_not_attend']),
 });
 
 export async function PATCH(request: NextRequest) {

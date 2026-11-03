@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { CheckCircle2, XCircle, Loader2, ExternalLink } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { CheckCircle2, XCircle, Loader2, ExternalLink, Calendar } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/ui/ToastProvider';
@@ -10,11 +10,19 @@ import { Badge } from '@/components/ui/Badge';
 import type { BookingEnrolmentOutcome } from '@/lib/services/booking-outcome-sync';
 
 const DID_NOT_SIGN_UP_REASONS = [
-    'Too expensive',
+    'Fee / Cost',
     'Schedule conflict',
     'Chose another provider',
     'Not ready yet',
     'No response',
+] as const;
+
+const NO_SHOW_FOLLOW_UP_REASONS = [
+    'No response after follow-up',
+    'Schedule conflict',
+    'Fee / Cost',
+    'Chose another provider',
+    'Not ready yet',
 ] as const;
 
 export interface BookingOutcomeActionsProps {
@@ -49,6 +57,16 @@ export default function BookingOutcomeActions({
     const [customReason, setCustomReason] = useState('');
     const [savingOutcome, setSavingOutcome] = useState<BookingEnrolmentOutcome | null>(null);
 
+    useEffect(() => {
+        setOutcome(
+            initialOutcome ?? (status === 'signed_up' ? 'signed_up' : status === 'completed' ? 'awaiting_outcome' : null)
+        );
+    }, [initialOutcome, status]);
+
+    useEffect(() => {
+        setReason(initialReason);
+    }, [initialReason]);
+
     const router = useRouter();
     const { toast } = useToast();
 
@@ -75,7 +93,7 @@ export default function BookingOutcomeActions({
             const data = await res.json();
             const updatedOutcome = (data.booking?.enrolmentOutcome as BookingEnrolmentOutcome) || targetOutcome;
             const updatedReason = data.booking?.enrolmentOutcomeReason ?? selectedReason ?? null;
-            const updatedStatus = data.booking?.status ?? 'completed';
+            const updatedStatus = data.booking?.status ?? status;
 
             setOutcome(updatedOutcome);
             setReason(updatedReason);
@@ -88,7 +106,7 @@ export default function BookingOutcomeActions({
             toast(
                 updatedOutcome === 'signed_up'
                     ? 'Marked as Signed Up — student enrolment confirmed.'
-                    : 'Marked as Did Not Sign Up.',
+                    : 'Marked as Not Interested (did not sign up).',
                 'success'
             );
             router.refresh();
@@ -107,6 +125,8 @@ export default function BookingOutcomeActions({
     }
 
     const isDecided = outcome === 'signed_up' || outcome === 'did_not_sign_up';
+    const isDidNotAttendFollowUp = status === 'did_not_attend' && !isDecided;
+    const reasonChips = status === 'did_not_attend' ? NO_SHOW_FOLLOW_UP_REASONS : DID_NOT_SIGN_UP_REASONS;
 
     if (isDecided && !isEditing) {
         return (
@@ -121,13 +141,15 @@ export default function BookingOutcomeActions({
                             Signed Up
                         </Badge>
                     ) : (
-                        <Badge variant="default" title={reason || undefined}>
+                        <Badge variant="default" title={reason ? `Did not sign up — ${reason}` : 'Did not sign up'}>
                             <XCircle className="w-3 h-3" />
-                            Did Not Sign Up
+                            Not Interested
                         </Badge>
                     )}
-                    {!compact && reason && (
-                        <span className="text-xs text-text-secondary">{reason}</span>
+                    {!compact && (reason || outcome === 'did_not_sign_up') && (
+                        <span className="text-xs text-text-secondary">
+                            {reason || 'Did not sign up'}
+                        </span>
                     )}
                     {!compact && linkedRegistrationId && (
                         <Link
@@ -159,32 +181,49 @@ export default function BookingOutcomeActions({
             className="relative inline-flex items-center gap-1.5 flex-wrap"
             onClick={(e) => e.stopPropagation()}
         >
-            {!compact && outcome === 'awaiting_outcome' && !isEditing && (
-                <Badge variant="warning">Awaiting Outcome</Badge>
+            {isDidNotAttendFollowUp && !isEditing && (
+                <Badge variant="warning">Did Not Attend · Follow Up</Badge>
             )}
-            <Button
-                type="button"
-                variant="default"
-                size="sm"
-                disabled={savingOutcome !== null}
-                onClick={(e) => {
-                    e.stopPropagation();
-                    submitOutcome('signed_up', 'Confirmed Signed Up from assessment booking');
-                }}
-            >
-                {savingOutcome === 'signed_up' ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                )}
-                Signed Up
-            </Button>
+            {!compact && outcome === 'awaiting_outcome' && !isDidNotAttendFollowUp && !isEditing && (
+                <Badge variant="warning">Awaiting Sign-Up</Badge>
+            )}
+
+            {isDidNotAttendFollowUp && !isEditing ? (
+                <Button type="button" variant="outline" size="sm" asChild>
+                    <Link
+                        href={`/dashboard/bookings/${bookingId}/reschedule`}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <Calendar className="w-3.5 h-3.5" />
+                        Reschedule
+                    </Link>
+                </Button>
+            ) : (
+                <Button
+                    type="button"
+                    variant="default"
+                    size="sm"
+                    disabled={savingOutcome !== null}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        submitOutcome('signed_up', 'Confirmed Signed Up from assessment booking');
+                    }}
+                >
+                    {savingOutcome === 'signed_up' ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                    )}
+                    Signed Up
+                </Button>
+            )}
 
             <div className="relative inline-block">
                 <Button
                     type="button"
                     variant="outline"
                     size="sm"
+                    title="Did not sign up"
                     disabled={savingOutcome !== null}
                     onClick={(e) => {
                         e.stopPropagation();
@@ -196,7 +235,7 @@ export default function BookingOutcomeActions({
                     ) : (
                         <XCircle className="w-3.5 h-3.5" />
                     )}
-                    Did Not Sign Up
+                    Not Interested
                 </Button>
 
                 {showReasonPopover && (
@@ -205,7 +244,10 @@ export default function BookingOutcomeActions({
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div className="flex items-center justify-between">
-                            <p className="text-xs font-semibold text-text">Quick reason (1-click)</p>
+                            <div>
+                                <p className="text-xs font-semibold text-text">Mark Not Interested</p>
+                                <p className="text-[11px] text-text-muted">Did not sign up — select reason</p>
+                            </div>
                             <button
                                 type="button"
                                 onClick={() => setShowReasonPopover(false)}
@@ -216,7 +258,7 @@ export default function BookingOutcomeActions({
                         </div>
 
                         <div className="flex flex-wrap gap-1.5">
-                            {DID_NOT_SIGN_UP_REASONS.map((chip) => (
+                            {reasonChips.map((chip) => (
                                 <button
                                     key={chip}
                                     type="button"
@@ -247,11 +289,14 @@ export default function BookingOutcomeActions({
                                 onClick={() =>
                                     submitOutcome(
                                         'did_not_sign_up',
-                                        customReason.trim() || 'Did not sign up after assessment'
+                                        customReason.trim() ||
+                                            (status === 'did_not_attend'
+                                                ? 'Did not attend — not proceeding after follow-up'
+                                                : 'Did not sign up after assessment')
                                     )
                                 }
                             >
-                                Confirm Did Not Sign Up
+                                Confirm Not Interested
                             </Button>
                         </div>
                     </div>

@@ -36,8 +36,9 @@ type SortDirection = 'asc' | 'desc';
 
 const STATUS_LABELS: Record<string, string> = {
     confirmed: 'Booked',
-    signed_up: 'Joining requested',
+    signed_up: 'Signed Up',
     completed: 'Attended',
+    did_not_attend: 'Did Not Attend',
     pending: 'Pending',
     cancelled: 'Cancelled',
     rescheduled: 'Rescheduled',
@@ -47,16 +48,29 @@ const STATUS_VARIANTS: Record<string, 'default' | 'success' | 'warning' | 'error
     confirmed: 'info',
     signed_up: 'success',
     completed: 'success',
+    did_not_attend: 'warning',
     pending: 'warning',
     cancelled: 'default',
     rescheduled: 'default',
 };
 
-function StatusBadge({ status, startAt, attendanceStatuses = [] }: { status: string; startAt?: Date | string | null; attendanceStatuses?: Array<string | null | undefined> }) {
-    if (requiresAssessmentOutcome(status, startAt, new Date(), attendanceStatuses)) return <Badge variant="warning">Outcome required</Badge>;
+function StatusBadge({
+    status,
+    startAt,
+    attendanceStatuses = [],
+    enrolmentOutcome = null,
+}: {
+    status: string;
+    startAt?: Date | string | null;
+    attendanceStatuses?: Array<string | null | undefined>;
+    enrolmentOutcome?: string | null;
+}) {
+    if (requiresAssessmentOutcome(status, startAt, new Date(), attendanceStatuses, enrolmentOutcome)) {
+        return <Badge variant="warning">Needs Attendance</Badge>;
+    }
     if (['confirmed', 'pending'].includes(status) && attendanceStatuses.length > 0 && attendanceStatuses.every(Boolean)) {
         const noShow = attendanceStatuses.every(value => ['no_show', 'absent', 'excused'].includes(value!));
-        return <Badge variant={noShow ? 'warning' : 'success'}>{noShow ? 'Did not attend' : 'Attendance recorded'}</Badge>;
+        return <Badge variant={noShow ? 'warning' : 'success'}>{noShow ? 'Did Not Attend' : 'Attendance recorded'}</Badge>;
     }
     return (
         <Badge variant={STATUS_VARIANTS[status] || 'default'} className={status === 'cancelled' ? 'opacity-70' : ''}>
@@ -208,10 +222,22 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                 body: JSON.stringify({ status }),
             });
             if (response.ok) {
+                const data = await response.json().catch(() => ({}));
                 setBookings(prev =>
-                    prev.map(b => b.id === bookingId ? { ...b, status } : b)
+                    prev.map(b =>
+                        b.id === bookingId
+                            ? {
+                                  ...b,
+                                  status,
+                                  ...(data?.booking && 'enrolmentOutcome' in data.booking
+                                      ? { enrolmentOutcome: data.booking.enrolmentOutcome }
+                                      : {}),
+                              }
+                            : b
+                    )
                 );
                 toast(`Status updated to "${STATUS_LABELS[status] ?? status}".`, 'success');
+                router.refresh();
             } else {
                 toast('Failed to update status. Please try again.', 'error');
             }
@@ -378,7 +404,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                 className="flex items-center gap-3 px-4 py-2 hover:bg-page text-sm text-text transition-colors w-full text-left disabled:opacity-50"
             >
                 <CheckCircle className="w-4 h-4" />
-                Mark joining requested
+                Mark as Signed Up
             </button>
             <button
                 onClick={(e) => { e.stopPropagation(); handleQuickStatus(booking.id, 'completed'); }}
@@ -388,6 +414,15 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
             >
                 <GraduationCap className="w-4 h-4" />
                 Mark as Attended
+            </button>
+            <button
+                onClick={(e) => { e.stopPropagation(); handleQuickStatus(booking.id, 'did_not_attend'); }}
+                disabled={updatingStatus === booking.id}
+                title="Marks booking as Did Not Attend and places it in the follow-up queue"
+                className="flex items-center gap-3 px-4 py-2 hover:bg-page text-sm text-amber-700 dark:text-amber-400 transition-colors w-full text-left disabled:opacity-50"
+            >
+                <AlertTriangle className="w-4 h-4" />
+                Mark as Did Not Attend
             </button>
             <div className="mx-3 my-1 border-t border-border-subtle" />
             <button
@@ -704,7 +739,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                         </div>
                                     </TableCell>
                                     <TableCell>
-                                        <StatusBadge status={booking.status} startAt={booking.startAt} attendanceStatuses={(booking.attendees ?? []).map((a: { attendanceStatus?: string | null }) => a.attendanceStatus)} />
+                                        <StatusBadge status={booking.status} startAt={booking.startAt} attendanceStatuses={(booking.attendees ?? []).map((a: { attendanceStatus?: string | null }) => a.attendanceStatus)} enrolmentOutcome={booking.enrolmentOutcome} />
                                     </TableCell>
                                     <TableCell onClick={(e) => e.stopPropagation()}>
                                         <BookingOutcomeActions
@@ -849,7 +884,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <StatusBadge status={booking.status} startAt={booking.startAt} attendanceStatuses={(booking.attendees ?? []).map((a: { attendanceStatus?: string | null }) => a.attendanceStatus)} />
+                                    <StatusBadge status={booking.status} startAt={booking.startAt} attendanceStatuses={(booking.attendees ?? []).map((a: { attendanceStatus?: string | null }) => a.attendanceStatus)} enrolmentOutcome={booking.enrolmentOutcome} />
                                     <div className="relative inline-block" onClick={(e) => e.stopPropagation()}>
                                         <button
                                             suppressHydrationWarning

@@ -14,7 +14,6 @@ import InternalNotesTimeline from '@/features/students/components/InternalNotesT
 import { getStudentNotes } from '@/features/students/notes.actions';
 import { getUserAccessibleCentres, getUserAccessibleCentreIds } from '@/lib/permissions';
 import ReassignCentreButton from '@/features/bookings/components/ReassignCentreButton';
-import { isFeatureEnabled } from '@/lib/feature-flags';
 import AttendanceDropdown from './AttendanceDropdown';
 import type { AttendanceStatus } from '@/lib/attendance';
 import { Card } from '@/components/ui/Card';
@@ -23,8 +22,9 @@ import { Button } from '@/components/ui/Button';
 
 const STATUS_LABELS: Record<string, string> = {
     confirmed: 'Booked',
-    signed_up: 'Joining requested',
+    signed_up: 'Signed Up',
     completed: 'Attended',
+    did_not_attend: 'Did Not Attend',
     pending: 'Pending',
     cancelled: 'Cancelled',
     rescheduled: 'Rescheduled',
@@ -34,6 +34,7 @@ const STATUS_VARIANTS: Record<string, 'default' | 'success' | 'warning' | 'error
     confirmed: 'info',
     signed_up: 'success',
     completed: 'success',
+    did_not_attend: 'warning',
     pending: 'warning',
     cancelled: 'default',
     rescheduled: 'default',
@@ -117,18 +118,39 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
             colour: booking.status === 'cancelled' ? 'text-text-muted' : 'text-accent',
         },
         {
-            label: booking.status === 'cancelled' ? 'Cancelled' : booking.status === 'rescheduled' ? 'Rescheduled' : 'Attended',
+            label:
+                booking.status === 'did_not_attend'
+                    ? 'Did Not Attend'
+                    : booking.status === 'cancelled'
+                    ? 'Cancelled'
+                    : booking.status === 'rescheduled'
+                    ? 'Rescheduled'
+                    : 'Attended',
             date: booking.startAt ? format(new Date(booking.startAt), 'MMM d, yyyy') : null,
-            done: ['completed', 'cancelled', 'rescheduled', 'signed_up'].includes(booking.status),
-            icon: booking.status === 'cancelled' ? XCircle : booking.status === 'rescheduled' ? RefreshCw : CheckCircle2,
-            colour: booking.status === 'completed' || booking.status === 'signed_up' ? 'text-accent' : booking.status === 'cancelled' ? 'text-text-muted' : booking.status === 'rescheduled' ? 'text-accent' : 'text-text-muted',
+            done: ['completed', 'did_not_attend', 'cancelled', 'rescheduled', 'signed_up'].includes(booking.status),
+            icon:
+                booking.status === 'cancelled' || booking.status === 'did_not_attend'
+                    ? XCircle
+                    : booking.status === 'rescheduled'
+                    ? RefreshCw
+                    : CheckCircle2,
+            colour:
+                booking.status === 'did_not_attend'
+                    ? 'text-amber-500'
+                    : booking.status === 'completed' || booking.status === 'signed_up'
+                    ? 'text-accent'
+                    : booking.status === 'cancelled'
+                    ? 'text-text-muted'
+                    : booking.status === 'rescheduled'
+                    ? 'text-accent'
+                    : 'text-text-muted',
         },
         {
             label: isSignedUpOutcome
                 ? 'Signed Up'
                 : isDidNotSignUpOutcome
-                ? 'Did Not Sign Up'
-                : 'Awaiting Outcome',
+                ? 'Not Interested'
+                : 'Awaiting Sign-Up',
             date: booking.enrolmentOutcomeAt ? format(new Date(booking.enrolmentOutcomeAt), 'MMM d, yyyy') : null,
             done: isOutcomeDecided,
             icon: isDidNotSignUpOutcome ? XCircle : CheckCircle2,
@@ -176,7 +198,7 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
                 </div>
             </div>
 
-            {requiresAssessmentOutcome(booking.status, booking.startAt, new Date(), booking.attendees.map(a => a.attendanceStatus)) && (
+            {requiresAssessmentOutcome(booking.status, booking.startAt, new Date(), booking.attendees.map(a => a.attendanceStatus), booking.enrolmentOutcome) && (
                 <div role="status" className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-foreground">
                     <strong>Assessment outcome required</strong>
                     <p className="text-sm mt-1">The appointment date has passed. Record attendance below or reschedule. Attendance does not confirm enrolment: returned registration forms remain awaiting confirmation until staff confirm signed up.</p>
@@ -191,7 +213,9 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
                             {isSignedUpOutcome
                                 ? 'Student is confirmed as Signed Up and eligible for billing.'
                                 : isDidNotSignUpOutcome
-                                ? 'Family decided not to sign up after this assessment.'
+                                ? 'Family is marked as Not Interested (did not sign up after this assessment).'
+                                : booking.status === 'did_not_attend'
+                                ? 'Family did not attend this assessment. Follow up with the parent to reschedule, or mark Not Interested if they are not proceeding.'
                                 : booking.status === 'completed'
                                 ? 'Assessment attended — did this student sign up for regular sessions?'
                                 : 'Record whether the student signed up once the assessment takes place.'}
@@ -254,17 +278,15 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
                                         <Badge variant={STATUS_VARIANTS[booking.status] || 'default'} className={booking.status === 'cancelled' ? 'opacity-70' : ''}>
                                             {STATUS_LABELS[booking.status] ?? booking.status}
                                         </Badge>
-                                        {isFeatureEnabled('GRANULAR_ATTENDANCE') && (
-                                            <div className="w-full">
-                                                <AttendanceDropdown
-                                                    bookingId={bookingId}
-                                                    attendeeId={attendee.id}
-                                                    currentAttendanceStatus={attendee.attendanceStatus as AttendanceStatus | null}
-                                                    currentBookingStatus={booking.status}
-                                                    currentNote={attendee.attendanceNote}
-                                                />
-                                            </div>
-                                        )}
+                                        <div className="w-full">
+                                            <AttendanceDropdown
+                                                bookingId={bookingId}
+                                                attendeeId={attendee.id}
+                                                currentAttendanceStatus={attendee.attendanceStatus as AttendanceStatus | null}
+                                                currentBookingStatus={booking.status}
+                                                currentNote={attendee.attendanceNote}
+                                            />
+                                        </div>
                                     </div>
                                 </div>
 

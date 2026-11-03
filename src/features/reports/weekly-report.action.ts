@@ -94,13 +94,14 @@ export interface WeeklyReportData {
 // Cosmetic only — the underlying value was always accurate — but a
 // one-line, zero-risk fix once seen live.
 const STATUS_LABELS: Record<string, string> = {
-    awaiting_confirmation: 'Pending Review',
-    signed_up: 'Approved',
+    awaiting_confirmation: 'Awaiting Confirmation',
+    signed_up: 'Signed Up',
     not_interested: 'Not Interested',
     cancelled: 'Cancelled',
     pending: 'Pending',
-    confirmed: 'Confirmed',
-    completed: 'Completed',
+    confirmed: 'Booked',
+    completed: 'Attended',
+    did_not_attend: 'Did Not Attend',
     rescheduled: 'Rescheduled',
 };
 

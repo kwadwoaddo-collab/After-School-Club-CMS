@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button';
 export interface BookingOutcomeCounts {
     all: number;
     needsAttendance: number;
+    didNotAttendFollowUp: number;
     awaitingOutcome: number;
     signedUp: number;
     didNotSignUp: number;
@@ -41,18 +42,20 @@ export default function BookingsFilters({ centres, resultsCount = 0, statusCount
 
     const outcomeFilterPills = [
         { value: 'all', label: 'All', count: outcomeCounts?.all ?? totalAggCount },
-        { value: 'required', label: 'Needs Attendance', count: outcomeCounts?.needsAttendance ?? 0 },
-        { value: 'awaiting_outcome', label: 'Awaiting Outcome', count: outcomeCounts?.awaitingOutcome ?? 0 },
+        { value: 'needs_attendance', label: 'Needs Attendance', count: outcomeCounts?.needsAttendance ?? 0 },
+        { value: 'did_not_attend', label: 'Did Not Attend · Follow Up', count: outcomeCounts?.didNotAttendFollowUp ?? 0 },
+        { value: 'awaiting_outcome', label: 'Awaiting Sign-Up', count: outcomeCounts?.awaitingOutcome ?? 0 },
         { value: 'signed_up', label: 'Signed Up', count: outcomeCounts?.signedUp ?? 0 },
-        { value: 'did_not_sign_up', label: 'Did Not Sign Up', count: outcomeCounts?.didNotSignUp ?? 0 },
+        { value: 'did_not_sign_up', label: 'Not Interested', count: outcomeCounts?.didNotSignUp ?? 0 },
     ];
 
     const statusOptionsWithCounts = [
         { value: 'all', label: 'All', count: totalAggCount },
         { value: 'confirmed', label: 'Booked', count: statusCounts?.confirmed || 0 },
-        { value: 'signed_up', label: 'Joining requested', count: statusCounts?.signed_up || 0 },
+        { value: 'signed_up', label: 'Signed Up', count: statusCounts?.signed_up || 0 },
         { value: 'pending', label: 'Pending', count: statusCounts?.pending || 0 },
         { value: 'completed', label: 'Attended', count: statusCounts?.completed || 0 },
+        { value: 'did_not_attend', label: 'Did Not Attend', count: statusCounts?.did_not_attend || 0 },
         { value: 'cancelled', label: 'Cancelled', count: statusCounts?.cancelled || 0 },
         { value: 'rescheduled', label: 'Rescheduled', count: statusCounts?.rescheduled || 0 },
     ];
@@ -125,7 +128,10 @@ export default function BookingsFilters({ centres, resultsCount = 0, statusCount
             <div className="flex items-center justify-between gap-2 flex-wrap">
                 <div className="flex items-center gap-1.5 overflow-x-auto max-w-full scrollbar-none py-0.5" role="group" aria-label="Filter by enrolment outcome">
                     {outcomeFilterPills.map((pill) => {
-                        const isActive = activeOutcome === pill.value || (pill.value === 'all' && !searchParams.get('outcome'));
+                        const isActive =
+                            activeOutcome === pill.value ||
+                            (pill.value === 'needs_attendance' && activeOutcome === 'required') ||
+                            (pill.value === 'all' && !searchParams.get('outcome'));
                         return (
                             <button
                                 key={pill.value}

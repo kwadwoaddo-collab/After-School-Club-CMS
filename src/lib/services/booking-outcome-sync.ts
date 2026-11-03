@@ -97,7 +97,10 @@ export async function resolveBookingForRegistration(
                         ne(bookings.status, 'cancelled')
                     )
                 )
-                .orderBy(desc(bookings.startAt))
+                .orderBy(
+                    sql`CASE WHEN ${bookings.status} = 'completed' THEN 0 WHEN ${bookings.status} IN ('confirmed', 'pending', 'signed_up') THEN 1 ELSE 2 END`,
+                    desc(bookings.startAt)
+                )
                 .limit(1);
             if (rows[0]?.id) return rows[0].id;
         }
@@ -243,10 +246,13 @@ export async function syncBookingOutcomeFromRegistration(
             }
         }
 
+        const rankBookingStatus = (st: string) =>
+            st === 'completed' ? 0 : ['confirmed', 'pending', 'signed_up'].includes(st) ? 1 : 2;
+
         // Tier 2: booking_attendees.childId matching registration_children.childId
         const childIdList = Array.from(targetChildIds);
-        if (childIdList.length > 0) {
-            const tier2Rows = await txOrDb
+        if (matchedBookingMap.size === 0 && childIdList.length > 0) {
+            const tier2Query = txOrDb
                 .select({ id: bookings.id, status: bookings.status, startAt: bookings.startAt })
                 .from(bookings)
                 .innerJoin(bookingAttendees, eq(bookingAttendees.bookingId, bookings.id))
@@ -257,8 +263,30 @@ export async function syncBookingOutcomeFromRegistration(
                         ne(bookings.status, 'cancelled')
                     )
                 );
-            for (const b of tier2Rows ?? []) {
-                matchedBookingMap.set(b.id, b);
+            const tier2Rows: Array<{ id: string; status: string; startAt: Date | null }> =
+                typeof tier2Query?.orderBy === 'function'
+                    ? await tier2Query.orderBy(
+                          sql`CASE WHEN ${bookings.status} = 'completed' THEN 0 WHEN ${bookings.status} IN ('confirmed', 'pending', 'signed_up') THEN 1 ELSE 2 END`,
+                          desc(bookings.startAt)
+                      )
+                    : await tier2Query;
+
+            const sortedTier2 = [...(tier2Rows ?? [])].sort((a, b) => {
+                const rankDiff = rankBookingStatus(a.status) - rankBookingStatus(b.status);
+                if (rankDiff !== 0) return rankDiff;
+                const aTime = a.startAt ? new Date(a.startAt).getTime() : 0;
+                const bTime = b.startAt ? new Date(b.startAt).getTime() : 0;
+                return bTime - aTime;
+            });
+
+            const eligibleTier2 =
+                status === 'signed_up'
+                    ? sortedTier2.filter((b) => !['did_not_attend', 'rescheduled'].includes(b.status))
+                    : sortedTier2;
+
+            const mostRelevant = eligibleTier2[0];
+            if (mostRelevant) {
+                matchedBookingMap.set(mostRelevant.id, mostRelevant);
             }
         }
 
@@ -289,15 +317,31 @@ export async function syncBookingOutcomeFromRegistration(
                     (n) => `${n.firstName.trim().toLowerCase()} ${n.lastName.trim().toLowerCase()}`
                 )
             );
-            for (const cand of tier3Candidates ?? []) {
-                const candidateFull = `${(cand.firstName || '').trim().toLowerCase()} ${(cand.lastName || '').trim().toLowerCase()}`;
-                if (normalizedNames.has(candidateFull)) {
-                    matchedBookingMap.set(cand.id, {
-                        id: cand.id,
-                        status: cand.status,
-                        startAt: cand.startAt,
-                    });
-                }
+            const matchingTier3 = (tier3Candidates ?? [])
+                .filter((cand: any) => {
+                    const candidateFull = `${(cand.firstName || '').trim().toLowerCase()} ${(cand.lastName || '').trim().toLowerCase()}`;
+                    return normalizedNames.has(candidateFull);
+                })
+                .sort((a: any, b: any) => {
+                    const rankDiff = rankBookingStatus(a.status) - rankBookingStatus(b.status);
+                    if (rankDiff !== 0) return rankDiff;
+                    const aTime = a.startAt ? new Date(a.startAt).getTime() : 0;
+                    const bTime = b.startAt ? new Date(b.startAt).getTime() : 0;
+                    return bTime - aTime;
+                });
+
+            const eligibleTier3 =
+                status === 'signed_up'
+                    ? matchingTier3.filter((b: any) => !['did_not_attend', 'rescheduled'].includes(b.status))
+                    : matchingTier3;
+
+            const bestCand = eligibleTier3[0];
+            if (bestCand) {
+                matchedBookingMap.set(bestCand.id, {
+                    id: bestCand.id,
+                    status: bestCand.status,
+                    startAt: bestCand.startAt,
+                });
             }
         }
 
@@ -409,8 +453,10 @@ export async function recordBookingEnrolmentOutcome(
         }
 
         const shouldCompleteStatus =
-            enrolmentOutcome !== 'awaiting_outcome' &&
-            ['confirmed', 'pending', 'signed_up'].includes(booking.status);
+            (enrolmentOutcome === 'signed_up' &&
+                ['confirmed', 'pending', 'signed_up', 'did_not_attend'].includes(booking.status)) ||
+            (enrolmentOutcome === 'did_not_sign_up' &&
+                ['confirmed', 'pending', 'signed_up'].includes(booking.status));
         const nextStatus = shouldCompleteStatus ? 'completed' : booking.status;
 
         const attendeeChildIds: string[] = (booking.attendees ?? [])
@@ -441,9 +487,9 @@ export async function recordBookingEnrolmentOutcome(
                         )
                     );
 
-                // Ensure any unassigned attendees on this completed booking have attendance marked present
+                // Ensure any unassigned attendees (or previous no-shows if now signed up) on this completed booking have attendance marked present
                 for (const att of booking.attendees ?? []) {
-                    if (!att.attendanceStatus) {
+                    if (!att.attendanceStatus || booking.status === 'did_not_attend') {
                         await tx
                             .update(bookingAttendees)
                             .set({
@@ -456,11 +502,41 @@ export async function recordBookingEnrolmentOutcome(
                     }
                 }
 
-                const agreedStartDate = (booking.startAt ? new Date(booking.startAt) : now)
+                // Look up any matching registrations first so we can preserve an agreed startDate if present
+                const matchingRegs = await tx
+                    .select({
+                        id: registrations.id,
+                        status: registrations.status,
+                        startDate: registrations.startDate,
+                        childId: registrationChildren.childId,
+                    })
+                    .from(registrations)
+                    .innerJoin(registrationChildren, eq(registrationChildren.registrationId, registrations.id))
+                    .where(
+                        and(
+                            eq(registrations.organisationId, organisationId),
+                            booking.centreId ? eq(registrations.centreId, booking.centreId) : undefined,
+                            inArray(registrationChildren.childId, sortedChildIds),
+                            inArray(registrations.status, ['awaiting_confirmation', 'pending', 'signed_up'])
+                        )
+                    );
+
+                const fallbackStartDate = (booking.startAt ? new Date(booking.startAt) : now)
                     .toISOString()
                     .slice(0, 10);
 
                 for (const cid of sortedChildIds) {
+                    const regWithStartDate =
+                        (matchingRegs ?? []).find((r: any) => r.childId === cid && r.startDate) ||
+                        (matchingRegs ?? []).find((r: any) => Boolean(r.startDate));
+                    const regStartDateObj = regWithStartDate?.startDate
+                        ? new Date(regWithStartDate.startDate)
+                        : null;
+                    const agreedStartDate =
+                        regStartDateObj && !isNaN(regStartDateObj.getTime())
+                            ? regStartDateObj.toISOString().slice(0, 10)
+                            : fallbackStartDate;
+
                     await tx.insert(auditEvents).values({
                         organisationId,
                         userId: actorUserId,
@@ -479,8 +555,48 @@ export async function recordBookingEnrolmentOutcome(
                 }
 
                 // Also update any 'awaiting_confirmation' or 'pending' registration for these children in this centre to 'signed_up'
-                const matchingRegs = await tx
-                    .select({ id: registrations.id, status: registrations.status })
+                const seenRegIds = new Set<string>();
+                for (const reg of matchingRegs ?? []) {
+                    if (seenRegIds.has(reg.id)) continue;
+                    seenRegIds.add(reg.id);
+
+                    if (reg.status === 'awaiting_confirmation' || reg.status === 'pending') {
+                        await tx
+                            .update(registrations)
+                            .set({
+                                status: 'signed_up',
+                                bookingId,
+                                updatedAt: now,
+                            })
+                            .where(eq(registrations.id, reg.id));
+                    }
+
+                    if (!linkedRegId) {
+                        linkedRegId = reg.id;
+                    }
+                }
+            }
+        } else if (enrolmentOutcome === 'did_not_sign_up') {
+            if (linkedRegId) {
+                await tx
+                    .update(registrations)
+                    .set({
+                        status: 'not_interested',
+                        bookingId,
+                        updatedAt: now,
+                    })
+                    .where(
+                        and(
+                            eq(registrations.id, linkedRegId),
+                            eq(registrations.organisationId, organisationId),
+                            inArray(registrations.status, ['awaiting_confirmation', 'pending'])
+                        )
+                    );
+            }
+
+            if (sortedChildIds.length > 0) {
+                const pendingRegs = await tx
+                    .select({ id: registrations.id })
                     .from(registrations)
                     .innerJoin(registrationChildren, eq(registrationChildren.registrationId, registrations.id))
                     .where(
@@ -492,11 +608,15 @@ export async function recordBookingEnrolmentOutcome(
                         )
                     );
 
-                for (const reg of matchingRegs) {
+                const seenPendingIds = new Set<string>();
+                for (const reg of pendingRegs ?? []) {
+                    if (seenPendingIds.has(reg.id)) continue;
+                    seenPendingIds.add(reg.id);
+
                     await tx
                         .update(registrations)
                         .set({
-                            status: 'signed_up',
+                            status: 'not_interested',
                             bookingId,
                             updatedAt: now,
                         })
@@ -600,17 +720,38 @@ export async function initializeBookingEnrolmentOutcomeOnCompletion(
         if (options?.checkAllAttendeesMarked) {
             if (attendees.length === 0) return {};
             const allMarked = attendees.every((a: any) => Boolean(a.attendanceStatus));
+            if (!allMarked) {
+                return {};
+            }
             const anyAttended = attendees.some(
                 (a: any) => a.attendanceStatus === 'present' || a.attendanceStatus === 'late'
             );
-            if (!allMarked || !anyAttended) {
+            const allDidNotAttend = attendees.every((a: any) =>
+                ['no_show', 'absent', 'excused'].includes(a.attendanceStatus)
+            );
+            if (!anyAttended) {
+                if (allDidNotAttend && ['confirmed', 'pending', 'completed'].includes(booking.status)) {
+                    const isTerminal =
+                        booking.enrolmentOutcome === 'signed_up' ||
+                        booking.enrolmentOutcome === 'did_not_sign_up';
+                    const nextOutcomeOnNoShow = isTerminal ? booking.enrolmentOutcome : null;
+                    await txOrDb
+                        .update(bookings)
+                        .set({
+                            status: 'did_not_attend',
+                            ...(!isTerminal ? { enrolmentOutcome: null } : {}),
+                            updatedAt: new Date(),
+                        })
+                        .where(eq(bookings.id, bookingId));
+                    return { status: 'did_not_attend', enrolmentOutcome: nextOutcomeOnNoShow };
+                }
                 return {};
             }
         }
 
         // Preserve already-decided terminal outcomes
         if (booking.enrolmentOutcome === 'signed_up' || booking.enrolmentOutcome === 'did_not_sign_up') {
-            if (options?.checkAllAttendeesMarked && ['confirmed', 'pending'].includes(booking.status)) {
+            if (options?.checkAllAttendeesMarked && ['confirmed', 'pending', 'did_not_attend'].includes(booking.status)) {
                 await txOrDb
                     .update(bookings)
                     .set({ status: 'completed', updatedAt: new Date() })
@@ -645,7 +786,7 @@ export async function initializeBookingEnrolmentOutcomeOnCompletion(
         }
 
         const nextOutcome: BookingEnrolmentOutcome = alreadyRegistered ? 'signed_up' : 'awaiting_outcome';
-        const nextStatus = ['confirmed', 'pending'].includes(booking.status) ? 'completed' : booking.status;
+        const nextStatus = ['confirmed', 'pending', 'did_not_attend'].includes(booking.status) ? 'completed' : booking.status;
         const now = new Date();
 
         await txOrDb

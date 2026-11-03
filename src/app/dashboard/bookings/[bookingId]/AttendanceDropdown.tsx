@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { markAttendeeAttendance } from '@/features/bookings/actions';
 import type { AttendanceStatus } from '@/lib/attendance';
 import { getAttendanceLabel, getAttendanceColorClass, resolveAttendanceStatus } from '@/lib/attendance';
@@ -23,6 +24,7 @@ export default function AttendanceDropdown({
     currentBookingStatus,
     currentNote
 }: AttendanceDropdownProps) {
+    const router = useRouter();
     const resolved = resolveAttendanceStatus(currentAttendanceStatus, currentBookingStatus);
 
     // We treat the current state as the local state initially
@@ -32,6 +34,11 @@ export default function AttendanceDropdown({
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
+
+    useEffect(() => {
+        const nextResolved = resolveAttendanceStatus(currentAttendanceStatus, currentBookingStatus);
+        setSelectedStatus(nextResolved.status);
+    }, [currentAttendanceStatus, currentBookingStatus]);
 
     // Filter to only the core statuses for the dropdown
     const availableStatuses: Array<{ value: AttendanceStatus | null, label: string }> = [
@@ -57,6 +64,7 @@ export default function AttendanceDropdown({
                 note: note.trim() || undefined
             });
             setSuccess(true);
+            router.refresh();
             setTimeout(() => setSuccess(false), 3000);
         } catch (err) {
             const message = err instanceof Error ? err.message : undefined;

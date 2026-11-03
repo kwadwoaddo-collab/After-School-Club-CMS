@@ -6,8 +6,8 @@ import ConfirmModal from '@/components/ui/ConfirmModal';
 type Status = 'awaiting_confirmation' | 'signed_up' | 'not_interested';
 
 const OPTIONS: { value: Status; label: string; cls: string }[] = [
-    { value: 'awaiting_confirmation', label: 'Form received — awaiting confirmation', cls: 'text-amber-700 dark:text-amber-400 hover:bg-amber-500/10' },
-    { value: 'signed_up', label: 'Confirm joining', cls: 'text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/10' },
+    { value: 'awaiting_confirmation', label: 'Awaiting Confirmation', cls: 'text-amber-700 dark:text-amber-400 hover:bg-amber-500/10' },
+    { value: 'signed_up', label: 'Confirm Signed Up', cls: 'text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/10' },
     { value: 'not_interested', label: 'Not Interested', cls: 'text-slate-600 dark:text-slate-400 hover:bg-card' },
 ];
 
@@ -108,9 +108,9 @@ export default function RegistrationStatusUpdater({
                 onConfirm={() => {
                     if (confirmingStatus) void performUpdate(confirmingStatus);
                 }}
-                title="Confirm Family Joining"
-                description="Confirm this family has joined? Only the children on this registration will become eligible for billing from their agreed billing start date."
-                confirmText="Confirm Joining"
+                title="Confirm Signed Up"
+                description="Confirm this family has signed up? Only the children on this registration will become eligible for billing from their agreed billing start date."
+                confirmText="Confirm Signed Up"
                 cancelText="Cancel"
                 variant="info"
             />
