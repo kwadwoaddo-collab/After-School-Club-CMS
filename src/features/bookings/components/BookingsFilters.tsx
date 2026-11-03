@@ -50,14 +50,14 @@ export default function BookingsFilters({ centres, resultsCount = 0, statusCount
     ];
 
     const statusOptionsWithCounts = [
-        { value: 'all', label: 'All', count: totalAggCount },
+        { value: 'all', label: 'All Statuses', count: totalAggCount },
         { value: 'confirmed', label: 'Booked', count: statusCounts?.confirmed || 0 },
-        { value: 'signed_up', label: 'Signed Up', count: statusCounts?.signed_up || 0 },
-        { value: 'pending', label: 'Pending', count: statusCounts?.pending || 0 },
         { value: 'completed', label: 'Attended', count: statusCounts?.completed || 0 },
         { value: 'did_not_attend', label: 'Did Not Attend', count: statusCounts?.did_not_attend || 0 },
-        { value: 'cancelled', label: 'Cancelled', count: statusCounts?.cancelled || 0 },
+        { value: 'signed_up', label: 'Signed Up', count: statusCounts?.signed_up || 0 },
+        { value: 'pending', label: 'Pending', count: statusCounts?.pending || 0 },
         { value: 'rescheduled', label: 'Rescheduled', count: statusCounts?.rescheduled || 0 },
+        { value: 'cancelled', label: 'Cancelled', count: statusCounts?.cancelled || 0 },
     ];
 
     const hasActiveFilters = !!(
@@ -118,161 +118,157 @@ export default function BookingsFilters({ centres, resultsCount = 0, statusCount
     };
 
     return (
-        <div className={`space-y-3 transition-opacity ${isPending ? 'opacity-75' : ''}`}>
+        <div className={`space-y-2.5 transition-opacity ${isPending ? 'opacity-75' : ''}`}>
             {isPending && (
                 <div
                     className="fixed top-0 left-0 right-0 z-[250] h-0.5 bg-accent animate-pulse pointer-events-none"
                     aria-hidden="true"
                 />
             )}
-            <div className="flex items-center justify-between gap-2 flex-wrap">
-                <div className="flex items-center gap-1.5 overflow-x-auto max-w-full scrollbar-none py-0.5" role="group" aria-label="Filter by enrolment outcome">
-                    {outcomeFilterPills.map((pill) => {
-                        const isActive =
-                            activeOutcome === pill.value ||
-                            (pill.value === 'needs_attendance' && activeOutcome === 'required') ||
-                            (pill.value === 'all' && !searchParams.get('outcome'));
-                        return (
-                            <button
-                                key={pill.value}
-                                type="button"
-                                aria-pressed={isActive}
-                                onClick={() => {
-                                    setStatus('all');
-                                    setFromDate('');
-                                    setToDate('');
-                                    applyFilters({
-                                        newOutcome: pill.value === 'all' ? '' : pill.value,
-                                        newStatus: 'all',
-                                        newToday: '',
-                                        newFrom: '',
-                                        newTo: '',
-                                    });
-                                }}
-                                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors whitespace-nowrap border ${
+            {/* Row 1: Pipeline Stage Queue Pills */}
+            <div className="flex items-center gap-1.5 overflow-x-auto max-w-full scrollbar-none py-0.5" role="group" aria-label="Filter by enrolment outcome">
+                {outcomeFilterPills.map((pill) => {
+                    const isActive =
+                        activeOutcome === pill.value ||
+                        (pill.value === 'needs_attendance' && activeOutcome === 'required') ||
+                        (pill.value === 'all' && !searchParams.get('outcome'));
+                    return (
+                        <button
+                            key={pill.value}
+                            type="button"
+                            aria-pressed={isActive}
+                            onClick={() => {
+                                setStatus('all');
+                                setFromDate('');
+                                setToDate('');
+                                applyFilters({
+                                    newOutcome: pill.value === 'all' ? '' : pill.value,
+                                    newStatus: 'all',
+                                    newToday: '',
+                                    newFrom: '',
+                                    newTo: '',
+                                });
+                            }}
+                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors whitespace-nowrap border ${
+                                isActive
+                                    ? 'bg-accent text-white border-accent'
+                                    : 'bg-surface text-text-secondary border-border hover:text-text hover:bg-page'
+                            }`}
+                        >
+                            <span>{pill.label}</span>
+                            <span
+                                className={`px-1.5 py-0.5 rounded-full text-[11px] tabular-nums ${
                                     isActive
-                                        ? 'bg-accent text-white border-accent'
-                                        : 'bg-surface text-text-secondary border-border hover:text-text hover:bg-page'
+                                        ? 'bg-white/20 text-white'
+                                        : 'bg-page text-text-muted'
                                 }`}
                             >
-                                <span>{pill.label}</span>
-                                <span
-                                    className={`px-1.5 py-0.5 rounded-full text-[11px] tabular-nums ${
-                                        isActive
-                                            ? 'bg-white/20 text-white'
-                                            : 'bg-page text-text-muted'
-                                    }`}
-                                >
-                                    {pill.count}
-                                </span>
-                            </button>
-                        );
-                    })}
-                </div>
-                <button type="button" aria-pressed={searchParams.get('outcome') === 'required'} onClick={() => { setStatus('all'); setFromDate(''); setToDate(''); applyFilters({ newOutcome: searchParams.get('outcome') === 'required' ? '' : 'required', newStatus: 'all', newToday: '', newFrom: '', newTo: '' }); }} className="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-secondary focus-visible:outline-2 focus-visible:outline-primary">{searchParams.get('outcome') === 'required' ? 'Showing assessments needing an outcome — show all' : 'Outcomes to record'}</button>
+                                {pill.count}
+                            </span>
+                        </button>
+                    );
+                })}
             </div>
-            {/* Desktop toolbar */}
-            <div className="hidden lg:flex items-center justify-between gap-3 flex-wrap">
-                <div className="flex bg-page p-1 rounded-md border border-border-subtle overflow-x-auto max-w-full scrollbar-none gap-1">
-                    {statusOptionsWithCounts.map((tab) => {
-                        const isActive = status === tab.value;
-                        return (
-                            <button
-                                key={tab.value}
-                                onClick={() => {
-                                    setStatus(tab.value);
-                                    applyFilters({ newStatus: tab.value });
-                                }}
-                                className={`px-3 py-1.5 rounded-sm text-sm font-medium transition-colors whitespace-nowrap ${
-                                    isActive
-                                        ? 'bg-surface text-text shadow-sm border border-border'
-                                        : 'text-text-secondary hover:text-text border border-transparent'
-                                }`}
-                            >
-                                {tab.label} ({tab.count})
-                            </button>
-                        );
-                    })}
-                </div>
 
-                <div className="flex items-center gap-2 flex-wrap">
-                    <Button
-                        type="button"
-                        variant={isToday ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => applyFilters({ newToday: isToday ? '' : 'true' })}
+            {/* Row 2: Single-Line Filter & Search Bar (Desktop) */}
+            <div className="hidden lg:flex items-center gap-2 flex-wrap">
+                <Button
+                    type="button"
+                    variant={isToday ? 'default' : 'outline'}
+                    size="sm"
+                    className="h-9"
+                    onClick={() => applyFilters({ newToday: isToday ? '' : 'true' })}
+                >
+                    <Calendar className="w-3.5 h-3.5" />
+                    Today
+                </Button>
+
+                <form onSubmit={handleSearch} className="flex-1 min-w-[200px] max-w-xs relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none" />
+                    <input
+                        type="text"
+                        value={search}
+                        onChange={(e) => {
+                            const val = e.target.value;
+                            setSearch(val);
+                            if (val === '') applyFilters({ newSearch: '' });
+                        }}
+                        placeholder="Search bookings…"
+                        aria-label="Search bookings"
+                        className="w-full h-9 pl-9 pr-3 rounded-sm text-sm text-text placeholder:text-text-muted focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent transition-colors border border-border bg-surface"
+                    />
+                </form>
+
+                <div className="relative">
+                    <select
+                        value={status}
+                        onChange={(e) => {
+                            const val = e.target.value;
+                            setStatus(val);
+                            applyFilters({ newStatus: val });
+                        }}
+                        aria-label="Filter by status"
+                        className="h-9 pl-3 pr-8 rounded-sm text-sm text-text focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent transition-colors appearance-none cursor-pointer border border-border bg-surface min-w-[165px]"
                     >
-                        <Calendar className="w-3.5 h-3.5" />
-                        Today
-                    </Button>
-
-                    <form onSubmit={handleSearch} className="min-w-[200px] relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none" />
-                        <input
-                            type="text"
-                            value={search}
-                            onChange={(e) => {
-                                const val = e.target.value;
-                                setSearch(val);
-                                if (val === '') applyFilters({ newSearch: '' });
-                            }}
-                            placeholder="Search bookings…"
-                            aria-label="Search bookings"
-                            className="w-full h-9 pl-9 pr-3 rounded-sm text-sm text-text placeholder:text-text-muted focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent transition-colors border border-border bg-surface"
-                        />
-                    </form>
-
-                    {centres.length > 1 && (
-                        <div className="relative">
-                            <select
-                                value={selectedCentreId}
-                                onChange={(e) => setSelectedCentreId(e.target.value)}
-                                aria-label="Filter by centre"
-                                className="h-9 pl-3 pr-8 rounded-sm text-sm text-text focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent transition-colors appearance-none cursor-pointer border border-border bg-surface min-w-[140px]"
-                            >
-                                <option value="all">All Centres</option>
-                                {centres.map(c => (
-                                    <option key={c.id} value={c.id}>{c.name}</option>
-                                ))}
-                            </select>
-                            <Filter className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-muted pointer-events-none" />
-                        </div>
-                    )}
-
-                    <div className="flex items-center gap-1.5 border border-border bg-surface rounded-sm px-2 h-9">
-                        <Calendar className="w-3.5 h-3.5 text-text-muted flex-shrink-0" />
-                        <input
-                            type="date"
-                            value={fromDate}
-                            aria-label="From date"
-                            onChange={(e) => {
-                                const val = e.target.value;
-                                setFromDate(val);
-                                applyFilters({ newFrom: val });
-                            }}
-                            className="bg-transparent border-none text-xs text-text outline-none cursor-pointer w-[104px]"
-                        />
-                        <span className="text-text-muted text-xs">–</span>
-                        <input
-                            type="date"
-                            value={toDate}
-                            aria-label="To date"
-                            onChange={(e) => {
-                                const val = e.target.value;
-                                setToDate(val);
-                                applyFilters({ newTo: val });
-                            }}
-                            className="bg-transparent border-none text-xs text-text outline-none cursor-pointer w-[104px]"
-                        />
-                    </div>
-
-                    {hasActiveFilters && (
-                        <Button variant="ghost" size="sm" onClick={handleClearFilters} title="Clear filters">
-                            <X className="w-3.5 h-3.5" />
-                            Clear
-                        </Button>
-                    )}
+                        {statusOptionsWithCounts.map((tab) => (
+                            <option key={tab.value} value={tab.value}>
+                                {tab.label} ({tab.count})
+                            </option>
+                        ))}
+                    </select>
+                    <Filter className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-muted pointer-events-none" />
                 </div>
+
+                {centres.length > 1 && (
+                    <div className="relative">
+                        <select
+                            value={selectedCentreId}
+                            onChange={(e) => setSelectedCentreId(e.target.value)}
+                            aria-label="Filter by centre"
+                            className="h-9 pl-3 pr-8 rounded-sm text-sm text-text focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent transition-colors appearance-none cursor-pointer border border-border bg-surface min-w-[140px]"
+                        >
+                            <option value="all">All Centres</option>
+                            {centres.map(c => (
+                                <option key={c.id} value={c.id}>{c.name}</option>
+                            ))}
+                        </select>
+                        <Filter className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-muted pointer-events-none" />
+                    </div>
+                )}
+
+                <div className="flex items-center gap-1.5 border border-border bg-surface rounded-sm px-2 h-9">
+                    <Calendar className="w-3.5 h-3.5 text-text-muted flex-shrink-0" />
+                    <input
+                        type="date"
+                        value={fromDate}
+                        aria-label="From date"
+                        onChange={(e) => {
+                            const val = e.target.value;
+                            setFromDate(val);
+                            applyFilters({ newFrom: val });
+                        }}
+                        className="bg-transparent border-none text-xs text-text outline-none cursor-pointer w-[104px]"
+                    />
+                    <span className="text-text-muted text-xs">–</span>
+                    <input
+                        type="date"
+                        value={toDate}
+                        aria-label="To date"
+                        onChange={(e) => {
+                            const val = e.target.value;
+                            setToDate(val);
+                            applyFilters({ newTo: val });
+                        }}
+                        className="bg-transparent border-none text-xs text-text outline-none cursor-pointer w-[104px]"
+                    />
+                </div>
+
+                {hasActiveFilters && (
+                    <Button variant="ghost" size="sm" className="h-9" onClick={handleClearFilters} title="Clear filters">
+                        <X className="w-3.5 h-3.5" />
+                        Clear
+                    </Button>
+                )}
             </div>
 
             {/* Mobile toolbar */}

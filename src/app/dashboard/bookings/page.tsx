@@ -1,7 +1,6 @@
 import { parseSummaryRange, summaryRangeSql } from '@/features/dashboard/summary-links';
 import SummaryRangeNotice from '@/features/dashboard/SummaryRangeNotice';
 import { assessmentOutcomeRequiredSql, bookingDidNotAttendFollowUpSql } from '@/features/bookings/assessment-outcome-query';
-import JoiningJourneyGuide from '@/features/students/components/JoiningJourneyGuide';
 import { logger } from '@/lib/logger';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { requireTenantSession } from '@/lib/session';
@@ -361,13 +360,12 @@ export default async function BookingsPage(props: {
     const totalPages = Math.ceil(totalRecords / PAGE_SIZE);
 
     return (
-        <div className="space-y-6">
-            <JoiningJourneyGuide />
+        <div className="space-y-4">
             {/* Header Portals — Fuses page header into the global header bar */}
             <HeaderPortal targetId="header-left">
                 <div className="flex items-center gap-2">
                     <h1 className="text-page-title text-text">Bookings</h1>
-                    <span className="px-2 py-0.5 rounded-sm bg-page border border-border-subtle text-text-muted text-xs font-medium">
+                    <span className="px-2 py-0.5 rounded-sm bg-page border border-border-subtle text-text-muted text-xs font-medium whitespace-nowrap">
                         {isFiltered ? `${totalRecords} of ${totalAggCount}` : totalAggCount}
                     </span>
                 </div>
@@ -391,9 +389,9 @@ export default async function BookingsPage(props: {
             </HeaderPortal>
 
             {/* Toolbar — sticky */}
-            <div className="sticky top-16 sm:top-20 z-20 -mx-4 sm:-mx-8 px-4 sm:px-8 py-3 bg-page/90 backdrop-blur-sm border-b border-border-subtle">
+            <div className="sticky top-16 sm:top-20 z-20 -mx-4 sm:-mx-8 px-4 sm:px-8 py-2.5 bg-page/90 backdrop-blur-sm border-b border-border-subtle">
                 <SummaryRangeNotice range={summaryRange} basis="Bookings scheduled" clearHref={`/dashboard/bookings?${new URLSearchParams(Object.entries(searchParams).filter(([key,value]) => key !== 'page' && typeof value === 'string') as [string,string][])}`}/>
-            <Suspense fallback={<div className="h-10 animate-pulse bg-page rounded-sm w-full" />}>
+                <Suspense fallback={<div className="h-10 animate-pulse bg-page rounded-sm w-full" />}>
                     <BookingsFilters
                         centres={orgCentres}
                         resultsCount={totalRecords}

@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { CheckCircle2, XCircle, Loader2, ExternalLink, Calendar } from 'lucide-react';
+import { Check, CheckCircle2, X, XCircle, Loader2, ExternalLink, RotateCcw } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/ui/ToastProvider';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
+import { requiresAssessmentOutcome } from '../assessment-outcome';
 import type { BookingEnrolmentOutcome } from '@/lib/services/booking-outcome-sync';
 
 const DID_NOT_SIGN_UP_REASONS = [
@@ -28,6 +29,8 @@ const NO_SHOW_FOLLOW_UP_REASONS = [
 export interface BookingOutcomeActionsProps {
     bookingId: string;
     status: string;
+    startAt?: Date | string | null;
+    attendanceStatuses?: Array<string | null | undefined>;
     enrolmentOutcome?: BookingEnrolmentOutcome | null;
     enrolmentOutcomeReason?: string | null;
     linkedRegistrationId?: string | null;
@@ -37,17 +40,25 @@ export interface BookingOutcomeActionsProps {
         reason: string | null,
         newStatus: string
     ) => void;
+    onStatusUpdated?: (
+        newStatus: string,
+        newEnrolmentOutcome?: BookingEnrolmentOutcome | null
+    ) => void;
 }
 
 export default function BookingOutcomeActions({
     bookingId,
     status,
+    startAt,
+    attendanceStatuses,
     enrolmentOutcome: initialOutcome = null,
     enrolmentOutcomeReason: initialReason = null,
     linkedRegistrationId = null,
     compact = false,
     onOutcomeUpdated,
+    onStatusUpdated,
 }: BookingOutcomeActionsProps) {
+    const [currentStatus, setCurrentStatus] = useState<string>(status);
     const [outcome, setOutcome] = useState<BookingEnrolmentOutcome | null>(
         initialOutcome ?? (status === 'signed_up' ? 'signed_up' : status === 'completed' ? 'awaiting_outcome' : null)
     );
@@ -56,8 +67,10 @@ export default function BookingOutcomeActions({
     const [showReasonPopover, setShowReasonPopover] = useState(false);
     const [customReason, setCustomReason] = useState('');
     const [savingOutcome, setSavingOutcome] = useState<BookingEnrolmentOutcome | null>(null);
+    const [savingAttendance, setSavingAttendance] = useState<'completed' | 'did_not_attend' | null>(null);
 
     useEffect(() => {
+        setCurrentStatus(status);
         setOutcome(
             initialOutcome ?? (status === 'signed_up' ? 'signed_up' : status === 'completed' ? 'awaiting_outcome' : null)
         );
@@ -69,6 +82,49 @@ export default function BookingOutcomeActions({
 
     const router = useRouter();
     const { toast } = useToast();
+
+    const submitAttendanceStatus = async (targetStatus: 'completed' | 'did_not_attend') => {
+        setSavingAttendance(targetStatus);
+        try {
+            const res = await fetch(`/api/bookings/${bookingId}/status`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: targetStatus }),
+            });
+
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                throw new Error(errData.error || 'Failed to update attendance status');
+            }
+
+            const data = await res.json().catch(() => ({}));
+            const nextOutcome: BookingEnrolmentOutcome | null =
+                data?.booking && 'enrolmentOutcome' in data.booking
+                    ? (data.booking.enrolmentOutcome as BookingEnrolmentOutcome | null)
+                    : targetStatus === 'completed'
+                    ? 'awaiting_outcome'
+                    : null;
+
+            setCurrentStatus(targetStatus);
+            setOutcome(nextOutcome);
+            onStatusUpdated?.(targetStatus, nextOutcome);
+
+            toast(
+                targetStatus === 'completed'
+                    ? 'Attendance recorded — now record whether the student signed up.'
+                    : 'Marked as Did Not Attend — placed in follow-up queue.',
+                'success'
+            );
+            router.refresh();
+        } catch (err) {
+            toast(
+                err instanceof Error ? err.message : 'Failed to update attendance status.',
+                'error'
+            );
+        } finally {
+            setSavingAttendance(null);
+        }
+    };
 
     const submitOutcome = async (
         targetOutcome: BookingEnrolmentOutcome,
@@ -93,8 +149,9 @@ export default function BookingOutcomeActions({
             const data = await res.json();
             const updatedOutcome = (data.booking?.enrolmentOutcome as BookingEnrolmentOutcome) || targetOutcome;
             const updatedReason = data.booking?.enrolmentOutcomeReason ?? selectedReason ?? null;
-            const updatedStatus = data.booking?.status ?? status;
+            const updatedStatus = data.booking?.status ?? currentStatus;
 
+            setCurrentStatus(updatedStatus);
             setOutcome(updatedOutcome);
             setReason(updatedReason);
             setIsEditing(false);
@@ -120,21 +177,46 @@ export default function BookingOutcomeActions({
         }
     };
 
-    if (status === 'cancelled') {
+    if (currentStatus === 'cancelled') {
         return <span className="text-xs text-text-muted">–</span>;
     }
 
     const isDecided = outcome === 'signed_up' || outcome === 'did_not_sign_up';
-    const isDidNotAttendFollowUp = status === 'did_not_attend' && !isDecided;
-    const reasonChips = status === 'did_not_attend' ? NO_SHOW_FOLLOW_UP_REASONS : DID_NOT_SIGN_UP_REASONS;
+    const hasAllAttendanceRecorded = Boolean(
+        attendanceStatuses && attendanceStatuses.length > 0 && attendanceStatuses.every(Boolean)
+    );
+    const allRecordedNoShow = Boolean(
+        hasAllAttendanceRecorded &&
+            attendanceStatuses!.every((val) => ['no_show', 'absent', 'excused'].includes(val!))
+    );
+    const needsAttendance = requiresAssessmentOutcome(
+        currentStatus,
+        startAt,
+        new Date(),
+        attendanceStatuses,
+        outcome
+    );
+    const isUpcomingBooked =
+        ['confirmed', 'pending', 'rescheduled'].includes(currentStatus) &&
+        !needsAttendance &&
+        !hasAllAttendanceRecorded &&
+        !isDecided &&
+        outcome !== 'awaiting_outcome';
+    const isDidNotAttendFollowUp =
+        (currentStatus === 'did_not_attend' ||
+            (['confirmed', 'pending'].includes(currentStatus) && allRecordedNoShow)) &&
+        !isDecided;
+    const reasonChips = isDidNotAttendFollowUp ? NO_SHOW_FOLLOW_UP_REASONS : DID_NOT_SIGN_UP_REASONS;
+    const btnSize = compact ? 'xs' : 'sm';
 
+    // Stage 3 — Outcome Decided (`signed_up` or `did_not_sign_up`)
     if (isDecided && !isEditing) {
         return (
             <div
-                className={`flex items-center gap-2 flex-wrap ${compact ? '' : 'justify-between'}`}
+                className={`flex items-center gap-2 ${compact ? 'flex-nowrap' : 'flex-wrap justify-between'}`}
                 onClick={(e) => e.stopPropagation()}
             >
-                <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-2 flex-nowrap">
                     {outcome === 'signed_up' ? (
                         <Badge variant="success">
                             <CheckCircle2 className="w-3 h-3" />
@@ -168,20 +250,72 @@ export default function BookingOutcomeActions({
                         setIsEditing(true);
                         setShowReasonPopover(false);
                     }}
-                    className="text-xs font-medium text-text-muted hover:text-accent underline-offset-2 hover:underline transition-colors"
+                    className="text-xs font-medium text-text-muted hover:text-accent underline-offset-2 hover:underline transition-colors whitespace-nowrap"
                 >
-                    Change outcome
+                    {compact ? 'Edit' : 'Change outcome'}
                 </button>
             </div>
         );
     }
 
+    // Stage 0 — Upcoming Appointment (`isUpcomingBooked`)
+    if (compact && isUpcomingBooked && !isEditing) {
+        return <span className="text-xs text-text-muted whitespace-nowrap">After assessment</span>;
+    }
+
+    // Stage 1 — Past Appointment Needing Attendance (`needsAttendance === true`)
+    if (needsAttendance && !isEditing) {
+        return (
+            <div
+                className="flex items-center gap-1.5 flex-nowrap"
+                onClick={(e) => e.stopPropagation()}
+            >
+                <Button
+                    type="button"
+                    variant="secondary"
+                    size={btnSize}
+                    disabled={savingAttendance !== null}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        submitAttendanceStatus('completed');
+                    }}
+                    className="border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20"
+                >
+                    {savingAttendance === 'completed' ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : (
+                        <Check className="w-3 h-3" />
+                    )}
+                    Attended
+                </Button>
+                <Button
+                    type="button"
+                    variant="outline"
+                    size={btnSize}
+                    disabled={savingAttendance !== null}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        submitAttendanceStatus('did_not_attend');
+                    }}
+                >
+                    {savingAttendance === 'did_not_attend' ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : (
+                        <X className="w-3 h-3" />
+                    )}
+                    Did Not Attend
+                </Button>
+            </div>
+        );
+    }
+
+    // Stage 2A (Attended & Awaiting Sign-Up Decision) & Stage 2B (Did Not Attend · Follow Up)
     return (
         <div
-            className="relative inline-flex items-center gap-1.5 flex-wrap"
+            className={`relative flex items-center gap-1.5 ${compact ? 'flex-nowrap' : 'flex-wrap'}`}
             onClick={(e) => e.stopPropagation()}
         >
-            {isDidNotAttendFollowUp && !isEditing && (
+            {!compact && isDidNotAttendFollowUp && !isEditing && (
                 <Badge variant="warning">Did Not Attend · Follow Up</Badge>
             )}
             {!compact && outcome === 'awaiting_outcome' && !isDidNotAttendFollowUp && !isEditing && (
@@ -189,30 +323,35 @@ export default function BookingOutcomeActions({
             )}
 
             {isDidNotAttendFollowUp && !isEditing ? (
-                <Button type="button" variant="outline" size="sm" asChild>
+                <Button type="button" variant="outline" size={btnSize} asChild>
                     <Link
                         href={`/dashboard/bookings/${bookingId}/reschedule`}
                         onClick={(e) => e.stopPropagation()}
                     >
-                        <Calendar className="w-3.5 h-3.5" />
+                        <RotateCcw className="w-3 h-3" />
                         Reschedule
                     </Link>
                 </Button>
             ) : (
                 <Button
                     type="button"
-                    variant="default"
-                    size="sm"
+                    variant={compact ? 'secondary' : 'default'}
+                    size={btnSize}
                     disabled={savingOutcome !== null}
                     onClick={(e) => {
                         e.stopPropagation();
                         submitOutcome('signed_up', 'Confirmed Signed Up from assessment booking');
                     }}
+                    className={
+                        compact
+                            ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20'
+                            : ''
+                    }
                 >
                     {savingOutcome === 'signed_up' ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <Loader2 className="w-3 h-3 animate-spin" />
                     ) : (
-                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        <Check className="w-3 h-3" />
                     )}
                     Signed Up
                 </Button>
@@ -222,7 +361,7 @@ export default function BookingOutcomeActions({
                 <Button
                     type="button"
                     variant="outline"
-                    size="sm"
+                    size={btnSize}
                     title="Did not sign up"
                     disabled={savingOutcome !== null}
                     onClick={(e) => {
@@ -231,9 +370,9 @@ export default function BookingOutcomeActions({
                     }}
                 >
                     {savingOutcome === 'did_not_sign_up' ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <Loader2 className="w-3 h-3 animate-spin" />
                     ) : (
-                        <XCircle className="w-3.5 h-3.5" />
+                        <X className="w-3 h-3" />
                     )}
                     Not Interested
                 </Button>
@@ -290,7 +429,7 @@ export default function BookingOutcomeActions({
                                     submitOutcome(
                                         'did_not_sign_up',
                                         customReason.trim() ||
-                                            (status === 'did_not_attend'
+                                            (isDidNotAttendFollowUp
                                                 ? 'Did not attend — not proceeding after follow-up'
                                                 : 'Did not sign up after assessment')
                                     )
@@ -307,7 +446,7 @@ export default function BookingOutcomeActions({
                 <Button
                     type="button"
                     variant="ghost"
-                    size="sm"
+                    size={btnSize}
                     onClick={() => {
                         setIsEditing(false);
                         setShowReasonPopover(false);

@@ -70,7 +70,7 @@ function StatusBadge({
     }
     if (['confirmed', 'pending'].includes(status) && attendanceStatuses.length > 0 && attendanceStatuses.every(Boolean)) {
         const noShow = attendanceStatuses.every(value => ['no_show', 'absent', 'excused'].includes(value!));
-        return <Badge variant={noShow ? 'warning' : 'success'}>{noShow ? 'Did Not Attend' : 'Attendance recorded'}</Badge>;
+        return <Badge variant={noShow ? 'warning' : 'success'}>{noShow ? 'Did Not Attend' : 'Attended'}</Badge>;
     }
     return (
         <Badge variant={STATUS_VARIANTS[status] || 'default'} className={status === 'cancelled' ? 'opacity-70' : ''}>
@@ -567,7 +567,6 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
 
             <div className="bg-surface border border-border rounded-lg overflow-hidden relative">
                 {/* Table for Desktop */}
-                <p className="hidden xl:block px-4 py-2 text-xs text-text-muted border-b border-border">Scroll horizontally when needed. Actions stay on the right.</p>
                 <div role="region" aria-label="Bookings table, scroll for more columns" tabIndex={0} className="hidden xl:block overflow-x-auto relative focus-visible:outline-2 focus-visible:outline-accent [&>div]:overflow-visible">
                     <Table>
                         <TableHeader>
@@ -746,6 +745,8 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                             compact
                                             bookingId={booking.id}
                                             status={booking.status}
+                                            startAt={booking.startAt}
+                                            attendanceStatuses={(booking.attendees ?? []).map((a: { attendanceStatus?: string | null }) => a.attendanceStatus)}
                                             enrolmentOutcome={booking.enrolmentOutcome ?? null}
                                             enrolmentOutcomeReason={booking.enrolmentOutcomeReason ?? null}
                                             linkedRegistrationId={booking.linkedRegistrationId ?? null}
@@ -758,6 +759,21 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                                                   enrolmentOutcome: outcome,
                                                                   enrolmentOutcomeReason: reason,
                                                                   status: newStatus,
+                                                              }
+                                                            : b
+                                                    )
+                                                );
+                                            }}
+                                            onStatusUpdated={(newStatus, newEnrolmentOutcome) => {
+                                                setBookings((prev) =>
+                                                    prev.map((b) =>
+                                                        b.id === booking.id
+                                                            ? {
+                                                                  ...b,
+                                                                  status: newStatus,
+                                                                  ...(newEnrolmentOutcome !== undefined
+                                                                      ? { enrolmentOutcome: newEnrolmentOutcome }
+                                                                      : {}),
                                                               }
                                                             : b
                                                     )
@@ -950,6 +966,8 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                     compact
                                     bookingId={booking.id}
                                     status={booking.status}
+                                    startAt={booking.startAt}
+                                    attendanceStatuses={(booking.attendees ?? []).map((a: { attendanceStatus?: string | null }) => a.attendanceStatus)}
                                     enrolmentOutcome={booking.enrolmentOutcome ?? null}
                                     enrolmentOutcomeReason={booking.enrolmentOutcomeReason ?? null}
                                     linkedRegistrationId={booking.linkedRegistrationId ?? null}
@@ -962,6 +980,21 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                                           enrolmentOutcome: outcome,
                                                           enrolmentOutcomeReason: reason,
                                                           status: newStatus,
+                                                      }
+                                                    : b
+                                            )
+                                        );
+                                    }}
+                                    onStatusUpdated={(newStatus, newEnrolmentOutcome) => {
+                                        setBookings((prev) =>
+                                            prev.map((b) =>
+                                                b.id === booking.id
+                                                    ? {
+                                                          ...b,
+                                                          status: newStatus,
+                                                          ...(newEnrolmentOutcome !== undefined
+                                                              ? { enrolmentOutcome: newEnrolmentOutcome }
+                                                              : {}),
                                                       }
                                                     : b
                                             )
