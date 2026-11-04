@@ -466,6 +466,7 @@ export async function updateBillingConfig(
             ...(data.leadTimeUnit       !== undefined && { leadTimeUnit:       data.leadTimeUnit }),
             ...(data.leadTimeValue      !== undefined && { leadTimeValue:      data.leadTimeValue }),
             ...(data.notes              !== undefined && { notes:              data.notes }),
+            ...(isFeeReview && existingConfig.status === 'cancelled' && { status: 'active' as const }),
             updatedAt: new Date(),
         })
         .where(and(

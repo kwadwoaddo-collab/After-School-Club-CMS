@@ -645,14 +645,14 @@ function StatusControls({ config, onDone }: { config: StudentBillingConfig; onDo
                             <Pause className="w-3.5 h-3.5" />
                             Pause
                         </button>
-                    ) : config.status === 'paused' ? (
+                    ) : (config.status === 'paused' || config.status === 'cancelled') ? (
                         <button
                             onClick={handleResume}
                             disabled={isPending}
                             className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm border border-border-subtle text-emerald-700 dark:text-emerald-400 text-xs font-medium hover:bg-success-soft transition-colors disabled:opacity-50"
                         >
                             <Play className="w-3.5 h-3.5" />
-                            Resume
+                            {config.status === 'cancelled' ? 'Reactivate billing' : 'Resume'}
                         </button>
                     ) : null}
                     {config.status !== 'cancelled' && (
