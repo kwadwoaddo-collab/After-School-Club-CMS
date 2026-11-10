@@ -6,7 +6,7 @@ import { invoices } from '@/db/schema';
 import { eq, desc, and, count, lt, inArray } from 'drizzle-orm';
 import { Download, CreditCard } from 'lucide-react';
 import { resolveActiveCentreId } from '@/lib/centre-filter';
-import { getUserAccessibleCentres } from '@/lib/permissions';
+import { getUserAccessibleCentres, isOrgOwner } from '@/lib/permissions';
 import { Suspense } from 'react';
 import Link from 'next/link';
 import FinanceDataGridClient from '@/features/finance/components/FinanceDataGridClient';
@@ -18,6 +18,9 @@ import BillingCyclesTab from '@/features/billing/components/BillingCyclesTab';
 import { fetchBillingCycles } from '@/features/billing/queries';
 import { logger } from '@/lib/logger';
 import { formerStudentOutstandingSql, activeStudentInvoiceSql, draftLifecycleReviewSql } from '@/features/finance/domain/former-balances';
+import CashReceiptsOwnerView from '@/features/finance/components/CashReceiptsOwnerView';
+import { fetchOwnerCashReceiptsLedger } from '@/features/finance/cash-receipts-queries';
+import type { CashReceiptsLedgerResult } from '@/features/finance/domain/cash-receipts-ledger';
 
 type OrgCentre = Awaited<ReturnType<typeof getUserAccessibleCentres>>[number];
 
@@ -30,6 +33,7 @@ export default async function FinancePage(props: {
         family?: string;
         task?: string;
         create?: string;
+        month?: string;
     }>
 }) {
     const searchParams = await props.searchParams;
@@ -44,6 +48,11 @@ export default async function FinancePage(props: {
         return redirect('/dashboard');
     }
 
+    const isOwner = userRole === 'ORG_OWNER' && (await isOrgOwner(session.user.id));
+    if (searchParams.view === 'cashflow' && !isOwner) {
+        return redirect('/dashboard/finance');
+    }
+
     function serialize<T>(obj: T): T {
         return JSON.parse(JSON.stringify(obj, (key, value) => typeof value === 'bigint' ? Number(value) : value));
     }
@@ -54,8 +63,10 @@ export default async function FinancePage(props: {
     const formerBalancesView = searchParams.view === 'former';
     const invoiceHistoryView = searchParams.view === 'history';
     const familyView = searchParams.view === 'families';
-    const workspaceView = isFinanceWorkspaceView(searchParams);
+    const cashflowView = isOwner && searchParams.view === 'cashflow';
+    const workspaceView = !cashflowView && isFinanceWorkspaceView(searchParams);
     let workspaceInvoices: WorkspaceInvoice[] = [];
+    let cashReceiptsLedger: CashReceiptsLedgerResult | null = null;
 
     let orgCentres: OrgCentre[] = [];
     let activeCentreId = 'all';
@@ -103,7 +114,15 @@ export default async function FinancePage(props: {
             formerBalancesView ? formerStudentOutstandingSql() : invoiceHistoryView ? undefined : activeStudentInvoiceSql(),
         );
 
-        if (workspaceView) {
+        if (cashflowView) {
+            cashReceiptsLedger = await fetchOwnerCashReceiptsLedger({
+                userId: session.user.id,
+                organisationId: session.user.organisationId,
+                centres: orgCentres.map((c: { id: string; name: string }) => ({ id: c.id, name: c.name })),
+                activeCentreId,
+                selectedMonth: searchParams.month,
+            });
+        } else if (workspaceView) {
             // Read-only action projection: lifecycle-independent so paused/stopped and legacy debts remain visible.
             // Fetch a thin full-centre set before deriving counts; pagination never changes queue totals.
             workspaceInvoices = await db.query.invoices.findMany({
@@ -173,14 +192,23 @@ export default async function FinancePage(props: {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-semibold text-foreground tracking-tight">{formerBalancesView ? 'Former / Paused Students Outstanding Balances' : invoiceHistoryView ? 'All Invoice History' : familyView ? 'Family accounts' : 'Finance'}</h1>
+                    <h1 className="text-3xl font-semibold text-foreground tracking-tight">{cashflowView ? 'Cash received & weekly tally' : formerBalancesView ? 'Former / Paused Students Outstanding Balances' : invoiceHistoryView ? 'All Invoice History' : familyView ? 'Family accounts' : 'Finance'}</h1>
                     <p className="text-muted-foreground mt-1 text-sm">
-                        {formerBalancesView ? 'Follow up issued unpaid invoices without reactivating student billing.' : 'Review invoices and record money received.'}
+                        {cashflowView ? 'Verified Monday–Sunday cash receipts, rolling monthly tally, and Month-on-Month / Year-on-Year comparisons.' : formerBalancesView ? 'Follow up issued unpaid invoices without reactivating student billing.' : 'Review invoices and record money received.'}
                     </p>
                 </div>
                 <div className="flex items-center gap-3 flex-wrap">
                     <nav aria-label="Finance views" className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
                         {!workspaceView && <Link href={`/dashboard/finance?${new URLSearchParams({...(activeCentreId !== 'all' ? {centre:activeCentreId} : {})})}`} className="inline-flex min-h-10 items-center font-medium text-primary hover:underline">Daily tasks</Link>}
+                        {isOwner && (
+                            <Link
+                                href={`/dashboard/finance?${new URLSearchParams({ ...(activeCentreId !== 'all' ? { centre: activeCentreId } : {}), view: 'cashflow' })}`}
+                                aria-current={cashflowView ? 'page' : undefined}
+                                className={`inline-flex min-h-10 items-center font-medium hover:underline ${cashflowView ? 'text-foreground underline underline-offset-4' : 'text-primary'}`}
+                            >
+                                Cash received
+                            </Link>
+                        )}
                         {[['history', 'All invoices'], ['families', 'Family accounts']].map(([view,label]) => <Link key={view} href={`/dashboard/finance?${new URLSearchParams({ ...(activeCentreId !== 'all' ? {centre:activeCentreId} : {}), view })}`} aria-current={searchParams.view === view ? 'page' : undefined} className="inline-flex min-h-10 items-center font-medium text-primary hover:underline">{label}</Link>)}
                         <Link href="/dashboard/finance/receipt" className="inline-flex min-h-10 items-center font-medium text-primary hover:underline">Receipts</Link>
                         <details className="relative"><summary className="flex min-h-10 cursor-pointer items-center text-muted-foreground">More</summary><div className="absolute right-0 top-10 z-20 w-64 rounded-lg border border-border bg-card p-3 shadow-lg"><Link href={`/dashboard/finance?${new URLSearchParams({ ...(activeCentreId !== 'all' ? {centre:activeCentreId} : {}), view:'former' })}`} className="block py-2 text-primary hover:underline">Paused / stopped balances</Link></div></details>
@@ -210,10 +238,11 @@ export default async function FinancePage(props: {
             {formerBalancesView && <p className="rounded-2xl border border-border bg-card p-4 text-sm text-muted-foreground">
                 These are existing issued balances, including shared family invoices where a covered student has paused or stopped. Payments and receipts remain available. Pausing a student does not void a debt, create a credit or issue another invoice.
             </p>}
+            {cashflowView && cashReceiptsLedger && <CashReceiptsOwnerView ledger={cashReceiptsLedger} />}
             {workspaceView && <FinanceWorkspace key={activeCentreId} invoices={serialize(workspaceInvoices)} cycles={serializedBillingCycles} today={new Intl.DateTimeFormat('en-CA', {timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date())} invoiceError={hasFetchError} cycleError={cycleFetchError}/>}
 
             {/* Main Finance Data Grid & KPI Summary */}
-            {!workspaceView && !familyView && <Suspense fallback={<div className="h-[400px] bg-secondary/20 rounded-3xl animate-pulse border border-border/60" />}>
+            {!workspaceView && !familyView && !cashflowView && <Suspense fallback={<div className="h-[400px] bg-secondary/20 rounded-3xl animate-pulse border border-border/60" />}>
                 <FinanceDataGridClient 
                     invoices={serializedInvoices}
                     totalCount={totalInvoices}

@@ -228,7 +228,11 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                     RevenueWidget is now rendered only for ORG_OWNER. */}
                 {isOwner && (
                     <Suspense fallback={<OverviewSkeleton />}>
-                        <RevenueWidget organisationId={org.id} />
+                        <RevenueWidget
+                            organisationId={org.id}
+                            activeCentreId={activeCentreId}
+                            accessibleCentreIds={accessibleCentreIds}
+                        />
                     </Suspense>
                 )}
                 

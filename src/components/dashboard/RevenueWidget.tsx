@@ -1,126 +1,235 @@
 import { db } from '@/db';
-import { invoices } from '@/db/schema';
-import { eq, and, gte, lt, sql, inArray } from 'drizzle-orm';
-import { startOfMonth, endOfMonth } from 'date-fns';
-import { cn } from '@/components/ui/utils';
-import { PoundSterling, AlertCircle, Clock } from 'lucide-react';
+import { invoices, payments } from '@/db/schema';
+import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
+import { ArrowRight } from 'lucide-react';
 import Link from 'next/link';
+import {
+  parseStoredDecimalToPence,
+  toEuropeLondonBusinessDate,
+} from '@/features/finance/domain/payment-eligibility';
+import {
+  endOfMondayWeek,
+  formatPenceToGBP,
+  formatShortDateRange,
+  formatYearMonthShort,
+  startOfMondayWeek,
+} from '@/features/finance/domain/cash-receipts-ledger';
 
 interface RevenueWidgetProps {
   organisationId: string;
+  activeCentreId?: string;
+  accessibleCentreIds?: string[];
 }
 
-export async function RevenueWidget({ organisationId }: RevenueWidgetProps) {
+export async function RevenueWidget({
+  organisationId,
+  activeCentreId = 'all',
+  accessibleCentreIds,
+}: RevenueWidgetProps) {
   const now = new Date();
-  const monthStart = startOfMonth(now);
-  const monthEnd = endOfMonth(now);
+  const todayBusinessDate = toEuropeLondonBusinessDate(now);
+  const currentMonth = todayBusinessDate.slice(0, 7);
+  const weekStart = startOfMondayWeek(todayBusinessDate);
+  const weekEnd = endOfMondayWeek(todayBusinessDate);
 
-  let revenue = {
-    thisMonth: 0,
-    outstanding: 0,
-    overdueCount: 0,
-  };
+  let receivedThisWeekPence = 0;
+  let receivedThisWeekCount = 0;
+  let receivedThisMonthPence = 0;
+  let receivedThisMonthCount = 0;
+  let outstandingPence = 0;
+  let openInvoiceCount = 0;
+  let overdueCount = 0;
 
   try {
-    const [stats] = await db
-      .select({
-        thisMonth: sql<number>`
-          coalesce(sum(${invoices.amount}) filter (
-            where ${invoices.status} = 'paid'
-            and ${invoices.invoiceDate} >= ${monthStart.toISOString()}
-            and ${invoices.invoiceDate} <= ${monthEnd.toISOString()}
-          ), 0)::float
-        `,
-        outstanding: sql<number>`
-          coalesce(sum(${invoices.amount}) filter (
-            where ${invoices.status} in ('sent', 'partially_paid')
-          ), 0)::float
-        `,
-        overdueCount: sql<number>`
-          count(*) filter (
-            where ${invoices.status} in ('sent', 'partially_paid')
-            and ${invoices.dueDate} < ${now.toISOString()}
-          )::int
-        `,
-      })
-      .from(invoices)
-      .where(eq(invoices.organisationId, organisationId));
+    const centreCondition =
+      activeCentreId && activeCentreId !== 'all'
+        ? eq(invoices.centreId, activeCentreId)
+        : Array.isArray(accessibleCentreIds)
+          ? accessibleCentreIds.length > 0
+            ? inArray(invoices.centreId, accessibleCentreIds)
+            : sql`false`
+          : undefined;
 
-    revenue = {
-      thisMonth: Number(stats?.thisMonth ?? 0),
-      outstanding: Number(stats?.outstanding ?? 0),
-      overdueCount: Number(stats?.overdueCount ?? 0),
-    };
+    const [verifiedPayments, openInvoices] = await Promise.all([
+      db
+        .select({
+          id: payments.id,
+          amount: payments.amount,
+          recordedAt: payments.recordedAt,
+          invoiceId: payments.invoiceId,
+        })
+        .from(payments)
+        .innerJoin(invoices, eq(payments.invoiceId, invoices.id))
+        .where(
+          and(
+            eq(invoices.organisationId, organisationId),
+            centreCondition,
+            inArray(invoices.status, ['sent', 'partially_paid', 'paid']),
+            eq(payments.status, 'verified'),
+            isNull(payments.reversedAt),
+            sql`(${payments.transactionReference} IS NULL OR UPPER(${payments.transactionReference}) NOT LIKE 'CREDIT-%')`
+          )
+        ),
+      db
+        .select({
+          id: invoices.id,
+          amount: invoices.amount,
+          dueDate: invoices.dueDate,
+        })
+        .from(invoices)
+        .where(
+          and(
+            eq(invoices.organisationId, organisationId),
+            centreCondition,
+            inArray(invoices.status, ['sent', 'partially_paid'])
+          )
+        ),
+    ]);
+
+    const paidByInvoiceId = new Map<string, number>();
+
+    for (const p of verifiedPayments) {
+      const pence = parseStoredDecimalToPence(p.amount);
+      if (pence <= 0) continue;
+
+      paidByInvoiceId.set(p.invoiceId, (paidByInvoiceId.get(p.invoiceId) ?? 0) + pence);
+
+      const businessDate = toEuropeLondonBusinessDate(p.recordedAt);
+      if (businessDate >= weekStart && businessDate <= weekEnd) {
+        receivedThisWeekPence += pence;
+        receivedThisWeekCount += 1;
+      }
+      if (businessDate.slice(0, 7) === currentMonth) {
+        receivedThisMonthPence += pence;
+        receivedThisMonthCount += 1;
+      }
+    }
+
+    for (const inv of openInvoices) {
+      const totalPence = parseStoredDecimalToPence(inv.amount);
+      const paidPence = paidByInvoiceId.get(inv.id) ?? 0;
+      const remaining = Math.max(0, totalPence - paidPence);
+      if (remaining > 0) {
+        outstandingPence += remaining;
+        openInvoiceCount += 1;
+        const dueBusinessDate = toEuropeLondonBusinessDate(inv.dueDate);
+        if (dueBusinessDate < todayBusinessDate) {
+          overdueCount += 1;
+        }
+      }
+    }
   } catch {
-    // silently degrade — don't break the dashboard
+    // Silently degrade on transient DB issues so the main dashboard remains available
   }
 
-  const formatCurrency = (n: number) =>
-    new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP', maximumFractionDigits: 0 }).format(n);
-
-  const items = [
-    {
-      label: 'Revenue This Month',
-      value: formatCurrency(revenue.thisMonth),
-      icon: PoundSterling,
-      color: 'text-success',
-      iconBg: 'bg-success/10',
-      description: 'Paid invoices',
-    },
-    {
-      label: 'Outstanding',
-      value: formatCurrency(revenue.outstanding),
-      icon: Clock,
-      color: 'text-warning',
-      iconBg: 'bg-warning/10',
-      description: 'Unpaid invoices',
-    },
-    {
-      label: 'Overdue Invoices',
-      value: revenue.overdueCount.toString(),
-      icon: AlertCircle,
-      color: revenue.overdueCount > 0 ? 'text-danger' : 'text-text-muted',
-      iconBg: revenue.overdueCount > 0 ? 'bg-danger-soft' : 'bg-secondary/40',
-      description: 'Past due date',
-    },
-  ];
+  const centreQuery: Record<string, string> =
+    activeCentreId && activeCentreId !== 'all' ? { centre: activeCentreId } : {};
+  const cashflowHref = `/dashboard/finance?${new URLSearchParams({
+    ...centreQuery,
+    view: 'cashflow',
+  }).toString()}`;
+  const awaitingPaymentHref = `/dashboard/finance?${new URLSearchParams({
+    ...centreQuery,
+    task: 'payments',
+  }).toString()}`;
+  const overdueHref = `/dashboard/finance?${new URLSearchParams({
+    ...centreQuery,
+    task: 'payments',
+    status: 'overdue',
+  }).toString()}`;
 
   return (
-    <div className="bg-surface border border-border rounded-xl overflow-hidden">
-      <div className="flex items-center gap-2 px-6 py-4 border-b border-border">
-        <PoundSterling className="w-4 h-4 text-success" />
-        <span className="text-xs font-bold uppercase tracking-[0.12em] text-text-muted">
-          Finance Overview
-        </span>
+    <section
+      aria-labelledby="dashboard-finance-heading"
+      className="overflow-hidden rounded-2xl border border-border bg-card"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-6 py-4">
+        <h2
+          id="dashboard-finance-heading"
+          className="text-base font-semibold tracking-tight text-foreground"
+        >
+          Cash received & outstanding balances
+        </h2>
+        <Link
+          href={cashflowHref}
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+        >
+          <span>Open weekly cash tally</span>
+          <ArrowRight aria-hidden="true" className="h-4 w-4" />
+        </Link>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-border-subtle">
-        {items.map((item, i) => (
-          <div key={i} className="flex items-center gap-4 p-6">
-            <div className={cn('p-3 rounded-xl flex-shrink-0', item.iconBg)}>
-              <item.icon className={cn('w-5 h-5', item.color)} />
-            </div>
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-text-muted mb-0.5">
-                {item.label}
-              </p>
-              {item.label === 'Overdue Invoices' && revenue.overdueCount > 0 ? (
-                // D1 (Milestone 3M): corrected dead link /dashboard/finances → /dashboard/finance
-                <Link href="/dashboard/finance" className={cn('text-2xl font-black tabular-nums hover:underline', item.color)}>
-                  {item.value}
-                </Link>
-              ) : (
-                <p className={cn('text-2xl font-black tabular-nums', item.color)}>
-                  {item.value}
-                </p>
-              )}
-              <p className="text-[10px] text-text-muted/60 font-medium mt-0.5">
-                {item.description}
-              </p>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
+      <dl className="grid grid-cols-1 divide-y divide-border sm:grid-cols-2 sm:divide-y-0 lg:grid-cols-4 lg:divide-x">
+        <div className="p-6">
+          <dt className="text-sm font-medium text-muted-foreground">
+            Received This Week (Mon–Sun)
+          </dt>
+          <dd className="mt-2">
+            <Link
+              href={cashflowHref}
+              className="text-2xl font-semibold tracking-tight text-foreground tabular-nums hover:text-primary hover:underline"
+            >
+              {formatPenceToGBP(receivedThisWeekPence)}
+            </Link>
+          </dd>
+          <p className="mt-1 text-xs text-muted-foreground tabular-nums">
+            {formatShortDateRange(weekStart, weekEnd, false)} · {receivedThisWeekCount} verified
+            payment{receivedThisWeekCount === 1 ? '' : 's'}
+          </p>
+        </div>
+
+        <div className="p-6">
+          <dt className="text-sm font-medium text-muted-foreground">
+            Received in {formatYearMonthShort(currentMonth)} (Rolling Tally)
+          </dt>
+          <dd className="mt-2">
+            <Link
+              href={cashflowHref}
+              className="text-2xl font-semibold tracking-tight text-foreground tabular-nums hover:text-primary hover:underline"
+            >
+              {formatPenceToGBP(receivedThisMonthPence)}
+            </Link>
+          </dd>
+          <p className="mt-1 text-xs text-muted-foreground tabular-nums">
+            {receivedThisMonthCount} verified payment{receivedThisMonthCount === 1 ? '' : 's'} month
+            to date
+          </p>
+        </div>
+
+        <div className="p-6">
+          <dt className="text-sm font-medium text-muted-foreground">Outstanding Balances</dt>
+          <dd className="mt-2">
+            <Link
+              href={awaitingPaymentHref}
+              className="text-2xl font-semibold tracking-tight text-foreground tabular-nums hover:text-primary hover:underline"
+            >
+              {formatPenceToGBP(outstandingPence)}
+            </Link>
+          </dd>
+          <p className="mt-1 text-xs text-muted-foreground tabular-nums">
+            Across {openInvoiceCount} issued unpaid invoice{openInvoiceCount === 1 ? '' : 's'}
+          </p>
+        </div>
+
+        <div className="p-6">
+          <dt className="text-sm font-medium text-muted-foreground">Overdue Invoices</dt>
+          <dd className="mt-2">
+            <Link
+              href={overdueHref}
+              className={`text-2xl font-semibold tracking-tight tabular-nums hover:underline ${
+                overdueCount > 0
+                  ? 'text-amber-800 dark:text-amber-200'
+                  : 'text-foreground'
+              }`}
+            >
+              {overdueCount}
+            </Link>
+          </dd>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {overdueCount > 0 ? 'Past due date — follow up' : 'No overdue issued invoices'}
+          </p>
+        </div>
+      </dl>
+    </section>
   );
 }
