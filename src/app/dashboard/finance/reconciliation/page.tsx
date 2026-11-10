@@ -1,12 +1,13 @@
 import { db } from '@/db';
 import { invoices, parents, children, payments } from '@/db/schema';
-import { eq, and, desc, inArray } from 'drizzle-orm';
+import { eq, and, desc, inArray, isNull } from 'drizzle-orm';
 import { requireTenantSession } from '@/lib/session';
 import { redirect } from 'next/navigation';
 import { resolveActiveCentreId } from '@/lib/centre-filter';
 import { getUserAccessibleCentres } from '@/lib/permissions';
 import { ReconciliationClient } from './reconciliation-client';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { extractInvoiceStudents } from '@/features/finance/cash-receipts-queries';
 
 export const metadata = {
   title: 'Payment Reconciliation',
@@ -41,7 +42,7 @@ export default async function ReconciliationPage(props: {
       ? inArray(invoices.centreId, validCentreIds)
       : eq(invoices.centreId, 'unauthorized_centre_id');
 
-  // Find all payable invoices (sent, overdue, or partially_paid)
+  // Find all payable invoices (sent or partially_paid — overdue is derived from dueDate, not an enum status)
   const pendingInvoices = await db.select({
     id: invoices.id,
     invoiceNumber: invoices.invoiceNumber,
@@ -51,6 +52,7 @@ export default async function ReconciliationPage(props: {
     status: invoices.status,
     parentId: invoices.parentId,
     childId: invoices.childId,
+    coveredChildrenJson: invoices.coveredChildrenJson,
     parentFirstName: parents.firstName,
     parentLastName: parents.lastName,
     parentEmail: parents.email,
@@ -65,13 +67,12 @@ export default async function ReconciliationPage(props: {
     and(
       eq(invoices.organisationId, organisationId),
       centreFilter,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      inArray(invoices.status, ['sent', 'overdue', 'partially_paid'] as any)
+      inArray(invoices.status, ['sent', 'partially_paid'])
     )
   )
   .orderBy(desc(invoices.createdAt));
 
-  // Fetch verified payments to calculate remaining balances in pence
+  // Fetch verified, unreversed payments to calculate remaining balances in pence
   const allInvoiceIds = pendingInvoices.map(i => i.id);
   
   let verifiedPaidPenceByInvoice: Record<string, number> = {};
@@ -81,7 +82,13 @@ export default async function ReconciliationPage(props: {
       amount: payments.amount,
     })
     .from(payments)
-    .where(and(inArray(payments.invoiceId, allInvoiceIds), eq(payments.status, 'verified')));
+    .where(
+      and(
+        inArray(payments.invoiceId, allInvoiceIds),
+        eq(payments.status, 'verified'),
+        isNull(payments.reversedAt)
+      )
+    );
     
     verifiedPaidPenceByInvoice = existingPayments.reduce((acc, p) => {
       const amountPence = Math.round(parseFloat(p.amount as string) * 100);
@@ -94,8 +101,15 @@ export default async function ReconciliationPage(props: {
     const amountDuePence = Math.round(parseFloat(i.amount as string) * 100);
     const paidAmountPence = verifiedPaidPenceByInvoice[i.id] || 0;
     const remainingBalancePence = Math.max(0, amountDuePence - paidAmountPence);
+    const students = extractInvoiceStudents(
+      i.coveredChildrenJson,
+      i.childId,
+      i.childFirstName,
+      i.childLastName
+    );
     return {
       ...i,
+      students,
       amountDuePence,
       paidAmountPence,
       remainingBalancePence,

@@ -49,4 +49,10 @@ describe('reconciliation payment context',()=>{
   expect(screen.getByText('Billing period: Period missing')).toBeTruthy();
   expect((screen.getByLabelText('Payment Reference') as HTMLInputElement).value).toBe('BANK-123');
  });
+ it('does not nest links inside buttons and renders multi-student family invoices',()=>{
+  const { container } = render(<ReconciliationClient invoices={[{...bill('FAM'),students:[{id:'c1',name:'Adwoa'},{id:'c2',name:'Ama'}]}]}/>);
+  expect(container.querySelectorAll('button a').length).toBe(0);
+  expect(screen.getByRole('link',{name:'Adwoa'})).toBeTruthy();
+  expect(screen.getByRole('link',{name:'Ama'})).toBeTruthy();
+ });
 });

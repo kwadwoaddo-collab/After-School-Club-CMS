@@ -22,6 +22,7 @@ type InvoiceDto = {
   status: string;
   parentId?: string | null;
   childId?: string | null;
+  students?: { id: string; name: string }[];
   parentFirstName: string | null;
   parentLastName: string | null;
   childTfcRef: string | null;
@@ -86,89 +87,120 @@ export function ReconciliationClient({
 
   const invoice = invoices.find(i => i.id === selectedInvoice);
 
+  const selectInvoice = (inv: InvoiceDto) => {
+    if (isPending) return;
+    setSelectedInvoice(inv.id);
+    setAmount(inv.remainingBalancePence !== undefined ? (inv.remainingBalancePence / 100).toFixed(2) : '');
+    setReference('');
+    setConfirmed(false);
+  };
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <div className="space-y-4">
-        <h2 className="text-lg font-bold text-foreground">Pending Invoices</h2>
+        <h2 className="text-lg font-bold text-foreground">Pending Invoices ({invoices.length})</h2>
         <div className="flex flex-col gap-2 max-h-[600px] overflow-y-auto pr-1">
-          {invoices.map(inv => (
-            <button
-              key={inv.id}
-              type="button"
-              disabled={isPending}
-              aria-pressed={selectedInvoice === inv.id}
-              onClick={() => {
-                setSelectedInvoice(inv.id);
-                setAmount(inv.remainingBalancePence !== undefined ? (inv.remainingBalancePence / 100).toFixed(2) : '');
-                setReference('');
-                setConfirmed(false);
-              }}
-              className={`text-left p-4 border rounded-2xl transition-all ${
-                selectedInvoice === inv.id
-                  ? 'border-primary bg-primary/5 ring-1 ring-primary'
-                  : 'border-border hover:border-primary/40 bg-card'
-              }`}
-            >
-              <div className="flex justify-between items-start mb-2 gap-3">
-                <div className="min-w-0">
-                  <div className="font-bold text-foreground truncate">
-                    {inv.parentId ? (
-                      <Link
-                        href={`/dashboard/parents/${inv.parentId}`}
-                        onClick={e => e.stopPropagation()}
-                        className="hover:text-primary hover:underline transition-colors"
-                      >
-                        {inv.parentFirstName} {inv.parentLastName}
-                      </Link>
-                    ) : (
-                      <span>{inv.parentFirstName} {inv.parentLastName}</span>
-                    )}
-                  </div>
-                  {inv.childFirstName && (
-                    <div className="text-xs font-medium text-muted-foreground truncate">
-                      Student:{' '}
-                      {inv.childId ? (
+          {invoices.map(inv => {
+            const isSelected = selectedInvoice === inv.id;
+            const studentList = inv.students && inv.students.length > 0
+              ? inv.students
+              : inv.childFirstName
+                ? [{ id: inv.childId || '', name: `${inv.childFirstName} ${inv.childLastName ?? ''}`.trim() }]
+                : [];
+            return (
+              <div
+                key={inv.id}
+                onClick={() => selectInvoice(inv)}
+                className={`p-4 border rounded-2xl transition-all cursor-pointer ${
+                  isSelected
+                    ? 'border-primary bg-primary/5 ring-1 ring-primary'
+                    : 'border-border hover:border-primary/40 bg-card'
+                }`}
+              >
+                <div className="flex justify-between items-start mb-2 gap-3">
+                  <div className="min-w-0">
+                    <div className="font-bold text-foreground truncate">
+                      {inv.parentId ? (
                         <Link
-                          href={`/dashboard/students/${inv.childId}`}
+                          href={`/dashboard/parents/${inv.parentId}`}
                           onClick={e => e.stopPropagation()}
-                          className="hover:text-primary hover:underline transition-colors"
+                          className="hover:text-primary hover:underline underline-offset-2 transition-colors"
                         >
-                          {inv.childFirstName} {inv.childLastName ?? ''}
+                          {inv.parentFirstName} {inv.parentLastName}
                         </Link>
                       ) : (
-                        <span>{inv.childFirstName} {inv.childLastName ?? ''}</span>
+                        <span>{inv.parentFirstName} {inv.parentLastName}</span>
                       )}
                     </div>
-                  )}
-                  <div className="text-sm text-muted-foreground">
-                    {inv.invoiceNumber}
+                    {studentList.length > 0 && (
+                      <div className="text-xs font-medium text-muted-foreground truncate">
+                        Student{studentList.length > 1 ? 's' : ''}:{' '}
+                        {studentList.map((s, idx) => (
+                          <React.Fragment key={s.id || s.name}>
+                            {idx > 0 && ', '}
+                            {s.id ? (
+                              <Link
+                                href={`/dashboard/students/${s.id}`}
+                                onClick={e => e.stopPropagation()}
+                                className="hover:text-primary hover:underline underline-offset-2 transition-colors"
+                              >
+                                {s.name}
+                              </Link>
+                            ) : (
+                              <span>{s.name}</span>
+                            )}
+                          </React.Fragment>
+                        ))}
+                      </div>
+                    )}
+                    <div className="text-sm text-muted-foreground tabular-nums">
+                      {inv.invoiceNumber}
+                    </div>
+                    <p className="mt-1 text-sm text-muted-foreground tabular-nums">{formatInvoicePeriod(inv.billingPeriodStart, inv.billingPeriodEnd)}</p>
                   </div>
-                  <p className="mt-1 text-sm text-muted-foreground">{formatInvoicePeriod(inv.billingPeriodStart, inv.billingPeriodEnd)}</p>
+                  <div className="text-right shrink-0 flex flex-col items-end gap-2">
+                    <div>
+                      <div className="font-bold text-foreground tabular-nums">
+                        Remaining £{inv.remainingBalance.toFixed(2)}
+                      </div>
+                      <div className="text-xs text-muted-foreground tabular-nums">
+                        Total £{inv.totalAmount.toFixed(2)}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={isPending}
+                      aria-pressed={isSelected}
+                      onClick={e => {
+                        e.stopPropagation();
+                        selectInvoice(inv);
+                      }}
+                      className={`min-h-8 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
+                        isSelected
+                          ? 'bg-primary text-primary-foreground border-primary'
+                          : 'bg-secondary/50 text-foreground border-border hover:bg-secondary'
+                      }`}
+                    >
+                      Select<span className="sr-only"> {inv.invoiceNumber}</span>
+                    </button>
+                  </div>
                 </div>
-                <div className="text-right shrink-0">
-                  <div className="font-black text-foreground tabular-nums">
-                    Remaining £{inv.remainingBalance.toFixed(2)}
-                  </div>
-                  <div className="text-xs text-muted-foreground tabular-nums">
-                    Total £{inv.totalAmount.toFixed(2)}
-                  </div>
-                </div>
-              </div>
 
-              {inv.childTfcRef && (
-                <div className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
-                  TFC Ref: {inv.childTfcRef}
-                </div>
-              )}
-            </button>
-          ))}
+                {inv.childTfcRef && (
+                  <div className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-primary/10 text-primary border border-primary/20 tabular-nums">
+                    TFC Ref: {inv.childTfcRef}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
 
       <div className="space-y-4">
         <h2 className="text-lg font-bold text-foreground">Reconcile Payment</h2>
 
-        <div className="p-6 border border-border rounded-[32px] bg-card space-y-5">
+        <div className="p-6 border border-border rounded-2xl bg-card space-y-5">
           {!selectedInvoice ? (
             <div className="text-center text-muted-foreground py-12 flex flex-col items-center gap-3">
               <CheckCircle2 className="w-10 h-10 text-muted-foreground/30" />
@@ -177,35 +209,50 @@ export function ReconciliationClient({
           ) : (
             <>
               <div className="pb-4 border-b border-border">
-                <div className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-1">Reconciling for</div>
                 <div className="font-bold text-foreground text-lg">
                   {invoice?.parentId ? (
-                    <Link href={`/dashboard/parents/${invoice.parentId}`} className="hover:text-primary hover:underline transition-colors">
+                    <Link href={`/dashboard/parents/${invoice.parentId}`} className="hover:text-primary hover:underline underline-offset-2 transition-colors">
                       {invoice.parentFirstName} {invoice.parentLastName}
                     </Link>
                   ) : (
                     <span>{invoice?.parentFirstName} {invoice?.parentLastName}</span>
                   )}{' '}
-                  ({invoice?.invoiceNumber})
+                  <span className="text-muted-foreground font-medium tabular-nums">({invoice?.invoiceNumber})</span>
                 </div>
-                {invoice?.childFirstName && (
+                {invoice?.students && invoice.students.length > 0 ? (
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Student{invoice.students.length > 1 ? 's' : ''}:{' '}
+                    {invoice.students.map((s, idx) => (
+                      <React.Fragment key={s.id || s.name}>
+                        {idx > 0 && ', '}
+                        {s.id ? (
+                          <Link href={`/dashboard/students/${s.id}`} className="text-primary hover:underline underline-offset-2 transition-colors">
+                            {s.name}
+                          </Link>
+                        ) : (
+                          <span>{s.name}</span>
+                        )}
+                      </React.Fragment>
+                    ))}
+                  </p>
+                ) : invoice?.childFirstName ? (
                   <p className="mt-1 text-sm text-muted-foreground">
                     Student:{' '}
                     {invoice.childId ? (
-                      <Link href={`/dashboard/students/${invoice.childId}`} className="text-primary hover:underline transition-colors">
+                      <Link href={`/dashboard/students/${invoice.childId}`} className="text-primary hover:underline underline-offset-2 transition-colors">
                         {invoice.childFirstName} {invoice.childLastName ?? ''}
                       </Link>
                     ) : (
                       <span>{invoice.childFirstName} {invoice.childLastName ?? ''}</span>
                     )}
                   </p>
-                )}
-                <p className="mt-2 text-sm text-foreground">Billing period: {formatInvoicePeriod(invoice?.billingPeriodStart, invoice?.billingPeriodEnd)}</p>
+                ) : null}
+                <p className="mt-2 text-sm text-foreground tabular-nums">Billing period: {formatInvoicePeriod(invoice?.billingPeriodStart, invoice?.billingPeriodEnd)}</p>
                 <p className="mt-1 text-sm text-muted-foreground tabular-nums">Invoice total £{invoice?.totalAmount.toFixed(2)} · Remaining £{invoice?.remainingBalance.toFixed(2)}</p>
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-black text-muted-foreground uppercase tracking-widest">Payment Method</label>
+                <span className="block text-sm font-semibold text-foreground">Payment Method</span>
                 <div className="grid grid-cols-1 gap-2">
                   {METHODS.map(m => (
                     <button
@@ -214,14 +261,14 @@ export function ReconciliationClient({
                       disabled={isPending}
                       aria-pressed={method === m.id}
                       onClick={() => { setMethod(m.id); setConfirmed(false); }}
-                      className={`flex items-center gap-3 p-3 rounded-2xl border transition-all text-left ${
+                      className={`flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${
                         method === m.id
                           ? 'bg-primary/10 border-primary ring-1 ring-primary'
                           : 'bg-secondary/40 border-border hover:bg-secondary/60'
                       }`}
                     >
                       <m.icon className={`w-4 h-4 ${method === m.id ? 'text-primary' : 'text-muted-foreground'}`} />
-                      <span className={`text-sm font-bold ${method === m.id ? 'text-foreground' : 'text-muted-foreground'}`}>
+                      <span className={`text-sm font-semibold ${method === m.id ? 'text-foreground' : 'text-muted-foreground'}`}>
                         {m.label}
                       </span>
                     </button>
@@ -229,34 +276,38 @@ export function ReconciliationClient({
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label htmlFor="reconcile-amount" className="text-xs font-black text-muted-foreground uppercase tracking-widest">Amount (£)</label>
+              <div className="space-y-1.5">
+                <label htmlFor="reconcile-amount" className="block text-sm font-semibold text-foreground">Amount (£)</label>
                 <input
                   id="reconcile-amount"
+                  name="amount"
                   disabled={isPending}
-                  type="number"
-                  step="0.01"
-                  min="0.01"
-                  max={invoice?.remainingBalance}
+                  type="text"
+                  inputMode="decimal"
                   value={amount}
                   onChange={e => { setAmount(e.target.value); setConfirmed(false); }}
                   placeholder={`Max: ${invoice?.remainingBalance.toFixed(2)}`}
-                  className="w-full p-3 rounded-2xl border border-border bg-secondary/40 text-foreground font-bold focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  className="w-full p-3 rounded-xl border border-border bg-secondary/40 text-foreground font-semibold tabular-nums focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                 />
               </div>
 
-              <div className="space-y-2">
-                <label htmlFor="reconcile-reference" className="text-xs font-black text-muted-foreground uppercase tracking-widest">Payment Reference</label>
+              <div className="space-y-1.5">
+                <label htmlFor="reconcile-reference" className="block text-sm font-semibold text-foreground">Payment Reference</label>
                 <input
                   id="reconcile-reference"
+                  name="reference"
                   disabled={isPending}
                   type="text"
+                  autoCorrect="off"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  aria-describedby="reconcile-reference-hint"
                   value={reference}
                   onChange={e => { setReference(e.target.value); setConfirmed(false); }}
                   placeholder="e.g. JSMIT12345TFC"
-                  className="w-full p-3 rounded-2xl border border-border bg-secondary/40 text-foreground font-medium focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  className="w-full p-3 rounded-xl border border-border bg-secondary/40 text-foreground font-medium focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                 />
-                <p className="text-xs text-muted-foreground">
+                <p id="reconcile-reference-hint" className="text-xs text-muted-foreground">
                   Must be unique per invoice to prevent double-applying.
                 </p>
               </div>
