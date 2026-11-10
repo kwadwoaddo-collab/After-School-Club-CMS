@@ -81,6 +81,7 @@ interface AssessmentProfileProps {
     billingConfig?: StudentBillingConfig | null;
     siblings?: Sibling[];
     registrationDetail?: RegistrationDetail | null;
+    centres?: Array<{ id: string; name: string }>;
     children?: React.ReactNode;
 }
 
@@ -142,7 +143,7 @@ const TABS: { id: TabId; label: string; icon: React.ComponentType<{ className?: 
 
 export default function StudentProfile({
     student, initialNotes, currentUserId, currentUserRole,
-    billingConfig, siblings = [], registrationDetail, children,
+    billingConfig, siblings = [], registrationDetail, centres = [], children,
 }: AssessmentProfileProps) {
     const fullName = `${student.firstName} ${student.lastName}`;
     const parentFullName = `${student.parent.firstName} ${student.parent.lastName}`;
@@ -164,6 +165,7 @@ export default function StudentProfile({
         lastName: student.lastName,
         dateOfBirth: student.dateOfBirth ? new Date(student.dateOfBirth).toISOString().split('T')[0] : '',
         schoolYear: normalizeSchoolYear(student.schoolYear),
+        centreId: student.centreId ?? '',
         notes: student.notes ?? '',
     });
 
@@ -187,6 +189,7 @@ export default function StudentProfile({
                     lastName: editForm.lastName,
                     dateOfBirth: editForm.dateOfBirth || null,
                     schoolYear: editForm.schoolYear,
+                    ...(editForm.centreId ? { centreId: editForm.centreId } : {}),
                     notes: editForm.notes || null,
                 }),
             });
@@ -659,6 +662,20 @@ export default function StudentProfile({
                                                 </select>
                                             </div>
                                         </div>
+                                        {centres.length > 0 && (
+                                            <div>
+                                                <label className="text-label text-text-muted block mb-1">Centre</label>
+                                                <select
+                                                    value={editForm.centreId}
+                                                    onChange={e => setEditForm(f => ({ ...f, centreId: e.target.value }))}
+                                                    className="w-full h-9 px-3 bg-surface border border-border rounded-sm text-small-body font-medium text-text focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent transition-colors"
+                                                >
+                                                    {centres.map(c => (
+                                                        <option key={c.id} value={c.id}>{c.name}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        )}
                                         <div>
                                             <label className="text-label text-text-muted block mb-1">Medical / safety notes</label>
                                             <textarea

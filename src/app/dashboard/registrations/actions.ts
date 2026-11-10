@@ -5,7 +5,7 @@ import { logger } from '@/lib/logger';
 
 import { requireTenantSession } from '@/lib/session';
 import { db } from '@/db';
-import { registrations, registrationChildren, registrationParents, parents, children, organisations, centres, auditEvents } from '@/db/schema';
+import { registrations, registrationChildren, registrationParents, parents, children, organisations, centres, auditEvents, billingConfigs, billingConfigChildren, invoices } from '@/db/schema';
 import { eq, and, inArray, isNull, sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { emailService } from '@/lib/services/email';
@@ -91,8 +91,80 @@ export async function assignRegistrationCentre(registrationId: string, centreId:
             // Double-anchor WHERE with organisationId so the update is never cross-org
             .where(and(eq(registrations.id, registrationId), eq(registrations.organisationId, orgId)));
 
+        // Cascade centre reassignment to linked children and any unissued/active family billing config at the old centre
+        try {
+            const regChildLinks = await db
+                .select({ childId: registrationChildren.childId })
+                .from(registrationChildren)
+                .where(eq(registrationChildren.registrationId, registrationId));
+            const childIds = (regChildLinks ?? [])
+                .map((rc: { childId: string | null }) => rc.childId)
+                .filter((id): id is string => Boolean(id));
+
+            if (childIds.length > 0) {
+                await db
+                    .update(children)
+                    .set({ centreId, updatedAt: new Date() })
+                    .where(and(inArray(children.id, childIds), eq(children.organisationId, orgId)));
+
+                const currentCentreId = (existing as { centreId?: string | null }).centreId;
+                if (centreId && currentCentreId && currentCentreId !== centreId && db.query?.billingConfigs?.findFirst) {
+                    const childRows = await db
+                        .select({ parentId: children.parentId })
+                        .from(children)
+                        .where(and(inArray(children.id, childIds), eq(children.organisationId, orgId)))
+                        .limit(1);
+                    const parentId = childRows?.[0]?.parentId;
+                    if (parentId) {
+                        const [oldConfig, targetConfig] = await Promise.all([
+                            db.query.billingConfigs.findFirst({
+                                where: and(
+                                    eq(billingConfigs.parentId, parentId),
+                                    eq(billingConfigs.centreId, currentCentreId),
+                                    eq(billingConfigs.organisationId, orgId)
+                                ),
+                                with: { children: true },
+                            }),
+                            db.query.billingConfigs.findFirst({
+                                where: and(
+                                    eq(billingConfigs.parentId, parentId),
+                                    eq(billingConfigs.centreId, centreId),
+                                    eq(billingConfigs.organisationId, orgId)
+                                ),
+                            }),
+                        ]);
+
+                        const allConfigChildrenMoving =
+                            oldConfig &&
+                            (oldConfig.children ?? []).every((cc: { childId: string }) => childIds.includes(cc.childId));
+
+                        if (oldConfig && !targetConfig && allConfigChildrenMoving) {
+                            await db
+                                .update(billingConfigs)
+                                .set({ centreId, updatedAt: new Date() })
+                                .where(and(eq(billingConfigs.id, oldConfig.id), eq(billingConfigs.organisationId, orgId)));
+                            await db
+                                .update(invoices)
+                                .set({ centreId, updatedAt: new Date() })
+                                .where(
+                                    and(
+                                        eq(invoices.billingConfigId, oldConfig.id),
+                                        eq(invoices.organisationId, orgId),
+                                        eq(invoices.status, 'draft')
+                                    )
+                                );
+                        }
+                    }
+                }
+            }
+        } catch (cascadeErr) {
+            logger.warn('Non-fatal error cascading registration centre to children/billing:', cascadeErr);
+        }
+
         revalidatePath('/dashboard/registrations');
         revalidatePath(`/dashboard/registrations/${registrationId}`);
+        revalidatePath('/dashboard/students');
+        revalidatePath('/dashboard/finance');
         return { success: true };
     } catch (error) {
         logger.error('Failed to assign centre:', error);

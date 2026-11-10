@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { requireApiAuth } from '@/lib/require-auth';
 import { db } from '@/db';
-import { children, parents, centres } from '@/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { children, parents, centres, registrations, registrationChildren, billingConfigs, invoices } from '@/db/schema';
+import { eq, and, inArray } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
@@ -147,9 +147,69 @@ export async function PATCH(
             .where(eq(children.id, id))
             .returning();
 
+        // When a student's centre changes, cascade to their registration and billing config if all covered children moved
+        if (data.centreId && data.centreId !== student.centreId) {
+            try {
+                const regLinks = await db
+                    .select({ registrationId: registrationChildren.registrationId })
+                    .from(registrationChildren)
+                    .where(eq(registrationChildren.childId, id));
+                const regIds = (regLinks ?? [])
+                    .map((r: { registrationId: string }) => r.registrationId)
+                    .filter(Boolean);
+                if (regIds.length > 0) {
+                    await db
+                        .update(registrations)
+                        .set({ centreId: data.centreId, updatedAt: new Date() })
+                        .where(and(inArray(registrations.id, regIds), eq(registrations.organisationId, orgId)));
+                }
+
+                if (student.parentId && student.centreId && db.query?.billingConfigs?.findFirst) {
+                    const [oldConfig, targetConfig] = await Promise.all([
+                        db.query.billingConfigs.findFirst({
+                            where: and(
+                                eq(billingConfigs.parentId, student.parentId),
+                                eq(billingConfigs.centreId, student.centreId),
+                                eq(billingConfigs.organisationId, orgId)
+                            ),
+                            with: { children: true },
+                        }),
+                        db.query.billingConfigs.findFirst({
+                            where: and(
+                                eq(billingConfigs.parentId, student.parentId),
+                                eq(billingConfigs.centreId, data.centreId),
+                                eq(billingConfigs.organisationId, orgId)
+                            ),
+                        }),
+                    ]);
+                    const coveredIds = (oldConfig?.children ?? []).map((cc: { childId: string }) => cc.childId);
+                    if (oldConfig && !targetConfig && coveredIds.length === 1 && coveredIds[0] === id) {
+                        await db
+                            .update(billingConfigs)
+                            .set({ centreId: data.centreId, updatedAt: new Date() })
+                            .where(and(eq(billingConfigs.id, oldConfig.id), eq(billingConfigs.organisationId, orgId)));
+                        await db
+                            .update(invoices)
+                            .set({ centreId: data.centreId, updatedAt: new Date() })
+                            .where(
+                                and(
+                                    eq(invoices.billingConfigId, oldConfig.id),
+                                    eq(invoices.organisationId, orgId),
+                                    eq(invoices.status, 'draft')
+                                )
+                            );
+                    }
+                }
+            } catch (cascadeErr) {
+                logger.warn('[Students API] Non-fatal error cascading student centre to registration/billing:', cascadeErr);
+            }
+        }
+
         revalidatePath('/dashboard/students');
         revalidatePath(`/dashboard/students/${id}`);
         revalidatePath('/dashboard/attendance');
+        revalidatePath('/dashboard/finance');
+        revalidatePath('/dashboard/registrations');
         if (student.parentId) {
             revalidatePath(`/dashboard/parents/${student.parentId}`);
         }

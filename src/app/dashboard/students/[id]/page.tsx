@@ -12,7 +12,7 @@ import StudentLifecyclePanel from '@/features/students/components/StudentLifecyc
 import ConfirmExistingEnrolment from '@/features/students/components/ConfirmExistingEnrolment';
 import StudentProfile from '@/features/students/components/StudentProfile';
 import { getStudentNotes } from '@/features/students/notes.actions';
-import { getUserAccessibleCentreIds } from '@/lib/permissions';
+import { getUserAccessibleCentreIds, getUserAccessibleCentres } from '@/lib/permissions';
 import { fetchStudentBillingConfig } from '@/features/billing/queries';
 
 export default async function StudentProfilePage(
@@ -221,10 +221,11 @@ export default async function StudentProfilePage(
     }
 
     const enrolmentStart = await readEnrolmentStart(session.user.organisationId, id);
-    const [[confirmedEnrolment], enrolmentEvents, followUpContacts] = await Promise.all([
+    const [[confirmedEnrolment], enrolmentEvents, followUpContacts, accessibleCentres] = await Promise.all([
         db.select({ id: children.id }).from(children).where(and(eq(children.id, id), eq(children.organisationId, session.user.organisationId), confirmedEnrolmentChildSql())).limit(1),
         db.query.studentEnrolmentEvents.findMany({ where: and(eq(studentEnrolmentEvents.childId, id), eq(studentEnrolmentEvents.organisationId, session.user.organisationId)), orderBy: [desc(studentEnrolmentEvents.effectiveDate), desc(studentEnrolmentEvents.createdAt), desc(studentEnrolmentEvents.id)] }),
         db.query.studentFollowUpContacts.findMany({ where: and(eq(studentFollowUpContacts.childId, id), eq(studentFollowUpContacts.organisationId, session.user.organisationId)), orderBy: [desc(studentFollowUpContacts.contactedAt), desc(studentFollowUpContacts.id)], limit: 100 }),
+        getUserAccessibleCentres(session.user.id),
     ]);
     const today = enrolmentBusinessDate();
     const currentEffectiveEvent = enrolmentEvents.find(event => event.effectiveDate <= today);
@@ -240,6 +241,7 @@ export default async function StudentProfilePage(
             billingConfig={billingConfig}
             siblings={siblings}
             registrationDetail={registrationDetail}
+            centres={accessibleCentres.map(c => ({ id: c.id, name: c.name }))}
         >
             {!student.registrationId && !confirmedEnrolment && ['ORG_OWNER', 'MANAGER'].includes(userRole ?? '') && <ConfirmExistingEnrolment childId={id} />}
             <StudentLifecyclePanel
