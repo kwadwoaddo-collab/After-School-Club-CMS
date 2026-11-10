@@ -33,6 +33,19 @@ export interface CashReceiptPaymentInput {
   students: CashReceiptStudentRef[];
 }
 
+export interface CashReceiptExpenseInput {
+  id: string;
+  expenseDate: string | Date;
+  amountPence?: number;
+  amount?: string | number;
+  description: string;
+  category?: string | null;
+  centreId: string;
+  centreName: string;
+  createdAt?: Date | string;
+  deletedAt?: Date | string | null;
+}
+
 export interface NormalizedCashReceiptPayment {
   id: string;
   amountPence: number;
@@ -52,7 +65,25 @@ export interface NormalizedCashReceiptPayment {
   students: CashReceiptStudentRef[];
 }
 
+export interface NormalizedCashReceiptExpense {
+  id: string;
+  expenseDate: string; // YYYY-MM-DD
+  yearMonth: string; // YYYY-MM
+  amountPence: number;
+  amountDecimal: string;
+  description: string;
+  category: string;
+  centreId: string;
+  centreName: string;
+  createdAtIso: string;
+}
+
 export interface WeekCashReceiptPayment extends NormalizedCashReceiptPayment {
+  inSelectedMonth: boolean;
+  spillDirection: 'before' | 'in_month' | 'after';
+}
+
+export interface WeekCashReceiptExpense extends NormalizedCashReceiptExpense {
   inSelectedMonth: boolean;
   spillDirection: 'before' | 'in_month' | 'after';
 }
@@ -65,6 +96,14 @@ export interface WeekCentreBreakdown {
   fullWeekPence: number;
   fullWeekCount: number;
   rollingTallyPence: number;
+  inMonthExpensePence: number;
+  inMonthExpenseCount: number;
+  fullWeekExpensePence: number;
+  fullWeekExpenseCount: number;
+  rollingExpenseTallyPence: number;
+  inMonthNetPence: number;
+  fullWeekNetPence: number;
+  rollingNetTallyPence: number;
 }
 
 export type WeekLifecycleState = 'completed' | 'current' | 'upcoming';
@@ -93,11 +132,25 @@ export interface CashReceiptsWeekRow {
   spillBeforeCount: number;
   spillAfterPence: number;
   spillAfterCount: number;
+  inMonthExpensePence: number;
+  inMonthExpenseCount: number;
+  fullWeekExpensePence: number;
+  fullWeekExpenseCount: number;
+  spillBeforeExpensePence: number;
+  spillBeforeExpenseCount: number;
+  spillAfterExpensePence: number;
+  spillAfterExpenseCount: number;
+  inMonthNetPence: number;
+  fullWeekNetPence: number;
   rollingMonthTallyPence: number;
   rollingMonthPaymentCount: number;
+  rollingMonthExpenseTallyPence: number;
+  rollingMonthExpensePaymentCount: number;
+  rollingMonthNetTallyPence: number;
   byCentre: WeekCentreBreakdown[];
   state: WeekLifecycleState;
   payments: WeekCashReceiptPayment[];
+  expenses: WeekCashReceiptExpense[];
 }
 
 export type ComparisonStatus = 'available' | 'insufficient_history' | 'zero_prior_base';
@@ -134,6 +187,17 @@ export interface CentreMonthSummary {
   sharePercent: number; // 0..100
 }
 
+export interface CentreCashflowSummary {
+  centreId: string;
+  centreName: string;
+  monthIncomePence: number;
+  monthIncomeCount: number;
+  monthExpensePence: number;
+  monthExpenseCount: number;
+  monthNetPence: number;
+  incomeSharePercent: number; // 0..100
+}
+
 export interface MonthlyTrendRow {
   yearMonth: string; // YYYY-MM
   monthLabel: string; // e.g. "November 2026"
@@ -142,9 +206,72 @@ export interface MonthlyTrendRow {
   isSelectedMonth: boolean;
   totalPence: number;
   paymentCount: number;
+  expensePence: number;
+  expenseCount: number;
+  netPence: number;
   byCentre: CentreMonthSummary[];
   momComparison: PeriodComparison;
   yoyComparison: PeriodComparison;
+}
+
+export interface YearlyRunningCentreBreakdown {
+  centreId: string;
+  centreName: string;
+  incomePence: number;
+  incomeCount: number;
+  expensePence: number;
+  expenseCount: number;
+  netPence: number;
+  runningIncomePence: number;
+  runningExpensePence: number;
+  runningNetPence: number;
+}
+
+export interface YearlyRunningMonthRow {
+  yearMonth: string; // YYYY-MM
+  monthLabel: string; // e.g. "January 2026"
+  shortMonthLabel: string; // e.g. "Jan 2026"
+  isCurrentMonth: boolean;
+  isSelectedMonth: boolean;
+  incomePence: number;
+  incomeCount: number;
+  expensePence: number;
+  expenseCount: number;
+  netPence: number;
+  netMarginPercent: number | null;
+  runningYearlyIncomePence: number;
+  runningYearlyIncomeCount: number;
+  runningYearlyExpensePence: number;
+  runningYearlyExpenseCount: number;
+  runningYearlyNetPence: number;
+  byCentre: YearlyRunningCentreBreakdown[];
+  momIncomeComparison: PeriodComparison;
+}
+
+export interface YearlyRunningLedgerSummary {
+  selectedYear: number;
+  rangeLabel: string; // e.g. "Jan – Nov 2026 (YTD)" or "Jan – Dec 2025"
+  ytdCutoffMonth: string; // YYYY-MM
+  totalIncomePence: number;
+  totalIncomeCount: number;
+  totalExpensePence: number;
+  totalExpenseCount: number;
+  totalNetPence: number;
+  netMarginPercent: number | null;
+  throughSelectedMonthIncomePence: number;
+  throughSelectedMonthExpensePence: number;
+  throughSelectedMonthNetPence: number;
+  byCentre: Array<{
+    centreId: string;
+    centreName: string;
+    totalIncomePence: number;
+    totalIncomeCount: number;
+    totalExpensePence: number;
+    totalExpenseCount: number;
+    totalNetPence: number;
+  }>;
+  months: YearlyRunningMonthRow[];
+  availableYears: number[];
 }
 
 export interface CashReceiptsLedgerResult {
@@ -160,14 +287,27 @@ export interface CashReceiptsLedgerResult {
   firstRecordedMonthLabel: string | null;
   monthTotalPence: number;
   monthPaymentCount: number;
+  monthExpenseTotalPence: number;
+  monthExpenseCount: number;
+  monthNetPence: number;
   allCentresMonthTotalPence: number;
   allCentresMonthPaymentCount: number;
+  allCentresMonthExpenseTotalPence: number;
+  allCentresMonthExpenseCount: number;
+  allCentresMonthNetPence: number;
+  thisWeekExpensePence: number;
+  thisWeekExpenseCount: number;
+  thisWeekNetPence: number;
+  lastWeekExpensePence: number;
+  lastWeekNetPence: number;
   centreSummaries: CentreMonthSummary[];
+  centreCashflowSummaries: CentreCashflowSummary[];
   thisWeekVsLastWeek: PeriodComparison;
   momComparison: PeriodComparison;
   yoyComparison: PeriodComparison;
   weeks: CashReceiptsWeekRow[];
   sixMonthTrend: MonthlyTrendRow[];
+  yearlyRunningLedger: YearlyRunningLedgerSummary;
   availableMonths: { yearMonth: string; label: string; shortLabel: string }[];
 }
 
@@ -211,6 +351,15 @@ const SHORT_DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as con
 export function formatPenceToGBP(pence: number, options?: { maximumFractionDigits?: number }): string {
   const maxDigits = options?.maximumFractionDigits ?? 2;
   const minDigits = maxDigits === 0 ? 0 : 2;
+  if (pence < 0) {
+    const absFormatted = new Intl.NumberFormat('en-GB', {
+      style: 'currency',
+      currency: 'GBP',
+      minimumFractionDigits: minDigits,
+      maximumFractionDigits: maxDigits,
+    }).format(Math.abs(pence) / 100);
+    return `−${absFormatted}`;
+  }
   return new Intl.NumberFormat('en-GB', {
     style: 'currency',
     currency: 'GBP',
@@ -220,7 +369,7 @@ export function formatPenceToGBP(pence: number, options?: { maximumFractionDigit
 }
 
 /**
- * Formats signed integer pence delta as a GBP string with explicit + or - prefix.
+ * Formats signed integer pence delta as a GBP string with explicit + or − prefix.
  */
 export function formatSignedPenceDelta(deltaPence: number): string {
   if (deltaPence === 0) return '£0.00';
@@ -302,6 +451,70 @@ export function normalizeCashReceiptPayment(
     parentId: payment.parentId,
     parentName: payment.parentName,
     students: payment.students ?? [],
+  };
+}
+
+/**
+ * Validates whether an expense record qualifies as an active outgoing.
+ */
+export function isQualifyingCashReceiptExpense(expense: CashReceiptExpenseInput): boolean {
+  if (expense.deletedAt !== null && expense.deletedAt !== undefined && expense.deletedAt !== '') {
+    return false;
+  }
+  const desc = typeof expense.description === 'string' ? expense.description.trim() : '';
+  if (!desc) return false;
+
+  const pence =
+    typeof expense.amountPence === 'number'
+      ? expense.amountPence
+      : parseStoredDecimalToPence(expense.amount);
+
+  return Number.isSafeInteger(pence) && pence > 0;
+}
+
+/**
+ * Normalizes a raw expense input into integer pence and YYYY-MM-DD date.
+ */
+export function normalizeCashReceiptExpense(
+  expense: CashReceiptExpenseInput
+): NormalizedCashReceiptExpense | null {
+  if (!isQualifyingCashReceiptExpense(expense)) return null;
+
+  const amountPence =
+    typeof expense.amountPence === 'number'
+      ? expense.amountPence
+      : parseStoredDecimalToPence(expense.amount);
+
+  let expenseDate: string;
+  if (typeof expense.expenseDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(expense.expenseDate.trim())) {
+    expenseDate = expense.expenseDate.trim();
+  } else {
+    const dateObj =
+      typeof expense.expenseDate === 'string' ? new Date(expense.expenseDate) : expense.expenseDate;
+    if (isNaN(dateObj.getTime())) return null;
+    expenseDate = toEuropeLondonBusinessDate(dateObj);
+  }
+
+  let createdAtIso = `${expenseDate}T12:00:00.000Z`;
+  if (expense.createdAt) {
+    const cDate =
+      typeof expense.createdAt === 'string' ? new Date(expense.createdAt) : expense.createdAt;
+    if (!isNaN(cDate.getTime())) {
+      createdAtIso = cDate.toISOString();
+    }
+  }
+
+  return {
+    id: expense.id,
+    expenseDate,
+    yearMonth: expenseDate.slice(0, 7),
+    amountPence,
+    amountDecimal: formatPenceToDecimal(amountPence),
+    description: expense.description.trim(),
+    category: expense.category?.trim() || 'general',
+    centreId: expense.centreId,
+    centreName: expense.centreName,
+    createdAtIso,
   };
 }
 
@@ -512,6 +725,22 @@ function sumRange(
   return { totalPence, count };
 }
 
+function sumExpenseRange(
+  expenses: NormalizedCashReceiptExpense[],
+  startYmd: string,
+  endYmd: string
+): { totalPence: number; count: number } {
+  let totalPence = 0;
+  let count = 0;
+  for (const e of expenses) {
+    if (e.expenseDate >= startYmd && e.expenseDate <= endYmd) {
+      totalPence += e.amountPence;
+      count += 1;
+    }
+  }
+  return { totalPence, count };
+}
+
 function buildComparison(params: {
   mode: PeriodComparison['mode'];
   payments: NormalizedCashReceiptPayment[];
@@ -693,10 +922,12 @@ export function resolveTargetYearMonth(
 }
 
 /**
- * Primary Pure Domain Engine for Owner Cash Received, Weekly Rolling Tally, and MoM/YoY Comparisons.
+ * Primary Pure Domain Engine for Owner Cash Received, Weekly Outgoings/Expenses,
+ * Weekly Rolling Net Tally, MoM/YoY Comparisons, and Jan–Dec Yearly Running Totals.
  */
 export function buildCashReceiptsLedger(params: {
   payments: CashReceiptPaymentInput[];
+  expenses?: CashReceiptExpenseInput[];
   centres: CentreRef[];
   selectedMonth?: string | null;
   activeCentreId?: string | null;
@@ -705,6 +936,7 @@ export function buildCashReceiptsLedger(params: {
 }): CashReceiptsLedgerResult {
   const {
     payments: rawPayments,
+    expenses: rawExpenses = [],
     centres,
     selectedMonth: rawSelectedMonth,
     activeCentreId: rawActiveCentreId,
@@ -740,6 +972,25 @@ export function buildCashReceiptsLedger(params: {
       a.id.localeCompare(b.id)
   );
 
+  // Deduplicate and normalize all qualifying expenses across the organisation
+  const seenExpenseIds = new Set<string>();
+  const allNormalizedExpenses: NormalizedCashReceiptExpense[] = [];
+  for (const rawExp of rawExpenses) {
+    if (!rawExp?.id || seenExpenseIds.has(rawExp.id)) continue;
+    const normExp = normalizeCashReceiptExpense(rawExp);
+    if (normExp) {
+      seenExpenseIds.add(normExp.id);
+      allNormalizedExpenses.push(normExp);
+    }
+  }
+
+  allNormalizedExpenses.sort(
+    (a, b) =>
+      a.expenseDate.localeCompare(b.expenseDate) ||
+      a.createdAtIso.localeCompare(b.createdAtIso) ||
+      a.id.localeCompare(b.id)
+  );
+
   // Determine active centre scope
   const validCentreIds = new Set(centres.map((c) => c.id));
   const activeCentreId =
@@ -756,6 +1007,11 @@ export function buildCashReceiptsLedger(params: {
       ? allNormalized
       : allNormalized.filter((p) => p.centreId === activeCentreId);
 
+  const scopedExpenses =
+    activeCentreId === 'all'
+      ? allNormalizedExpenses
+      : allNormalizedExpenses.filter((e) => e.centreId === activeCentreId);
+
   // Earliest recorded business date for INV-9 history guards
   let firstRecordedBusinessDate: string | null = earliestRecordedBusinessDate ?? null;
   for (const p of scopedPayments) {
@@ -763,7 +1019,6 @@ export function buildCashReceiptsLedger(params: {
       firstRecordedBusinessDate = p.businessDate;
     }
   }
-  // Fallback to org-wide earliest payment if scoped centre has no payments yet but org has history
   if (!firstRecordedBusinessDate && allNormalized.length > 0) {
     firstRecordedBusinessDate = allNormalized[0].businessDate;
   }
@@ -778,9 +1033,14 @@ export function buildCashReceiptsLedger(params: {
 
   let allCentresMonthTotalPence = 0;
   let allCentresMonthPaymentCount = 0;
+  let allCentresMonthExpenseTotalPence = 0;
+  let allCentresMonthExpenseCount = 0;
+
   const centreTotalsMap = new Map<string, { pence: number; count: number }>();
+  const centreExpensesMap = new Map<string, { pence: number; count: number }>();
   for (const c of centres) {
     centreTotalsMap.set(c.id, { pence: 0, count: 0 });
+    centreExpensesMap.set(c.id, { pence: 0, count: 0 });
   }
 
   for (const p of allNormalized) {
@@ -794,6 +1054,20 @@ export function buildCashReceiptsLedger(params: {
     }
   }
 
+  for (const e of allNormalizedExpenses) {
+    if (e.expenseDate >= monthStart && e.expenseDate <= monthEnd) {
+      allCentresMonthExpenseTotalPence += e.amountPence;
+      allCentresMonthExpenseCount += 1;
+      const entry = centreExpensesMap.get(e.centreId) ?? { pence: 0, count: 0 };
+      entry.pence += e.amountPence;
+      entry.count += 1;
+      centreExpensesMap.set(e.centreId, entry);
+    }
+  }
+
+  const allCentresMonthNetPence = allCentresMonthTotalPence - allCentresMonthExpenseTotalPence;
+
+  // Preserve exact CentreMonthSummary shape for existing consumers and tests
   const centreSummaries: CentreMonthSummary[] = centres.map((c) => {
     const entry = centreTotalsMap.get(c.id) ?? { pence: 0, count: 0 };
     const sharePercent =
@@ -809,18 +1083,45 @@ export function buildCashReceiptsLedger(params: {
     };
   });
 
+  const centreCashflowSummaries: CentreCashflowSummary[] = centres.map((c) => {
+    const inc = centreTotalsMap.get(c.id) ?? { pence: 0, count: 0 };
+    const exp = centreExpensesMap.get(c.id) ?? { pence: 0, count: 0 };
+    const incomeSharePercent =
+      allCentresMonthTotalPence > 0
+        ? Number(((inc.pence / allCentresMonthTotalPence) * 100).toFixed(1))
+        : 0;
+    return {
+      centreId: c.id,
+      centreName: c.name,
+      monthIncomePence: inc.pence,
+      monthIncomeCount: inc.count,
+      monthExpensePence: exp.pence,
+      monthExpenseCount: exp.count,
+      monthNetPence: inc.pence - exp.pence,
+      incomeSharePercent,
+    };
+  });
+
   // Build Monday–Sunday weeks for selectedMonth
   const rawWeeks = generateMonthMondaySundayWeeks(selectedMonth);
   let rollingMonthTallyPence = 0;
   let rollingMonthPaymentCount = 0;
+  let rollingMonthExpenseTallyPence = 0;
+  let rollingMonthExpensePaymentCount = 0;
+
   const rollingCentreTallyMap = new Map<string, number>();
+  const rollingCentreExpenseTallyMap = new Map<string, number>();
   for (const c of centres) {
     rollingCentreTallyMap.set(c.id, 0);
+    rollingCentreExpenseTallyMap.set(c.id, 0);
   }
 
   const weeks: CashReceiptsWeekRow[] = rawWeeks.map((w) => {
     const weekPaymentsRaw = scopedPayments.filter(
       (p) => p.businessDate >= w.weekStart && p.businessDate <= w.weekEnd
+    );
+    const weekExpensesRaw = scopedExpenses.filter(
+      (e) => e.expenseDate >= w.weekStart && e.expenseDate <= w.weekEnd
     );
 
     let inMonthPence = 0;
@@ -862,10 +1163,55 @@ export function buildCashReceiptsLedger(params: {
       };
     });
 
+    let inMonthExpensePence = 0;
+    let inMonthExpenseCount = 0;
+    let fullWeekExpensePence = 0;
+    let fullWeekExpenseCount = 0;
+    let spillBeforeExpensePence = 0;
+    let spillBeforeExpenseCount = 0;
+    let spillAfterExpensePence = 0;
+    let spillAfterExpenseCount = 0;
+
+    const weekExpenses: WeekCashReceiptExpense[] = weekExpensesRaw.map((e) => {
+      const inSelectedMonth = e.expenseDate >= w.clippedStart && e.expenseDate <= w.clippedEnd;
+      const spillDirection: WeekCashReceiptExpense['spillDirection'] =
+        e.expenseDate < monthStart
+          ? 'before'
+          : e.expenseDate > monthEnd
+            ? 'after'
+            : 'in_month';
+
+      fullWeekExpensePence += e.amountPence;
+      fullWeekExpenseCount += 1;
+
+      if (inSelectedMonth) {
+        inMonthExpensePence += e.amountPence;
+        inMonthExpenseCount += 1;
+      } else if (spillDirection === 'before') {
+        spillBeforeExpensePence += e.amountPence;
+        spillBeforeExpenseCount += 1;
+      } else {
+        spillAfterExpensePence += e.amountPence;
+        spillAfterExpenseCount += 1;
+      }
+
+      return {
+        ...e,
+        inSelectedMonth,
+        spillDirection,
+      };
+    });
+
+    const inMonthNetPence = inMonthPence - inMonthExpensePence;
+    const fullWeekNetPence = fullWeekPence - fullWeekExpensePence;
+
     rollingMonthTallyPence += inMonthPence;
     rollingMonthPaymentCount += inMonthCount;
+    rollingMonthExpenseTallyPence += inMonthExpensePence;
+    rollingMonthExpensePaymentCount += inMonthExpenseCount;
+    const rollingMonthNetTallyPence = rollingMonthTallyPence - rollingMonthExpenseTallyPence;
 
-    // Per-centre breakdown for this week (always computed from allNormalized so All Centres columns work seamlessly)
+    // Per-centre breakdown for this week (always computed from allNormalized + allNormalizedExpenses)
     const byCentre: WeekCentreBreakdown[] = centres.map((c) => {
       let cInMonthPence = 0;
       let cInMonthCount = 0;
@@ -884,8 +1230,29 @@ export function buildCashReceiptsLedger(params: {
         }
       }
 
+      let cInMonthExpensePence = 0;
+      let cInMonthExpenseCount = 0;
+      let cFullWeekExpensePence = 0;
+      let cFullWeekExpenseCount = 0;
+
+      for (const e of allNormalizedExpenses) {
+        if (e.centreId !== c.id) continue;
+        if (e.expenseDate >= w.weekStart && e.expenseDate <= w.weekEnd) {
+          cFullWeekExpensePence += e.amountPence;
+          cFullWeekExpenseCount += 1;
+          if (e.expenseDate >= w.clippedStart && e.expenseDate <= w.clippedEnd) {
+            cInMonthExpensePence += e.amountPence;
+            cInMonthExpenseCount += 1;
+          }
+        }
+      }
+
       const nextRolling = (rollingCentreTallyMap.get(c.id) ?? 0) + cInMonthPence;
       rollingCentreTallyMap.set(c.id, nextRolling);
+
+      const nextExpenseRolling =
+        (rollingCentreExpenseTallyMap.get(c.id) ?? 0) + cInMonthExpensePence;
+      rollingCentreExpenseTallyMap.set(c.id, nextExpenseRolling);
 
       return {
         centreId: c.id,
@@ -895,6 +1262,14 @@ export function buildCashReceiptsLedger(params: {
         fullWeekPence: cFullWeekPence,
         fullWeekCount: cFullWeekCount,
         rollingTallyPence: nextRolling,
+        inMonthExpensePence: cInMonthExpensePence,
+        inMonthExpenseCount: cInMonthExpenseCount,
+        fullWeekExpensePence: cFullWeekExpensePence,
+        fullWeekExpenseCount: cFullWeekExpenseCount,
+        rollingExpenseTallyPence: nextExpenseRolling,
+        inMonthNetPence: cInMonthPence - cInMonthExpensePence,
+        fullWeekNetPence: cFullWeekPence - cFullWeekExpensePence,
+        rollingNetTallyPence: nextRolling - nextExpenseRolling,
       };
     });
 
@@ -931,17 +1306,34 @@ export function buildCashReceiptsLedger(params: {
       spillBeforeCount,
       spillAfterPence,
       spillAfterCount,
+      inMonthExpensePence,
+      inMonthExpenseCount,
+      fullWeekExpensePence,
+      fullWeekExpenseCount,
+      spillBeforeExpensePence,
+      spillBeforeExpenseCount,
+      spillAfterExpensePence,
+      spillAfterExpenseCount,
+      inMonthNetPence,
+      fullWeekNetPence,
       rollingMonthTallyPence,
       rollingMonthPaymentCount,
+      rollingMonthExpenseTallyPence,
+      rollingMonthExpensePaymentCount,
+      rollingMonthNetTallyPence,
       byCentre,
       state,
       payments: weekPayments,
+      expenses: weekExpenses,
     };
   });
 
-  // Month total strictly equals the final rollingMonthTallyPence (zero double-counting across months)
+  // Month totals strictly equal the final rollingMonthTallyPence (zero double-counting across months)
   const monthTotalPence = rollingMonthTallyPence;
   const monthPaymentCount = rollingMonthPaymentCount;
+  const monthExpenseTotalPence = rollingMonthExpenseTallyPence;
+  const monthExpenseCount = rollingMonthExpensePaymentCount;
+  const monthNetPence = monthTotalPence - monthExpenseTotalPence;
 
   // Headline Pulse: Current Week (Mon–Sun) vs Last Week (Mon–Sun) relative to todayBusinessDate
   const currentWeekStart = startOfMondayWeek(todayBusinessDate);
@@ -964,6 +1356,14 @@ export function buildCashReceiptsLedger(params: {
     firstRecordedBusinessDate,
   });
 
+  const thisWeekExpenseStats = sumExpenseRange(scopedExpenses, currentWeekStart, currentWeekEnd);
+  const lastWeekExpenseStats = sumExpenseRange(scopedExpenses, lastWeekStart, lastWeekEnd);
+  const thisWeekExpensePence = thisWeekExpenseStats.totalPence;
+  const thisWeekExpenseCount = thisWeekExpenseStats.count;
+  const thisWeekNetPence = thisWeekVsLastWeek.currentPence - thisWeekExpensePence;
+  const lastWeekExpensePence = lastWeekExpenseStats.totalPence;
+  const lastWeekNetPence = thisWeekVsLastWeek.priorPence - lastWeekExpensePence;
+
   // MoM and YoY Comparisons for selectedMonth
   const { momComparison, yoyComparison } = buildMonthComparisons({
     targetMonth: selectedMonth,
@@ -981,6 +1381,7 @@ export function buildCashReceiptsLedger(params: {
     const ymEnd = `${ym}-${pad2(ymDays)}`;
 
     const scopedStats = sumRange(scopedPayments, ymStart, ymEnd);
+    const scopedExpStats = sumExpenseRange(scopedExpenses, ymStart, ymEnd);
     const allCentresStats = sumRange(allNormalized, ymStart, ymEnd);
 
     const byCentre: CentreMonthSummary[] = centres.map((c) => {
@@ -1020,13 +1421,206 @@ export function buildCashReceiptsLedger(params: {
       isSelectedMonth: ym === selectedMonth,
       totalPence: scopedStats.totalPence,
       paymentCount: scopedStats.count,
+      expensePence: scopedExpStats.totalPence,
+      expenseCount: scopedExpStats.count,
+      netPence: scopedStats.totalPence - scopedExpStats.totalPence,
       byCentre,
       momComparison: comparisons.momComparison,
       yoyComparison: comparisons.yoyComparison,
     });
   }
 
-  // Available quick-jump months (last 6 months ending at currentMonth, plus selectedMonth if older)
+  // ==================== YEARLY RUNNING TOTAL LEDGER (JAN–DEC) ====================
+  const selectedYear = parseYmParts(selectedMonth).year;
+  const currentYear = parseYmParts(currentMonth).year;
+  const activeEndMonthNum =
+    selectedYear === currentYear
+      ? Math.max(parseYmParts(currentMonth).month, parseYmParts(selectedMonth).month)
+      : 12;
+  const ytdCutoffMonth = `${selectedYear}-${pad2(activeEndMonthNum)}`;
+  const rangeLabel =
+    selectedYear === currentYear
+      ? activeEndMonthNum === 1
+        ? `Jan ${selectedYear} (YTD)`
+        : `Jan – ${SHORT_MONTH_NAMES[activeEndMonthNum - 1]} ${selectedYear} (YTD)`
+      : `Jan – Dec ${selectedYear}`;
+
+  let runningYearlyIncomePence = 0;
+  let runningYearlyIncomeCount = 0;
+  let runningYearlyExpensePence = 0;
+  let runningYearlyExpenseCount = 0;
+
+  let throughSelectedMonthIncomePence = 0;
+  let throughSelectedMonthExpensePence = 0;
+  let throughSelectedMonthNetPence = 0;
+
+  const yearlyCentreRunningMap = new Map<
+    string,
+    { incomePence: number; incomeCount: number; expensePence: number; expenseCount: number }
+  >();
+  for (const c of centres) {
+    yearlyCentreRunningMap.set(c.id, {
+      incomePence: 0,
+      incomeCount: 0,
+      expensePence: 0,
+      expenseCount: 0,
+    });
+  }
+
+  const yearlyMonths: YearlyRunningMonthRow[] = [];
+  for (let m = 1; m <= activeEndMonthNum; m += 1) {
+    const ym = `${selectedYear}-${pad2(m)}`;
+    const ymDays = getDaysInYearMonth(ym);
+    const ymStart = `${ym}-01`;
+    const ymEnd = `${ym}-${pad2(ymDays)}`;
+
+    const monthInc = sumRange(scopedPayments, ymStart, ymEnd);
+    const monthExp = sumExpenseRange(scopedExpenses, ymStart, ymEnd);
+    const monthNet = monthInc.totalPence - monthExp.totalPence;
+    const netMarginPercent =
+      monthInc.totalPence > 0
+        ? Number(((monthNet / monthInc.totalPence) * 100).toFixed(1))
+        : null;
+
+    runningYearlyIncomePence += monthInc.totalPence;
+    runningYearlyIncomeCount += monthInc.count;
+    runningYearlyExpensePence += monthExp.totalPence;
+    runningYearlyExpenseCount += monthExp.count;
+    const runningYearlyNetPence = runningYearlyIncomePence - runningYearlyExpensePence;
+
+    if (ym <= selectedMonth) {
+      throughSelectedMonthIncomePence = runningYearlyIncomePence;
+      throughSelectedMonthExpensePence = runningYearlyExpensePence;
+      throughSelectedMonthNetPence = runningYearlyNetPence;
+    }
+
+    const byCentre: YearlyRunningCentreBreakdown[] = centres.map((c) => {
+      let cIncPence = 0;
+      let cIncCount = 0;
+      for (const p of allNormalized) {
+        if (p.centreId === c.id && p.businessDate >= ymStart && p.businessDate <= ymEnd) {
+          cIncPence += p.amountPence;
+          cIncCount += 1;
+        }
+      }
+      let cExpPence = 0;
+      let cExpCount = 0;
+      for (const e of allNormalizedExpenses) {
+        if (e.centreId === c.id && e.expenseDate >= ymStart && e.expenseDate <= ymEnd) {
+          cExpPence += e.amountPence;
+          cExpCount += 1;
+        }
+      }
+
+      const prevRunning = yearlyCentreRunningMap.get(c.id) ?? {
+        incomePence: 0,
+        incomeCount: 0,
+        expensePence: 0,
+        expenseCount: 0,
+      };
+      const nextRunning = {
+        incomePence: prevRunning.incomePence + cIncPence,
+        incomeCount: prevRunning.incomeCount + cIncCount,
+        expensePence: prevRunning.expensePence + cExpPence,
+        expenseCount: prevRunning.expenseCount + cExpCount,
+      };
+      yearlyCentreRunningMap.set(c.id, nextRunning);
+
+      return {
+        centreId: c.id,
+        centreName: c.name,
+        incomePence: cIncPence,
+        incomeCount: cIncCount,
+        expensePence: cExpPence,
+        expenseCount: cExpCount,
+        netPence: cIncPence - cExpPence,
+        runningIncomePence: nextRunning.incomePence,
+        runningExpensePence: nextRunning.expensePence,
+        runningNetPence: nextRunning.incomePence - nextRunning.expensePence,
+      };
+    });
+
+    const { momComparison: momIncomeComparison } = buildMonthComparisons({
+      targetMonth: ym,
+      todayBusinessDate,
+      payments: scopedPayments,
+      firstRecordedBusinessDate,
+    });
+
+    yearlyMonths.push({
+      yearMonth: ym,
+      monthLabel: formatYearMonthFull(ym),
+      shortMonthLabel: formatYearMonthShort(ym),
+      isCurrentMonth: ym === currentMonth,
+      isSelectedMonth: ym === selectedMonth,
+      incomePence: monthInc.totalPence,
+      incomeCount: monthInc.count,
+      expensePence: monthExp.totalPence,
+      expenseCount: monthExp.count,
+      netPence: monthNet,
+      netMarginPercent,
+      runningYearlyIncomePence,
+      runningYearlyIncomeCount,
+      runningYearlyExpensePence,
+      runningYearlyExpenseCount,
+      runningYearlyNetPence,
+      byCentre,
+      momIncomeComparison,
+    });
+  }
+
+  const totalYearlyNetPence = runningYearlyIncomePence - runningYearlyExpensePence;
+  const totalYearlyNetMarginPercent =
+    runningYearlyIncomePence > 0
+      ? Number(((totalYearlyNetPence / runningYearlyIncomePence) * 100).toFixed(1))
+      : null;
+
+  const availableYearsSet = new Set<number>([currentYear, selectedYear, currentYear - 1]);
+  for (const p of allNormalized) {
+    const yr = parseInt(p.businessDate.slice(0, 4), 10);
+    if (yr >= 2020 && yr <= 2100) availableYearsSet.add(yr);
+  }
+  for (const e of allNormalizedExpenses) {
+    const yr = parseInt(e.expenseDate.slice(0, 4), 10);
+    if (yr >= 2020 && yr <= 2100) availableYearsSet.add(yr);
+  }
+  const availableYears = Array.from(availableYearsSet).sort((a, b) => b - a);
+
+  const yearlyRunningLedger: YearlyRunningLedgerSummary = {
+    selectedYear,
+    rangeLabel,
+    ytdCutoffMonth,
+    totalIncomePence: runningYearlyIncomePence,
+    totalIncomeCount: runningYearlyIncomeCount,
+    totalExpensePence: runningYearlyExpensePence,
+    totalExpenseCount: runningYearlyExpenseCount,
+    totalNetPence: totalYearlyNetPence,
+    netMarginPercent: totalYearlyNetMarginPercent,
+    throughSelectedMonthIncomePence,
+    throughSelectedMonthExpensePence,
+    throughSelectedMonthNetPence,
+    byCentre: centres.map((c) => {
+      const totals = yearlyCentreRunningMap.get(c.id) ?? {
+        incomePence: 0,
+        incomeCount: 0,
+        expensePence: 0,
+        expenseCount: 0,
+      };
+      return {
+        centreId: c.id,
+        centreName: c.name,
+        totalIncomePence: totals.incomePence,
+        totalIncomeCount: totals.incomeCount,
+        totalExpensePence: totals.expensePence,
+        totalExpenseCount: totals.expenseCount,
+        totalNetPence: totals.incomePence - totals.expensePence,
+      };
+    }),
+    months: yearlyMonths,
+    availableYears,
+  };
+
+  // Available quick-jump months (last 12 months ending at currentMonth, plus selectedMonth if older)
   const availableMonthsMap = new Map<
     string,
     { yearMonth: string; label: string; shortLabel: string }
@@ -1063,14 +1657,27 @@ export function buildCashReceiptsLedger(params: {
     firstRecordedMonthLabel,
     monthTotalPence,
     monthPaymentCount,
+    monthExpenseTotalPence,
+    monthExpenseCount,
+    monthNetPence,
     allCentresMonthTotalPence,
     allCentresMonthPaymentCount,
+    allCentresMonthExpenseTotalPence,
+    allCentresMonthExpenseCount,
+    allCentresMonthNetPence,
+    thisWeekExpensePence,
+    thisWeekExpenseCount,
+    thisWeekNetPence,
+    lastWeekExpensePence,
+    lastWeekNetPence,
     centreSummaries,
+    centreCashflowSummaries,
     thisWeekVsLastWeek,
     momComparison,
     yoyComparison,
     weeks,
     sixMonthTrend,
+    yearlyRunningLedger,
     availableMonths,
   };
 }

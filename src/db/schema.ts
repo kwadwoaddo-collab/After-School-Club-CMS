@@ -1525,3 +1525,39 @@ export const centreDocuments = pgTable('centre_documents', {
  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
  removedAt: timestamp('removed_at', { withTimezone: true }),
 }, table => ({ centreIdx: index('centre_documents_centre_idx').on(table.organisationId, table.centreId), folderScope: foreignKey({ name: 'centre_documents_folder_scope', columns: [table.folderId, table.centreId, table.organisationId], foreignColumns: [centreDocumentFolders.id, centreDocumentFolders.centreId, centreDocumentFolders.organisationId] }) }));
+
+// ==================== OWNER FINANCE EXPENSES ====================
+// Migration-owned (drizzle/0037_owner_finance_expenses.sql). CHECK constraints live in the migration only.
+export const financeExpenses = pgTable('finance_expenses', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  organisationId: uuid('organisation_id').references(() => organisations.id, { onDelete: 'cascade' }).notNull(),
+  centreId: uuid('centre_id').references(() => centres.id, { onDelete: 'cascade' }).notNull(),
+  expenseDate: date('expense_date').notNull(),
+  amountPence: integer('amount_pence').notNull(),
+  description: varchar('description', { length: 300 }).notNull(),
+  category: varchar('category', { length: 50 }).default('general').notNull(),
+  createdBy: uuid('created_by').references(() => users.id).notNull(),
+  updatedBy: uuid('updated_by').references(() => users.id),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  deletedAt: timestamp('deleted_at', { withTimezone: true }),
+  deletedBy: uuid('deleted_by').references(() => users.id),
+}, (table) => ({
+  orgCentreDateIdx: index('finance_expenses_org_centre_date_idx').on(table.organisationId, table.centreId, table.expenseDate),
+}));
+
+export const financeExpensesRelations = relations(financeExpenses, ({ one }) => ({
+  organisation: one(organisations, {
+    fields: [financeExpenses.organisationId],
+    references: [organisations.id],
+  }),
+  centre: one(centres, {
+    fields: [financeExpenses.centreId],
+    references: [centres.id],
+  }),
+  creator: one(users, {
+    fields: [financeExpenses.createdBy],
+    references: [users.id],
+  }),
+}));
+

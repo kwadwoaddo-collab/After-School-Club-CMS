@@ -1,8 +1,9 @@
 'use client';
 
-import { Fragment, useState } from 'react';
+import { Fragment, useEffect, useState, useTransition } from 'react';
 import Link from 'next/link';
-import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { ChevronDown, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import {
   addMonthsYm,
   formatMonthShortOnly,
@@ -11,11 +12,32 @@ import {
   type CashReceiptsLedgerResult,
   type CashReceiptsWeekRow,
   type PeriodComparison,
+  type WeekCashReceiptExpense,
 } from '../domain/cash-receipts-ledger';
 import { formatInvoiceDate } from '../domain/invoice-display';
+import {
+  createFinanceExpense,
+  deleteFinanceExpense,
+  updateFinanceExpense,
+} from '../expense-actions';
 
 const focusRing =
   'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary';
+
+const EXPENSE_CATEGORY_OPTIONS = [
+  { value: 'general', label: 'General' },
+  { value: 'supplies_snacks', label: 'Supplies & snacks' },
+  { value: 'staff_wages', label: 'Staff & wages' },
+  { value: 'premises_hire', label: 'Premises & hall hire' },
+  { value: 'activities_equipment', label: 'Activities & equipment' },
+  { value: 'admin_transport', label: 'Admin & transport' },
+] as const;
+
+function formatExpenseCategory(category: string): string {
+  const match = EXPENSE_CATEGORY_OPTIONS.find((c) => c.value === category);
+  if (match) return match.label;
+  return category.replace(/_/g, ' ');
+}
 
 function shortCentreName(fullName: string): string {
   const cleaned = fullName.replace(/\s+After\s+School\s+Club$/i, '').trim();
@@ -79,15 +101,61 @@ function DeltaBadge({ comparison }: { comparison: PeriodComparison }) {
   );
 }
 
+function getBoundaryEntriesButtonLabel(
+  week: CashReceiptsWeekRow,
+  selectedMonthShortLabel: string,
+  isExpanded: boolean
+): string {
+  const inMonthTotal = week.inMonthCount + week.inMonthExpenseCount;
+  const fullWeekTotal = week.fullWeekCount + week.fullWeekExpenseCount;
+  const spillBeforeTotal = week.spillBeforeCount + week.spillBeforeExpenseCount;
+  const spillAfterTotal = week.spillAfterCount + week.spillAfterExpenseCount;
+  const isBoundary = week.isBoundaryStart || week.isBoundaryEnd;
+
+  if (fullWeekTotal === 0) {
+    return isExpanded ? 'Hide week' : '0 entries · + Add';
+  }
+
+  if (isBoundary) {
+    const spillCount = spillBeforeTotal + spillAfterTotal;
+    const spillMonth = week.spillBeforeMonthLabel ?? week.spillAfterMonthLabel ?? 'adj.';
+    if (inMonthTotal === 0 && spillCount > 0) {
+      return `${isExpanded ? 'Hide · ' : ''}0 in ${selectedMonthShortLabel} (${spillCount} in ${spillMonth})`;
+    }
+    if (inMonthTotal > 0 && spillCount > 0) {
+      return `${isExpanded ? 'Hide' : 'View'} ${inMonthTotal} in ${selectedMonthShortLabel} (+${spillCount} ${spillMonth})`;
+    }
+  }
+
+  const verb = isExpanded ? 'Hide' : 'View';
+  if (week.fullWeekExpenseCount > 0 && week.fullWeekCount > 0) {
+    return `${verb} ${week.fullWeekCount} in · ${week.fullWeekExpenseCount} out`;
+  }
+  if (week.fullWeekExpenseCount > 0) {
+    return `${verb} ${week.fullWeekExpenseCount} outgoing${
+      week.fullWeekExpenseCount === 1 ? '' : 's'
+    }`;
+  }
+  return `${verb} ${week.fullWeekCount} payment${week.fullWeekCount === 1 ? '' : 's'}`;
+}
+
 export interface CashReceiptsOwnerViewProps {
   ledger: CashReceiptsLedgerResult;
 }
 
 export default function CashReceiptsOwnerView({ ledger }: CashReceiptsOwnerViewProps) {
-  // Default-expand the current live week (or most recent week with payments)
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+
+  // Default-expand the current live week (or most recent week with in-month activity)
   const defaultExpandedWeek =
-    ledger.weeks.find((w) => w.state === 'current' && w.fullWeekCount > 0)?.weekNumber ??
-    [...ledger.weeks].reverse().find((w) => w.fullWeekCount > 0)?.weekNumber ??
+    ledger.weeks.find(
+      (w) => w.state === 'current' && w.inMonthCount + w.inMonthExpenseCount > 0
+    )?.weekNumber ??
+    [...ledger.weeks]
+      .reverse()
+      .find((w) => w.inMonthCount + w.inMonthExpenseCount > 0)?.weekNumber ??
+    ledger.weeks.find((w) => w.state === 'current')?.weekNumber ??
     null;
 
   const [expandedWeeks, setExpandedWeeks] = useState<Record<number, boolean>>(
@@ -95,6 +163,60 @@ export default function CashReceiptsOwnerView({ ledger }: CashReceiptsOwnerViewP
   );
   // Scope toggle for boundary weeks: 'in_month' vs 'full_week'
   const [boundaryScope, setBoundaryScope] = useState<Record<number, 'in_month' | 'full_week'>>({});
+
+  // Quick-add outgoing bar state
+  const defaultDateForMonth = ledger.isViewingCurrentMonth
+    ? ledger.todayBusinessDate
+    : `${ledger.selectedMonth}-01`;
+  const defaultCentreOption =
+    ledger.activeCentreId !== 'all'
+      ? ledger.activeCentreId
+      : ledger.centreSummaries[0]?.centreId ?? '';
+
+  const [quickDate, setQuickDate] = useState<string>(defaultDateForMonth);
+  const [quickCentreId, setQuickCentreId] = useState<string>(defaultCentreOption);
+  const [quickAmount, setQuickAmount] = useState<string>('');
+  const [quickDescription, setQuickDescription] = useState<string>('');
+  const [quickCategory, setQuickCategory] = useState<string>('general');
+  const [quickFeedback, setQuickFeedback] = useState<{
+    type: 'success' | 'error';
+    message: string;
+  } | null>(null);
+
+  // Sync quick-add defaults when month or activeCentreId changes
+  useEffect(() => {
+    setQuickDate(
+      ledger.isViewingCurrentMonth ? ledger.todayBusinessDate : `${ledger.selectedMonth}-01`
+    );
+  }, [ledger.isViewingCurrentMonth, ledger.selectedMonth, ledger.todayBusinessDate]);
+
+  useEffect(() => {
+    if (ledger.activeCentreId !== 'all') {
+      setQuickCentreId(ledger.activeCentreId);
+    } else if (!quickCentreId && ledger.centreSummaries[0]?.centreId) {
+      setQuickCentreId(ledger.centreSummaries[0].centreId);
+    }
+  }, [ledger.activeCentreId, ledger.centreSummaries, quickCentreId]);
+
+  // Week-scoped inline add state
+  const [addingInWeek, setAddingInWeek] = useState<number | null>(null);
+  const [weekAddDate, setWeekAddDate] = useState<string>(defaultDateForMonth);
+  const [weekAddCentreId, setWeekAddCentreId] = useState<string>(defaultCentreOption);
+  const [weekAddAmount, setWeekAddAmount] = useState<string>('');
+  const [weekAddDescription, setWeekAddDescription] = useState<string>('');
+  const [weekAddCategory, setWeekAddCategory] = useState<string>('general');
+  const [weekActionError, setWeekActionError] = useState<string | null>(null);
+
+  // Inline edit expense state
+  const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
+  const [editDate, setEditDate] = useState<string>('');
+  const [editCentreId, setEditCentreId] = useState<string>('');
+  const [editAmount, setEditAmount] = useState<string>('');
+  const [editDescription, setEditDescription] = useState<string>('');
+  const [editCategory, setEditCategory] = useState<string>('general');
+
+  // Inline delete confirmation state
+  const [confirmDeleteExpenseId, setConfirmDeleteExpenseId] = useState<string | null>(null);
 
   const toggleWeek = (weekNumber: number) => {
     setExpandedWeeks((prev) => ({ ...prev, [weekNumber]: !prev[weekNumber] }));
@@ -119,15 +241,140 @@ export default function CashReceiptsOwnerView({ ledger }: CashReceiptsOwnerViewP
     return `/dashboard/finance?${params.toString()}`;
   };
 
+  const handleQuickAddSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setQuickFeedback(null);
+
+    startTransition(async () => {
+      const res = await createFinanceExpense({
+        centreId: quickCentreId,
+        expenseDate: quickDate,
+        amount: quickAmount,
+        description: quickDescription,
+        category: quickCategory,
+      });
+
+      if (!res.success) {
+        setQuickFeedback({
+          type: 'error',
+          message: res.error ?? 'Could not record outgoing.',
+        });
+        return;
+      }
+
+      setQuickAmount('');
+      setQuickDescription('');
+      setQuickFeedback({
+        type: 'success',
+        message:
+          res.createdCount && res.createdCount > 1
+            ? `Outgoing split equally across ${res.createdCount} centres.`
+            : 'Outgoing recorded in ledger.',
+      });
+      router.refresh();
+    });
+  };
+
+  const openWeekInlineAdd = (week: CashReceiptsWeekRow) => {
+    setWeekActionError(null);
+    setAddingInWeek(week.weekNumber);
+    const defaultDay =
+      ledger.todayBusinessDate >= week.clippedStart && ledger.todayBusinessDate <= week.clippedEnd
+        ? ledger.todayBusinessDate
+        : week.clippedStart;
+    setWeekAddDate(defaultDay);
+    setWeekAddCentreId(
+      ledger.activeCentreId !== 'all'
+        ? ledger.activeCentreId
+        : ledger.centreSummaries[0]?.centreId ?? ''
+    );
+    setWeekAddAmount('');
+    setWeekAddDescription('');
+    setWeekAddCategory('general');
+  };
+
+  const handleWeekInlineAddSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setWeekActionError(null);
+
+    startTransition(async () => {
+      const res = await createFinanceExpense({
+        centreId: weekAddCentreId,
+        expenseDate: weekAddDate,
+        amount: weekAddAmount,
+        description: weekAddDescription,
+        category: weekAddCategory,
+      });
+
+      if (!res.success) {
+        setWeekActionError(res.error ?? 'Could not record outgoing.');
+        return;
+      }
+
+      setAddingInWeek(null);
+      setWeekAddAmount('');
+      setWeekAddDescription('');
+      router.refresh();
+    });
+  };
+
+  const startEditingExpense = (exp: WeekCashReceiptExpense) => {
+    setWeekActionError(null);
+    setConfirmDeleteExpenseId(null);
+    setEditingExpenseId(exp.id);
+    setEditDate(exp.expenseDate);
+    setEditCentreId(exp.centreId);
+    setEditAmount(exp.amountDecimal);
+    setEditDescription(exp.description);
+    setEditCategory(exp.category);
+  };
+
+  const handleSaveExpenseEdit = (expenseId: string) => {
+    setWeekActionError(null);
+    startTransition(async () => {
+      const res = await updateFinanceExpense({
+        expenseId,
+        centreId: editCentreId,
+        expenseDate: editDate,
+        amount: editAmount,
+        description: editDescription,
+        category: editCategory,
+      });
+
+      if (!res.success) {
+        setWeekActionError(res.error ?? 'Could not update outgoing.');
+        return;
+      }
+
+      setEditingExpenseId(null);
+      router.refresh();
+    });
+  };
+
+  const handleConfirmDeleteExpense = (expenseId: string) => {
+    setWeekActionError(null);
+    startTransition(async () => {
+      const res = await deleteFinanceExpense({ expenseId });
+      if (!res.success) {
+        setWeekActionError(res.error ?? 'Could not delete outgoing.');
+        return;
+      }
+      setConfirmDeleteExpenseId(null);
+      router.refresh();
+    });
+  };
+
   const prevMonth = addMonthsYm(ledger.selectedMonth, -1);
   const nextMonth = addMonthsYm(ledger.selectedMonth, 1);
   const canGoNextMonth = nextMonth <= ledger.currentMonth;
   const showCentreColumns = ledger.activeCentreId === 'all' && ledger.centreSummaries.length > 0;
-  const totalTableColumns = 5 + (showCentreColumns ? ledger.centreSummaries.length : 0);
+  // Columns: Week + [Centres] + Money In + Outgoings + Weekly Net + Rolling Tally + Entries
+  const totalTableColumns = 6 + (showCentreColumns ? ledger.centreSummaries.length : 0);
+  const ytd = ledger.yearlyRunningLedger;
 
   return (
     <div className="space-y-8">
-      {/* 1. Top Control Bar: Centre Switcher Pills + Month Selector */}
+      {/* 1. Top Control Bar: Centre Switcher Pills + Month & Year Selector */}
       <div className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-4 sm:p-5 lg:flex-row lg:items-center lg:justify-between">
         <nav aria-label="Centre cashflow filter" className="flex flex-wrap items-center gap-2">
           <Link
@@ -147,11 +394,12 @@ export default function CashReceiptsOwnerView({ ledger }: CashReceiptsOwnerViewP
                   : 'bg-secondary text-muted-foreground'
               }`}
             >
-              {formatPenceToGBP(ledger.allCentresMonthTotalPence)}
+              In {formatPenceToGBP(ledger.allCentresMonthTotalPence)} · Net{' '}
+              {formatPenceToGBP(ledger.allCentresMonthNetPence)}
             </span>
           </Link>
 
-          {ledger.centreSummaries.map((centre) => {
+          {ledger.centreCashflowSummaries.map((centre) => {
             const isSelected = ledger.activeCentreId === centre.centreId;
             return (
               <Link
@@ -172,7 +420,8 @@ export default function CashReceiptsOwnerView({ ledger }: CashReceiptsOwnerViewP
                       : 'bg-secondary text-muted-foreground'
                   }`}
                 >
-                  {formatPenceToGBP(centre.monthPence)}
+                  In {formatPenceToGBP(centre.monthIncomePence)} · Net{' '}
+                  {formatPenceToGBP(centre.monthNetPence)}
                 </span>
               </Link>
             );
@@ -180,6 +429,36 @@ export default function CashReceiptsOwnerView({ ledger }: CashReceiptsOwnerViewP
         </nav>
 
         <div className="flex flex-wrap items-center gap-2">
+          {/* Year quick-switcher pills */}
+          {ytd.availableYears.length > 1 && (
+            <div
+              role="group"
+              aria-label="Year selector"
+              className="flex items-center gap-1 rounded-xl border border-border bg-secondary/40 p-1"
+            >
+              {ytd.availableYears.map((yr) => {
+                const isActiveYear = yr === ytd.selectedYear;
+                const currentYearNum = Number(ledger.currentMonth.slice(0, 4));
+                const targetMonthForYear =
+                  yr === currentYearNum ? ledger.currentMonth : `${yr}-12`;
+                return (
+                  <Link
+                    key={yr}
+                    href={buildCashflowHref({ month: targetMonthForYear })}
+                    aria-current={isActiveYear ? 'true' : undefined}
+                    className={`inline-flex min-h-8 items-center rounded-lg px-2.5 py-1 text-xs font-semibold tabular-nums transition-colors ${focusRing} ${
+                      isActiveYear
+                        ? 'bg-card text-foreground shadow-xs'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    {yr}
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+
           <Link
             href={buildCashflowHref({ month: prevMonth })}
             aria-label={`Previous month (${prevMonth})`}
@@ -245,7 +524,7 @@ export default function CashReceiptsOwnerView({ ledger }: CashReceiptsOwnerViewP
 
       {/* 2. 4-Column Divided Executive Ledger Strip */}
       <dl
-        aria-label="Executive cashflow summary"
+        aria-label="Executive cashflow and running totals summary"
         className="grid grid-cols-1 divide-y divide-border rounded-2xl border border-border bg-card md:grid-cols-2 md:divide-y-0 lg:grid-cols-4 lg:divide-x"
       >
         {/* Column 1: This Week (Mon–Sun) */}
@@ -259,6 +538,12 @@ export default function CashReceiptsOwnerView({ ledger }: CashReceiptsOwnerViewP
               {formatPenceToGBP(ledger.thisWeekVsLastWeek.currentPence)}
             </dd>
             <p className="mt-1 text-xs text-muted-foreground tabular-nums">
+              Outgoings: −{formatPenceToGBP(ledger.thisWeekExpensePence)} ·{' '}
+              <span className="font-semibold text-foreground">
+                Net: {formatPenceToGBP(ledger.thisWeekNetPence)}
+              </span>
+            </p>
+            <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">
               {ledger.thisWeekVsLastWeek.currentPeriodLabel} ·{' '}
               {ledger.thisWeekVsLastWeek.currentCount} verified payment
               {ledger.thisWeekVsLastWeek.currentCount === 1 ? '' : 's'}
@@ -269,15 +554,15 @@ export default function CashReceiptsOwnerView({ ledger }: CashReceiptsOwnerViewP
               <span>Prior week ({ledger.thisWeekVsLastWeek.priorPeriodLabel}) predates records</span>
             ) : (
               <span>
-                {formatSignedPenceDelta(ledger.thisWeekVsLastWeek.deltaPence)} vs last week (
-                {ledger.thisWeekVsLastWeek.priorPeriodLabel}:{' '}
+                {formatSignedPenceDelta(ledger.thisWeekVsLastWeek.deltaPence)} cash in vs last week
+                ({ledger.thisWeekVsLastWeek.priorPeriodLabel}:{' '}
                 {formatPenceToGBP(ledger.thisWeekVsLastWeek.priorPence)})
               </span>
             )}
           </div>
         </div>
 
-        {/* Column 2: [Month] Rolling Tally */}
+        {/* Column 2: [Month] Cashflow & Rolling Tally */}
         <div className="flex flex-col justify-between p-5 sm:p-6">
           <div>
             <div className="flex items-center justify-between gap-2">
@@ -285,41 +570,49 @@ export default function CashReceiptsOwnerView({ ledger }: CashReceiptsOwnerViewP
                 {ledger.selectedMonthLabel} Tally
               </dt>
               <span className="inline-flex items-center rounded-full bg-secondary px-2.5 py-0.5 text-xs font-medium text-foreground tabular-nums">
-                {ledger.monthPaymentCount} payment{ledger.monthPaymentCount === 1 ? '' : 's'}
+                {ledger.monthPaymentCount} in · {ledger.monthExpenseCount} out
               </span>
             </div>
             <dd className="mt-2 text-2xl font-semibold tracking-tight text-foreground tabular-nums sm:text-3xl">
               {formatPenceToGBP(ledger.monthTotalPence)}
             </dd>
-            <p className="mt-1 text-xs text-muted-foreground">
-              {ledger.isViewingCurrentMonth
-                ? `Month-to-date cash received (${ledger.activeCentreName})`
-                : `Completed calendar month (${ledger.activeCentreName})`}
+            <p className="mt-1 text-xs text-muted-foreground tabular-nums">
+              Outgoings: −{formatPenceToGBP(ledger.monthExpenseTotalPence)} ·{' '}
+              <span
+                className={`font-semibold ${
+                  ledger.monthNetPence >= 0
+                    ? 'text-emerald-700 dark:text-emerald-300'
+                    : 'text-amber-800 dark:text-amber-200'
+                }`}
+              >
+                Net: {formatPenceToGBP(ledger.monthNetPence)}
+              </span>
             </p>
           </div>
 
-          {ledger.activeCentreId === 'all' && ledger.centreSummaries.length > 1 ? (
+          {ledger.activeCentreId === 'all' && ledger.centreCashflowSummaries.length > 1 ? (
             <div className="mt-4 space-y-2 border-t border-border pt-3">
               <div
                 aria-hidden="true"
                 className="flex h-2 w-full overflow-hidden rounded-full bg-secondary"
               >
-                {ledger.centreSummaries.map((c, idx) => (
+                {ledger.centreCashflowSummaries.map((c, idx) => (
                   <div
                     key={c.centreId}
-                    style={{ width: `${c.sharePercent}%` }}
+                    style={{ width: `${c.incomeSharePercent}%` }}
                     className={idx === 0 ? 'bg-primary' : 'bg-emerald-500'}
                   />
                 ))}
               </div>
               <p className="text-xs text-muted-foreground tabular-nums">
-                {ledger.centreSummaries.map((c, idx) => (
+                {ledger.centreCashflowSummaries.map((c, idx) => (
                   <Fragment key={c.centreId}>
                     {idx > 0 && ' · '}
                     <span className="font-medium text-foreground">
                       {shortCentreName(c.centreName)}
                     </span>{' '}
-                    {formatPenceToGBP(c.monthPence)} ({c.sharePercent}%)
+                    In {formatPenceToGBP(c.monthIncomePence)} (Net{' '}
+                    {formatPenceToGBP(c.monthNetPence)})
                   </Fragment>
                 ))}
               </p>
@@ -328,14 +621,14 @@ export default function CashReceiptsOwnerView({ ledger }: CashReceiptsOwnerViewP
             <div className="mt-4 border-t border-border pt-3 text-xs text-muted-foreground tabular-nums">
               All centres in {ledger.selectedMonthShortLabel}:{' '}
               <span className="font-medium text-foreground">
-                {formatPenceToGBP(ledger.allCentresMonthTotalPence)}
+                In {formatPenceToGBP(ledger.allCentresMonthTotalPence)}
               </span>{' '}
-              ({ledger.allCentresMonthPaymentCount} payments)
+              · Net {formatPenceToGBP(ledger.allCentresMonthNetPence)}
             </div>
           )}
         </div>
 
-        {/* Column 3: Month-on-Month (MoM) */}
+        {/* Column 3: Month-on-Month (MoM) & YoY */}
         <div className="flex flex-col justify-between p-5 sm:p-6">
           <div>
             <div className="flex items-center justify-between gap-2">
@@ -364,64 +657,88 @@ export default function CashReceiptsOwnerView({ ledger }: CashReceiptsOwnerViewP
                 <p className="mt-1 text-xs text-muted-foreground tabular-nums">
                   {ledger.momComparison.comparisonRangeLabel}
                 </p>
+                <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">
+                  Prior pace: {formatPenceToGBP(ledger.momComparison.priorPence)}
+                  {ledger.momComparison.mode === 'mtd_same_day' && (
+                    <>
+                      {' · '}Full {ledger.momComparison.fullPriorPeriodLabel}:{' '}
+                      {formatPenceToGBP(ledger.momComparison.fullPriorPeriodPence)}
+                    </>
+                  )}
+                </p>
               </>
             )}
           </div>
 
           <div className="mt-4 border-t border-border pt-3 text-xs text-muted-foreground tabular-nums">
-            Prior pace ({ledger.momComparison.priorPeriodLabel}):{' '}
-            <span className="font-medium text-foreground">
-              {formatPenceToGBP(ledger.momComparison.priorPence)}
-            </span>
-            {ledger.momComparison.mode === 'mtd_same_day' && (
-              <>
-                {' · '}Full {ledger.momComparison.fullPriorPeriodLabel}:{' '}
+            {ledger.yoyComparison.comparisonStatus === 'insufficient_history' ? (
+              <span>
+                YoY: Baseline building (records start{' '}
+                {ledger.firstRecordedMonthLabel ?? 'recently'})
+              </span>
+            ) : (
+              <span>
+                YoY ({ledger.yoyComparison.priorPeriodLabel}):{' '}
                 <span className="font-medium text-foreground">
-                  {formatPenceToGBP(ledger.momComparison.fullPriorPeriodPence)}
-                </span>
-              </>
+                  {formatSignedPenceDelta(ledger.yoyComparison.deltaPence)}
+                </span>{' '}
+                (vs {formatPenceToGBP(ledger.yoyComparison.priorPence)})
+              </span>
             )}
           </div>
         </div>
 
-        {/* Column 4: Year-on-Year (YoY) */}
+        {/* Column 4: Yearly Running Total (YTD / Annual) */}
         <div className="flex flex-col justify-between p-5 sm:p-6">
           <div>
             <div className="flex items-center justify-between gap-2">
-              <dt className="text-sm font-medium text-muted-foreground">Year-on-Year (YoY)</dt>
-              <DeltaBadge comparison={ledger.yoyComparison} />
+              <dt className="text-sm font-medium text-muted-foreground">
+                {ytd.selectedYear} Yearly Running Total
+              </dt>
+              <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary tabular-nums">
+                {ytd.rangeLabel}
+              </span>
             </div>
-
-            {ledger.yoyComparison.comparisonStatus === 'insufficient_history' ? (
-              <>
-                <dd className="mt-2 text-xl font-semibold tracking-tight text-foreground">
-                  Baseline building — records start {ledger.firstRecordedMonthLabel ?? 'recently'}
-                </dd>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {ledger.yoyComparison.fullPriorPeriodLabel} predates the earliest verified payment
-                  in the ledger.
-                </p>
-              </>
-            ) : (
-              <>
-                <dd className="mt-2 text-2xl font-semibold tracking-tight text-foreground tabular-nums sm:text-3xl">
-                  {formatSignedPenceDelta(ledger.yoyComparison.deltaPence)}
-                </dd>
-                <p className="mt-1 text-xs text-muted-foreground tabular-nums">
-                  {ledger.yoyComparison.comparisonRangeLabel}
-                </p>
-              </>
-            )}
+            <dd className="mt-2 text-2xl font-semibold tracking-tight text-foreground tabular-nums sm:text-3xl">
+              {formatPenceToGBP(ytd.totalIncomePence)}
+            </dd>
+            <p className="mt-1 text-xs text-muted-foreground tabular-nums">
+              Yearly Outgoings: −{formatPenceToGBP(ytd.totalExpensePence)} ·{' '}
+              <span
+                className={`font-semibold ${
+                  ytd.totalNetPence >= 0
+                    ? 'text-emerald-700 dark:text-emerald-300'
+                    : 'text-amber-800 dark:text-amber-200'
+                }`}
+              >
+                Yearly Net: {formatPenceToGBP(ytd.totalNetPence)}
+              </span>
+            </p>
+            <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">
+              {ytd.totalIncomeCount} verified payment{ytd.totalIncomeCount === 1 ? '' : 's'} ·{' '}
+              {ytd.totalExpenseCount} outgoing{ytd.totalExpenseCount === 1 ? '' : 's'} in{' '}
+              {ytd.selectedYear}
+            </p>
           </div>
 
           <div className="mt-4 border-t border-border pt-3 text-xs text-muted-foreground tabular-nums">
-            {ledger.yoyComparison.comparisonStatus === 'insufficient_history' ? (
-              <span>YoY % comparison activates automatically at 12 months of history</span>
+            {ledger.activeCentreId === 'all' && ytd.byCentre.length > 1 ? (
+              <span>
+                {ytd.byCentre.map((c, idx) => (
+                  <Fragment key={c.centreId}>
+                    {idx > 0 && ' · '}
+                    <span className="font-medium text-foreground">
+                      {shortCentreName(c.centreName)}
+                    </span>{' '}
+                    Net {formatPenceToGBP(c.totalNetPence)}
+                  </Fragment>
+                ))}
+              </span>
             ) : (
               <span>
-                Prior year ({ledger.yoyComparison.priorPeriodLabel}):{' '}
+                Cumulative through {ledger.selectedMonthShortLabel} {ytd.selectedYear}:{' '}
                 <span className="font-medium text-foreground">
-                  {formatPenceToGBP(ledger.yoyComparison.priorPence)}
+                  Net {formatPenceToGBP(ytd.throughSelectedMonthNetPence)}
                 </span>
               </span>
             )}
@@ -429,18 +746,169 @@ export default function CashReceiptsOwnerView({ ledger }: CashReceiptsOwnerViewP
         </div>
       </dl>
 
-      {/* 3. Weekly Cash Received & Rolling Tally Table (Mon–Sun Weeks) */}
+      {/* 3. Inline 3-Second Quick-Add Outgoing / Expense Bar */}
+      <section
+        aria-labelledby="quick-add-outgoing-heading"
+        className="rounded-2xl border border-border bg-card p-4 sm:p-5"
+      >
+        <div className="flex flex-col justify-between gap-1 sm:flex-row sm:items-baseline">
+          <h2
+            id="quick-add-outgoing-heading"
+            className="text-base font-semibold tracking-tight text-foreground"
+          >
+            Record weekly outgoing or expense
+          </h2>
+          <p className="text-xs text-muted-foreground">
+            Deducts automatically from the matching Monday–Sunday week, monthly tally, and{' '}
+            {ytd.selectedYear} yearly running total.
+          </p>
+        </div>
+
+        <form
+          aria-labelledby="quick-add-outgoing-heading"
+          onSubmit={handleQuickAddSubmit}
+          className="mt-3.5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-12 lg:items-end"
+        >
+          <div className="flex flex-col gap-1 lg:col-span-2">
+            <label htmlFor="quick-expense-date" className="text-xs font-medium text-foreground">
+              Date <span aria-hidden="true">*</span>
+            </label>
+            <input
+              id="quick-expense-date"
+              name="expenseDate"
+              type="date"
+              required
+              value={quickDate}
+              onChange={(e) => setQuickDate(e.target.value)}
+              className={`min-h-10 rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground tabular-nums ${focusRing}`}
+            />
+          </div>
+
+          <div className="flex flex-col gap-1 lg:col-span-3">
+            <label htmlFor="quick-expense-centre" className="text-xs font-medium text-foreground">
+              Centre <span aria-hidden="true">*</span>
+            </label>
+            <select
+              id="quick-expense-centre"
+              name="centreId"
+              required
+              value={quickCentreId}
+              onChange={(e) => setQuickCentreId(e.target.value)}
+              className={`min-h-10 rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground ${focusRing}`}
+            >
+              {ledger.centreSummaries.map((c) => (
+                <option key={c.centreId} value={c.centreId}>
+                  {c.centreName}
+                </option>
+              ))}
+              {ledger.centreSummaries.length > 1 && (
+                <option value="split_all">
+                  Split equally across all {ledger.centreSummaries.length} centres
+                </option>
+              )}
+            </select>
+          </div>
+
+          <div className="flex flex-col gap-1 lg:col-span-2">
+            <label htmlFor="quick-expense-amount" className="text-xs font-medium text-foreground">
+              Amount (£) <span aria-hidden="true">*</span>
+            </label>
+            <input
+              id="quick-expense-amount"
+              name="amount"
+              type="text"
+              inputMode="decimal"
+              required
+              placeholder="e.g. 45.00"
+              value={quickAmount}
+              onChange={(e) => {
+                setQuickAmount(e.target.value);
+                if (quickFeedback?.type === 'error') setQuickFeedback(null);
+              }}
+              className={`min-h-10 rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground tabular-nums ${focusRing}`}
+            />
+          </div>
+
+          <div className="flex flex-col gap-1 lg:col-span-3">
+            <label
+              htmlFor="quick-expense-description"
+              className="text-xs font-medium text-foreground"
+            >
+              Description <span aria-hidden="true">*</span>
+            </label>
+            <input
+              id="quick-expense-description"
+              name="description"
+              type="text"
+              required
+              maxLength={300}
+              placeholder="Fruit & snacks, hall hire, supplies..."
+              value={quickDescription}
+              onChange={(e) => {
+                setQuickDescription(e.target.value);
+                if (quickFeedback?.type === 'error') setQuickFeedback(null);
+              }}
+              className={`min-h-10 rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground ${focusRing}`}
+            />
+          </div>
+
+          <div className="flex flex-col gap-1 lg:col-span-2">
+            <label htmlFor="quick-expense-category" className="text-xs font-medium text-foreground">
+              Category
+            </label>
+            <div className="flex items-center gap-2">
+              <select
+                id="quick-expense-category"
+                name="category"
+                value={quickCategory}
+                onChange={(e) => setQuickCategory(e.target.value)}
+                className={`min-h-10 w-full rounded-xl border border-border bg-background px-2.5 py-2 text-sm text-foreground ${focusRing}`}
+              >
+                {EXPENSE_CATEGORY_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="submit"
+                disabled={isPending}
+                className={`inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50 ${focusRing}`}
+              >
+                <Plus aria-hidden="true" className="h-4 w-4" />
+                <span>{isPending ? 'Saving...' : 'Add'}</span>
+              </button>
+            </div>
+          </div>
+        </form>
+
+        {quickFeedback && (
+          <div
+            role={quickFeedback.type === 'error' ? 'alert' : 'status'}
+            aria-live="polite"
+            className={`mt-3 text-xs font-medium ${
+              quickFeedback.type === 'error'
+                ? 'text-red-600 dark:text-red-400'
+                : 'text-emerald-700 dark:text-emerald-300'
+            }`}
+          >
+            {quickFeedback.message}
+          </div>
+        )}
+      </section>
+
+      {/* 4. Weekly Cashflow, Outgoings & Rolling Tally Table (Mon–Sun Weeks) */}
       <section aria-labelledby="weekly-cash-heading" className="space-y-3">
         <div className="flex flex-col justify-between gap-1 sm:flex-row sm:items-baseline">
           <h2
             id="weekly-cash-heading"
             className="text-xl font-semibold tracking-tight text-foreground"
           >
-            Weekly cash received & rolling tally — {ledger.selectedMonthLabel}
+            Weekly cashflow, outgoings & rolling tally — {ledger.selectedMonthLabel}
           </h2>
           <p className="text-sm text-muted-foreground">
             Monday–Sunday weeks. Boundary weeks clip days outside {ledger.selectedMonthShortLabel}{' '}
-            so the monthly rolling tally never double-counts across months.
+            so monthly totals never double-count across months.
           </p>
         </div>
 
@@ -452,8 +920,8 @@ export default function CashReceiptsOwnerView({ ledger }: CashReceiptsOwnerViewP
         >
           <table className="w-full border-collapse text-left text-sm">
             <caption className="sr-only">
-              Weekly Monday to Sunday cash received and rolling monthly tally for{' '}
-              {ledger.selectedMonthLabel}
+              Weekly Monday to Sunday cash received, outgoings, net cashflow, and rolling monthly
+              tally for {ledger.selectedMonthLabel}
             </caption>
             <thead className="sticky top-0 z-10 border-b border-border bg-secondary/70 backdrop-blur-xs">
               <tr>
@@ -472,16 +940,19 @@ export default function CashReceiptsOwnerView({ ledger }: CashReceiptsOwnerViewP
                     </th>
                   ))}
                 <th scope="col" className="px-4 py-3.5 text-right font-medium text-muted-foreground">
-                  Received in {ledger.selectedMonthShortLabel}
+                  Money In ({ledger.selectedMonthShortLabel})
                 </th>
                 <th scope="col" className="px-4 py-3.5 text-right font-medium text-muted-foreground">
-                  Full Mon–Sun Week
+                  Outgoings ({ledger.selectedMonthShortLabel})
+                </th>
+                <th scope="col" className="px-4 py-3.5 text-right font-medium text-muted-foreground">
+                  Weekly Net ({ledger.selectedMonthShortLabel})
                 </th>
                 <th scope="col" className="px-4 py-3.5 text-right font-medium text-muted-foreground">
                   Rolling {ledger.selectedMonthShortLabel} Tally
                 </th>
                 <th scope="col" className="px-4 py-3.5 text-right font-medium text-muted-foreground">
-                  Payments
+                  Entries
                 </th>
               </tr>
             </thead>
@@ -493,7 +964,12 @@ export default function CashReceiptsOwnerView({ ledger }: CashReceiptsOwnerViewP
                   scope === 'in_month'
                     ? week.payments.filter((p) => p.inSelectedMonth)
                     : week.payments;
+                const visibleExpenses =
+                  scope === 'in_month'
+                    ? week.expenses.filter((e) => e.inSelectedMonth)
+                    : week.expenses;
                 const isBoundary = week.isBoundaryStart || week.isBoundaryEnd;
+                const hasAnyEntries = week.fullWeekCount + week.fullWeekExpenseCount > 0;
 
                 return (
                   <Fragment key={week.weekKey}>
@@ -556,12 +1032,20 @@ export default function CashReceiptsOwnerView({ ledger }: CashReceiptsOwnerViewP
                             >
                               {formatPenceToGBP(c.inMonthPence)}
                             </span>
-                            <span className="block text-xs text-muted-foreground">
-                              {c.inMonthCount} payment{c.inMonthCount === 1 ? '' : 's'}
-                            </span>
+                            {c.inMonthExpensePence > 0 ? (
+                              <span className="block text-xs text-muted-foreground">
+                                Out −{formatPenceToGBP(c.inMonthExpensePence)} · Net{' '}
+                                {formatPenceToGBP(c.inMonthNetPence)}
+                              </span>
+                            ) : (
+                              <span className="block text-xs text-muted-foreground">
+                                {c.inMonthCount} payment{c.inMonthCount === 1 ? '' : 's'}
+                              </span>
+                            )}
                           </td>
                         ))}
 
+                      {/* Money In (Month) */}
                       <td className="px-4 py-4 text-right align-top tabular-nums whitespace-nowrap">
                         <span
                           className={`text-base font-semibold ${
@@ -574,62 +1058,102 @@ export default function CashReceiptsOwnerView({ ledger }: CashReceiptsOwnerViewP
                           {week.inMonthCount} payment{week.inMonthCount === 1 ? '' : 's'} in{' '}
                           {ledger.selectedMonthShortLabel}
                         </span>
-                      </td>
-
-                      <td className="px-4 py-4 text-right align-top tabular-nums whitespace-nowrap">
-                        <span className="font-medium text-foreground">
-                          {formatPenceToGBP(week.fullWeekPence)}
-                        </span>
-                        {week.isBoundaryStart && week.spillBeforePence > 0 ? (
+                        {week.isBoundaryStart && week.spillBeforePence > 0 && (
                           <span className="block text-xs text-amber-800 dark:text-amber-200">
-                            incl. {formatPenceToGBP(week.spillBeforePence)} in{' '}
+                            +{formatPenceToGBP(week.spillBeforePence)} in{' '}
                             {week.spillBeforeMonthLabel}
                           </span>
-                        ) : week.isBoundaryEnd && week.spillAfterPence > 0 ? (
+                        )}
+                        {week.isBoundaryEnd && week.spillAfterPence > 0 && (
                           <span className="block text-xs text-amber-800 dark:text-amber-200">
-                            incl. {formatPenceToGBP(week.spillAfterPence)} in{' '}
+                            +{formatPenceToGBP(week.spillAfterPence)} in{' '}
                             {week.spillAfterMonthLabel}
-                          </span>
-                        ) : isBoundary ? (
-                          <span className="block text-xs text-muted-foreground">
-                            7-day Mon–Sun ({formatPenceToGBP(0)} outside{' '}
-                            {ledger.selectedMonthShortLabel})
-                          </span>
-                        ) : (
-                          <span className="block text-xs text-muted-foreground">
-                            7-day Mon–Sun total
                           </span>
                         )}
                       </td>
 
+                      {/* Outgoings (Month) */}
                       <td className="px-4 py-4 text-right align-top tabular-nums whitespace-nowrap">
-                        <span className="text-base font-semibold text-foreground">
-                          {formatPenceToGBP(week.rollingMonthTallyPence)}
+                        <span
+                          className={`text-base font-semibold ${
+                            week.inMonthExpensePence > 0
+                              ? 'text-amber-800 dark:text-amber-200'
+                              : 'text-muted-foreground'
+                          }`}
+                        >
+                          {week.inMonthExpensePence > 0
+                            ? `−${formatPenceToGBP(week.inMonthExpensePence)}`
+                            : formatPenceToGBP(0)}
                         </span>
                         <span className="block text-xs text-muted-foreground">
-                          {week.rollingMonthPaymentCount} cumulative in{' '}
+                          {week.inMonthExpenseCount} outgoing
+                          {week.inMonthExpenseCount === 1 ? '' : 's'} in{' '}
                           {ledger.selectedMonthShortLabel}
+                        </span>
+                        {week.isBoundaryStart && week.spillBeforeExpensePence > 0 && (
+                          <span className="block text-xs text-amber-800 dark:text-amber-200">
+                            +{formatPenceToGBP(week.spillBeforeExpensePence)} in{' '}
+                            {week.spillBeforeMonthLabel}
+                          </span>
+                        )}
+                        {week.isBoundaryEnd && week.spillAfterExpensePence > 0 && (
+                          <span className="block text-xs text-amber-800 dark:text-amber-200">
+                            +{formatPenceToGBP(week.spillAfterExpensePence)} in{' '}
+                            {week.spillAfterMonthLabel}
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Weekly Net (Month) */}
+                      <td className="px-4 py-4 text-right align-top tabular-nums whitespace-nowrap">
+                        <span
+                          className={`text-base font-semibold ${
+                            week.inMonthNetPence > 0
+                              ? 'text-emerald-700 dark:text-emerald-300'
+                              : week.inMonthNetPence < 0
+                                ? 'text-amber-800 dark:text-amber-200'
+                                : 'text-muted-foreground'
+                          }`}
+                        >
+                          {formatPenceToGBP(week.inMonthNetPence)}
+                        </span>
+                        <span className="block text-xs text-muted-foreground">
+                          {isBoundary
+                            ? `7-day net: ${formatPenceToGBP(week.fullWeekNetPence)}`
+                            : 'In minus outgoings'}
                         </span>
                       </td>
 
+                      {/* Rolling [Month] Tally */}
+                      <td className="px-4 py-4 text-right align-top tabular-nums whitespace-nowrap">
+                        <span className="text-base font-semibold text-foreground">
+                          Net {formatPenceToGBP(week.rollingMonthNetTallyPence)}
+                        </span>
+                        <span className="block text-xs text-muted-foreground">
+                          In {formatPenceToGBP(week.rollingMonthTallyPence)} · Out{' '}
+                          {formatPenceToGBP(week.rollingMonthExpenseTallyPence)}
+                        </span>
+                      </td>
+
+                      {/* Entries Button */}
                       <td className="px-4 py-4 text-right align-top whitespace-nowrap">
                         <button
                           type="button"
                           onClick={() => toggleWeek(week.weekNumber)}
                           aria-expanded={isExpanded}
                           aria-controls={`week-drilldown-${week.weekNumber}`}
-                          className={`inline-flex min-h-9 items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${focusRing} ${
-                            week.fullWeekCount > 0
+                          className={`inline-flex min-h-9 items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium tabular-nums transition-colors ${focusRing} ${
+                            hasAnyEntries
                               ? 'border-border bg-card text-primary hover:bg-secondary'
                               : 'border-border/60 bg-card/40 text-muted-foreground hover:bg-secondary/50'
                           }`}
                         >
                           <span>
-                            {week.fullWeekCount > 0
-                              ? `${isExpanded ? 'Hide' : 'View'} ${week.fullWeekCount} payment${
-                                  week.fullWeekCount === 1 ? '' : 's'
-                                }`
-                              : '0 payments'}
+                            {getBoundaryEntriesButtonLabel(
+                              week,
+                              ledger.selectedMonthShortLabel,
+                              isExpanded
+                            )}
                           </span>
                           <ChevronDown
                             aria-hidden="true"
@@ -642,167 +1166,549 @@ export default function CashReceiptsOwnerView({ ledger }: CashReceiptsOwnerViewP
                     </tr>
 
                     {isExpanded && (
-                      <tr id={`week-drilldown-${week.weekNumber}`} className="bg-secondary/25">
-                        <td colSpan={totalTableColumns} className="px-4 py-4 sm:px-6">
-                          <div className="space-y-3">
+                      <tr id={`week-drilldown-${week.weekNumber}`} className="bg-secondary/20">
+                        <td colSpan={totalTableColumns} className="px-4 py-5 sm:px-6">
+                          <div className="space-y-6">
+                            {/* Boundary Scope Toggle + Week Header */}
                             <div className="flex flex-wrap items-center justify-between gap-3">
-                              <p className="text-xs font-medium text-muted-foreground tabular-nums">
-                                Verified payments in Week {week.weekNumber} ({week.weekRangeLabel})
-                              </p>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="text-xs font-semibold text-foreground tabular-nums">
+                                  Week {week.weekNumber} Ledger ({week.weekRangeLabel})
+                                </span>
+                                <span className="text-xs text-muted-foreground tabular-nums">
+                                  · In {formatPenceToGBP(week.inMonthPence)} · Out{' '}
+                                  {formatPenceToGBP(week.inMonthExpensePence)} · Net{' '}
+                                  {formatPenceToGBP(week.inMonthNetPence)}
+                                </span>
+                              </div>
 
-                              {isBoundary && (
-                                <div
-                                  role="group"
-                                  aria-label={`Boundary week ${week.weekNumber} payment scope`}
-                                  className="inline-flex items-center gap-1 rounded-lg border border-border bg-card p-1"
+                              <div className="flex flex-wrap items-center gap-2">
+                                {isBoundary && (
+                                  <div
+                                    role="group"
+                                    aria-label={`Boundary week ${week.weekNumber} entry scope`}
+                                    className="inline-flex items-center gap-1 rounded-lg border border-border bg-card p-1"
+                                  >
+                                    <button
+                                      type="button"
+                                      aria-pressed={scope === 'in_month'}
+                                      onClick={() =>
+                                        setBoundaryScope((prev) => ({
+                                          ...prev,
+                                          [week.weekNumber]: 'in_month',
+                                        }))
+                                      }
+                                      className={`rounded-md px-2.5 py-1 text-xs font-medium tabular-nums ${focusRing} ${
+                                        scope === 'in_month'
+                                          ? 'bg-primary text-primary-foreground'
+                                          : 'text-muted-foreground hover:text-foreground'
+                                      }`}
+                                    >
+                                      Only days in {ledger.selectedMonthShortLabel} (
+                                      {week.inMonthCount + week.inMonthExpenseCount})
+                                    </button>
+                                    <button
+                                      type="button"
+                                      aria-pressed={scope === 'full_week'}
+                                      onClick={() =>
+                                        setBoundaryScope((prev) => ({
+                                          ...prev,
+                                          [week.weekNumber]: 'full_week',
+                                        }))
+                                      }
+                                      className={`rounded-md px-2.5 py-1 text-xs font-medium tabular-nums ${focusRing} ${
+                                        scope === 'full_week'
+                                          ? 'bg-primary text-primary-foreground'
+                                          : 'text-muted-foreground hover:text-foreground'
+                                      }`}
+                                    >
+                                      All 7 days Mon–Sun (
+                                      {week.fullWeekCount + week.fullWeekExpenseCount})
+                                    </button>
+                                  </div>
+                                )}
+
+                                {addingInWeek !== week.weekNumber && (
+                                  <button
+                                    type="button"
+                                    onClick={() => openWeekInlineAdd(week)}
+                                    className={`inline-flex min-h-8 items-center gap-1 rounded-lg border border-primary/30 bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary hover:bg-primary/15 ${focusRing}`}
+                                  >
+                                    <Plus aria-hidden="true" className="h-3.5 w-3.5" />
+                                    <span>Add outgoing to Week {week.weekNumber}</span>
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+
+                            {weekActionError && (
+                              <div
+                                role="alert"
+                                className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs font-medium text-red-700 dark:text-red-300"
+                              >
+                                {weekActionError}
+                              </div>
+                            )}
+
+                            {/* Part A: Outgoings & Expenses in Week N */}
+                            <div className="space-y-2.5">
+                              <div className="flex items-center justify-between">
+                                <h3 className="text-xs font-semibold text-foreground">
+                                  Outgoings & expenses ({visibleExpenses.length})
+                                </h3>
+                              </div>
+
+                              {addingInWeek === week.weekNumber && (
+                                <form
+                                  aria-label={`Add outgoing to Week ${week.weekNumber}`}
+                                  onSubmit={handleWeekInlineAddSubmit}
+                                  className="grid grid-cols-1 gap-2.5 rounded-xl border border-border bg-card p-3 sm:grid-cols-2 lg:grid-cols-12 lg:items-end"
                                 >
-                                  <button
-                                    type="button"
-                                    aria-pressed={scope === 'in_month'}
-                                    onClick={() =>
-                                      setBoundaryScope((prev) => ({
-                                        ...prev,
-                                        [week.weekNumber]: 'in_month',
-                                      }))
-                                    }
-                                    className={`rounded-md px-2.5 py-1 text-xs font-medium tabular-nums ${focusRing} ${
-                                      scope === 'in_month'
-                                        ? 'bg-primary text-primary-foreground'
-                                        : 'text-muted-foreground hover:text-foreground'
-                                    }`}
-                                  >
-                                    Only days in {ledger.selectedMonthShortLabel} ({week.inMonthCount})
-                                  </button>
-                                  <button
-                                    type="button"
-                                    aria-pressed={scope === 'full_week'}
-                                    onClick={() =>
-                                      setBoundaryScope((prev) => ({
-                                        ...prev,
-                                        [week.weekNumber]: 'full_week',
-                                      }))
-                                    }
-                                    className={`rounded-md px-2.5 py-1 text-xs font-medium tabular-nums ${focusRing} ${
-                                      scope === 'full_week'
-                                        ? 'bg-primary text-primary-foreground'
-                                        : 'text-muted-foreground hover:text-foreground'
-                                    }`}
-                                  >
-                                    All 7 days Mon–Sun ({week.fullWeekCount})
-                                  </button>
+                                  <div className="flex flex-col gap-1 lg:col-span-2">
+                                    <label
+                                      htmlFor={`week-${week.weekNumber}-date`}
+                                      className="text-xs font-medium text-foreground"
+                                    >
+                                      Date
+                                    </label>
+                                    <input
+                                      id={`week-${week.weekNumber}-date`}
+                                      name="expenseDate"
+                                      type="date"
+                                      required
+                                      value={weekAddDate}
+                                      onChange={(e) => setWeekAddDate(e.target.value)}
+                                      className={`min-h-9 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs text-foreground tabular-nums ${focusRing}`}
+                                    />
+                                  </div>
+                                  <div className="flex flex-col gap-1 lg:col-span-3">
+                                    <label
+                                      htmlFor={`week-${week.weekNumber}-centre`}
+                                      className="text-xs font-medium text-foreground"
+                                    >
+                                      Centre
+                                    </label>
+                                    <select
+                                      id={`week-${week.weekNumber}-centre`}
+                                      name="centreId"
+                                      required
+                                      value={weekAddCentreId}
+                                      onChange={(e) => setWeekAddCentreId(e.target.value)}
+                                      className={`min-h-9 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs text-foreground ${focusRing}`}
+                                    >
+                                      {ledger.centreSummaries.map((c) => (
+                                        <option key={c.centreId} value={c.centreId}>
+                                          {c.centreName}
+                                        </option>
+                                      ))}
+                                      {ledger.centreSummaries.length > 1 && (
+                                        <option value="split_all">
+                                          Split equally across all centres
+                                        </option>
+                                      )}
+                                    </select>
+                                  </div>
+                                  <div className="flex flex-col gap-1 lg:col-span-2">
+                                    <label
+                                      htmlFor={`week-${week.weekNumber}-amount`}
+                                      className="text-xs font-medium text-foreground"
+                                    >
+                                      Amount (£)
+                                    </label>
+                                    <input
+                                      id={`week-${week.weekNumber}-amount`}
+                                      name="amount"
+                                      type="text"
+                                      inputMode="decimal"
+                                      required
+                                      placeholder="0.00"
+                                      value={weekAddAmount}
+                                      onChange={(e) => setWeekAddAmount(e.target.value)}
+                                      className={`min-h-9 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs text-foreground tabular-nums ${focusRing}`}
+                                    />
+                                  </div>
+                                  <div className="flex flex-col gap-1 lg:col-span-3">
+                                    <label
+                                      htmlFor={`week-${week.weekNumber}-desc`}
+                                      className="text-xs font-medium text-foreground"
+                                    >
+                                      Description
+                                    </label>
+                                    <input
+                                      id={`week-${week.weekNumber}-desc`}
+                                      name="description"
+                                      type="text"
+                                      required
+                                      maxLength={300}
+                                      placeholder="Description of outgoing"
+                                      value={weekAddDescription}
+                                      onChange={(e) => setWeekAddDescription(e.target.value)}
+                                      className={`min-h-9 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs text-foreground ${focusRing}`}
+                                    />
+                                  </div>
+                                  <div className="flex flex-col gap-1 lg:col-span-2">
+                                    <label
+                                      htmlFor={`week-${week.weekNumber}-cat`}
+                                      className="text-xs font-medium text-foreground"
+                                    >
+                                      Category
+                                    </label>
+                                    <div className="flex items-center gap-1.5">
+                                      <select
+                                        id={`week-${week.weekNumber}-cat`}
+                                        name="category"
+                                        value={weekAddCategory}
+                                        onChange={(e) => setWeekAddCategory(e.target.value)}
+                                        className={`min-h-9 w-full rounded-lg border border-border bg-background px-2 py-1.5 text-xs text-foreground ${focusRing}`}
+                                      >
+                                        {EXPENSE_CATEGORY_OPTIONS.map((opt) => (
+                                          <option key={opt.value} value={opt.value}>
+                                            {opt.label}
+                                          </option>
+                                        ))}
+                                      </select>
+                                      <button
+                                        type="submit"
+                                        disabled={isPending}
+                                        className={`min-h-9 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50 ${focusRing}`}
+                                      >
+                                        Save
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => setAddingInWeek(null)}
+                                        className={`min-h-9 rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground ${focusRing}`}
+                                      >
+                                        Cancel
+                                      </button>
+                                    </div>
+                                  </div>
+                                </form>
+                              )}
+
+                              {visibleExpenses.length === 0 ? (
+                                <p className="text-xs text-muted-foreground">
+                                  No outgoings recorded in this period.
+                                </p>
+                              ) : (
+                                <div className="overflow-x-auto rounded-xl border border-border bg-card">
+                                  <table className="w-full border-collapse text-left text-xs sm:text-sm">
+                                    <thead>
+                                      <tr className="border-b border-border bg-secondary/40 text-muted-foreground">
+                                        <th scope="col" className="px-3 py-2.5 font-medium">
+                                          Date
+                                        </th>
+                                        <th scope="col" className="px-3 py-2.5 font-medium">
+                                          Description
+                                        </th>
+                                        <th scope="col" className="px-3 py-2.5 font-medium">
+                                          Category
+                                        </th>
+                                        <th scope="col" className="px-3 py-2.5 font-medium">
+                                          Centre
+                                        </th>
+                                        <th
+                                          scope="col"
+                                          className="px-3 py-2.5 text-right font-medium"
+                                        >
+                                          Amount
+                                        </th>
+                                        <th
+                                          scope="col"
+                                          className="px-3 py-2.5 text-right font-medium"
+                                        >
+                                          Actions
+                                        </th>
+                                      </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-border">
+                                      {visibleExpenses.map((exp) => {
+                                        const isEditing = editingExpenseId === exp.id;
+                                        const isConfirmingDelete = confirmDeleteExpenseId === exp.id;
+
+                                        if (isEditing) {
+                                          return (
+                                            <tr key={exp.id} className="bg-secondary/20">
+                                              <td className="px-3 py-2">
+                                                <input
+                                                  type="date"
+                                                  aria-label="Edit outgoing date"
+                                                  value={editDate}
+                                                  onChange={(e) => setEditDate(e.target.value)}
+                                                  className={`min-h-8 rounded-lg border border-border bg-background px-2 py-1 text-xs tabular-nums ${focusRing}`}
+                                                />
+                                              </td>
+                                              <td className="px-3 py-2">
+                                                <input
+                                                  type="text"
+                                                  aria-label="Edit outgoing description"
+                                                  maxLength={300}
+                                                  value={editDescription}
+                                                  onChange={(e) =>
+                                                    setEditDescription(e.target.value)
+                                                  }
+                                                  className={`min-h-8 w-full rounded-lg border border-border bg-background px-2 py-1 text-xs ${focusRing}`}
+                                                />
+                                              </td>
+                                              <td className="px-3 py-2">
+                                                <select
+                                                  aria-label="Edit outgoing category"
+                                                  value={editCategory}
+                                                  onChange={(e) => setEditCategory(e.target.value)}
+                                                  className={`min-h-8 rounded-lg border border-border bg-background px-2 py-1 text-xs ${focusRing}`}
+                                                >
+                                                  {EXPENSE_CATEGORY_OPTIONS.map((opt) => (
+                                                    <option key={opt.value} value={opt.value}>
+                                                      {opt.label}
+                                                    </option>
+                                                  ))}
+                                                </select>
+                                              </td>
+                                              <td className="px-3 py-2">
+                                                <select
+                                                  aria-label="Edit outgoing centre"
+                                                  value={editCentreId}
+                                                  onChange={(e) => setEditCentreId(e.target.value)}
+                                                  className={`min-h-8 rounded-lg border border-border bg-background px-2 py-1 text-xs ${focusRing}`}
+                                                >
+                                                  {ledger.centreSummaries.map((c) => (
+                                                    <option key={c.centreId} value={c.centreId}>
+                                                      {shortCentreName(c.centreName)}
+                                                    </option>
+                                                  ))}
+                                                </select>
+                                              </td>
+                                              <td className="px-3 py-2 text-right">
+                                                <input
+                                                  type="text"
+                                                  inputMode="decimal"
+                                                  aria-label="Edit outgoing amount"
+                                                  value={editAmount}
+                                                  onChange={(e) => setEditAmount(e.target.value)}
+                                                  className={`min-h-8 w-24 rounded-lg border border-border bg-background px-2 py-1 text-right text-xs tabular-nums ${focusRing}`}
+                                                />
+                                              </td>
+                                              <td className="px-3 py-2 text-right whitespace-nowrap">
+                                                <div className="inline-flex items-center gap-1.5">
+                                                  <button
+                                                    type="button"
+                                                    disabled={isPending}
+                                                    onClick={() => handleSaveExpenseEdit(exp.id)}
+                                                    className={`rounded-md bg-primary px-2.5 py-1 text-xs font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50 ${focusRing}`}
+                                                  >
+                                                    Save
+                                                  </button>
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => setEditingExpenseId(null)}
+                                                    className={`rounded-md border border-border bg-card px-2 py-1 text-xs font-medium text-muted-foreground hover:text-foreground ${focusRing}`}
+                                                  >
+                                                    Cancel
+                                                  </button>
+                                                </div>
+                                              </td>
+                                            </tr>
+                                          );
+                                        }
+
+                                        return (
+                                          <tr key={exp.id} className="hover:bg-secondary/20">
+                                            <td className="px-3 py-2.5 tabular-nums whitespace-nowrap">
+                                              <span className="font-medium text-foreground">
+                                                {formatInvoiceDate(exp.expenseDate)}
+                                              </span>
+                                              {!exp.inSelectedMonth && (
+                                                <span className="ml-2 inline-flex rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-medium text-amber-800 dark:text-amber-200">
+                                                  {formatMonthShortOnly(exp.expenseDate)} tally
+                                                </span>
+                                              )}
+                                            </td>
+                                            <td className="px-3 py-2.5 font-medium text-foreground">
+                                              {exp.description}
+                                            </td>
+                                            <td className="px-3 py-2.5 text-muted-foreground whitespace-nowrap">
+                                              <span className="inline-flex rounded-md bg-secondary px-2 py-0.5 text-xs font-medium text-foreground">
+                                                {formatExpenseCategory(exp.category)}
+                                              </span>
+                                            </td>
+                                            <td className="px-3 py-2.5 text-muted-foreground whitespace-nowrap">
+                                              {shortCentreName(exp.centreName)}
+                                            </td>
+                                            <td className="px-3 py-2.5 text-right font-semibold text-amber-800 dark:text-amber-200 tabular-nums whitespace-nowrap">
+                                              −{formatPenceToGBP(exp.amountPence)}
+                                            </td>
+                                            <td className="px-3 py-2.5 text-right whitespace-nowrap">
+                                              {isConfirmingDelete ? (
+                                                <div className="inline-flex items-center gap-1.5">
+                                                  <span className="text-xs text-muted-foreground">
+                                                    Delete?
+                                                  </span>
+                                                  <button
+                                                    type="button"
+                                                    disabled={isPending}
+                                                    onClick={() =>
+                                                      handleConfirmDeleteExpense(exp.id)
+                                                    }
+                                                    className={`rounded-md bg-red-600 px-2 py-0.5 text-xs font-semibold text-white hover:bg-red-700 disabled:opacity-50 ${focusRing}`}
+                                                  >
+                                                    Yes
+                                                  </button>
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => setConfirmDeleteExpenseId(null)}
+                                                    className={`rounded-md border border-border bg-card px-2 py-0.5 text-xs font-medium text-muted-foreground hover:text-foreground ${focusRing}`}
+                                                  >
+                                                    No
+                                                  </button>
+                                                </div>
+                                              ) : (
+                                                <div className="inline-flex items-center gap-2">
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => startEditingExpense(exp)}
+                                                    className={`text-xs font-medium text-primary hover:underline ${focusRing}`}
+                                                  >
+                                                    Edit
+                                                  </button>
+                                                  <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                      setConfirmDeleteExpenseId(exp.id)
+                                                    }
+                                                    className={`text-xs font-medium text-muted-foreground hover:text-red-600 dark:hover:text-red-400 ${focusRing}`}
+                                                  >
+                                                    Delete
+                                                  </button>
+                                                </div>
+                                              )}
+                                            </td>
+                                          </tr>
+                                        );
+                                      })}
+                                    </tbody>
+                                  </table>
                                 </div>
                               )}
                             </div>
 
-                            {visiblePayments.length === 0 ? (
-                              <p className="py-2 text-sm text-muted-foreground">
-                                {isBoundary && scope === 'in_month' && week.fullWeekCount > 0
-                                  ? `No payments recorded on the ${ledger.selectedMonthShortLabel} day(s) of this boundary week. Switch to "All 7 days Mon–Sun" to inspect the ${week.fullWeekCount} payment(s) recorded in the adjacent month.`
-                                  : 'No verified payments recorded during this week.'}
-                              </p>
-                            ) : (
-                              <div className="overflow-x-auto rounded-xl border border-border bg-card">
-                                <table className="w-full border-collapse text-left text-xs sm:text-sm">
-                                  <thead>
-                                    <tr className="border-b border-border bg-secondary/40 text-muted-foreground">
-                                      <th scope="col" className="px-3 py-2.5 font-medium">
-                                        Date recorded
-                                      </th>
-                                      <th scope="col" className="px-3 py-2.5 font-medium">
-                                        Parent
-                                      </th>
-                                      <th scope="col" className="px-3 py-2.5 font-medium">
-                                        Student(s)
-                                      </th>
-                                      <th scope="col" className="px-3 py-2.5 font-medium">
-                                        Centre
-                                      </th>
-                                      <th scope="col" className="px-3 py-2.5 font-medium">
-                                        Invoice
-                                      </th>
-                                      <th scope="col" className="px-3 py-2.5 font-medium">
-                                        Method
-                                      </th>
-                                      <th
-                                        scope="col"
-                                        className="px-3 py-2.5 text-right font-medium"
-                                      >
-                                        Amount
-                                      </th>
-                                    </tr>
-                                  </thead>
-                                  <tbody className="divide-y divide-border">
-                                    {visiblePayments.map((payment) => (
-                                      <tr key={payment.id} className="hover:bg-secondary/20">
-                                        <td className="px-3 py-2.5 tabular-nums whitespace-nowrap">
-                                          <span className="font-medium text-foreground">
-                                            {formatInvoiceDate(payment.businessDate)}
-                                          </span>
-                                          {!payment.inSelectedMonth && (
-                                            <span className="ml-2 inline-flex rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-medium text-amber-800 dark:text-amber-200">
-                                              {formatMonthShortOnly(payment.businessDate)} tally
-                                            </span>
-                                          )}
-                                        </td>
-                                        <td className="px-3 py-2.5">
-                                          <Link
-                                            href={`/dashboard/parents/${payment.parentId}`}
-                                            className={`font-medium text-primary hover:underline ${focusRing}`}
-                                          >
-                                            {payment.parentName}
-                                          </Link>
-                                        </td>
-                                        <td className="px-3 py-2.5">
-                                          {payment.students.length > 0 ? (
-                                            <span className="flex flex-wrap gap-x-2 gap-y-1">
-                                              {payment.students.map((s, idx) => (
-                                                <Fragment key={s.id}>
-                                                  {idx > 0 && (
-                                                    <span className="text-muted-foreground">·</span>
-                                                  )}
-                                                  <Link
-                                                    href={`/dashboard/students/${s.id}`}
-                                                    className={`text-primary hover:underline ${focusRing}`}
-                                                  >
-                                                    {s.name}
-                                                  </Link>
-                                                </Fragment>
-                                              ))}
-                                            </span>
-                                          ) : (
-                                            <span className="text-muted-foreground">
-                                              See invoice
-                                            </span>
-                                          )}
-                                        </td>
-                                        <td className="px-3 py-2.5 text-muted-foreground whitespace-nowrap">
-                                          {shortCentreName(payment.centreName)}
-                                        </td>
-                                        <td className="px-3 py-2.5 whitespace-nowrap">
-                                          <Link
-                                            href={`/dashboard/finance/invoices/${payment.invoiceId}`}
-                                            className={`font-medium text-primary hover:underline ${focusRing}`}
-                                          >
-                                            {payment.invoiceNumber}
-                                          </Link>
-                                        </td>
-                                        <td className="px-3 py-2.5 text-muted-foreground whitespace-nowrap">
-                                          {formatPaymentMethod(payment.method)}
-                                          {payment.transactionReference && (
-                                            <span className="ml-1.5 text-xs text-muted-foreground/80">
-                                              ({payment.transactionReference})
-                                            </span>
-                                          )}
-                                        </td>
-                                        <td className="px-3 py-2.5 text-right font-semibold text-foreground tabular-nums whitespace-nowrap">
-                                          {formatPenceToGBP(payment.amountPence)}
-                                        </td>
+                            {/* Part B: Verified Payments Received in Week N */}
+                            <div className="space-y-2.5 border-t border-border pt-4">
+                              <h3 className="text-xs font-semibold text-foreground">
+                                Verified payments received ({visiblePayments.length})
+                              </h3>
+
+                              {visiblePayments.length === 0 ? (
+                                <p className="text-xs text-muted-foreground">
+                                  {isBoundary && scope === 'in_month' && week.fullWeekCount > 0
+                                    ? `No payments recorded on the ${ledger.selectedMonthShortLabel} day(s) of this boundary week. Switch to "All 7 days Mon–Sun" above to inspect the ${week.fullWeekCount} payment(s) recorded in the adjacent month.`
+                                    : 'No verified payments recorded during this period.'}
+                                </p>
+                              ) : (
+                                <div className="overflow-x-auto rounded-xl border border-border bg-card">
+                                  <table className="w-full border-collapse text-left text-xs sm:text-sm">
+                                    <thead>
+                                      <tr className="border-b border-border bg-secondary/40 text-muted-foreground">
+                                        <th scope="col" className="px-3 py-2.5 font-medium">
+                                          Date recorded
+                                        </th>
+                                        <th scope="col" className="px-3 py-2.5 font-medium">
+                                          Parent
+                                        </th>
+                                        <th scope="col" className="px-3 py-2.5 font-medium">
+                                          Student(s)
+                                        </th>
+                                        <th scope="col" className="px-3 py-2.5 font-medium">
+                                          Centre
+                                        </th>
+                                        <th scope="col" className="px-3 py-2.5 font-medium">
+                                          Invoice
+                                        </th>
+                                        <th scope="col" className="px-3 py-2.5 font-medium">
+                                          Method
+                                        </th>
+                                        <th
+                                          scope="col"
+                                          className="px-3 py-2.5 text-right font-medium"
+                                        >
+                                          Amount
+                                        </th>
                                       </tr>
-                                    ))}
-                                  </tbody>
-                                </table>
-                              </div>
-                            )}
+                                    </thead>
+                                    <tbody className="divide-y divide-border">
+                                      {visiblePayments.map((payment) => (
+                                        <tr key={payment.id} className="hover:bg-secondary/20">
+                                          <td className="px-3 py-2.5 tabular-nums whitespace-nowrap">
+                                            <span className="font-medium text-foreground">
+                                              {formatInvoiceDate(payment.businessDate)}
+                                            </span>
+                                            {!payment.inSelectedMonth && (
+                                              <span className="ml-2 inline-flex rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-medium text-amber-800 dark:text-amber-200">
+                                                {formatMonthShortOnly(payment.businessDate)} tally
+                                              </span>
+                                            )}
+                                          </td>
+                                          <td className="px-3 py-2.5">
+                                            <Link
+                                              href={`/dashboard/parents/${payment.parentId}`}
+                                              className={`font-medium text-primary hover:underline ${focusRing}`}
+                                            >
+                                              {payment.parentName}
+                                            </Link>
+                                          </td>
+                                          <td className="px-3 py-2.5">
+                                            {payment.students.length > 0 ? (
+                                              <span className="flex flex-wrap gap-x-2 gap-y-1">
+                                                {payment.students.map((s, idx) => (
+                                                  <Fragment key={s.id}>
+                                                    {idx > 0 && (
+                                                      <span className="text-muted-foreground">
+                                                        ·
+                                                      </span>
+                                                    )}
+                                                    <Link
+                                                      href={`/dashboard/students/${s.id}`}
+                                                      className={`text-primary hover:underline ${focusRing}`}
+                                                    >
+                                                      {s.name}
+                                                    </Link>
+                                                  </Fragment>
+                                                ))}
+                                              </span>
+                                            ) : (
+                                              <span className="text-muted-foreground">
+                                                See invoice
+                                              </span>
+                                            )}
+                                          </td>
+                                          <td className="px-3 py-2.5 text-muted-foreground whitespace-nowrap">
+                                            {shortCentreName(payment.centreName)}
+                                          </td>
+                                          <td className="px-3 py-2.5 whitespace-nowrap">
+                                            <Link
+                                              href={`/dashboard/finance/invoices/${payment.invoiceId}`}
+                                              className={`font-medium text-primary hover:underline ${focusRing}`}
+                                            >
+                                              {payment.invoiceNumber}
+                                            </Link>
+                                          </td>
+                                          <td className="px-3 py-2.5 text-muted-foreground whitespace-nowrap">
+                                            {formatPaymentMethod(payment.method)}
+                                            {payment.transactionReference && (
+                                              <span className="ml-1.5 text-xs text-muted-foreground/80">
+                                                ({payment.transactionReference})
+                                              </span>
+                                            )}
+                                          </td>
+                                          <td className="px-3 py-2.5 text-right font-semibold text-foreground tabular-nums whitespace-nowrap">
+                                            {formatPenceToGBP(payment.amountPence)}
+                                          </td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </td>
                       </tr>
@@ -817,25 +1723,34 @@ export default function CashReceiptsOwnerView({ ledger }: CashReceiptsOwnerViewP
                   {ledger.selectedMonthLabel} Total
                 </th>
                 {showCentreColumns &&
-                  ledger.centreSummaries.map((c) => (
+                  ledger.centreCashflowSummaries.map((c) => (
                     <td
                       key={c.centreId}
                       className="px-4 py-3.5 text-right tabular-nums whitespace-nowrap"
                     >
-                      {formatPenceToGBP(c.monthPence)}
+                      <span>{formatPenceToGBP(c.monthIncomePence)}</span>
+                      <span className="block text-xs font-normal text-muted-foreground">
+                        Out −{formatPenceToGBP(c.monthExpensePence)} · Net{' '}
+                        {formatPenceToGBP(c.monthNetPence)}
+                      </span>
                     </td>
                   ))}
                 <td className="px-4 py-3.5 text-right tabular-nums whitespace-nowrap">
                   {formatPenceToGBP(ledger.monthTotalPence)}
                 </td>
-                <td className="px-4 py-3.5 text-right text-xs font-normal text-muted-foreground">
-                  Clipped to {ledger.selectedMonthShortLabel}
+                <td className="px-4 py-3.5 text-right text-amber-800 dark:text-amber-200 tabular-nums whitespace-nowrap">
+                  {ledger.monthExpenseTotalPence > 0
+                    ? `−${formatPenceToGBP(ledger.monthExpenseTotalPence)}`
+                    : formatPenceToGBP(0)}
                 </td>
                 <td className="px-4 py-3.5 text-right tabular-nums whitespace-nowrap">
-                  {formatPenceToGBP(ledger.monthTotalPence)}
+                  {formatPenceToGBP(ledger.monthNetPence)}
+                </td>
+                <td className="px-4 py-3.5 text-right tabular-nums whitespace-nowrap">
+                  Net {formatPenceToGBP(ledger.monthNetPence)}
                 </td>
                 <td className="px-4 py-3.5 text-right text-xs font-normal text-muted-foreground tabular-nums">
-                  {ledger.monthPaymentCount} verified
+                  {ledger.monthPaymentCount} in · {ledger.monthExpenseCount} out
                 </td>
               </tr>
             </tfoot>
@@ -843,31 +1758,33 @@ export default function CashReceiptsOwnerView({ ledger }: CashReceiptsOwnerViewP
         </div>
       </section>
 
-      {/* 4. 6-Month Comparison & YoY Trajectory Table */}
-      <section aria-labelledby="six-month-trend-heading" className="space-y-3">
+      {/* 5. Yearly Running Totals & Monthly Trajectory Table (Jan–Dec) */}
+      <section aria-labelledby="yearly-running-heading" className="space-y-3">
         <div className="flex flex-col justify-between gap-1 sm:flex-row sm:items-baseline">
           <h2
-            id="six-month-trend-heading"
+            id="yearly-running-heading"
             className="text-xl font-semibold tracking-tight text-foreground"
           >
-            6-month cash trajectory & MoM / YoY comparison
+            {ytd.selectedYear} yearly running totals & monthly trajectory ({ytd.rangeLabel})
           </h2>
           <p className="text-sm text-muted-foreground">
-            Select any month to inspect its weekly Monday–Sunday breakdown above.
+            Cumulative Jan–Dec cash received, outgoings, and net cashflow. Select any month to
+            inspect its weekly breakdown above.
           </p>
         </div>
 
         <div
           tabIndex={0}
           role="region"
-          aria-labelledby="six-month-trend-heading"
+          aria-labelledby="yearly-running-heading"
           className="overflow-x-auto rounded-2xl border border-border bg-card"
         >
           <table className="w-full border-collapse text-left text-sm">
             <caption className="sr-only">
-              Six-month cash received trajectory with Month-on-Month and Year-on-Year comparisons
+              {ytd.selectedYear} monthly cash received, outgoings, net cashflow, and cumulative
+              yearly running totals
             </caption>
-            <thead className="border-b border-border bg-secondary/70">
+            <thead className="sticky top-0 z-10 border-b border-border bg-secondary/70 backdrop-blur-xs">
               <tr>
                 <th scope="col" className="px-4 py-3.5 font-medium text-muted-foreground">
                   Month
@@ -883,18 +1800,24 @@ export default function CashReceiptsOwnerView({ ledger }: CashReceiptsOwnerViewP
                     </th>
                   ))}
                 <th scope="col" className="px-4 py-3.5 text-right font-medium text-muted-foreground">
-                  Monthly Total
+                  Money In
                 </th>
                 <th scope="col" className="px-4 py-3.5 text-right font-medium text-muted-foreground">
-                  MoM Change
+                  Outgoings
                 </th>
                 <th scope="col" className="px-4 py-3.5 text-right font-medium text-muted-foreground">
-                  YoY Comparison
+                  Monthly Net
+                </th>
+                <th scope="col" className="px-4 py-3.5 text-right font-medium text-muted-foreground">
+                  MoM Cash In
+                </th>
+                <th scope="col" className="px-4 py-3.5 text-right font-medium text-muted-foreground">
+                  Yearly Running Total (Jan–Month)
                 </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {ledger.sixMonthTrend.map((row) => (
+              {ytd.months.map((row) => (
                 <tr
                   key={row.yearMonth}
                   className={
@@ -903,7 +1826,10 @@ export default function CashReceiptsOwnerView({ ledger }: CashReceiptsOwnerViewP
                       : 'bg-card transition-colors hover:bg-secondary/30'
                   }
                 >
-                  <th scope="row" className="px-4 py-3.5 font-medium text-foreground whitespace-nowrap">
+                  <th
+                    scope="row"
+                    className="px-4 py-3.5 font-medium text-foreground whitespace-nowrap"
+                  >
                     <div className="flex items-center gap-2">
                       <Link
                         href={buildCashflowHref({ month: row.yearMonth })}
@@ -932,66 +1858,155 @@ export default function CashReceiptsOwnerView({ ledger }: CashReceiptsOwnerViewP
                       >
                         <span
                           className={
-                            c.monthPence > 0 ? 'text-foreground' : 'text-muted-foreground'
+                            c.incomePence > 0 ? 'text-foreground' : 'text-muted-foreground'
                           }
                         >
-                          {formatPenceToGBP(c.monthPence)}
+                          {formatPenceToGBP(c.incomePence)}
                         </span>
+                        {c.expensePence > 0 && (
+                          <span className="block text-xs font-normal text-muted-foreground">
+                            Out −{formatPenceToGBP(c.expensePence)} · Net{' '}
+                            {formatPenceToGBP(c.netPence)}
+                          </span>
+                        )}
                       </td>
                     ))}
 
                   <td className="px-4 py-3.5 text-right tabular-nums whitespace-nowrap">
-                    <span className="font-semibold text-foreground">
-                      {formatPenceToGBP(row.totalPence)}
+                    <span
+                      className={
+                        row.incomePence > 0
+                          ? 'font-semibold text-foreground'
+                          : 'text-muted-foreground'
+                      }
+                    >
+                      {formatPenceToGBP(row.incomePence)}
                     </span>
                     <span className="block text-xs font-normal text-muted-foreground">
-                      {row.paymentCount} payment{row.paymentCount === 1 ? '' : 's'}
+                      {row.incomeCount} payment{row.incomeCount === 1 ? '' : 's'}
                     </span>
                   </td>
 
                   <td className="px-4 py-3.5 text-right tabular-nums whitespace-nowrap">
-                    {row.momComparison.comparisonStatus === 'insufficient_history' ? (
+                    <span
+                      className={
+                        row.expensePence > 0
+                          ? 'font-semibold text-amber-800 dark:text-amber-200'
+                          : 'text-muted-foreground'
+                      }
+                    >
+                      {row.expensePence > 0
+                        ? `−${formatPenceToGBP(row.expensePence)}`
+                        : formatPenceToGBP(0)}
+                    </span>
+                    <span className="block text-xs font-normal text-muted-foreground">
+                      {row.expenseCount} outgoing{row.expenseCount === 1 ? '' : 's'}
+                    </span>
+                  </td>
+
+                  <td className="px-4 py-3.5 text-right tabular-nums whitespace-nowrap">
+                    <span
+                      className={`font-semibold ${
+                        row.netPence > 0
+                          ? 'text-emerald-700 dark:text-emerald-300'
+                          : row.netPence < 0
+                            ? 'text-amber-800 dark:text-amber-200'
+                            : 'text-muted-foreground'
+                      }`}
+                    >
+                      {formatPenceToGBP(row.netPence)}
+                    </span>
+                    {row.netMarginPercent !== null && (
+                      <span className="block text-xs font-normal text-muted-foreground">
+                        {row.netMarginPercent}% net margin
+                      </span>
+                    )}
+                  </td>
+
+                  <td className="px-4 py-3.5 text-right tabular-nums whitespace-nowrap">
+                    {row.momIncomeComparison.comparisonStatus === 'insufficient_history' ? (
                       <span className="text-xs text-muted-foreground">Prior predates records</span>
                     ) : (
                       <div className="inline-flex flex-col items-end gap-1">
                         <div className="flex items-center gap-1.5">
                           <span className="font-medium text-foreground">
-                            {formatSignedPenceDelta(row.momComparison.deltaPence)}
+                            {formatSignedPenceDelta(row.momIncomeComparison.deltaPence)}
                           </span>
-                          <DeltaBadge comparison={row.momComparison} />
+                          <DeltaBadge comparison={row.momIncomeComparison} />
                         </div>
-                        <span className="text-xs text-muted-foreground">
-                          vs {formatPenceToGBP(row.momComparison.priorPence)} (
-                          {row.momComparison.priorPeriodLabel})
+                        <span className="text-xs font-normal text-muted-foreground">
+                          vs {formatPenceToGBP(row.momIncomeComparison.priorPence)}
                         </span>
                       </div>
                     )}
                   </td>
 
                   <td className="px-4 py-3.5 text-right tabular-nums whitespace-nowrap">
-                    {row.yoyComparison.comparisonStatus === 'insufficient_history' ? (
-                      <span className="text-xs text-muted-foreground">
-                        Baseline building (starts{' '}
-                        {row.yoyComparison.firstRecordedMonthLabel ?? 'recently'})
-                      </span>
-                    ) : (
-                      <div className="inline-flex flex-col items-end gap-1">
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-medium text-foreground">
-                            {formatSignedPenceDelta(row.yoyComparison.deltaPence)}
-                          </span>
-                          <DeltaBadge comparison={row.yoyComparison} />
-                        </div>
-                        <span className="text-xs text-muted-foreground">
-                          vs {formatPenceToGBP(row.yoyComparison.priorPence)} (
-                          {row.yoyComparison.priorPeriodLabel})
-                        </span>
-                      </div>
-                    )}
+                    <span className="font-semibold text-foreground">
+                      Net {formatPenceToGBP(row.runningYearlyNetPence)}
+                    </span>
+                    <span className="block text-xs font-normal text-muted-foreground">
+                      Cum. In {formatPenceToGBP(row.runningYearlyIncomePence)} · Out{' '}
+                      {formatPenceToGBP(row.runningYearlyExpensePence)}
+                    </span>
                   </td>
                 </tr>
               ))}
             </tbody>
+            <tfoot className="border-t-2 border-border bg-secondary/40 font-semibold text-foreground">
+              <tr>
+                <th scope="row" className="px-4 py-3.5 text-left">
+                  {ytd.rangeLabel} Total
+                </th>
+                {showCentreColumns &&
+                  ytd.byCentre.map((c) => (
+                    <td
+                      key={c.centreId}
+                      className="px-4 py-3.5 text-right tabular-nums whitespace-nowrap"
+                    >
+                      <span>{formatPenceToGBP(c.totalIncomePence)}</span>
+                      <span className="block text-xs font-normal text-muted-foreground">
+                        Out −{formatPenceToGBP(c.totalExpensePence)} · Net{' '}
+                        {formatPenceToGBP(c.totalNetPence)}
+                      </span>
+                    </td>
+                  ))}
+                <td className="px-4 py-3.5 text-right tabular-nums whitespace-nowrap">
+                  <span>{formatPenceToGBP(ytd.totalIncomePence)}</span>
+                  <span className="block text-xs font-normal text-muted-foreground">
+                    {ytd.totalIncomeCount} payments
+                  </span>
+                </td>
+                <td className="px-4 py-3.5 text-right text-amber-800 dark:text-amber-200 tabular-nums whitespace-nowrap">
+                  <span>
+                    {ytd.totalExpensePence > 0
+                      ? `−${formatPenceToGBP(ytd.totalExpensePence)}`
+                      : formatPenceToGBP(0)}
+                  </span>
+                  <span className="block text-xs font-normal text-muted-foreground">
+                    {ytd.totalExpenseCount} outgoings
+                  </span>
+                </td>
+                <td className="px-4 py-3.5 text-right tabular-nums whitespace-nowrap">
+                  <span>{formatPenceToGBP(ytd.totalNetPence)}</span>
+                  {ytd.netMarginPercent !== null && (
+                    <span className="block text-xs font-normal text-muted-foreground">
+                      {ytd.netMarginPercent}% YTD margin
+                    </span>
+                  )}
+                </td>
+                <td className="px-4 py-3.5 text-right text-xs font-normal text-muted-foreground">
+                  {ytd.months.length} month{ytd.months.length === 1 ? '' : 's'}
+                </td>
+                <td className="px-4 py-3.5 text-right tabular-nums whitespace-nowrap">
+                  <span>Net {formatPenceToGBP(ytd.totalNetPence)}</span>
+                  <span className="block text-xs font-normal text-muted-foreground">
+                    In {formatPenceToGBP(ytd.totalIncomePence)} · Out{' '}
+                    {formatPenceToGBP(ytd.totalExpensePence)}
+                  </span>
+                </td>
+              </tr>
+            </tfoot>
           </table>
         </div>
       </section>

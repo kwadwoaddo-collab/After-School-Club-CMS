@@ -4,9 +4,11 @@ import {
   formatPenceToGBP,
   formatSignedPenceDelta,
   generateMonthMondaySundayWeeks,
+  isQualifyingCashReceiptExpense,
   isQualifyingCashReceiptPayment,
   startOfMondayWeek,
   endOfMondayWeek,
+  type CashReceiptExpenseInput,
   type CashReceiptPaymentInput,
   type CentreRef,
 } from '../cash-receipts-ledger';
@@ -36,6 +38,24 @@ function makePayment(
     parentId: `parent-${id}`,
     parentName: 'Jane Doe',
     students: [{ id: `child-${id}`, name: 'Alex Doe' }],
+    ...overrides,
+  };
+}
+
+function makeExpense(
+  id: string,
+  overrides: Partial<CashReceiptExpenseInput> = {}
+): CashReceiptExpenseInput {
+  return {
+    id,
+    expenseDate: '2026-11-05',
+    amountPence: 4500,
+    description: 'Fruit and snacks for Sydenham',
+    category: 'supplies_snacks',
+    centreId: 'centre-sydenham',
+    centreName: 'Sydenham After School Club',
+    createdAt: '2026-11-05T14:00:00Z',
+    deletedAt: null,
     ...overrides,
   };
 }
@@ -348,6 +368,200 @@ describe('cash-receipts-ledger domain engine', () => {
       expect(formatPenceToGBP(dagLedger.monthTotalPence)).toBe('£400.00');
       expect(formatSignedPenceDelta(-15050)).toBe('−£150.50');
       expect(formatSignedPenceDelta(25000)).toBe('+£250.00');
+    });
+  });
+
+  describe('Weekly Outgoings / Expenses & Net Cashflow Ledger', () => {
+    it('filters out soft-deleted, empty-description, and zero/negative expenses', () => {
+      expect(isQualifyingCashReceiptExpense(makeExpense('1'))).toBe(true);
+      expect(
+        isQualifyingCashReceiptExpense(makeExpense('2', { deletedAt: '2026-11-06T10:00:00Z' }))
+      ).toBe(false);
+      expect(isQualifyingCashReceiptExpense(makeExpense('3', { amountPence: 0 }))).toBe(false);
+      expect(isQualifyingCashReceiptExpense(makeExpense('4', { amountPence: -500 }))).toBe(false);
+      expect(isQualifyingCashReceiptExpense(makeExpense('5', { description: '   ' }))).toBe(false);
+    });
+
+    it('clips boundary-week outgoings accurately and computes rolling monthly net tallies', () => {
+      const payments: CashReceiptPaymentInput[] = [
+        makePayment('nov-01', { amount: '200.00', recordedAt: '2026-11-01T11:00:00Z' }),
+        makePayment('nov-05', { amount: '500.00', recordedAt: '2026-11-05T11:00:00Z' }),
+      ];
+
+      const expenses: CashReceiptExpenseInput[] = [
+        // Fri 30 Oct: in Week 1 of Nov (Mon 26 Oct – Sun 1 Nov), but belongs to October!
+        makeExpense('exp-oct-30', { expenseDate: '2026-10-30', amountPence: 8000 }),
+        // Sun 1 Nov: in Week 1 of Nov, belongs to November!
+        makeExpense('exp-nov-01', { expenseDate: '2026-11-01', amountPence: 5000 }),
+        // Thu 5 Nov: in Week 2 of Nov, belongs to Dagenham
+        makeExpense('exp-nov-05', {
+          expenseDate: '2026-11-05',
+          amountPence: 12000,
+          centreId: 'centre-dagenham',
+          centreName: 'Dagenham After School Club',
+        }),
+        // Soft-deleted expense in Nov (must be ignored)
+        makeExpense('exp-deleted', {
+          expenseDate: '2026-11-06',
+          amountPence: 99900,
+          deletedAt: '2026-11-07T09:00:00Z',
+        }),
+      ];
+
+      const ledger = buildCashReceiptsLedger({
+        payments,
+        expenses,
+        centres: CENTRES,
+        selectedMonth: '2026-11',
+        activeCentreId: 'all',
+        today: '2026-11-10',
+      });
+
+      // Week 1 (Mon 26 Oct – Sun 1 Nov):
+      // Income in Nov = 20000p (£200), Outgoings in Nov = 5000p (£50), SpillBefore Outgoings = 8000p (£80)
+      expect(ledger.weeks[0].inMonthExpensePence).toBe(5000);
+      expect(ledger.weeks[0].spillBeforeExpensePence).toBe(8000);
+      expect(ledger.weeks[0].fullWeekExpensePence).toBe(13000);
+      expect(ledger.weeks[0].inMonthNetPence).toBe(15000); // £200 - £50 = £150
+      expect(ledger.weeks[0].rollingMonthExpenseTallyPence).toBe(5000);
+      expect(ledger.weeks[0].rollingMonthNetTallyPence).toBe(15000);
+
+      // Week 2 (Mon 2 Nov – Sun 8 Nov):
+      // Income = 50000p (£500), Outgoings = 12000p (£120), Net = 38000p (£380)
+      // Cumulative Rolling Income = 70000p (£700), Rolling Outgoings = 17000p (£170), Rolling Net = 53000p (£530)
+      expect(ledger.weeks[1].inMonthExpensePence).toBe(12000);
+      expect(ledger.weeks[1].inMonthNetPence).toBe(38000);
+      expect(ledger.weeks[1].rollingMonthTallyPence).toBe(70000);
+      expect(ledger.weeks[1].rollingMonthExpenseTallyPence).toBe(17000);
+      expect(ledger.weeks[1].rollingMonthNetTallyPence).toBe(53000);
+
+      // Month totals
+      expect(ledger.monthTotalPence).toBe(70000);
+      expect(ledger.monthExpenseTotalPence).toBe(17000);
+      expect(ledger.monthNetPence).toBe(53000);
+      expect(ledger.centreCashflowSummaries).toEqual([
+        {
+          centreId: 'centre-sydenham',
+          centreName: 'Sydenham After School Club',
+          monthIncomePence: 70000,
+          monthIncomeCount: 2,
+          monthExpensePence: 5000,
+          monthExpenseCount: 1,
+          monthNetPence: 65000,
+          incomeSharePercent: 100,
+        },
+        {
+          centreId: 'centre-dagenham',
+          centreName: 'Dagenham After School Club',
+          monthIncomePence: 0,
+          monthIncomeCount: 0,
+          monthExpensePence: 12000,
+          monthExpenseCount: 1,
+          monthNetPence: -12000,
+          incomeSharePercent: 0,
+        },
+      ]);
+    });
+  });
+
+  describe('Yearly Running Ledger (Jan–Dec Cumulative Income, Outgoings & Net)', () => {
+    it('computes chronological Jan–Nov YTD cumulative running totals for Income, Outgoings, and Net', () => {
+      const payments: CashReceiptPaymentInput[] = [
+        makePayment('jan-1', { amount: '1000.00', recordedAt: '2026-01-15T10:00:00Z' }),
+        makePayment('Jun-1', { amount: '2000.00', recordedAt: '2026-06-10T10:00:00Z' }),
+        makePayment('nov-1', {
+          amount: '1500.00',
+          recordedAt: '2026-11-04T10:00:00Z',
+          centreId: 'centre-dagenham',
+          centreName: 'Dagenham After School Club',
+        }),
+      ];
+
+      const expenses: CashReceiptExpenseInput[] = [
+        makeExpense('exp-jan', { expenseDate: '2026-01-20', amountPence: 30000 }), // £300
+        makeExpense('exp-jun', { expenseDate: '2026-06-18', amountPence: 50000 }), // £500
+        makeExpense('exp-nov', {
+          expenseDate: '2026-11-05',
+          amountPence: 40000, // £400
+          centreId: 'centre-dagenham',
+          centreName: 'Dagenham After School Club',
+        }),
+      ];
+
+      const ledger = buildCashReceiptsLedger({
+        payments,
+        expenses,
+        centres: CENTRES,
+        selectedMonth: '2026-11',
+        activeCentreId: 'all',
+        today: '2026-11-10',
+      });
+
+      const ytd = ledger.yearlyRunningLedger;
+      expect(ytd.selectedYear).toBe(2026);
+      expect(ytd.rangeLabel).toBe('Jan – Nov 2026 (YTD)');
+      expect(ytd.months).toHaveLength(11); // Jan..Nov
+
+      // Jan (index 0): In £1,000, Out £300, Net £700 -> Running Net £700
+      expect(ytd.months[0]).toMatchObject({
+        yearMonth: '2026-01',
+        incomePence: 100000,
+        expensePence: 30000,
+        netPence: 70000,
+        runningYearlyIncomePence: 100000,
+        runningYearlyExpensePence: 30000,
+        runningYearlyNetPence: 70000,
+      });
+
+      // Feb..May (indices 1..4): £0 in month, Running stays In £1,000, Out £300, Net £700
+      expect(ytd.months[1].runningYearlyNetPence).toBe(70000);
+      expect(ytd.months[4].runningYearlyNetPence).toBe(70000);
+
+      // Jun (index 5): In £2,000, Out £500, Net £1,500 -> Running In £3,000, Out £800, Net £2,200
+      expect(ytd.months[5]).toMatchObject({
+        yearMonth: '2026-06',
+        incomePence: 200000,
+        expensePence: 50000,
+        netPence: 150000,
+        runningYearlyIncomePence: 300000,
+        runningYearlyExpensePence: 80000,
+        runningYearlyNetPence: 220000,
+      });
+
+      // Nov (index 10): In £1,500, Out £400, Net £1,100 -> Running In £4,500, Out £1,200, Net £3,300
+      expect(ytd.months[10]).toMatchObject({
+        yearMonth: '2026-11',
+        incomePence: 150000,
+        expensePence: 40000,
+        netPence: 110000,
+        runningYearlyIncomePence: 450000,
+        runningYearlyExpensePence: 120000,
+        runningYearlyNetPence: 330000,
+      });
+
+      expect(ytd.totalIncomePence).toBe(450000);
+      expect(ytd.totalExpensePence).toBe(120000);
+      expect(ytd.totalNetPence).toBe(330000);
+      expect(ytd.byCentre).toEqual([
+        {
+          centreId: 'centre-sydenham',
+          centreName: 'Sydenham After School Club',
+          totalIncomePence: 300000,
+          totalIncomeCount: 2,
+          totalExpensePence: 80000,
+          totalExpenseCount: 2,
+          totalNetPence: 220000,
+        },
+        {
+          centreId: 'centre-dagenham',
+          centreName: 'Dagenham After School Club',
+          totalIncomePence: 150000,
+          totalIncomeCount: 1,
+          totalExpensePence: 40000,
+          totalExpenseCount: 1,
+          totalNetPence: 110000,
+        },
+      ]);
     });
   });
 });

@@ -1,9 +1,11 @@
 import { db } from '@/db';
-import { centres, children, invoices, parents, payments } from '@/db/schema';
+import { centres, children, financeExpenses, invoices, parents, payments } from '@/db/schema';
+import { logger } from '@/lib/logger';
 import { isOrgOwner } from '@/lib/permissions';
 import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import {
   buildCashReceiptsLedger,
+  type CashReceiptExpenseInput,
   type CashReceiptPaymentInput,
   type CashReceiptsLedgerResult,
   type CashReceiptStudentRef,
@@ -51,14 +53,16 @@ export function extractInvoiceStudents(
 }
 
 /**
- * Queries verified, unreversed cash receipts across the organisation and builds the
- * Owner Cash Receipts Ledger (Weekly Mon–Sun breakdown, Rolling Monthly Tally, MoM/YoY comparisons).
+ * Queries verified, unreversed cash receipts and active outgoings/expenses across the organisation
+ * and builds the Owner Cash Receipts & Outgoings Ledger (Weekly Mon–Sun breakdown, Rolling Monthly Tally,
+ * MoM/YoY comparisons, and Jan–Dec Yearly Running Totals).
  *
  * Enforces:
  * - INV-1: Live `isOrgOwner(userId)` check
  * - INV-2: `payments INNER JOIN invoices` for tenant and centre isolation
  * - INV-3: Qualifying payment predicate (verified, unreversed, non-draft/void invoice, non-CREDIT-* ref)
  * - INV-7: `LEFT JOIN children` + `coveredChildrenJson` so multi-child family invoices with null `childId` are never dropped
+ * - INV-DEG-1: Isolated try/catch around `finance_expenses` query so cash receipts never fail if table is unavailable
  */
 export async function fetchOwnerCashReceiptsLedger(params: {
   userId: string;
@@ -142,8 +146,49 @@ export async function fetchOwnerCashReceiptsLedger(params: {
     };
   });
 
+  let expenseInputs: CashReceiptExpenseInput[] = [];
+  try {
+    const expenseRows = await db
+      .select({
+        id: financeExpenses.id,
+        expenseDate: financeExpenses.expenseDate,
+        amountPence: financeExpenses.amountPence,
+        description: financeExpenses.description,
+        category: financeExpenses.category,
+        centreId: financeExpenses.centreId,
+        centreName: centres.name,
+        createdAt: financeExpenses.createdAt,
+        deletedAt: financeExpenses.deletedAt,
+      })
+      .from(financeExpenses)
+      .leftJoin(centres, eq(financeExpenses.centreId, centres.id))
+      .where(
+        and(
+          eq(financeExpenses.organisationId, organisationId),
+          isNull(financeExpenses.deletedAt)
+        )
+      )
+      .orderBy(desc(financeExpenses.expenseDate), desc(financeExpenses.createdAt));
+
+    expenseInputs = expenseRows.map((r) => ({
+      id: r.id,
+      expenseDate: r.expenseDate,
+      amountPence: r.amountPence,
+      description: r.description,
+      category: r.category,
+      centreId: r.centreId,
+      centreName: r.centreName ?? 'Centre',
+      createdAt: r.createdAt,
+      deletedAt: r.deletedAt,
+    }));
+  } catch (err) {
+    logger.warn('finance_expenses query unavailable; degrading to empty expenses', { err });
+    expenseInputs = [];
+  }
+
   return buildCashReceiptsLedger({
     payments: paymentInputs,
+    expenses: expenseInputs,
     centres: orgCentres,
     selectedMonth,
     activeCentreId,

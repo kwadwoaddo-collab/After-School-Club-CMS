@@ -1,5 +1,5 @@
 import { db } from '@/db';
-import { invoices, payments } from '@/db/schema';
+import { financeExpenses, invoices, payments } from '@/db/schema';
 import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { ArrowRight } from 'lucide-react';
 import Link from 'next/link';
@@ -34,8 +34,10 @@ export async function RevenueWidget({
 
   let receivedThisWeekPence = 0;
   let receivedThisWeekCount = 0;
+  let expensesThisWeekPence = 0;
   let receivedThisMonthPence = 0;
   let receivedThisMonthCount = 0;
+  let expensesThisMonthPence = 0;
   let outstandingPence = 0;
   let openInvoiceCount = 0;
   let overdueCount = 0;
@@ -50,7 +52,16 @@ export async function RevenueWidget({
             : sql`false`
           : undefined;
 
-    const [verifiedPayments, openInvoices] = await Promise.all([
+    const expenseCentreCondition =
+      activeCentreId && activeCentreId !== 'all'
+        ? eq(financeExpenses.centreId, activeCentreId)
+        : Array.isArray(accessibleCentreIds)
+          ? accessibleCentreIds.length > 0
+            ? inArray(financeExpenses.centreId, accessibleCentreIds)
+            : sql`false`
+          : undefined;
+
+    const [verifiedPayments, openInvoices, activeExpenses] = await Promise.all([
       db
         .select({
           id: payments.id,
@@ -84,6 +95,21 @@ export async function RevenueWidget({
             inArray(invoices.status, ['sent', 'partially_paid'])
           )
         ),
+      db
+        .select({
+          id: financeExpenses.id,
+          amountPence: financeExpenses.amountPence,
+          expenseDate: financeExpenses.expenseDate,
+        })
+        .from(financeExpenses)
+        .where(
+          and(
+            eq(financeExpenses.organisationId, organisationId),
+            expenseCentreCondition,
+            isNull(financeExpenses.deletedAt)
+          )
+        )
+        .catch(() => []),
     ]);
 
     const paidByInvoiceId = new Map<string, number>();
@@ -105,6 +131,21 @@ export async function RevenueWidget({
       }
     }
 
+    for (const exp of activeExpenses) {
+      const pence = typeof exp.amountPence === 'number' ? exp.amountPence : 0;
+      if (pence <= 0) continue;
+      const expDate =
+        typeof exp.expenseDate === 'string'
+          ? exp.expenseDate.trim()
+          : toEuropeLondonBusinessDate(exp.expenseDate);
+      if (expDate >= weekStart && expDate <= weekEnd) {
+        expensesThisWeekPence += pence;
+      }
+      if (expDate.slice(0, 7) === currentMonth) {
+        expensesThisMonthPence += pence;
+      }
+    }
+
     for (const inv of openInvoices) {
       const totalPence = parseStoredDecimalToPence(inv.amount);
       const paidPence = paidByInvoiceId.get(inv.id) ?? 0;
@@ -121,6 +162,9 @@ export async function RevenueWidget({
   } catch {
     // Silently degrade on transient DB issues so the main dashboard remains available
   }
+
+  const netThisWeekPence = receivedThisWeekPence - expensesThisWeekPence;
+  const netThisMonthPence = receivedThisMonthPence - expensesThisMonthPence;
 
   const centreQuery: Record<string, string> =
     activeCentreId && activeCentreId !== 'all' ? { centre: activeCentreId } : {};
@@ -148,13 +192,13 @@ export async function RevenueWidget({
           id="dashboard-finance-heading"
           className="text-base font-semibold tracking-tight text-foreground"
         >
-          Cash received & outstanding balances
+          Cash received, outgoings & outstanding balances
         </h2>
         <Link
           href={cashflowHref}
           className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
         >
-          <span>Open weekly cash tally</span>
+          <span>Open weekly cashflow & outgoings</span>
           <ArrowRight aria-hidden="true" className="h-4 w-4" />
         </Link>
       </div>
@@ -173,6 +217,12 @@ export async function RevenueWidget({
             </Link>
           </dd>
           <p className="mt-1 text-xs text-muted-foreground tabular-nums">
+            Outgoings: {formatPenceToGBP(expensesThisWeekPence)} ·{' '}
+            <span className="font-medium text-foreground">
+              Net: {formatPenceToGBP(netThisWeekPence)}
+            </span>
+          </p>
+          <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">
             {formatShortDateRange(weekStart, weekEnd, false)} · {receivedThisWeekCount} verified
             payment{receivedThisWeekCount === 1 ? '' : 's'}
           </p>
@@ -191,6 +241,12 @@ export async function RevenueWidget({
             </Link>
           </dd>
           <p className="mt-1 text-xs text-muted-foreground tabular-nums">
+            Outgoings: {formatPenceToGBP(expensesThisMonthPence)} ·{' '}
+            <span className="font-medium text-foreground">
+              Net: {formatPenceToGBP(netThisMonthPence)}
+            </span>
+          </p>
+          <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">
             {receivedThisMonthCount} verified payment{receivedThisMonthCount === 1 ? '' : 's'} month
             to date
           </p>
