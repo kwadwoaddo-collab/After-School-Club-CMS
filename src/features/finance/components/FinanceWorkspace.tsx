@@ -7,7 +7,7 @@ import { ChevronDown, Download, Search, SlidersHorizontal, X } from 'lucide-reac
 import type { BillingCycleRow } from '@/features/billing/queries';
 import { adjacentInvoices, buildFinanceQueues, inspectInvoice, splitDraftPeriods, type WorkspaceInvoice } from '../domain/finance-workspace';
 import { financeWorkspaceCsv } from '../domain/finance-workspace-export';
-import { formatInvoiceDate, formatInvoicePeriod } from '../domain/invoice-display';
+import { formatInvoiceDate, formatInvoicePeriod, formatPaidDate } from '../domain/invoice-display';
 import RecordPaymentModal from './RecordPaymentModal';
 
 const money = (pence: number) => new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP' }).format(pence / 100);
@@ -19,11 +19,13 @@ type Item = ReturnType<typeof buildFinanceQueues>['drafts'][number];
 
 function InvoiceContext({ invoice, today }: { invoice: WorkspaceInvoice; today: string }) {
     const state = inspectInvoice(invoice, today);
+    const paidInFull = state.financialReliable && state.remaining === 0 && invoice.status !== 'draft';
+    const paidDate = paidInFull ? formatPaidDate(invoice.payments) : null;
     return <div className="space-y-1 text-sm">
         <Link className={`font-medium text-primary underline-offset-2 hover:underline ${focus}`} href={`/dashboard/finance/invoices/${invoice.id}`}>{invoice.invoiceNumber}</Link>
         <p>{formatInvoicePeriod(invoice.billingPeriodStart, invoice.billingPeriodEnd)}</p>
-        <p className={state.financialReliable && state.remaining === 0 && invoice.status !== 'draft' ? 'font-medium text-emerald-700 dark:text-emerald-300' : 'text-muted-foreground'}>
-            {!state.financialReliable ? 'Payment totals need checking' : invoice.status === 'draft' ? `${money(state.amount)} · Not issued` : state.remaining === 0 ? `Paid ${money(state.paid)}` : `${money(state.remaining)} remaining`}
+        <p className={paidInFull ? 'font-medium tabular-nums text-emerald-700 dark:text-emerald-300' : 'text-muted-foreground'}>
+            {!state.financialReliable ? 'Payment totals need checking' : invoice.status === 'draft' ? `${money(state.amount)} · Not issued` : state.remaining === 0 ? `Paid ${money(state.paid)}${paidDate ? ` (${paidDate})` : ''}` : `${money(state.remaining)} remaining`}
         </p>
     </div>;
 }
@@ -132,6 +134,7 @@ export default function FinanceWorkspace({ invoices, cycles, today, invoiceError
             const invoice = item.invoice, paymentMode = mode === 'payment';
             const previous = adjacentInvoices(invoice, invoices).previous;
             const prior = previous ? inspectInvoice(previous, today) : null;
+            const priorPaidDate = previous && prior && prior.financialReliable && previous.status !== 'draft' && prior.remaining === 0 ? formatPaidDate(previous.payments) : null;
             const students = coveredStudents(invoice);
             const others = queues.payments.filter(other => other.invoice.id !== invoice.id && other.invoice.parentId === invoice.parentId && other.invoice.centreId === invoice.centreId);
             const unreliable = queues.attention.some(other => other.invoice.id !== invoice.id && other.invoice.parentId === invoice.parentId && other.invoice.centreId === invoice.centreId && other.invoice.status !== 'draft' && !other.financialReliable);
@@ -152,7 +155,7 @@ export default function FinanceWorkspace({ invoices, cycles, today, invoiceError
                         </div>
                         <div className="text-left tabular-nums md:text-right"><p className="text-xl font-semibold text-foreground">{paymentMode ? money(item.remaining) : item.amountValid ? money(item.amount) : 'Check amount'}</p><p className="text-sm text-muted-foreground">{paymentMode ? 'Remaining balance' : invoice.status === 'draft' ? 'Draft invoice total' : 'Invoice total'}</p>{paymentMode && <p className="mt-1 text-sm text-muted-foreground">{money(item.paid)} verified paid · {money(item.amount)} total</p>}</div>
                     </div>
-                    {previous && prior && <p className="mt-3 text-sm text-muted-foreground">Previous: <Link href={`/dashboard/finance/invoices/${previous.id}`} className={`text-primary hover:underline ${focus}`}>{formatInvoicePeriod(previous.billingPeriodStart,previous.billingPeriodEnd)} · {previous.invoiceNumber}</Link> · {!prior.financialReliable ? 'Balance needs checking' : previous.status === 'draft' ? 'Draft — not issued' : prior.remaining === 0 ? 'Paid in full' : `${money(prior.paid)} paid · ${money(prior.remaining)} remaining`}{prior.pending ? ' · Payment awaiting verification' : ''}</p>}
+                    {previous && prior && <p className="mt-3 text-sm text-muted-foreground">Previous: <Link href={`/dashboard/finance/invoices/${previous.id}`} className={`text-primary hover:underline ${focus}`}>{formatInvoicePeriod(previous.billingPeriodStart,previous.billingPeriodEnd)} · {previous.invoiceNumber}</Link> · {!prior.financialReliable ? 'Balance needs checking' : previous.status === 'draft' ? 'Draft — not issued' : prior.remaining === 0 ? <span className="font-medium tabular-nums text-emerald-700 dark:text-emerald-300">Paid in full{priorPaidDate ? ` (${priorPaidDate})` : ''}</span> : `${money(prior.paid)} paid · ${money(prior.remaining)} remaining`}{prior.pending ? ' · Payment awaiting verification' : ''}</p>}
                     {!previous && <p className="mt-3 text-sm text-muted-foreground">No earlier non-void invoice recorded for this billing account.</p>}
                     <p className="mt-1 text-sm text-muted-foreground">{unreliable ? 'Other issued balances need checking.' : others.length ? <>Other outstanding: <strong className="font-medium text-foreground">{money(others.reduce((sum,other)=>sum+other.remaining,0))}</strong> across {others.length} invoice{others.length === 1 ? '' : 's'}. <Link href={`/dashboard/parents/${invoice.parentId}`}  className={`text-primary underline underline-offset-4 ${focus}`}>View family invoices</Link></> : 'No other outstanding issued invoices recorded in this centre.'}{pendingOther ? ' A payment is awaiting verification.' : ''}</p>
                     {(item.pending || needsCheck) && <p className="mt-2 text-sm font-medium text-amber-800 dark:text-amber-200">{needsCheck && item.reasons.join(' ')}{item.pending && `${needsCheck ? ' ' : ''}Payment awaiting verification — check it before recording the same money again.`}</p>}

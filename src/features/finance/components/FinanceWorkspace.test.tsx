@@ -136,5 +136,17 @@ describe('daily finance workflow',()=>{
   expect(screen.getByRole('link',{name:'Open draft to check details'})).toBeTruthy();
   expect(screen.queryByRole('link',{name:'Open draft to issue'})).toBeNull();
  });
+ it('shows the verified paid date in green on both the collapsed card summary and expanded Previous invoice review',()=>{
+  const previous={...bill('M-43AA','paid','2026-10-11','2026-11-10'),amount:'1600',payments:[{id:'p1',amount:'600',status:'verified',recordedAt:'2026-11-05T10:00:00Z'},{id:'p2',amount:'1000',status:'verified',recordedAt:'2026-11-13T15:30:00Z'}]};
+  const current={...bill('TL7GFE','draft','2026-11-11','2026-12-10'),amount:'1600'};
+  render(<Workspace invoices={[previous,current]} cycles={[]} today="2026-11-15" invoiceError={false} cycleError={false}/>);
+  const card=screen.getByRole('article',{name:'INV-TL7GFE billing card'});
+  const collapsedPaid=within(card).getByText('Paid in full (13/11/2026)');
+  expect(collapsedPaid.className).toContain('text-emerald-700');
+  fireEvent.click(within(card).getByRole('button',{name:'Review invoice INV-TL7GFE'}));
+  const review=screen.getByRole('region',{name:'Invoice review INV-TL7GFE'});
+  const expandedPaid=within(review).getByText('Paid £1,600.00 (13/11/2026)');
+  expect(expandedPaid.className).toContain('text-emerald-700');
+ });
 
 });

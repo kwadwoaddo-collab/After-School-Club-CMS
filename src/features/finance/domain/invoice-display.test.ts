@@ -1,5 +1,5 @@
 import {describe,it,expect} from 'vitest';
-import {formatInvoiceDate,formatInvoicePeriod,invoiceBalanceLabel} from './invoice-display';
+import {formatInvoiceDate,formatInvoicePeriod,formatPaidDate,invoiceBalanceLabel} from './invoice-display';
 describe('invoice list read-only clarity',()=>{
  it('shows covered period rather than creation date with an unambiguous year',()=>{
   expect(formatInvoicePeriod('2026-11-06','2026-12-05')).toBe('6 Nov – 5 Dec 2026');
@@ -27,5 +27,16 @@ describe('invoice list read-only clarity',()=>{
   expect(invoiceBalanceLabel({amount:'100',status:'sent',payments:[{amount:'25'}]})).toBe('Check payments');
   expect(invoiceBalanceLabel({amount:'100',status:'sent',payments:[{amount:'101',status:'verified'}]})).toBe('Check payments');
   expect(invoiceBalanceLabel({amount:'bad',status:'sent',payments:[]})).toBe('Check amounts');
+ });
+ it('formats the latest verified unreversed payment date in UK DD/MM/YYYY format',()=>{
+  expect(formatPaidDate([{status:'verified',recordedAt:'2026-11-13T14:20:00Z'}])).toBe('13/11/2026');
+  expect(formatPaidDate([
+   {status:'verified',recordedAt:'2026-11-05T10:00:00Z'},
+   {status:'verified',recordedAt:'2026-11-13T09:15:00Z'},
+   {status:'verified',reversedAt:'2026-11-15T12:00:00Z',recordedAt:'2026-11-14T12:00:00Z'},
+   {status:'pending',recordedAt:'2026-11-15T16:00:00Z'},
+  ])).toBe('13/11/2026');
+  expect(formatPaidDate([{status:'pending',recordedAt:'2026-11-13T14:20:00Z'}])).toBeNull();
+  expect(formatPaidDate([])).toBeNull();
  });
 });

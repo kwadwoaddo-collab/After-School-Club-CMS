@@ -5,6 +5,22 @@ export function formatInvoiceDate(value: string | Date | null | undefined): stri
     const date = value ? new Date(value) : null;
     return date && Number.isFinite(date.getTime()) ? new Intl.DateTimeFormat('en-GB', {day:'numeric',month:'short',year:'numeric',timeZone:'UTC'}).format(date) : 'Not recorded';
 }
+export function formatPaidDate(
+    payments:
+        | { status?: string | null; reversedAt?: string | Date | null; recordedAt?: string | Date | null }[]
+        | null
+        | undefined
+): string | null {
+    if (!payments?.length) return null;
+    let latestMs = -Infinity;
+    for (const payment of payments) {
+        if (payment.status !== 'verified' || payment.reversedAt || !payment.recordedAt) continue;
+        const ms = new Date(payment.recordedAt).getTime();
+        if (Number.isFinite(ms) && ms > latestMs) latestMs = ms;
+    }
+    if (!Number.isFinite(latestMs)) return null;
+    return new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Europe/London' }).format(new Date(latestMs));
+}
 export function formatInvoicePeriod(start: string | Date | null | undefined, end: string | Date | null | undefined): string {
     if (!start || !end) return 'Period missing';
     const a = new Date(start), b = new Date(end);
