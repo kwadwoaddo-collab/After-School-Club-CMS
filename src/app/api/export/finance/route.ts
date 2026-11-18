@@ -2,18 +2,38 @@ import { logger } from '@/lib/logger';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { getApiSession } from '@/lib/session';
 import { db } from '@/db';
-import { invoices, payments } from '@/db/schema';
+import { invoices } from '@/db/schema';
 import { eq, and, gte, lte, desc, inArray } from 'drizzle-orm';
 import { getUserAccessibleCentres } from '@/lib/permissions';
 import { neutralizeCsvFormula } from '@/lib/csv-safety';
+import {
+    evaluateInvoiceCollectionState,
+    toLondonBusinessDate,
+} from '@/features/finance/domain/invoice-collection-state';
+import {
+    formatPenceToDecimal,
+    parseStoredDecimalToPence,
+} from '@/features/finance/domain/payment-eligibility';
 import { NextRequest, NextResponse } from 'next/server';
 
+const CSV_HEADERS = [
+    'Invoice Number',
+    'Invoice Date',
+    'Student Name',
+    'Parent Name',
+    'Invoice Amount (£)',
+    'Paid Amount (£)',
+    'Outstanding (£)',
+    'Status',
+    'Payment Method(s)',
+];
+
 /**
- * GET /api/export/finance?from=YYYY-MM-DD&to=YYYY-MM-DD
+ * GET /api/export/finance?from=YYYY-MM-DD&to=YYYY-MM-DD&centre=<centreId>
  *
- * Returns a CSV of invoices + payments for the given date range.
- * Includes: date, student name, parent name, invoice amount,
- * paid amount, outstanding, status, payment method.
+ * Returns a CSV of invoices + verified payments for the given date range.
+ * Includes: invoice number, date, student name, parent name, invoice amount,
+ * verified paid amount, outstanding balance (0.00 for draft/void), collection status, payment method(s).
  *
  * Auth: session required. Role must be ORG_OWNER or MANAGER.
  */
@@ -32,6 +52,7 @@ export async function GET(req: NextRequest) {
         const { searchParams } = new URL(req.url);
         const fromParam = searchParams.get('from');
         const toParam = searchParams.get('to');
+        const requestedCentre = searchParams.get('centre');
 
         // Default: current month
         const now = new Date();
@@ -51,32 +72,38 @@ export async function GET(req: NextRequest) {
 
         const orgId = session.user.organisationId;
 
+        // Helper: wrap a value in double-quotes, escaping inner quotes and formula prefixes
+        const esc = (val: string | null | undefined) =>
+            `"${neutralizeCsvFormula(String(val ?? '')).replace(/"/g, '""')}"`;
+
+        const fromStr = fromDate.toISOString().split('T')[0];
+        const toStr = toDate.toISOString().split('T')[0];
+
         let centreCondition = undefined;
-        if (role !== 'ORG_OWNER') {
+        if (role === 'ORG_OWNER') {
+            if (requestedCentre && requestedCentre !== 'all') {
+                centreCondition = eq(invoices.centreId, requestedCentre);
+            }
+        } else {
             const accessibleCentres = await getUserAccessibleCentres(session.user.id);
             const accessibleCentreIds = accessibleCentres.map(c => c.id);
             if (accessibleCentreIds.length === 0) {
-                const headers = [
-                    'Date',
-                    'Invoice #',
-                    'Student',
-                    'Parent',
-                    'Centre',
-                    'Amount (£)',
-                    'Paid (£)',
-                    'Outstanding (£)',
-                    'Status',
-                    'Payment Method',
-                ];
-                return new NextResponse(headers.join(','), {
+                return new NextResponse(CSV_HEADERS.map(esc).join(','), {
                     status: 200,
                     headers: {
                         'Content-Type': 'text/csv; charset=utf-8',
-                        'Content-Disposition': 'attachment; filename="finance-export.csv"',
+                        'Content-Disposition': `attachment; filename="finance-${fromStr}-to-${toStr}.csv"`,
                     },
                 });
             }
-            centreCondition = inArray(invoices.centreId, accessibleCentreIds);
+            if (requestedCentre && requestedCentre !== 'all') {
+                if (!accessibleCentreIds.includes(requestedCentre)) {
+                    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+                }
+                centreCondition = eq(invoices.centreId, requestedCentre);
+            } else {
+                centreCondition = inArray(invoices.centreId, accessibleCentreIds);
+            }
         }
 
         // Query invoices in date range for this organisation
@@ -95,35 +122,31 @@ export async function GET(req: NextRequest) {
             },
         });
 
-        // Helper: wrap a value in double-quotes, escaping inner quotes and formula prefixes
-        const esc = (val: string | null | undefined) =>
-            `"${neutralizeCsvFormula(String(val ?? '')).replace(/"/g, '""')}"`;
-
-        const headers = [
-            'Invoice Number',
-            'Invoice Date',
-            'Student Name',
-            'Parent Name',
-            'Invoice Amount (£)',
-            'Paid Amount (£)',
-            'Outstanding (£)',
-            'Status',
-            'Payment Method(s)',
-        ];
+        const todayLondonIso = toLondonBusinessDate();
 
         const rows = invoiceRows.map(inv => {
-            const invoiceAmount = Number(inv.amount) || 0;
+            const invoiceAmountPence = parseStoredDecimalToPence(inv.amount);
 
-            let paidAmount = 0;
+            let paidAmountPence = 0;
             const methods = new Set<string>();
             for (const p of (inv.payments ?? [])) {
-                if (p.status !== 'failed') {
-                    paidAmount += Number(p.amount) || 0;
-                    methods.add(p.method);
+                if (p.status === 'verified' && !p.reversedAt) {
+                    paidAmountPence += parseStoredDecimalToPence(p.amount);
+                    if (p.method) {
+                        methods.add(p.method);
+                    }
                 }
             }
 
-            const outstanding = Math.max(0, invoiceAmount - paidAmount);
+            const outstandingPence =
+                inv.status === 'draft' || inv.status === 'void'
+                    ? 0
+                    : Math.max(0, invoiceAmountPence - paidAmountPence);
+
+            const collectionState = evaluateInvoiceCollectionState(inv, todayLondonIso, {
+                strictPayments: false,
+            });
+
             const parentName = inv.parent
                 ? `${inv.parent.firstName} ${inv.parent.lastName}`
                 : '';
@@ -140,18 +163,15 @@ export async function GET(req: NextRequest) {
                 esc(invoiceDateStr),
                 esc(studentName),
                 esc(parentName),
-                invoiceAmount.toFixed(2),
-                paidAmount.toFixed(2),
-                outstanding.toFixed(2),
-                esc(inv.status),
+                formatPenceToDecimal(invoiceAmountPence),
+                formatPenceToDecimal(paidAmountPence),
+                formatPenceToDecimal(outstandingPence),
+                esc(collectionState.exportLabel),
                 esc(paymentMethodStr),
             ].join(',');
         });
 
-        const csvContent = [headers.map(esc).join(','), ...rows].join('\n');
-
-        const fromStr = fromDate.toISOString().split('T')[0];
-        const toStr = toDate.toISOString().split('T')[0];
+        const csvContent = [CSV_HEADERS.map(esc).join(','), ...rows].join('\n');
 
         return new NextResponse(csvContent, {
             headers: {

@@ -1,4 +1,5 @@
 import { parseStrictDecimalToPence } from '@/features/finance/domain/payment-eligibility';
+import { resolveOpenAgingStage } from '@/features/finance/domain/invoice-collection-state';
 
 export interface FamilyInvoiceInput {
     id: string; invoiceNumber: string; organisationId: string; centreId: string; parentId: string;
@@ -10,7 +11,7 @@ export interface FamilyInvoiceSummary {
     id: string; invoiceNumber: string; periodStart: string | null; periodEnd: string | null;
     dueDate: string | null; createdAt: string | null; amountPence: number; paidPence: number; balancePence: number;
     status: string; paymentStatus: 'paid' | 'partially_paid' | 'unpaid' | 'not_issued' | 'void' | 'needs_review';
-    overdue: boolean; historical?: boolean; needsReview: boolean; coveredChildren: unknown;
+    overdue: boolean; inPeriod?: boolean; historical?: boolean; needsReview: boolean; coveredChildren: unknown;
 }
 export type FamilyBillingAction = 'draft_review' | 'draft_due' | 'scheduled' | 'invoice_sent' | 'needs_setup' | 'paused' | 'data_review_required' | 'skipped';
 export interface FamilyBillingSummary {
@@ -69,9 +70,11 @@ export function buildFamilyBillingSummary(input: {
         const needsReview = moneyInvalid || !periodStart || !periodEnd || periodEnd < periodStart || !dueDate ||
             (invoice.status === 'paid' && balancePence > 0) || (invoice.status === 'draft' && paidPence > 0);
         if (needsReview) reviewReasons.push(`${invoice.invoiceNumber}: dates or payment status need review.`);
+        const isOpenUnpaid = invoice.status !== 'draft' && invoice.status !== 'void' && paymentStatus !== 'needs_review' && balancePence > 0;
+        const collectionStage = isOpenUnpaid ? resolveOpenAgingStage(invoice, today) : null;
         return { id: invoice.id, invoiceNumber: invoice.invoiceNumber, periodStart, periodEnd, dueDate,
             createdAt: isoDay(invoice.createdAt), amountPence, paidPence, balancePence, status: invoice.status,
-            paymentStatus, overdue: invoice.status !== 'draft' && invoice.status !== 'void' && balancePence > 0 && !!dueDate && dueDate < today,
+            paymentStatus, overdue: collectionStage === 'overdue', inPeriod: collectionStage === 'in_period',
             historical: !!periodEnd && periodEnd < today, needsReview, coveredChildren: invoice.coveredChildrenJson ?? null };
     }).sort((a, b) => (b.periodStart ?? '').localeCompare(a.periodStart ?? '') || a.invoiceNumber.localeCompare(b.invoiceNumber));
     const valid = history.filter(invoice => invoice.periodStart && invoice.periodEnd && invoice.periodEnd >= invoice.periodStart);

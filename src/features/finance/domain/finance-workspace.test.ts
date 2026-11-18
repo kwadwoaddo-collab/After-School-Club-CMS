@@ -83,9 +83,37 @@ describe('finance work queues', () => {
     });
     it('keeps full-set counts stable beyond a single page and orders overdue debts first',()=>{
         const invoices=Array.from({length:60},(_,i)=>invoice(String(i),{billingConfigId:null}));
-        invoices.push(invoice('overdue',{billingConfigId:null,dueDate:'2026-10-01'}));
+        invoices.push(invoice('overdue',{billingConfigId:null,billingPeriodStart:'2026-09-06',billingPeriodEnd:'2026-10-05',dueDate:'2026-09-06'}));
         const queues=buildFinanceQueues(invoices,today);
         expect(queues.payments).toHaveLength(61);expect(queues.payments[0].invoice.id).toBe('overdue');
+    });
+    it('classifies open invoices across upcoming, in_period and overdue by assessment period bounds rather than day-1 due date',()=>{
+        const upcomingItem=inspectInvoice(invoice('upcoming',{billingPeriodStart:'2026-11-06',billingPeriodEnd:'2026-12-05',dueDate:'2026-11-06'}),today);
+        expect(upcomingItem.collectionStage).toBe('upcoming');
+        expect(upcomingItem.inPeriod).toBe(false);
+        expect(upcomingItem.overdue).toBe(false);
+
+        const dayOne=inspectInvoice(invoice('day1',{billingPeriodStart:'2026-10-06',billingPeriodEnd:'2026-11-05',dueDate:'2026-10-06'}),'2026-10-06');
+        const midPeriod=inspectInvoice(invoice('mid',{billingPeriodStart:'2026-10-06',billingPeriodEnd:'2026-11-05',dueDate:'2026-10-06'}),today);
+        const lastDay=inspectInvoice(invoice('last',{billingPeriodStart:'2026-10-06',billingPeriodEnd:'2026-11-05',dueDate:'2026-10-06'}),'2026-11-05');
+        for (const active of [dayOne,midPeriod,lastDay]) {
+            expect(active.collectionStage).toBe('in_period');
+            expect(active.inPeriod).toBe(true);
+            expect(active.overdue).toBe(false);
+        }
+
+        const pastPeriod=inspectInvoice(invoice('past',{billingPeriodStart:'2026-10-06',billingPeriodEnd:'2026-11-05',dueDate:'2026-10-06'}),'2026-11-06');
+        expect(pastPeriod.collectionStage).toBe('overdue');
+        expect(pastPeriod.inPeriod).toBe(false);
+        expect(pastPeriod.overdue).toBe(true);
+    });
+    it('sorts payments queue by stage priority (overdue -> in_period -> upcoming), then redCutoff, then dueDate',()=>{
+        const upcomingNov=invoice('upcoming-nov',{billingPeriodStart:'2026-11-06',billingPeriodEnd:'2026-12-05',dueDate:'2026-11-06'});
+        const inPeriodOct=invoice('in-period-oct',{billingPeriodStart:'2026-10-06',billingPeriodEnd:'2026-11-05',dueDate:'2026-10-06'});
+        const overdueSep=invoice('overdue-sep',{billingPeriodStart:'2026-09-06',billingPeriodEnd:'2026-10-05',dueDate:'2026-09-06'});
+        const overdueAug=invoice('overdue-aug',{billingPeriodStart:'2026-08-06',billingPeriodEnd:'2026-09-05',dueDate:'2026-08-06'});
+        const queues=buildFinanceQueues([upcomingNov,inPeriodOct,overdueSep,overdueAug],today);
+        expect(queues.payments.map(item=>item.invoice.id)).toEqual(['overdue-aug','overdue-sep','in-period-oct','upcoming-nov']);
     });
     it('does not flood daily attention with fully paid legacy invoices lacking coverage dates',()=>{
         expect(buildFinanceQueues([invoice('old',{status:'paid',billingPeriodStart:null,billingPeriodEnd:null,payments:[{id:'p',amount:'1900',status:'verified',recordedAt:today}]})],today).attention).toHaveLength(0);

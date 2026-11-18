@@ -3,7 +3,7 @@ import { requireTenantSession } from '@/lib/session';
 import { redirect } from 'next/navigation';
 import { db } from '@/db';
 import { invoices } from '@/db/schema';
-import { eq, desc, and, count, lt, inArray } from 'drizzle-orm';
+import { eq, asc, desc, and, count, inArray } from 'drizzle-orm';
 import { Download, CreditCard } from 'lucide-react';
 import { resolveActiveCentreId } from '@/lib/centre-filter';
 import { getUserAccessibleCentres, isOrgOwner } from '@/lib/permissions';
@@ -13,6 +13,8 @@ import FinanceDataGridClient from '@/features/finance/components/FinanceDataGrid
 import type { FinanceInvoice } from '@/features/finance/components/FinanceDataGridClient';
 import FinanceWorkspace from '@/features/finance/components/FinanceWorkspace';
 import { isFinanceWorkspaceView, type WorkspaceInvoice } from '@/features/finance/domain/finance-workspace';
+import { toLondonBusinessDate } from '@/features/finance/domain/invoice-collection-state';
+import { buildInvoiceCollectionStageSql } from '@/features/finance/domain/invoice-collection-sql';
 import FinanceDashboardFilters from '@/features/finance/components/FinanceDashboardFilters';
 import BillingCyclesTab from '@/features/billing/components/BillingCyclesTab';
 import { fetchBillingCycles } from '@/features/billing/queries';
@@ -74,6 +76,9 @@ export default async function FinancePage(props: {
     let paginatedInvoices: FinanceInvoice[] = [];
     let hasFetchError = false;
 
+    const todayStr = toLondonBusinessDate();
+    const monthStart = `${todayStr.slice(0, 7)}-01`;
+
     try {
         let orgCentresRaw: OrgCentre[] = [];
         try {
@@ -92,19 +97,21 @@ export default async function FinancePage(props: {
                 ? inArray(invoices.centreId, validCentreIds)
                 : inArray(invoices.centreId, []);
 
-        const todayMidnightUtc = new Date();
-        todayMidnightUtc.setUTCHours(0, 0, 0, 0);
-
         let dbStatusFilter = undefined;
         if (statusFilter === 'paid') {
             dbStatusFilter = eq(invoices.status, 'paid');
         } else if (statusFilter === 'draft') {
             dbStatusFilter = eq(invoices.status, 'draft');
+        } else if (statusFilter === 'sent') {
+            dbStatusFilter = eq(invoices.status, 'sent');
+        } else if (statusFilter === 'partially_paid') {
+            dbStatusFilter = eq(invoices.status, 'partially_paid');
+        } else if (statusFilter === 'upcoming') {
+            dbStatusFilter = buildInvoiceCollectionStageSql('upcoming', todayStr);
+        } else if (statusFilter === 'in_period') {
+            dbStatusFilter = buildInvoiceCollectionStageSql('in_period', todayStr);
         } else if (statusFilter === 'overdue') {
-            dbStatusFilter = and(
-                inArray(invoices.status, ['sent', 'partially_paid']),
-                lt(invoices.dueDate, todayMidnightUtc)
-            );
+            dbStatusFilter = buildInvoiceCollectionStageSql('overdue', todayStr);
         }
 
         const combinedFilter = and(
@@ -137,6 +144,11 @@ export default async function FinancePage(props: {
                 },
             });
         } else if (!familyView) {
+            const invoiceOrderBy =
+                statusFilter === 'overdue' || statusFilter === 'in_period'
+                    ? [asc(invoices.dueDate), desc(invoices.createdAt)]
+                    : [desc(invoices.createdAt)];
+
             const [[countResult], rows] = await Promise.all([
                 db.select({ count: count() }).from(invoices).where(combinedFilter),
                 db.query.invoices.findMany({
@@ -144,7 +156,7 @@ export default async function FinancePage(props: {
                     extras: { needsBillingReview: draftLifecycleReviewSql().as('needs_billing_review') },
                     limit: pageSize,
                     offset: (page - 1) * pageSize,
-                    orderBy: [desc(invoices.createdAt)],
+                    orderBy: invoiceOrderBy,
                     with: {
                         centre: true,
                         child: true,
@@ -181,12 +193,6 @@ export default async function FinancePage(props: {
     }
     const serializedBillingCycles = serialize(billingCycles);
 
-    const today = new Date();
-    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1)
-        .toISOString()
-        .split('T')[0];
-    const todayStr = today.toISOString().split('T')[0];
-
     return (
         <div className="max-w-7xl mx-auto space-y-6">
             {/* Header */}
@@ -217,12 +223,12 @@ export default async function FinancePage(props: {
                         <FinanceDashboardFilters centres={orgCentres} />
                     </Suspense>
                     {!workspaceView && <a
-                        href={`/api/export/finance?from=${monthStart}&to=${todayStr}`}
+                        href={`/api/export/finance?${new URLSearchParams({ from: monthStart, to: todayStr, ...(activeCentreId !== 'all' ? { centre: activeCentreId } : {}) })}`}
                         download={`finance-${monthStart}-to-${todayStr}.csv`}
-                        className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-bold hover:bg-emerald-500/20 shadow-sm transition-all active:scale-95 duration-150"
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-xs font-bold hover:bg-emerald-500/20 shadow-sm transition-all active:scale-95 duration-150"
                         title="Download finance CSV for current month"
                     >
-                        <Download className="w-4 h-4" />
+                        <Download className="w-4 h-4" aria-hidden="true" />
                         Export CSV
                     </a>}
                 </div>
@@ -239,7 +245,7 @@ export default async function FinancePage(props: {
                 These are existing issued balances, including shared family invoices where a covered student has paused or stopped. Payments and receipts remain available. Pausing a student does not void a debt, create a credit or issue another invoice.
             </p>}
             {cashflowView && cashReceiptsLedger && <CashReceiptsOwnerView ledger={cashReceiptsLedger} />}
-            {workspaceView && <FinanceWorkspace key={activeCentreId} invoices={serialize(workspaceInvoices)} cycles={serializedBillingCycles} today={new Intl.DateTimeFormat('en-CA', {timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date())} invoiceError={hasFetchError} cycleError={cycleFetchError}/>}
+            {workspaceView && <FinanceWorkspace key={activeCentreId} invoices={serialize(workspaceInvoices)} cycles={serializedBillingCycles} today={todayStr} invoiceError={hasFetchError} cycleError={cycleFetchError}/>}
 
             {/* Main Finance Data Grid & KPI Summary */}
             {!workspaceView && !familyView && !cashflowView && <Suspense fallback={<div className="h-[400px] bg-secondary/20 rounded-3xl animate-pulse border border-border/60" />}>
@@ -257,7 +263,7 @@ export default async function FinancePage(props: {
             {familyView && <div id="family-billing-overview" className="scroll-mt-24 bg-card/80 backdrop-blur-md border border-border/60 shadow-sm rounded-3xl p-6 sm:p-8 animate-in slide-in-from-bottom-4 duration-500 delay-150">
                 <div className="flex items-center justify-between mb-6">
                     <h2 className="text-xl font-bold text-foreground flex items-center gap-2.5 tracking-tight">
-                        <CreditCard className="w-5 h-5 text-primary" />
+                        <CreditCard className="w-5 h-5 text-primary" aria-hidden="true" />
                         Family accounts
                     </h2>
                 </div>

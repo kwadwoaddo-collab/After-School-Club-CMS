@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
                 const totalOverdueValuePence = overdueInvoices.reduce(
                     (sum, inv) => {
                         const totalPaid = (inv.payments ?? []).reduce(
-                            (pSum, p) => p.status === 'verified' ? pSum + Math.round(Number(p.amount) * 100) : pSum,
+                            (pSum, p) => (p.status === 'verified' && !p.reversedAt) ? pSum + Math.round(Number(p.amount) * 100) : pSum,
                             0
                         );
                         const invPence = Math.round(Number(inv.amount) * 100);
@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
                 const overduePounds = (totalOverdueValuePence / 100).toFixed(2);
 
                 const digestTitle = `Daily Finance Digest — ${org.name}`;
-                const digestMessage = `${draftsCount} draft(s) (£${draftPounds}) to review, ${setupCount} schedule setup required, ${overdueCount} overdue (£${overduePounds}), ${expectedCount} payment(s) expected.`;
+                const digestMessage = `${draftsCount} draft(s) (£${draftPounds}) to review, ${setupCount} schedule setup required, ${overdueCount} overdue past assessment period (£${overduePounds}), ${expectedCount} payment(s) expected (in period / upcoming).`;
 
                 // 1. Deliver in-app notification
                 try {
@@ -154,12 +154,12 @@ export async function POST(request: NextRequest) {
                                         <td style="padding: 10px; text-align: right;">—</td>
                                     </tr>
                                     <tr style="border-bottom: 1px solid #e2e8f0;">
-                                        <td style="padding: 10px;">Overdue Invoices</td>
+                                        <td style="padding: 10px;">Overdue Invoices (Past Assessment Period)</td>
                                         <td style="padding: 10px; text-align: right; font-weight: bold; color: #e11d48;">${overdueCount}</td>
                                         <td style="padding: 10px; text-align: right; color: #e11d48;">£${overduePounds}</td>
                                     </tr>
                                     <tr style="border-bottom: 1px solid #e2e8f0;">
-                                        <td style="padding: 10px;">Upcoming Payments Expected</td>
+                                        <td style="padding: 10px;">Payments Expected (In Period &amp; Upcoming)</td>
                                         <td style="padding: 10px; text-align: right; font-weight: bold;">${expectedCount}</td>
                                         <td style="padding: 10px; text-align: right;">—</td>
                                     </tr>

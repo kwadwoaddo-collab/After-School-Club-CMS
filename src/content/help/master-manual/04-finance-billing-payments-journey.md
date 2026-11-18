@@ -13,18 +13,19 @@ This master journey maps the commercial and billing lifecycle of a family within
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │               STAGE 1: AGREED FEE SETUP                     │
-│  Staff configure monthly family tuition & anchor dates      │
+│  Staff configure monthly family tuition & assessment dates  │
 └──────────────────────────────┬──────────────────────────────┘
                                │
 ┌──────────────────────────────▼──────────────────────────────┐
-│            STAGE 2: MONTHLY INVOICE GENERATION              │
-│  Automated cron / manual run generates draft invoices       │
-│  Application pre-check in `billingRuns` prevents duplicates │
+│     STAGE 2: ADVANCE INVOICE PREPARATION (1 MONTH AHEAD)    │
+│  Cron / manual run prepares `draft` 1 calendar month ahead  │
+│  `Due Date` is Day 1 of the covered Assessment period       │
 └──────────────────────────────┬──────────────────────────────┘
                                │
 ┌──────────────────────────────▼──────────────────────────────┐
-│          STAGE 3: PARENT NOTIFICATION & PORTAL              │
-│  Parent receives invoice email & views balance on `/portal` │
+│       STAGE 3: ISSUANCE, MANUAL EMAIL & 4-STATE PORTAL      │
+│  Staff issue invoice (`sent`) & manually send email notice  │
+│  Blue (Upcoming) → Amber (In period · Due) → Red (Overdue)  │
 └──────────────────────────────┬──────────────────────────────┘
                                │
                ┌───────────────┴───────────────┐
@@ -40,8 +41,8 @@ This master journey maps the commercial and billing lifecycle of a family within
                └───────────────┬───────────────┘
                                │
 ┌──────────────────────────────▼──────────────────────────────┐
-│            STAGE 4: BALANCE SETTLEMENT & RECEIPTS           │
-│  Invoice marks "PAID"; parent receives confirmation receipt │
+│        STAGE 4: GREEN SETTLEMENT (`Paid in full`)           │
+│  Verified payments reach £0.00 remaining; receipt available │
 │  Audit events logged & revenue reflected in dashboard KPIs  │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -58,31 +59,34 @@ This master journey maps the commercial and billing lifecycle of a family within
 When a new family registers or enrolls:
 1. Staff navigate to the student profile or parent record.
 2. Under **Family Billing**, staff configure the **Agreed Monthly Fee** (e.g. £250.00) and link all enrolled siblings.
-3. Staff set the **Billing Anchor Date** (e.g. 1st of every month) and **Invoice Lead Days** (e.g. 7 days).
+3. Staff set the **Billing Anchor Date** defining the family's recurring **Assessment period** (e.g. 1st of every month).
 4. The agreement is saved in `active` status.
 
 ---
 
-## 3. Stage 2: Invoice Generation & Duplicate Prevention
+## 3. Stage 2: Advance Preparation & Duplicate Prevention
 
 ![Figure — Monthly Invoice Batch Generation Run preview modal with total count and value](/training/assets/screenshots/annotated/SS-D6-S029.png)
 *Figure MM-4.3 — Monthly Invoicing Batch Run Preview*
 
 📹 **Video Walkthrough:** [Watch: Executing Monthly Invoicing Batch Run](/training/assets/videos/SS-D6-V014.mp4)
 
-As the billing anchor date approaches:
-1. **Automated Daily Run:** The daily billing cron job evaluates active configs. When the current date reaches `anchorDate - leadDays`, the invoice is generated automatically.
+Invoices are prepared **1 calendar month in advance** of each **Assessment period**:
+1. **Advance Draft Preparation:** Automated daily runs and manual batch runs prepare the upcoming month's invoice 1 calendar month ahead, setting `Due Date` to Day 1 (the start) of the covered **Assessment period**.
 2. **Duplicate Run Protection:** The system records an entry in the `billingRuns` table. An application pre-check prevents generating duplicate invoices for the same period.
-3. **Line-Item Generation:** The invoice is generated in `draft` status, stamped with an invoice number (`INV-XXXXXX`), and populates `coveredChildrenJson` with all linked siblings.
+3. **Draft Isolation & No Auto-Email:** Invoices are created in `draft` status, stamped with an invoice number (`INV-XXXXXX`), and populate `coveredChildrenJson` with all linked siblings. Drafts are hidden from parents and never trigger automatic emails.
 
 ---
 
-## 4. Stage 3: Parent Review & Notification
+## 4. Stage 3: Issuance, Deliberate Manual Emails & the 4-State Lifecycle
 
-Once generated:
-1. An automated email is sent to the parent containing the invoice summary, amount, due date, and a direct link to `/portal/billing`.
-2. The parent logs into the Parent Portal via passwordless magic link.
-3. The parent views the total outstanding balance and the breakdown of invoices due.
+Once staff review and issue a `draft` invoice (`status: 'sent'`):
+1. **Deliberate Manual Email Action:** Financial emails are always deliberate manual actions by authorised staff (Owner or Centre Manager). Clicking **Send / Resend Email** dispatches the invoice summary (including the **Assessment Period** and neutral `Due Date`) with audited provider status tracking.
+2. **4-State Collection Lifecycle:** Both the staff Finance Directory and the Parent Portal (`/portal` and `/portal/billing`) track every issued invoice across four clear visual states:
+   - **Blue (`Upcoming`):** Issued in advance, before Day 1 of the **Assessment period**. Session booking in the Parent Portal remains fully active.
+   - **Yellow / Amber (`In period · Due` / `Assessment period · Payment due`):** Inside the active **Assessment period** (Day 1 through `billingPeriodEnd`). Tracked actively for payment, **never** branded "Overdue", and session booking remains unobstructed. Logged Childcare Voucher / Tax-Free Childcare references show an explicit *"awaiting centre verification"* acknowledgement while HMRC funds clear.
+   - **Red (`Overdue · Past period` / `Overdue · Past assessment period`):** Strictly *after* the **Assessment period** ends with an unpaid balance remaining.
+   - **Green (`Paid in full`):** Verified payments cover 100% of the invoice total (`£0.00` remaining).
 
 ---
 

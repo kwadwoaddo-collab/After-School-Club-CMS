@@ -13,7 +13,12 @@ interface RecordPaymentModalProps {
     invoiceNumber: string;
     remainingBalance: number;
     invoiceTotal?: number;
-    billingContext?: { parentId: string; familyName: string; period: string };
+    billingContext?: {
+        parentId: string;
+        familyName: string;
+        period: string;
+        priorOverdueNotice?: string;
+    };
     onClose: () => void;
     onSuccess: () => void;
 }
@@ -125,6 +130,16 @@ export default function RecordPaymentModal({
                         <X className="w-6 h-6" />
                     </button>
                 </div>
+
+                {billingContext?.priorOverdueNotice && (
+                    <div
+                        role="note"
+                        className="mx-8 mt-6 flex items-start gap-2.5 rounded-2xl border border-amber-500/30 bg-amber-500/15 px-4 py-3 text-sm text-amber-900 dark:text-amber-200"
+                    >
+                        <AlertTriangle aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" />
+                        <p>{billingContext.priorOverdueNotice}</p>
+                    </div>
+                )}
 
                 {conflictPayment && (
                     <div className="mx-8 mt-6 p-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl space-y-3">

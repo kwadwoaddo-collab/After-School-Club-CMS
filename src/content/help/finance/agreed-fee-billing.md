@@ -12,8 +12,9 @@ Instead of invoicing parents for individual hours or ad-hoc daily sessions, club
 ### Core Concepts:
 - **Parent-Centric Billing:** The billing agreement is attached to the primary parent account (`parentId`) at a specific centre (`centreId`).
 - **Multi-Child Sibling Coverage:** A single billing agreement can cover one, two, or multiple siblings under one combined monthly tuition fee.
-- **Billing Anchor Date:** The baseline monthly due date (e.g. the 1st of every month).
-- **Invoice Lead Days:** How many days in advance of the due date the invoice is generated (default: 7 days).
+- **Assessment Period & Advance Preparation:** Monthly invoices are prepared **1 calendar month in advance** of the **Assessment period** they cover, with `Due Date` set to Day 1 (the start) of that **Assessment period**.
+- **4-State Collection Lifecycle:** Issued invoices move predictably from **Blue (`Upcoming`)** before the assessment period starts, to **Yellow / Amber (`In period · Due`)** throughout the active assessment period (never branded "Overdue"), to **Red (`Overdue · Past assessment period`)** strictly after the assessment period ends if unpaid, and **Green (`Paid in full`)** once verified payments clear 100% of the balance.
+- **Deliberate Manual Emails:** Invoice generation and issuance never auto-dispatch emails to parents; staff trigger financial notification emails as an explicit manual action.
 
 ---
 
@@ -74,14 +75,14 @@ A family billing configuration moves through three administrative states:
 2. Scroll to the **Family Billing & Agreed Fee** card.
 3. Click **Configure Billing**.
 4. Enter the **Agreed Monthly Fee (£):** e.g. `250.00` (stored internally as `25000` pence).
-5. Set the **Billing Anchor Date:** Select the recurring monthly payment date (e.g. `2026-09-01`).
-6. Set the **Invoice Lead Days:** Enter how many days before the anchor date the invoice should be created (default: `7`).
+5. Set the **Billing Anchor Date:** Select the start date of the recurring monthly **Assessment period** (e.g. `2026-09-01`).
+6. Review advance scheduling: SprintScale prepares each monthly invoice **1 calendar month in advance** as a `draft`, setting `Due Date` to Day 1 of the **Assessment period**.
 7. **Covered Children:** Check the boxes next to all siblings included under this single monthly agreement.
 8. (Optional) Enter internal **Billing Notes** (e.g. "Includes sibling discount for Taylor and Jamie").
 9. Click **Save Billing Configuration**.
 
 **Expected Result:**
-The billing config is created in `active` status. The family will be included in the next monthly invoice run.
+The billing config is created in `active` status. Monthly drafts are prepared 1 calendar month ahead of each **Assessment period**; once reviewed and issued by staff, they follow the 4-state collection lifecycle (**Blue `Upcoming`** → **Yellow/Amber `In period · Due`** → **Red `Overdue · Past assessment period`** → **Green `Paid in full`**), with email notifications sent only when staff explicitly trigger them.
 
 ---
 

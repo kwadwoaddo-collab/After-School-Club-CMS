@@ -1,5 +1,6 @@
 import {describe,it,expect} from 'vitest';
 import {buildFinanceQueues,inspectInvoice,type WorkspaceInvoice} from './finance-workspace';
+import {collectionStagePriority} from './invoice-collection-state';
 function referenceQueues(invoices: WorkspaceInvoice[], today: string) {
     const unique = [...new Map(invoices.map(invoice => [invoice.id, invoice])).values()];
     const inspected = unique.filter(invoice => invoice.status !== 'void').map(invoice => ({ invoice, ...inspectInvoice(invoice, today) }));
@@ -9,7 +10,14 @@ function referenceQueues(invoices: WorkspaceInvoice[], today: string) {
         if (inspected.some(other => other.invoice.id !== item.invoice.id && other.invoice.billingConfigId === item.invoice.billingConfigId && other.invoice.centreId === item.invoice.centreId && other.invoice.parentId === item.invoice.parentId && other.start && other.end && other.start <= item.end! && other.end >= item.start!)) item.reasons.push('Another invoice overlaps this billing period.');
     }
     const drafts = inspected.filter(item => item.invoice.status === 'draft').sort((a,b) => (a.start ?? '').localeCompare(b.start ?? '') || a.invoice.id.localeCompare(b.invoice.id));
-    const payments = inspected.filter(item => ['sent','partially_paid'].includes(item.invoice.status) && item.remaining > 0 && item.financialReliable).sort((a,b) => (a.due ?? '9999').localeCompare(b.due ?? '9999') || a.invoice.id.localeCompare(b.invoice.id));
+    const payments = inspected
+        .filter(item => ['sent','partially_paid'].includes(item.invoice.status) && item.remaining > 0 && item.financialReliable)
+        .sort((a,b) =>
+            (collectionStagePriority(a.collectionStage) - collectionStagePriority(b.collectionStage)) ||
+            (a.redCutoff ?? a.due ?? '9999').localeCompare(b.redCutoff ?? b.due ?? '9999') ||
+            (a.due ?? '9999').localeCompare(b.due ?? '9999') ||
+            a.invoice.id.localeCompare(b.invoice.id)
+        );
     const attention = inspected.filter(item => item.reasons.length);
     return { drafts, payments, attention };
 }

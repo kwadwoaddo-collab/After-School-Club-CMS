@@ -3,7 +3,7 @@
 
 
 import { useState, useEffect, useTransition } from 'react';
-import { CreditCard, ArrowLeft, Download, Send, Clock, CheckCircle2, AlertCircle, Trash2, Ban, Eye, Loader2, Edit2, Check, X as XIcon } from 'lucide-react';
+import { CreditCard, ArrowLeft, Download, Send, Clock, CheckCircle2, AlertCircle, AlertTriangle, CalendarClock, FileText, Trash2, Ban, Eye, Loader2, Edit2, Check, X as XIcon } from 'lucide-react';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import RecordPaymentModal from './RecordPaymentModal';
@@ -16,7 +16,13 @@ import PDFPreviewModal from './PDFPreviewModal';
 import ConfirmActionModal from './ConfirmActionModal';
 import { voidInvoice, updateInvoiceDate, updateInvoiceNotes, resendInvoiceEmail, issueDraftInvoice, updateDraftInvoice, discardDraftInvoice } from '../actions';
 import { canOfferRecordPayment, parseStoredDecimalToPence } from '../domain/payment-eligibility';
-import { formatInvoicePeriod } from '../domain/invoice-display';
+import { formatInvoicePeriod, formatPaidDate } from '../domain/invoice-display';
+import {
+    COLLECTION_STAGE_STYLES,
+    evaluateInvoiceCollectionState,
+    toLondonBusinessDate,
+    type InvoiceCollectionStage,
+} from '../domain/invoice-collection-state';
 import IssueInvoiceConfirmation from './IssueInvoiceConfirmation';
 import type { InvoiceEmailStatus } from '../invoice-email-status';
 import { useToast } from '@/components/ui/ToastProvider';
@@ -168,25 +174,35 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
         setIsClient(true);
     }, []);
 
-    const totalPaid = invoice.payments.reduce((sum: number, p: any) => p.status === 'verified' ? sum + Number(p.amount) : sum, 0);
+    const totalPaid = invoice.payments.reduce((sum: number, p: any) => (p.status === 'verified' && !p.reversedAt) ? sum + Number(p.amount) : sum, 0);
     const remainingBalance = Number(invoice.amount) - totalPaid;
+    const collectionState = evaluateInvoiceCollectionState(invoice, toLondonBusinessDate(), { strictPayments: false });
+    const paidDate = collectionState.stage === 'paid' ? formatPaidDate(invoice.payments) : null;
 
-    const getStatusBadge = (status: string) => {
-        switch (status) {
-            case 'draft':
-                return <span className="flex items-center gap-1.5 px-3 py-1 bg-amber-500/10 text-amber-600 rounded-full text-xs font-bold ring-1 ring-amber-500/20"><Clock className="w-3.5 h-3.5" /> DRAFT</span>;
+    const renderCollectionIcon = (stage: InvoiceCollectionStage) => {
+        switch (stage) {
             case 'paid':
-                return <span className="flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 text-emerald-600 rounded-full text-xs font-bold ring-1 ring-emerald-500/20"><CheckCircle2 className="w-3.5 h-3.5" /> PAID</span>;
-            case 'partially_paid':
-                return <span className="flex items-center gap-1.5 px-3 py-1 bg-amber-500/10 text-amber-600 rounded-full text-xs font-bold ring-1 ring-amber-500/20"><Clock className="w-3.5 h-3.5" /> PARTIALLY PAID</span>;
-            case 'sent':
-                return <span className="flex items-center gap-1.5 px-3 py-1 bg-blue-500/10 text-blue-400 rounded-full text-xs font-bold ring-1 ring-blue-500/20"><Send className="w-3.5 h-3.5" /> ISSUED</span>;
+                return <CheckCircle2 className="w-3.5 h-3.5" aria-hidden="true" />;
+            case 'upcoming':
+                return <CalendarClock className="w-3.5 h-3.5" aria-hidden="true" />;
+            case 'in_period':
+                return <Clock className="w-3.5 h-3.5" aria-hidden="true" />;
+            case 'overdue':
+            case 'needs_checking':
+                return <AlertTriangle className="w-3.5 h-3.5" aria-hidden="true" />;
+            case 'draft':
+                return <FileText className="w-3.5 h-3.5" aria-hidden="true" />;
             case 'void':
-                return <span className="flex items-center gap-1.5 px-3 py-1 bg-neutral-500/10 text-neutral-400 rounded-full text-xs font-bold ring-1 ring-neutral-500/20 line-through"><Ban className="w-3.5 h-3.5" /> VOID</span>;
-            default:
-                return <span className="flex items-center gap-1.5 px-3 py-1 bg-slate-500/10 text-muted-foreground rounded-full text-xs font-bold ring-1 ring-slate-500/20"><AlertCircle className="w-3.5 h-3.5" /> {status.toUpperCase()}</span>;
+                return <Ban className="w-3.5 h-3.5" aria-hidden="true" />;
         }
     };
+
+    const getStatusBadge = () => (
+        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${COLLECTION_STAGE_STYLES[collectionState.stage].badge}`}>
+            {renderCollectionIcon(collectionState.stage)}
+            {collectionState.staffBadgeLabel}
+        </span>
+    );
 
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -367,7 +383,17 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                                 <div className="text-primary font-black tracking-widest text-xs uppercase mb-2">Invoice Details</div>
                                 <h1 className="text-4xl font-black text-foreground tracking-tight mb-2">{invoice.invoiceNumber}</h1>
                                 <div className="flex flex-wrap items-center gap-2">
-                                    {getStatusBadge(invoice.status)}
+                                    {getStatusBadge()}
+                                    {invoice.status === 'sent' && (
+                                        <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-secondary text-muted-foreground border border-border rounded-full text-xs font-bold">
+                                            <Send className="w-3.5 h-3.5" aria-hidden="true" /> ISSUED
+                                        </span>
+                                    )}
+                                    {paidDate && (
+                                        <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 text-emerald-800 dark:text-emerald-200 border border-emerald-500/25 rounded-full text-xs font-semibold">
+                                            Paid {paidDate}
+                                        </span>
+                                    )}
                                     {invoice.centre?.name && (
                                         <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-bold ring-1 ring-primary/20">
                                             {invoice.centre.name}
@@ -528,13 +554,13 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                                     </div>
                                 )}
                             </div>
-                            <div>
-                                <p className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-1">Billing Start</p>
-                                <p className="text-sm font-bold text-foreground">{invoice.billingPeriodStart ? format(new Date(invoice.billingPeriodStart), 'dd/MM/yyyy') : '-'}</p>
-                            </div>
-                            <div>
-                                <p className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-1">Billing End</p>
-                                <p className="text-sm font-bold text-foreground">{invoice.billingPeriodEnd ? format(new Date(invoice.billingPeriodEnd), 'dd/MM/yyyy') : '-'}</p>
+                            <div className="col-span-2">
+                                <p className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-1">Assessment Period</p>
+                                <p className="text-sm font-bold text-foreground">
+                                    {invoice.billingPeriodStart && invoice.billingPeriodEnd
+                                        ? formatInvoicePeriod(invoice.billingPeriodStart, invoice.billingPeriodEnd)
+                                        : '-'}
+                                </p>
                             </div>
                         </div>
 

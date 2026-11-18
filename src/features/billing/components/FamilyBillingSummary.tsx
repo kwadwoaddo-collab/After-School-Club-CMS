@@ -1,19 +1,95 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
+import {
+    AlertTriangle,
+    Ban,
+    CalendarClock,
+    CheckCircle2,
+    Clock,
+    FileText,
+} from 'lucide-react';
 import type { FamilyInvoiceSummary, FamilyBillingSummary as Summary } from '@/features/billing/queries';
 
 const money = (pence: number) => new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP' }).format(pence / 100);
 const date = (value: string | null) => value ? new Date(`${value.slice(0, 10)}T12:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }) : 'Not recorded';
 
+function invoicePresentation(invoice: FamilyInvoiceSummary): {
+    label: string;
+    className: string;
+    compactFinancial: string;
+    icon: ReactNode;
+} {
+    const isPartPaid = invoice.paymentStatus === 'partially_paid';
+
+    if (invoice.paymentStatus === 'needs_review') {
+        return {
+            label: 'Needs review',
+            className: 'text-amber-800 dark:text-amber-200',
+            compactFinancial: 'Needs review',
+            icon: <AlertTriangle className="w-3.5 h-3.5" aria-hidden="true" />,
+        };
+    }
+    if (invoice.paymentStatus === 'void') {
+        return {
+            label: 'Void',
+            className: 'text-muted-foreground',
+            compactFinancial: 'Void',
+            icon: <Ban className="w-3.5 h-3.5" aria-hidden="true" />,
+        };
+    }
+    if (invoice.paymentStatus === 'not_issued') {
+        return {
+            label: 'Draft — not issued',
+            className: 'text-muted-foreground',
+            compactFinancial: `${money(invoice.amountPence)} draft`,
+            icon: <FileText className="w-3.5 h-3.5" aria-hidden="true" />,
+        };
+    }
+    if (invoice.paymentStatus === 'paid') {
+        return {
+            label: 'Paid',
+            className: 'text-emerald-700 dark:text-emerald-300',
+            compactFinancial: `${money(invoice.paidPence)} paid`,
+            icon: <CheckCircle2 className="w-3.5 h-3.5" aria-hidden="true" />,
+        };
+    }
+    if (invoice.overdue) {
+        return {
+            label: isPartPaid ? 'Overdue · Part-paid' : 'Overdue · Past period',
+            className: 'text-rose-700 dark:text-rose-300',
+            compactFinancial: `${money(invoice.balancePence)} ${isPartPaid ? 'overdue · part-paid' : 'overdue · past period'}`,
+            icon: <AlertTriangle className="w-3.5 h-3.5" aria-hidden="true" />,
+        };
+    }
+    if (invoice.inPeriod) {
+        return {
+            label: isPartPaid ? 'In period · Part-paid' : 'In period · Due',
+            className: 'text-amber-800 dark:text-amber-200',
+            compactFinancial: `${money(invoice.balancePence)} ${isPartPaid ? 'in period · part-paid' : 'in period · due'}`,
+            icon: <Clock className="w-3.5 h-3.5" aria-hidden="true" />,
+        };
+    }
+    return {
+        label: isPartPaid ? 'Upcoming · Part-paid' : 'Upcoming',
+        className: 'text-sky-800 dark:text-sky-300',
+        compactFinancial: `${money(invoice.balancePence)} ${isPartPaid ? 'upcoming · part-paid' : 'upcoming'}`,
+        icon: <CalendarClock className="w-3.5 h-3.5" aria-hidden="true" />,
+    };
+}
+
 function invoiceLabel(invoice: FamilyInvoiceSummary) {
-    return invoice.paymentStatus === 'needs_review' ? 'Needs review' : invoice.paymentStatus === 'void' ? 'Void' : invoice.paymentStatus === 'not_issued' ? 'Draft — not issued' : invoice.overdue ? 'Overdue' : invoice.paymentStatus === 'paid' ? 'Paid' : invoice.paymentStatus === 'partially_paid' ? 'Part-paid' : 'Issued — unpaid';
+    return invoicePresentation(invoice).label;
 }
 
 function Invoice({ invoice }: { invoice: FamilyInvoiceSummary }) {
+    const meta = invoicePresentation(invoice);
     return <div className="space-y-1 py-2 text-sm">
         <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
             <Link href={`/dashboard/finance/invoices/${invoice.id}`} className="font-semibold text-primary underline underline-offset-2">{invoice.invoiceNumber}</Link>
-            <span className="font-medium text-foreground">{invoiceLabel(invoice)}</span>
+            <span className={`inline-flex items-center gap-1 font-medium ${meta.className}`}>
+                {meta.icon}
+                {meta.label}
+            </span>
         </div>
         <p className="text-foreground">{date(invoice.periodStart)} – {date(invoice.periodEnd)}</p>
         {invoice.paymentStatus === 'needs_review' ? <p className="text-muted-foreground">Invoice amounts or payment records need review.</p> : <p className="text-muted-foreground tabular-nums">Billed {money(invoice.amountPence)} · Paid {money(invoice.paidPence)}{invoice.paymentStatus !== 'not_issued' && invoice.paymentStatus !== 'void' ? ` · Remaining ${money(invoice.balancePence)}` : ''}</p>}
@@ -51,9 +127,9 @@ function FullBillingDetails({ summary }: { summary: Summary }) {
 
 
 function CompactInvoice({ label, invoice }: { label: string; invoice: FamilyInvoiceSummary }) {
-    const financial = invoice.paymentStatus === 'needs_review' ? 'Needs review' : invoice.paymentStatus === 'void' ? 'Void' : invoice.paymentStatus === 'not_issued' ? `${money(invoice.amountPence)} draft` : invoice.paymentStatus === 'paid' ? `${money(invoice.paidPence)} paid` : `${money(invoice.balancePence)} ${invoice.overdue ? 'overdue' : invoice.paymentStatus === 'partially_paid' ? 'remaining · part-paid' : 'unpaid'}`;
+    const meta = invoicePresentation(invoice);
     return <div className="text-sm">
-        <p className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1"><span className="text-muted-foreground">{label}</span><span className="font-semibold text-foreground tabular-nums">{financial}</span></p>
+        <p className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1"><span className="text-muted-foreground">{label}</span><span className={`font-semibold tabular-nums ${meta.className}`}>{meta.compactFinancial}</span></p>
         <Link href={`/dashboard/finance/invoices/${invoice.id}`} className="text-primary underline underline-offset-2">{date(invoice.periodStart)} – {date(invoice.periodEnd)}</Link>
     </div>;
 }
@@ -69,7 +145,7 @@ export default function FamilyBillingSummary({ summary, children, nextPeriod, pr
         {summary.drafts.length > 0 && <p className="text-sm text-foreground">{summary.drafts.length} draft{summary.drafts.length === 1 ? '' : 's'} awaiting review{summary.drafts.length === 1 ? ` · ${date(summary.drafts[0].periodStart)} – ${date(summary.drafts[0].periodEnd)}` : ''}</p>}
         {summary.drafts.some(invoice => invoice.historical) && <p className="text-sm font-medium text-foreground">Historical draft — review before issuing.</p>}
         {summary.outstandingReliable ? summary.outstandingPence > 0 && <p className="text-sm font-semibold text-foreground tabular-nums">Outstanding: {money(summary.outstandingPence)} <span className="font-normal text-muted-foreground">· {summary.outstandingInvoices.length} issued invoice{summary.outstandingInvoices.length === 1 ? '' : 's'}</span></p> : <p className="text-sm font-semibold text-foreground">Outstanding total needs review.</p>}
-        {overdue.length > 0 && <p className="text-sm font-semibold text-foreground">{overdue.length} overdue invoice{overdue.length === 1 ? '' : 's'} — follow up payment.</p>}
+        {overdue.length > 0 && <p className="text-sm font-semibold text-rose-700 dark:text-rose-300">{overdue.length} overdue invoice{overdue.length === 1 ? '' : 's'} — follow up payment.</p>}
         {summary.needsReview && <p className="text-sm font-medium text-foreground">Billing details need review before preparing another invoice.</p>}
         <details className="group border-t border-border/50 pt-2">
             <summary className="cursor-pointer py-1 text-sm font-medium text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"><span className="group-open:hidden">Show billing details</span><span className="hidden group-open:inline">Hide billing details</span></summary>

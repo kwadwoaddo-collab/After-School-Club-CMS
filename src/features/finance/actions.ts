@@ -15,6 +15,7 @@ import { notifyOwners } from '@/lib/db-notifications';
 import { financeEligibleChildSql, getFinanceEligibleChildIds, assertEligibleBillingCoverage, lockEnrolmentForBilling, billingServicePeriod, lockBillingConfiguration } from '@/lib/enrolment/finance-eligibility';
 import { assertNotQuarantined } from '@/lib/data-quality/quarantine';
 import { recurringInvoiceOverlapSql } from '@/lib/billing/invoice-overlap';
+import { recalculateInvoiceStatus } from '@/lib/finance/recalculate-invoice-status';
 import {
     canAcceptStaffPayment,
     isPermittedStaffPaymentMethod,
@@ -84,60 +85,6 @@ async function insertInvoiceAndLog(
     });
 
     return inv;
-}
-
-/**
- * Category C — Authoritative invoice status recalculation.
- *
- * Recalculates invoice status from ONLY verified payments.
- * Must be called after any payment state change that affects balance.
- *
- * Rules:
- * - draft: untouched (not payment-driven)
- * - void: untouched (terminal; reversal on void invoice is allowed
- *   but does NOT resurrect the invoice — see reversePayment)
- * - verified total >= invoice amount → paid
- * - verified total > 0 → partially_paid
- * - verified total === 0 → sent
- *
- * Must be called inside a db.transaction() tx.
- */
-async function recalculateInvoiceStatus(
-    tx: any, // Using any for transaction to match existing codebase patterns
-    invoiceId: string
-): Promise<void> {
-    const invoice = await tx.query.invoices.findFirst({
-        where: eq(invoices.id, invoiceId),
-        columns: { status: true, amount: true },
-    });
-    if (!invoice) return;
-    // draft and void are not payment-driven states
-    if (invoice.status === 'draft' || invoice.status === 'void') return;
-
-    const allPayments = await tx.query.payments.findMany({
-        where: eq(payments.invoiceId, invoiceId),
-        columns: { status: true, amount: true },
-    });
-    const totalVerifiedPence = allPayments
-        .filter((p: any) => p.status === 'verified')
-        .reduce((s: number, p: any) => s + parseStoredDecimalToPence(p.amount), 0);
-
-    const invoiceAmountPence = parseStoredDecimalToPence(invoice.amount);
-
-    let newStatus: 'sent' | 'partially_paid' | 'paid';
-    if (totalVerifiedPence >= invoiceAmountPence) {
-        newStatus = 'paid';
-    } else if (totalVerifiedPence > 0) {
-        newStatus = 'partially_paid';
-    } else {
-        newStatus = 'sent';
-    }
-
-    if (newStatus !== invoice.status) {
-        await tx.update(invoices)
-            .set({ status: newStatus, updatedAt: new Date() })
-            .where(eq(invoices.id, invoiceId));
-    }
 }
 
 export async function getParents(query: string) {
@@ -1445,7 +1392,9 @@ export async function resendInvoiceEmail(invoiceId: string): Promise<{ success: 
     const emailStatus = await sendAuditedInvoiceEmail({
         invoiceId, organisationId: session.user.organisationId, userId: session.user.id,
         parentFirstName: parentName, parentEmail, invoiceNumber: invoice.invoiceNumber,
-        amount: Number(invoice.amount), dueDate: invoice.dueDate ?? new Date(), centreName, portalUrl,
+        amount: Number(invoice.amount), dueDate: invoice.dueDate ?? new Date(),
+        billingPeriodStart: invoice.billingPeriodStart, billingPeriodEnd: invoice.billingPeriodEnd,
+        centreName, portalUrl,
     });
     revalidatePath(`/dashboard/finance/invoices/${invoiceId}`);
     return emailStatus.status === 'accepted'

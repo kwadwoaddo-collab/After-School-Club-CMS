@@ -1,10 +1,11 @@
 import { invoices, payments } from '@/db/schema';
+import { parseStoredDecimalToPence } from '@/features/finance/domain/payment-eligibility';
 import { eq } from 'drizzle-orm';
 
 /**
  * Category C — Authoritative invoice status recalculation.
  *
- * Recalculates invoice status from ONLY verified payments.
+ * Recalculates invoice status from ONLY verified, unreversed payments using integer pence math.
  * Must be called inside a db.transaction() tx.
  *
  * - draft: untouched (not payment-driven)
@@ -27,16 +28,18 @@ export async function recalculateInvoiceStatus(
 
     const allPayments = await tx.query.payments.findMany({
         where: eq(payments.invoiceId, invoiceId),
-        columns: { status: true, amount: true },
+        columns: { status: true, amount: true, reversedAt: true },
     });
-    const totalVerified = allPayments
-        .filter((p: { status: string; amount: string | number }) => p.status === 'verified')
-        .reduce((s: number, p: { status: string; amount: string | number }) => s + Number(p.amount), 0);
+    const totalVerifiedPence = allPayments
+        .filter((p: { status: string; amount: string | number; reversedAt?: Date | string | null }) => p.status === 'verified' && !p.reversedAt)
+        .reduce((s: number, p: { status: string; amount: string | number }) => s + parseStoredDecimalToPence(p.amount), 0);
+
+    const invoiceAmountPence = parseStoredDecimalToPence(invoice.amount);
 
     let newStatus: 'sent' | 'partially_paid' | 'paid';
-    if (totalVerified >= Number(invoice.amount)) {
+    if (totalVerifiedPence >= invoiceAmountPence) {
         newStatus = 'paid';
-    } else if (totalVerified > 0) {
+    } else if (totalVerifiedPence > 0) {
         newStatus = 'partially_paid';
     } else {
         newStatus = 'sent';

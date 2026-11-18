@@ -7,6 +7,32 @@ function cell(value: string) {
     return `"${safe.replaceAll('"', '""')}"`;
 }
 
+function exportStatus(item: ReturnType<typeof buildFinanceQueues>['drafts'][number]): string {
+    if (item.invoice.status === 'draft') return 'Draft — not issued';
+    switch (item.collectionStage) {
+        case 'overdue':
+            return item.paid > 0
+                ? 'Overdue — part-paid'
+                : item.start && item.end
+                  ? 'Overdue — past assessment period'
+                  : 'Overdue';
+        case 'in_period':
+            return item.paid > 0
+                ? 'In period — part-paid'
+                : item.start && item.end
+                  ? 'In period — due'
+                  : 'Due today';
+        case 'upcoming':
+            return item.paid > 0 ? 'Upcoming — part-paid' : 'Upcoming — issued in advance';
+        case 'paid':
+            return 'Paid in full';
+        case 'void':
+            return 'Void — not due';
+        default:
+            return item.paid > 0 ? 'Needs checking — part-paid' : 'Needs checking';
+    }
+}
+
 /** Exports only the already authorised, filtered read projection supplied to the workspace. */
 export function financeWorkspaceCsv(items: ReturnType<typeof buildFinanceQueues>['drafts']) {
     const rows = [['Family','Centre','Invoice','Billing period','Status','Total GBP','Remaining GBP','Due date']];
@@ -16,7 +42,7 @@ export function financeWorkspaceCsv(items: ReturnType<typeof buildFinanceQueues>
             invoice.parent ? `${invoice.parent.firstName} ${invoice.parent.lastName}` : 'Family account',
             invoice.centre?.name ?? '', invoice.invoiceNumber,
             formatInvoicePeriod(invoice.billingPeriodStart,invoice.billingPeriodEnd),
-            invoice.status === 'draft' ? 'Draft — not issued' : item.paid > 0 ? 'Part-paid' : 'Issued — awaiting payment',
+            exportStatus(item),
             item.amountValid ? (item.amount/100).toFixed(2) : '',
             invoice.status !== 'draft' && item.financialReliable ? (item.remaining/100).toFixed(2) : '',
             formatInvoiceDate(invoice.dueDate),

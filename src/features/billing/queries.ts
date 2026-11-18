@@ -5,8 +5,10 @@
 
 import { db } from '@/db';
 import { billingConfigs, billingRuns, billingCycleSkips, invoices, children } from '@/db/schema';
-import { eq, and, desc, inArray, lt, gte, isNull, sql, type Column } from 'drizzle-orm';
+import { eq, and, or, asc, desc, inArray, isNull, sql, type Column } from 'drizzle-orm';
 import { penceToPounds } from '@/lib/billing';
+import { toLondonBusinessDate } from '@/features/finance/domain/invoice-collection-state';
+import { buildInvoiceCollectionStageSql } from '@/features/finance/domain/invoice-collection-sql';
 import {
     computeBillingSchedule,
     getBillingPeriodForDate,
@@ -504,45 +506,19 @@ export async function fetchBillingSetupRequired(orgId: string, centreId: string 
 }
 
 /**
- * Fetch upcoming expected payments on issued invoices (B12).
+ * Fetch in-period and upcoming expected payments on issued/part-paid invoices (B12).
  */
 export async function fetchPaymentsExpected(orgId: string, centreId: string | string[] = 'all') {
-    const today = new Date();
-    today.setUTCHours(0, 0, 0, 0);
-
-    const centreCond = buildCentreFilter(invoices.centreId, centreId);
-    const whereConditions = [
-        eq(invoices.organisationId, orgId),
-        eq(invoices.status, 'sent'),
-        gte(invoices.dueDate, today),
-    ];
-
-    if (centreCond) {
-        whereConditions.push(centreCond);
-    }
-
-    return await db.query.invoices.findMany({
-        where: and(...whereConditions),
-        with: {
-            parent: { columns: { firstName: true, lastName: true, email: true } },
-            centre: { columns: { name: true } },
-        },
-        orderBy: [desc(invoices.dueDate)],
-    });
-}
-
-/**
- * Fetch overdue issued invoices that require staff attention (B13).
- */
-export async function fetchOverdueInvoices(orgId: string, centreId: string | string[] = 'all') {
-    const today = new Date();
-    today.setUTCHours(0, 0, 0, 0);
+    const todayLondon = toLondonBusinessDate();
 
     const centreCond = buildCentreFilter(invoices.centreId, centreId);
     const whereConditions = [
         eq(invoices.organisationId, orgId),
         inArray(invoices.status, ['sent', 'partially_paid']),
-        lt(invoices.dueDate, today),
+        or(
+            buildInvoiceCollectionStageSql('in_period', todayLondon),
+            buildInvoiceCollectionStageSql('upcoming', todayLondon),
+        )!,
     ];
 
     if (centreCond) {
@@ -556,6 +532,33 @@ export async function fetchOverdueInvoices(orgId: string, centreId: string | str
             centre: { columns: { name: true } },
             payments: true,
         },
-        orderBy: [desc(invoices.dueDate)],
+        orderBy: [asc(invoices.dueDate)],
+    });
+}
+
+/**
+ * Fetch overdue issued invoices (past assessment period) that require staff attention (B13).
+ */
+export async function fetchOverdueInvoices(orgId: string, centreId: string | string[] = 'all') {
+    const todayLondon = toLondonBusinessDate();
+
+    const centreCond = buildCentreFilter(invoices.centreId, centreId);
+    const whereConditions = [
+        eq(invoices.organisationId, orgId),
+        buildInvoiceCollectionStageSql('overdue', todayLondon),
+    ];
+
+    if (centreCond) {
+        whereConditions.push(centreCond);
+    }
+
+    return await db.query.invoices.findMany({
+        where: and(...whereConditions),
+        with: {
+            parent: { columns: { firstName: true, lastName: true, email: true } },
+            centre: { columns: { name: true } },
+            payments: true,
+        },
+        orderBy: [asc(invoices.dueDate)],
     });
 }

@@ -7,6 +7,7 @@ import {
   parseStoredDecimalToPence,
   toEuropeLondonBusinessDate,
 } from '@/features/finance/domain/payment-eligibility';
+import { resolveOpenAgingStage } from '@/features/finance/domain/invoice-collection-state';
 import {
   endOfMondayWeek,
   formatPenceToGBP,
@@ -40,6 +41,7 @@ export async function RevenueWidget({
   let expensesThisMonthPence = 0;
   let outstandingPence = 0;
   let openInvoiceCount = 0;
+  let inPeriodCount = 0;
   let overdueCount = 0;
 
   try {
@@ -86,6 +88,8 @@ export async function RevenueWidget({
           id: invoices.id,
           amount: invoices.amount,
           dueDate: invoices.dueDate,
+          billingPeriodStart: invoices.billingPeriodStart,
+          billingPeriodEnd: invoices.billingPeriodEnd,
         })
         .from(invoices)
         .where(
@@ -153,9 +157,11 @@ export async function RevenueWidget({
       if (remaining > 0) {
         outstandingPence += remaining;
         openInvoiceCount += 1;
-        const dueBusinessDate = toEuropeLondonBusinessDate(inv.dueDate);
-        if (dueBusinessDate < todayBusinessDate) {
+        const stage = resolveOpenAgingStage(inv, todayBusinessDate);
+        if (stage === 'overdue') {
           overdueCount += 1;
+        } else if (stage === 'in_period') {
+          inPeriodCount += 1;
         }
       }
     }
@@ -263,7 +269,7 @@ export async function RevenueWidget({
             </Link>
           </dd>
           <p className="mt-1 text-xs text-muted-foreground tabular-nums">
-            Across {openInvoiceCount} issued unpaid invoice{openInvoiceCount === 1 ? '' : 's'}
+            Across {openInvoiceCount} unpaid ({inPeriodCount} in assessment period)
           </p>
         </div>
 
@@ -274,7 +280,7 @@ export async function RevenueWidget({
               href={overdueHref}
               className={`text-2xl font-semibold tracking-tight tabular-nums hover:underline ${
                 overdueCount > 0
-                  ? 'text-amber-800 dark:text-amber-200'
+                  ? 'text-rose-700 dark:text-rose-300'
                   : 'text-foreground'
               }`}
             >
@@ -282,7 +288,7 @@ export async function RevenueWidget({
             </Link>
           </dd>
           <p className="mt-1 text-xs text-muted-foreground">
-            {overdueCount > 0 ? 'Past due date — follow up' : 'No overdue issued invoices'}
+            {overdueCount > 0 ? 'Past assessment period — follow up' : 'No overdue issued invoices'}
           </p>
         </div>
       </dl>

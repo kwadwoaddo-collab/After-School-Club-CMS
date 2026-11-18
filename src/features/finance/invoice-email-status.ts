@@ -27,12 +27,16 @@ export async function readInvoiceEmailStatus(invoiceId: string, organisationId: 
     }
 }
 
-export async function sendAuditedInvoiceEmail(input: {
+export type SendAuditedInvoiceEmailInput = {
     invoiceId: string; organisationId: string; userId: string;
     parentEmail: string | null | undefined; parentFirstName: string;
     invoiceNumber: string; amount: number; dueDate: Date;
+    billingPeriodStart?: Date | string | null;
+    billingPeriodEnd?: Date | string | null;
     centreName: string; portalUrl: string;
-}): Promise<InvoiceEmailStatus> {
+};
+
+export async function sendAuditedInvoiceEmail(input: SendAuditedInvoiceEmailInput): Promise<InvoiceEmailStatus> {
     const attemptedAt = new Date().toISOString();
     const record = async (status: InvoiceEmailStatus['status'], messageId?: string) => {
         await db.insert(auditEvents).values({

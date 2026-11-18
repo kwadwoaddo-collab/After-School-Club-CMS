@@ -7,7 +7,10 @@ import type { WorkspaceInvoice } from '../domain/finance-workspace';
 const mocks=vi.hoisted(()=>({replace:vi.fn(),refresh:vi.fn(),search:'centre=centre'}));
 vi.mock('next/navigation',()=>({useRouter:()=>mocks,useSearchParams:()=>new URLSearchParams(mocks.search)}));
 vi.mock('next/link',()=>({default:({children,...props}:React.PropsWithChildren<React.AnchorHTMLAttributes<HTMLAnchorElement>>)=><a {...props}>{children}</a>}));
-vi.mock('./RecordPaymentModal',()=>({default:({invoiceNumber,remainingBalance}:{invoiceNumber:string;remainingBalance:number})=><div role="dialog">{invoiceNumber} payment {remainingBalance}</div>}));
+vi.mock('../actions',()=>({recordPayment:vi.fn()}));
+vi.mock('../hooks/use-payment-idempotency',()=>({usePaymentIdempotency:()=>({idempotencyKey:'test',originalRecordedAt:null,rotateIdempotencyKey:vi.fn(),clearIdempotencyKey:vi.fn()})}));
+vi.mock('@/components/ui/ToastProvider',()=>({useToast:()=>({toast:vi.fn()})}));
+vi.mock('./RecordPaymentModal',()=>({default:({invoiceNumber,remainingBalance,billingContext}:{invoiceNumber:string;remainingBalance:number;billingContext?:{priorOverdueNotice?:string}})=><div role="dialog">{invoiceNumber} payment {remainingBalance}{billingContext?.priorOverdueNotice ? ` | ${billingContext.priorOverdueNotice}` : ''}</div>}));
 const bill=(id:string,status:string,start='2026-11-06',end='2026-12-05'):WorkspaceInvoice=>({id,invoiceNumber:`INV-${id}`,organisationId:'org',centreId:'centre',parentId:'parent',parent:{id:'parent',firstName:'Demo',lastName:'Family'},amount:'1900',status,invoiceDate:'2026-10-16',billingPeriodStart:start,billingPeriodEnd:end,dueDate:start,payments:[]});
 afterEach(()=>{cleanup();vi.clearAllMocks();mocks.search='centre=centre';});
 describe('daily finance workflow',()=>{
@@ -70,11 +73,18 @@ describe('daily finance workflow',()=>{
   rerender(<Workspace invoices={invoices.slice(0,25)} cycles={[]} today="2026-10-25" invoiceError={false} cycleError={false}/>);
   expect(screen.getByRole('button',{name:'Record payment for INV-0'})).toBeTruthy();
  });
- it('clears overdue-only on tab changes instead of silently hiding future debts',()=>{
+ it('resets payment stage filter on tab changes and clear filters instead of silently hiding future debts',()=>{
   render(<Workspace invoices={[bill('nov','sent')]} cycles={[]} today="2026-10-25" invoiceError={false} cycleError={false}/>);
-  fireEvent.click(screen.getByRole('button',{name:/Awaiting payment/}));fireEvent.click(screen.getByRole('checkbox',{name:'Overdue only'}));
+  fireEvent.click(screen.getByRole('button',{name:/Awaiting payment/}));
+  const stageGroup=screen.getByRole('group',{name:'Payment stage filter'});
+  fireEvent.click(within(stageGroup).getByRole('button',{name:'Overdue (0)'}));
   expect(screen.queryByRole('button',{name:'Record payment for INV-nov'})).toBeNull();
-  fireEvent.click(screen.getByRole('button',{name:/Drafts to review/}));fireEvent.click(screen.getByRole('button',{name:/Awaiting payment/}));
+  fireEvent.click(screen.getByRole('button',{name:'Clear filters'}));
+  expect(within(stageGroup).getByRole('button',{name:'All unpaid (1)'}).getAttribute('aria-pressed')).toBe('true');
+  expect(screen.getByRole('button',{name:'Record payment for INV-nov'})).toBeTruthy();
+  fireEvent.click(within(stageGroup).getByRole('button',{name:'Overdue (0)'}));
+  fireEvent.click(screen.getByRole('button',{name:/Drafts to review/}));
+  fireEvent.click(screen.getByRole('button',{name:/Awaiting payment/}));
   expect(screen.getByRole('button',{name:'Record payment for INV-nov'})).toBeTruthy();
  });
  it('preserves a search typed during tab navigation and synchronizes browser back',()=>{
@@ -88,13 +98,13 @@ describe('daily finance workflow',()=>{
   mocks.search='centre=centre';rerender(<Workspace {...props}/>);
   expect(screen.getByRole('heading',{name:'Review before issuing'})).toBeTruthy();
  });
- it('preserves an overdue filter selected before the task URL finishes updating',()=>{
+ it('preserves a stage filter selected before the task URL finishes updating',()=>{
   const props={invoices:[bill('nov','sent')],cycles:[],today:'2026-10-25',invoiceError:false,cycleError:false};
   const {rerender}=render(<Workspace {...props}/>);
   fireEvent.click(screen.getByRole('button',{name:/Awaiting payment/}));
-  fireEvent.click(screen.getByRole('checkbox',{name:'Overdue only'}));
+  fireEvent.click(within(screen.getByRole('group',{name:'Payment stage filter'})).getByRole('button',{name:'Overdue (0)'}));
   mocks.search='centre=centre&task=payments';rerender(<Workspace {...props}/>);
-  expect((screen.getByRole('checkbox',{name:'Overdue only'}) as HTMLInputElement).checked).toBe(true);
+  expect(within(screen.getByRole('group',{name:'Payment stage filter'})).getByRole('button',{name:'Overdue (0)'}).getAttribute('aria-pressed')).toBe('true');
  });
  it('defaults to cards, keeps the selected draft prominent and shows older debt separately from a paid previous period',()=>{
   const previous={...bill('previous','paid','2026-09-06','2026-10-05'),payments:[{id:'paid',amount:'1900',status:'verified',recordedAt:'2026-09-07'}]};
@@ -148,5 +158,51 @@ describe('daily finance workflow',()=>{
   const expandedPaid=within(review).getByText('Paid £1,600.00 (13/11/2026)');
   expect(expandedPaid.className).toContain('text-emerald-700');
  });
+ it('renders explicit 4-state payment badges across cards and table, filters by stage, and highlights prior overdue vs in-period balances',()=>{
+  const sepOverdue={...bill('sep','partially_paid','2026-09-06','2026-10-05'),payments:[{id:'p1',amount:'400',status:'verified',recordedAt:'2026-09-10'}]};
+  const octInPeriod=bill('oct','sent','2026-10-06','2026-11-05');
+  const novUpcoming=bill('nov','sent','2026-11-06','2026-12-05');
+  mocks.search='centre=centre&status=in_period';
+  render(<Workspace invoices={[novUpcoming,octInPeriod,sepOverdue]} cycles={[]} today="2026-10-25" invoiceError={false} cycleError={false}/>);
 
+  const stageGroup=screen.getByRole('group',{name:'Payment stage filter'});
+  expect(within(stageGroup).getByRole('button',{name:'All unpaid (3)'}).getAttribute('aria-pressed')).toBe('false');
+  expect(within(stageGroup).getByRole('button',{name:'Overdue (1)'}).getAttribute('aria-pressed')).toBe('false');
+  expect(within(stageGroup).getByRole('button',{name:'In period (1)'}).getAttribute('aria-pressed')).toBe('true');
+  expect(within(stageGroup).getByRole('button',{name:'Upcoming (1)'}).getAttribute('aria-pressed')).toBe('false');
+
+  // Initially filtered to In period (oct), whose previous invoice (sep) is Overdue · £400.00 paid · £1,500.00 remaining
+  const octCard=screen.getByRole('article',{name:'INV-oct billing card'});
+  expect(within(octCard).getByText('In period · Due').className).toContain('text-amber-800');
+  expect(within(octCard).getByText('Overdue · £400.00 paid · £1,500.00 remaining').className).toContain('text-rose-700');
+
+  // Switch to All unpaid to verify sort order and all 3 stage labels on cards and table
+  fireEvent.click(within(stageGroup).getByRole('button',{name:'All unpaid (3)'}));
+  const cards=screen.getAllByRole('article');
+  expect(cards.map(c=>c.getAttribute('aria-label'))).toEqual(['INV-sep billing card','INV-oct billing card','INV-nov billing card']);
+  expect(within(cards[0]).getByText('Overdue · Part-paid').className).toContain('text-rose-700');
+  expect(within(cards[2]).getByText('Upcoming · Issued in advance').className).toContain('text-sky-800');
+  expect(within(cards[2]).getByText('In period · £1,900.00 remaining').className).toContain('text-amber-800');
+
+  fireEvent.click(screen.getByRole('button',{name:'Table'}));
+  const table=screen.getByRole('table',{name:'Outstanding invoices'});
+  expect(within(table).getByText('Overdue · Part-paid').className).toContain('bg-rose-500/10');
+  expect(within(table).getByText('In period · Due').className).toContain('bg-amber-500/15');
+  expect(within(table).getByText('Upcoming').className).toContain('bg-sky-500/10');
+ });
+ it('passes priorOverdueNotice to RecordPaymentModal when recording payment on an in-period or upcoming invoice with older family arrears',async()=>{
+  const sepOverdue={...bill('sep','sent','2026-09-06','2026-10-05'),amount:'450'};
+  const octInPeriod=bill('oct','sent','2026-10-06','2026-11-05');
+  mocks.search='centre=centre&task=payments';
+  render(<Workspace invoices={[octInPeriod,sepOverdue]} cycles={[]} today="2026-10-25" invoiceError={false} cycleError={false}/>);
+
+  fireEvent.click(screen.getByRole('button',{name:'Record payment for INV-oct'}));
+  const notice='Note: This family also has an older overdue invoice (INV-sep · £450.00 remaining) from a past assessment period.';
+  expect(screen.getByRole('dialog').textContent).toContain(notice);
+
+  cleanup();
+  const { default: ActualRecordPaymentModal }=await vi.importActual<typeof import('./RecordPaymentModal')>('./RecordPaymentModal');
+  render(<ActualRecordPaymentModal invoiceId="oct" invoiceNumber="INV-oct" remainingBalance={1900} billingContext={{parentId:'parent',familyName:'Demo Family',period:'6 Oct – 5 Nov 2026',priorOverdueNotice:notice}} onClose={()=>{}} onSuccess={()=>{}}/>);
+  expect(screen.getByRole('note').textContent).toBe(notice);
+ });
 });

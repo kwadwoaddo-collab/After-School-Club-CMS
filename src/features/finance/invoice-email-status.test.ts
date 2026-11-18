@@ -44,4 +44,32 @@ describe('audited invoice email outcomes', () => {
   mocks.findFirst.mockResolvedValue(null);
   expect(await readInvoiceEmailStatus('old','org')).toBeNull();
  });
+ it('forwards optional billingPeriodStart and billingPeriodEnd to sendInvoiceCreated', async () => {
+  const periodStart = new Date('2026-11-01T00:00:00.000Z');
+  const periodEnd = new Date('2026-11-30T00:00:00.000Z');
+  const res = await sendAuditedInvoiceEmail({
+   ...input,
+   billingPeriodStart: periodStart,
+   billingPeriodEnd: periodEnd,
+  });
+  expect(res.status).toBe('accepted');
+  expect(mocks.send).toHaveBeenCalledWith(expect.objectContaining({
+   invoiceNumber: 'INV-1',
+   billingPeriodStart: periodStart,
+   billingPeriodEnd: periodEnd,
+  }));
+ });
+ it('allows null billingPeriodStart and billingPeriodEnd for ad-hoc invoices', async () => {
+  const res = await sendAuditedInvoiceEmail({
+   ...input,
+   billingPeriodStart: null,
+   billingPeriodEnd: null,
+  });
+  expect(res.status).toBe('accepted');
+  expect(mocks.send).toHaveBeenCalledWith(expect.objectContaining({
+   invoiceNumber: 'INV-1',
+   billingPeriodStart: null,
+   billingPeriodEnd: null,
+  }));
+ });
 });

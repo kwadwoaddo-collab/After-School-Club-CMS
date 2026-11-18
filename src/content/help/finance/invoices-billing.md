@@ -19,19 +19,21 @@ It enables staff to:
 
 ## 2. Three Ways Invoices Are Created
 
+Monthly agreed-fee invoices are prepared **1 calendar month in advance** of the **Assessment period** they cover, with `Due Date` set to Day 1 (the start) of that **Assessment period**. Financial notification emails are **never** sent automatically during draft generation or issuance — dispatching an email to a parent is always a separate, deliberate manual action taken by authorised staff.
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                 1. AUTOMATED DAILY CRON RUN                 │
 │  • Endpoint: `/api/cron/billing` (Runs daily at 6am UTC)    │
 │  • Evaluates all active billing configs across the org      │
-│  • Computes next billing period based on anchor date & lead │
-│  • Auto-generates draft invoice when due                    │
+│  • Prepares the next Assessment period 1 month in advance   │
+│  • Auto-generates `draft` invoice (no email sent)           │
 └─────────────────────────────────────────────────────────────┘
                                ▲
 ┌──────────────────────────────┴──────────────────────────────┐
 │                 2. ON-DEMAND CONFIG RUN                     │
 │  • Triggered in CMS: `generateInvoiceFromConfig`            │
-│  • Staff select billing period start and generate invoice   │
+│  • Staff select Assessment period and generate `draft`      │
 │  • Enforces same application pre-check as automated cron    │
 └─────────────────────────────────────────────────────────────┘
                                ▲
@@ -60,7 +62,7 @@ To protect against duplicate billing:
 
 ---
 
-## 4. Invoice Status Lifecycle
+## 4. Invoice Status & 4-State Collection Lifecycle
 
 ![Figure — Invoices Directory showing invoice numbers, dates, recipients, amounts, and statuses](/training/assets/screenshots/annotated/SS-D6-S030.png)
 *Figure 11.2 — Invoices Directory & Status Overview*
@@ -70,15 +72,30 @@ To protect against duplicate billing:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                   INVOICE STATUS LIFECYCLE                  │
+│                   DATABASE RECORD STATUSES                  │
 ├─────────────────────────────────────────────────────────────┤
-│  • `draft`: Newly generated invoice; editable/review state  │
-│  • `sent`: Dispatched to parent via email or portal         │
-│  • `partially_paid`: Payment recorded, but balance remains  │
+│  • `draft`: Prepared 1 month in advance; hidden from portal │
+│  • `sent`: Issued to parent account (visible on `/portal`)  │
+│  • `partially_paid`: Verified payment logged; balance > £0  │
 │  • `paid`: Full invoice amount settled via verified payments│
 │  • `void`: Cancelled by Owner; permanently archived         │
 └─────────────────────────────────────────────────────────────┘
 ```
+
+### 4-State Assessment Period Tracking (Staff & Parent Portal)
+
+Once an invoice is issued (`sent` or `partially_paid`), SprintScale evaluates its collection stage against the **Assessment period** (`billingPeriodStart` to `billingPeriodEnd`) in `Europe/London` business time:
+
+| Color & Stage | Staff Label | Parent Portal Label | Rule |
+|---|---|---|---|
+| **Blue (`upcoming`)** | `Upcoming` / `Upcoming · Part-paid` | `Upcoming` / `Upcoming · Part-paid` | Issued in advance, **before** Day 1 of the **Assessment period**. |
+| **Yellow / Amber (`in_period`)** | `In period · Due` / `In period · Part-paid` | `Assessment period · Payment due` / `Assessment period · Part-paid` | Active **Assessment period** (Day 1 through `billingPeriodEnd`). `Due Date` is Day 1 of the assessment period, and the invoice is **never** marked "Overdue" while the assessment period is underway. |
+| **Red (`overdue`)** | `Overdue · Past period` / `Overdue · Part-paid` | `Overdue · Past assessment period` / `Overdue · Part-paid` | Strictly **after** `billingPeriodEnd` has passed with a remaining balance greater than `£0.00`. |
+| **Green (`paid`)** | `Paid in full` | `Paid in full (DD/MM/YYYY)` | Verified payments cover 100% of the invoice total (`£0.00` remaining). |
+
+> [!IMPORTANT]
+> **Deliberate Manual Financial Emails:**
+> Generating a `draft` invoice or issuing a draft to `sent` **never** automatically dispatches an email to the parent. Staff must explicitly click **Send / Resend Email** on the issued invoice when ready to notify the family by email.
 
 ---
 
@@ -93,13 +110,13 @@ To protect against duplicate billing:
 3. Select the **Centre** and the **Parent** (or enter new parent details).
 4. Select the **Child / Children** covered by the invoice.
 5. Enter the **Total Amount (£):** e.g. `150.00`.
-6. Set the **Invoice Issue Date** and **Due Date**.
-7. (Optional) Set the **Billing Period Start & End Dates**.
+6. Set the **Invoice Issue Date** and **Due Date** (typically Day 1 of the **Assessment period**).
+7. (Optional) Set the **Assessment Period Start & End Dates**.
 8. Enter custom **Notes** (e.g. "Term 1 STEM Club registration and materials").
 9. Click **Create Invoice**.
 
 **Expected Result:**
-The invoice is generated with a unique reference number (e.g. `INV-A1B2C3`), initial status is set to `draft`, an audit event is logged, and an email notification is dispatched to the parent.
+The invoice is generated with a unique reference number (e.g. `INV-A1B2C3`), initial status is set to `draft`, and an audit event is logged. No email is sent until an Owner or Manager issues the invoice and explicitly chooses **Send / Resend Email**.
 
 ---
 

@@ -1,4 +1,10 @@
 import type { FinanceInvoice } from '../components/FinanceDataGridClient';
+import {
+    collectionStagePriority,
+    resolveCollectionWindow,
+    resolveOpenAgingStage,
+    type InvoiceCollectionStage,
+} from './invoice-collection-state';
 import { parseStrictDecimalToPence } from './payment-eligibility';
 
 export type WorkspaceInvoice = Omit<FinanceInvoice, 'payments'> & { billingConfigId?: string | null; coveredChildrenJson?: unknown; payments?: (NonNullable<FinanceInvoice['payments']>[number] & { reversedAt?: string | Date | null })[] };
@@ -32,9 +38,39 @@ export function inspectInvoice(invoice: WorkspaceInvoice, today: string) {
         if (!due) reasons.push('Due date needs checking.');
     }
     if (invoice.needsBillingReview) reasons.push('Attendance or registration needs review before issuing.');
-    return { amount, amountValid, financialReliable, paid, remaining: amount - paid, reasons, start, end, due,
-        upcoming: !!start && start > today, historical: !!end && end < today,
-        overdue: invoice.status !== 'draft' && !!due && due < today,
+    const remaining = amount - paid;
+    const { yellowStart, redCutoff } = resolveCollectionWindow(invoice);
+    let collectionStage: InvoiceCollectionStage;
+    if (invoice.status === 'void') {
+        collectionStage = 'void';
+    } else if (invoice.status === 'draft') {
+        collectionStage = !financialReliable ? 'needs_checking' : 'draft';
+    } else if (!financialReliable) {
+        collectionStage = 'needs_checking';
+    } else if (remaining === 0) {
+        collectionStage = 'paid';
+    } else if (['sent', 'partially_paid'].includes(invoice.status) && remaining > 0) {
+        collectionStage = resolveOpenAgingStage(invoice, today);
+    } else {
+        collectionStage = 'needs_checking';
+    }
+    return {
+        amount,
+        amountValid,
+        financialReliable,
+        paid,
+        remaining,
+        reasons,
+        start,
+        end,
+        due,
+        yellowStart,
+        redCutoff,
+        collectionStage,
+        inPeriod: collectionStage === 'in_period',
+        upcoming: !!start && start > today,
+        historical: !!end && end < today,
+        overdue: collectionStage === 'overdue',
         pending: (invoice.payments ?? []).some(payment => payment.status === 'pending' && !payment.reversedAt),
     };
 }
@@ -56,7 +92,14 @@ export function buildFinanceQueues(invoices: WorkspaceInvoice[], today: string) 
         if (groups.get(key(item))?.some(other => other.invoice.id !== item.invoice.id && other.start! <= item.end! && other.end! >= item.start!)) item.reasons.push('Another invoice overlaps this billing period.');
     }
     const drafts = inspected.filter(item => item.invoice.status === 'draft').sort((a,b) => (a.start ?? '').localeCompare(b.start ?? '') || a.invoice.id.localeCompare(b.invoice.id));
-    const payments = inspected.filter(item => ['sent','partially_paid'].includes(item.invoice.status) && item.remaining > 0 && item.financialReliable).sort((a,b) => (a.due ?? '9999').localeCompare(b.due ?? '9999') || a.invoice.id.localeCompare(b.invoice.id));
+    const payments = inspected
+        .filter(item => ['sent','partially_paid'].includes(item.invoice.status) && item.remaining > 0 && item.financialReliable)
+        .sort((a,b) =>
+            (collectionStagePriority(a.collectionStage) - collectionStagePriority(b.collectionStage)) ||
+            (a.redCutoff ?? a.due ?? '9999').localeCompare(b.redCutoff ?? b.due ?? '9999') ||
+            (a.due ?? '9999').localeCompare(b.due ?? '9999') ||
+            a.invoice.id.localeCompare(b.invoice.id)
+        );
     const attention = inspected.filter(item => item.reasons.length);
     return { drafts, payments, attention };
 }

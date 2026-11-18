@@ -5,11 +5,34 @@ import { invoices } from '@/db/schema';
 import { eq, desc, and, ne } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, CreditCard, Receipt, AlertCircle, CheckCircle2, MapPin, Landmark, Calendar } from 'lucide-react';
+import {
+    ArrowLeft,
+    CreditCard,
+    Receipt,
+    AlertCircle,
+    AlertTriangle,
+    CheckCircle2,
+    Clock,
+    CalendarClock,
+    MapPin,
+    Landmark,
+    Calendar,
+} from 'lucide-react';
 import { VoucherPaymentForm } from '@/features/portal/components/VoucherPaymentForm';
 import StripePayButton from '@/features/portal/components/StripePayButton';
 import NotificationBell from '@/features/portal/components/NotificationBell';
 import { getNotifications } from '@/app/portal/notifications/actions';
+import {
+    COLLECTION_STAGE_STYLES,
+    evaluateInvoiceCollectionState,
+    toLondonBusinessDate,
+    type InvoiceCollectionStage,
+} from '@/features/finance/domain/invoice-collection-state';
+import {
+    formatInvoiceDate,
+    formatInvoicePeriod,
+    formatPaidDate,
+} from '@/features/finance/domain/invoice-display';
 
 function resolveCoveredChildrenLabel(inv: any): string {
     if (Array.isArray(inv.coveredChildrenJson) && inv.coveredChildrenJson.length > 0) {
@@ -22,6 +45,39 @@ function resolveCoveredChildrenLabel(inv: any): string {
         return `${inv.child.firstName} ${inv.child.lastName}`;
     }
     return inv.childDisplayName || 'Family Invoice';
+}
+
+function renderCollectionStageIcon(stage: InvoiceCollectionStage) {
+    switch (stage) {
+        case 'overdue':
+            return <AlertTriangle className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />;
+        case 'in_period':
+        case 'needs_checking':
+            return <Clock className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />;
+        case 'upcoming':
+            return <CalendarClock className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />;
+        case 'paid':
+            return <CheckCircle2 className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />;
+        case 'draft':
+        case 'void':
+            return <Receipt className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />;
+    }
+}
+
+function formatPaymentMethodLabel(method?: string | null): string {
+    if (!method) return 'Payment';
+    switch (method) {
+        case 'voucher':
+            return 'Voucher / TFC';
+        case 'bank_transfer':
+            return 'Bank Transfer';
+        case 'stripe':
+            return 'Card';
+        case 'cash':
+            return 'Cash';
+        default:
+            return method.replace(/_/g, ' ');
+    }
 }
 
 export default async function BillingDashboard(props: { searchParams: Promise<{ payment?: string }> }) {
@@ -47,23 +103,55 @@ export default async function BillingDashboard(props: { searchParams: Promise<{ 
         }
     });
 
-    const outstandingInvoices = parentInvoices.filter(inv => inv.status !== 'paid' && inv.status !== 'void');
-    const pastInvoices = parentInvoices.filter(inv => inv.status === 'paid' || inv.status === 'void');
+    const todayLondonIso = toLondonBusinessDate();
+    const evaluatedInvoices = parentInvoices.map(inv => ({
+        inv,
+        state: evaluateInvoiceCollectionState(inv, todayLondonIso),
+    }));
 
-    const totalOutstanding = outstandingInvoices.reduce((sum, inv) => {
-        const paidAmount = inv.payments?.reduce((acc, p) => p.status === 'verified' ? acc + Number(p.amount) : acc, 0) || 0;
-        return sum + (Number(inv.amount) - paidAmount);
-    }, 0);
+    const outstandingInvoices = evaluatedInvoices.filter(
+        ({ inv, state }) => inv.status !== 'paid' && inv.status !== 'void' && state.stage !== 'paid'
+    );
+    const pastInvoices = evaluatedInvoices.filter(
+        ({ inv, state }) => inv.status === 'paid' || inv.status === 'void' || state.stage === 'paid'
+    );
+
+    const totalOutstandingPence = outstandingInvoices.reduce(
+        (sum, { state }) => sum + state.remainingPence,
+        0
+    );
+    const totalOutstanding = totalOutstandingPence / 100;
+
+    const paymentEntries = parentInvoices
+        .flatMap(inv =>
+            (inv.payments ?? [])
+                .filter(p => p.status === 'verified' || p.status === 'pending')
+                .map(p => ({
+                    ...p,
+                    invoiceNumber: inv.invoiceNumber,
+                    centreName: inv.centre?.name || 'Centre',
+                    coveredChildrenLabel: resolveCoveredChildrenLabel(inv),
+                }))
+        )
+        .sort((a, b) => {
+            const aMs = a.recordedAt ? new Date(a.recordedAt).getTime() : 0;
+            const bMs = b.recordedAt ? new Date(b.recordedAt).getTime() : 0;
+            return bMs - aMs;
+        });
 
     return (
         <div className="min-h-screen bg-background text-foreground pb-12">
             <header className="bg-card border-b border-border sticky top-0 z-20">
                 <div className="max-w-4xl mx-auto px-4 py-4 flex items-center gap-4">
-                    <Link href="/portal" className="min-h-[44px] min-w-[44px] flex items-center justify-center p-2 -ml-2 rounded-lg hover:bg-card transition-colors text-muted-foreground hover:text-foreground">
-                        <ArrowLeft className="w-5 h-5" />
+                    <Link
+                        href="/portal"
+                        aria-label="Back to portal"
+                        className="min-h-[44px] min-w-[44px] flex items-center justify-center p-2 -ml-2 rounded-lg hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
+                    >
+                        <ArrowLeft className="w-5 h-5" aria-hidden="true" />
                     </Link>
                     <div className="flex-1">
-                        <h1 className="text-lg font-bold text-foreground">Billing & Invoices</h1>
+                        <h1 className="text-lg font-bold text-foreground">Billing &amp; Invoices</h1>
                         <p className="text-xs text-muted-foreground">Manage your centre payments, bank transfers, and childcare vouchers</p>
                     </div>
                     <div className="flex items-center">
@@ -76,39 +164,39 @@ export default async function BillingDashboard(props: { searchParams: Promise<{ 
                 {/* Balance Overview */}
                 <section className="bg-primary/10 border border-primary/20 p-6 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4">
                     <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-primary/20 text-primary rounded-xl flex items-center justify-center">
-                            <CreditCard className="w-6 h-6" />
+                        <div className="w-12 h-12 bg-primary/20 text-primary rounded-xl flex items-center justify-center shrink-0">
+                            <CreditCard className="w-6 h-6" aria-hidden="true" />
                         </div>
                         <div>
-                            <p className="text-sm text-primary font-medium">Total Outstanding Balance</p>
-                            <h2 className="text-3xl font-bold text-foreground">£{totalOutstanding.toFixed(2)}</h2>
+                            <h2 className="text-sm font-semibold text-foreground">Total Outstanding Balance</h2>
+                            <p className="text-3xl font-bold tabular-nums text-foreground mt-0.5">£{totalOutstanding.toFixed(2)}</p>
                         </div>
                     </div>
-                    {totalOutstanding > 0 && (
+                    {totalOutstandingPence > 0 && (
                         <a href="#outstanding-invoices" className="bg-primary text-primary-foreground rounded-xl px-6 py-3 font-bold w-full md:w-auto text-center hover:bg-primary/90 transition-colors">
-                            Pay All Outstanding →
+                            Review Outstanding Invoices
                         </a>
                     )}
                 </section>
 
                 {/* Payment success/cancel banner */}
                 {searchParams.payment === 'success' && (
-                    <div className="flex items-center gap-3 bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-xl">
-                        <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
-                        <p className="text-sm font-bold text-emerald-600">Payment received — your invoice has been marked as paid.</p>
+                    <div className={`flex items-center gap-3 p-4 rounded-xl ${COLLECTION_STAGE_STYLES.paid.badge}`}>
+                        <CheckCircle2 className="w-5 h-5 shrink-0" aria-hidden="true" />
+                        <p className="text-sm font-semibold">Payment received — your invoice has been marked as paid.</p>
                     </div>
                 )}
                 {searchParams.payment === 'cancelled' && (
-                    <div className="flex items-center gap-3 bg-amber-500/10 border border-amber-500/20 p-4 rounded-xl">
-                        <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0" />
-                        <p className="text-sm font-bold text-amber-600">Payment was cancelled. Your invoice is still outstanding.</p>
+                    <div className={`flex items-center gap-3 p-4 rounded-xl ${COLLECTION_STAGE_STYLES.in_period.badge}`}>
+                        <AlertCircle className="w-5 h-5 shrink-0" aria-hidden="true" />
+                        <p className="text-sm font-semibold">Payment was cancelled. Your invoice remains open.</p>
                     </div>
                 )}
 
                 {/* Outstanding Invoices */}
                 <section id="outstanding-invoices">
                     <div className="flex items-center gap-2 mb-4">
-                        <AlertCircle className="w-5 h-5 text-secondary" />
+                        <Receipt className="w-5 h-5 text-primary" aria-hidden="true" />
                         <h2 className="text-lg font-bold text-foreground">Outstanding Invoices</h2>
                     </div>
 
@@ -118,109 +206,124 @@ export default async function BillingDashboard(props: { searchParams: Promise<{ 
                         </div>
                     ) : (
                         <div className="space-y-4">
-                            {outstandingInvoices.map(inv => {
-                                const paidAmount = inv.payments?.reduce((acc, p) => p.status === 'verified' ? acc + Number(p.amount) : acc, 0) || 0;
-                                const remaining = Number(inv.amount) - paidAmount;
-                                const isOverdue = new Date(inv.dueDate) < new Date() && remaining > 0;
-                                const STATUS_LABELS: Record<string, string> = { draft: 'Draft', sent: 'Sent', partially_paid: 'Partial', paid: 'Paid', void: 'Void' };
+                            {outstandingInvoices.map(({ inv, state }) => {
+                                const remaining = state.remainingPence / 100;
+                                const isOverdue = state.stage === 'overdue';
                                 const coveredChildrenLabel = resolveCoveredChildrenLabel(inv);
                                 const centreName = inv.centre?.name || 'Centre';
                                 const hasBillingPeriod = Boolean(inv.billingPeriodStart && inv.billingPeriodEnd);
+                                const assessmentPeriodLabel = hasBillingPeriod
+                                    ? formatInvoicePeriod(inv.billingPeriodStart, inv.billingPeriodEnd)
+                                    : inv.billingPeriodLabel;
                                 const hasBankDetails = Boolean(inv.centre?.bankName || inv.centre?.sortCode || inv.centre?.accountNo);
 
                                 return (
                                     <div key={inv.id} className="bg-card p-6 rounded-xl border border-border flex flex-col md:flex-row gap-6">
                                         <div className="flex-1">
-                                            <div className="flex justify-between items-start mb-2 gap-3">
+                                            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-2 gap-3">
                                                 <div>
                                                     <div className="flex items-center gap-2 flex-wrap mb-1">
                                                         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
-                                                            <MapPin className="w-3 h-3" /> {centreName}
+                                                            <MapPin className="w-3 h-3" aria-hidden="true" /> {centreName}
                                                         </span>
                                                         <h3 className="font-bold text-foreground">Invoice #{inv.invoiceNumber}</h3>
                                                     </div>
                                                     <p className="text-sm text-muted-foreground">
                                                         {coveredChildrenLabel}
                                                     </p>
-                                                    {(hasBillingPeriod || inv.billingPeriodLabel) && (
-                                                        <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                                                            <Calendar className="w-3 h-3" />
-                                                            {hasBillingPeriod
-                                                                ? `${new Date(inv.billingPeriodStart!).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} – ${new Date(inv.billingPeriodEnd!).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`
-                                                                : inv.billingPeriodLabel}
+                                                    {assessmentPeriodLabel && (
+                                                        <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1.5">
+                                                            <Calendar className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                                                            <span>Assessment period: {assessmentPeriodLabel}</span>
                                                         </p>
                                                     )}
                                                 </div>
                                                 <div className="flex gap-2 shrink-0">
-                                                    {isOverdue && (
-                                                        <span className="text-xs uppercase font-bold px-2 py-0.5 rounded-full bg-destructive/10 text-destructive border border-destructive/20">
-                                                            Overdue
-                                                        </span>
-                                                    )}
-                                                    <span className="text-xs uppercase font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 border border-amber-500/20">
-                                                        {STATUS_LABELS[inv.status] || inv.status}
+                                                    <span
+                                                        className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${COLLECTION_STAGE_STYLES[state.stage].badge}`}
+                                                    >
+                                                        {renderCollectionStageIcon(state.stage)}
+                                                        <span>{state.parentLabel}</span>
                                                     </span>
                                                 </div>
                                             </div>
-                                            <div className="grid grid-cols-2 gap-4 mt-4 bg-secondary/40 p-4 rounded-lg border border-border">
+
+                                            <dl className="grid grid-cols-2 gap-4 mt-4 bg-secondary/40 p-4 rounded-lg border border-border">
                                                 <div>
-                                                    <p className="text-xs text-muted-foreground">Total Amount</p>
-                                                    <p className="font-medium text-foreground">£{Number(inv.amount).toFixed(2)}</p>
+                                                    <dt className="text-xs text-muted-foreground">Total Amount</dt>
+                                                    <dd className="font-medium tabular-nums text-foreground">£{Number(inv.amount).toFixed(2)}</dd>
                                                 </div>
                                                 <div>
-                                                    <p className="text-xs text-muted-foreground">Amount Due</p>
-                                                    <p className="font-bold text-primary">£{remaining.toFixed(2)}</p>
+                                                    <dt className="text-xs text-muted-foreground">Amount Due</dt>
+                                                    <dd className="font-bold tabular-nums text-primary">£{remaining.toFixed(2)}</dd>
                                                 </div>
                                                 <div>
-                                                    <p className="text-xs text-muted-foreground">Issued Date</p>
-                                                    <p className="font-medium text-foreground">{new Date(inv.invoiceDate).toLocaleDateString('en-GB')}</p>
+                                                    <dt className="text-xs text-muted-foreground">Issued Date</dt>
+                                                    <dd className="font-medium tabular-nums text-foreground">{formatInvoiceDate(inv.invoiceDate)}</dd>
                                                 </div>
                                                 <div>
-                                                    <p className="text-xs text-muted-foreground">Due Date</p>
-                                                    <p className={`font-medium ${isOverdue ? 'text-destructive font-bold' : 'text-foreground'}`}>{new Date(inv.dueDate).toLocaleDateString('en-GB')}</p>
+                                                    <dt className="text-xs text-muted-foreground">Due Date</dt>
+                                                    <dd className={`tabular-nums ${isOverdue ? 'text-rose-700 dark:text-rose-300 font-semibold' : 'font-medium text-foreground'}`}>
+                                                        {formatInvoiceDate(inv.dueDate)}
+                                                    </dd>
                                                 </div>
-                                            </div>
+                                            </dl>
+
+                                            {state.stage === 'in_period' && state.hasValidPeriod && (
+                                                <p className="mt-2.5 text-xs text-muted-foreground">
+                                                    Payment requested by start of assessment period · Marked overdue only after {formatInvoiceDate(inv.billingPeriodEnd)}
+                                                </p>
+                                            )}
+
+                                            {state.hasPendingPayment && state.pendingPence > 0 && (
+                                                <div className={`mt-3 rounded-lg px-3.5 py-2.5 text-xs font-medium flex items-center gap-2 ${COLLECTION_STAGE_STYLES.in_period.badge}`}>
+                                                    <Clock className="w-4 h-4 shrink-0" aria-hidden="true" />
+                                                    <span>
+                                                        Voucher / TFC reference logged (£{(state.pendingPence / 100).toFixed(2)}) — awaiting centre verification
+                                                    </span>
+                                                </div>
+                                            )}
 
                                             {remaining > 0 && hasBankDetails && (
                                                 <div className="mt-4 bg-primary/5 border border-primary/20 rounded-lg p-3.5 text-xs space-y-1.5">
-                                                    <p className="font-bold text-foreground flex items-center gap-1.5 uppercase tracking-wider text-[11px]">
-                                                        <Landmark className="w-3.5 h-3.5 text-primary" />
-                                                        Pay by Bank Transfer ({centreName})
+                                                    <p className="font-semibold text-foreground flex items-center gap-1.5">
+                                                        <Landmark className="w-3.5 h-3.5 text-primary shrink-0" aria-hidden="true" />
+                                                        <span>Pay by Bank Transfer ({centreName})</span>
                                                     </p>
-                                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+                                                    <dl className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
                                                         {inv.centre?.bankName && (
                                                             <div>
-                                                                <span className="text-muted-foreground block">Bank</span>
-                                                                <span className="font-semibold text-foreground">{inv.centre.bankName}</span>
+                                                                <dt className="text-muted-foreground">Bank</dt>
+                                                                <dd className="font-semibold text-foreground">{inv.centre.bankName}</dd>
                                                             </div>
                                                         )}
                                                         {inv.centre?.sortCode && (
                                                             <div>
-                                                                <span className="text-muted-foreground block">Sort Code</span>
-                                                                <span className="font-mono font-semibold text-foreground">{inv.centre.sortCode}</span>
+                                                                <dt className="text-muted-foreground">Sort Code</dt>
+                                                                <dd className="font-mono font-semibold tabular-nums text-foreground">{inv.centre.sortCode}</dd>
                                                             </div>
                                                         )}
                                                         {inv.centre?.accountNo && (
                                                             <div>
-                                                                <span className="text-muted-foreground block">Account No</span>
-                                                                <span className="font-mono font-semibold text-foreground">{inv.centre.accountNo}</span>
+                                                                <dt className="text-muted-foreground">Account No</dt>
+                                                                <dd className="font-mono font-semibold tabular-nums text-foreground">{inv.centre.accountNo}</dd>
                                                             </div>
                                                         )}
                                                         <div>
-                                                            <span className="text-muted-foreground block">Reference</span>
-                                                            <span className="font-mono font-bold text-primary">{inv.invoiceNumber}</span>
+                                                            <dt className="text-muted-foreground">Reference</dt>
+                                                            <dd className="font-mono font-bold text-primary">{inv.invoiceNumber}</dd>
                                                         </div>
-                                                    </div>
+                                                    </dl>
                                                 </div>
                                             )}
                                         </div>
-                                        
+
                                         <div className="w-full md:w-72 flex flex-col justify-center gap-3 border-t md:border-t-0 md:border-l border-border pt-4 md:pt-0 md:pl-6">
                                             {stripeEnabled && (
                                                 <StripePayButton invoiceId={inv.id} amountDue={remaining} />
                                             )}
                                             <div className={stripeEnabled ? 'border-t border-border pt-3' : ''}>
-                                                <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider mb-2">
+                                                <p className="text-xs text-muted-foreground font-semibold mb-2">
                                                     {stripeEnabled ? 'Or pay by childcare voucher' : 'Pay by childcare voucher'}
                                                 </p>
                                                 <VoucherPaymentForm invoiceId={inv.id} amountDue={remaining} />
@@ -233,48 +336,107 @@ export default async function BillingDashboard(props: { searchParams: Promise<{ 
                     )}
                 </section>
 
-                {/* Past Invoices / Payment History */}
-                {pastInvoices.length > 0 && (
-                    <section>
-                        <div className="flex items-center gap-2 mb-4">
-                            <Receipt className="w-5 h-5 text-muted-foreground" />
-                            <h2 className="text-lg font-bold text-foreground opacity-80">Payment History</h2>
+                {/* Payment History & Settled Invoices */}
+                {(paymentEntries.length > 0 || pastInvoices.length > 0) && (
+                    <section className="space-y-6">
+                        <div className="flex items-center gap-2">
+                            <Receipt className="w-5 h-5 text-muted-foreground" aria-hidden="true" />
+                            <h2 className="text-lg font-bold text-foreground">Payment History</h2>
                         </div>
-                        <div className="space-y-3 opacity-90">
-                            {pastInvoices.map(inv => {
-                                const STATUS_LABELS: Record<string, string> = { draft: 'Draft', sent: 'Sent', partially_paid: 'Partial', paid: 'Paid', void: 'Void' };
-                                const centreName = inv.centre?.name || 'Centre';
-                                const coveredChildrenLabel = resolveCoveredChildrenLabel(inv);
-                                return (
-                                    <div key={inv.id} className="bg-secondary/40 p-4 rounded-xl border border-border flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
-                                        <div className="flex flex-wrap gap-3 items-center">
-                                            <span className="text-muted-foreground font-mono text-sm">
-                                                {new Date(inv.invoiceDate).toLocaleDateString('en-GB')}
-                                            </span>
-                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
-                                                <MapPin className="w-3 h-3" /> {centreName}
-                                            </span>
-                                            <span className="font-medium text-foreground">
-                                                Invoice #{inv.invoiceNumber}
-                                            </span>
-                                            <span className="text-xs text-muted-foreground">
-                                                ({coveredChildrenLabel})
-                                            </span>
+
+                        {paymentEntries.length > 0 && (
+                            <div className="space-y-3">
+                                {paymentEntries.map(payment => {
+                                    const isVerified = payment.status === 'verified';
+                                    return (
+                                        <div
+                                            key={payment.id}
+                                            className="bg-card p-4 rounded-xl border border-border flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3"
+                                        >
+                                            <div className="flex flex-wrap gap-3 items-center">
+                                                <span className="text-muted-foreground font-mono text-sm tabular-nums">
+                                                    {formatInvoiceDate(payment.recordedAt)}
+                                                </span>
+                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
+                                                    <MapPin className="w-3 h-3" aria-hidden="true" /> {payment.centreName}
+                                                </span>
+                                                <span className="font-medium text-foreground">
+                                                    Invoice #{payment.invoiceNumber}
+                                                </span>
+                                                <span className="text-xs text-muted-foreground">
+                                                    {formatPaymentMethodLabel(payment.method)}
+                                                    {payment.transactionReference ? ` · Ref ${payment.transactionReference}` : ''}
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center gap-4">
+                                                <span className="font-bold tabular-nums text-foreground">
+                                                    £{Number(payment.amount).toFixed(2)}
+                                                </span>
+                                                {isVerified ? (
+                                                    <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+                                                        <CheckCircle2 className="w-4 h-4 shrink-0" aria-hidden="true" />
+                                                        <span>Verified</span>
+                                                    </span>
+                                                ) : (
+                                                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${COLLECTION_STAGE_STYLES.in_period.badge}`}>
+                                                        <Clock className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                                                        <span>Awaiting verification</span>
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
-                                        <div className="flex items-center gap-4">
-                                            {inv.status === 'void' ? (
-                                                <span className="line-through text-muted-foreground">£{Number(inv.amount).toFixed(2)}</span>
-                                            ) : (
-                                                <span className="font-bold text-foreground">£{Number(inv.amount).toFixed(2)}</span>
-                                            )}
-                                            <span className="text-xs px-2 py-1 bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 rounded-full font-bold">
-                                                {STATUS_LABELS[inv.status] || inv.status}
-                                            </span>
+                                    );
+                                })}
+                            </div>
+                        )}
+
+                        {pastInvoices.length > 0 && (
+                            <div className="space-y-3">
+                                <h3 className="text-sm font-semibold text-muted-foreground">Settled &amp; Archived Invoices</h3>
+                                {pastInvoices.map(({ inv, state }) => {
+                                    const centreName = inv.centre?.name || 'Centre';
+                                    const coveredChildrenLabel = resolveCoveredChildrenLabel(inv);
+                                    const isVoid = inv.status === 'void' || state.stage === 'void';
+                                    const paidDate = formatPaidDate(inv.payments);
+                                    return (
+                                        <div key={inv.id} className="bg-secondary/40 p-4 rounded-xl border border-border flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+                                            <div className="flex flex-wrap gap-3 items-center">
+                                                <span className="text-muted-foreground font-mono text-sm tabular-nums">
+                                                    {formatInvoiceDate(inv.invoiceDate)}
+                                                </span>
+                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
+                                                    <MapPin className="w-3 h-3" aria-hidden="true" /> {centreName}
+                                                </span>
+                                                <span className="font-medium text-foreground">
+                                                    Invoice #{inv.invoiceNumber}
+                                                </span>
+                                                <span className="text-xs text-muted-foreground">
+                                                    ({coveredChildrenLabel})
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center gap-4">
+                                                {isVoid ? (
+                                                    <span className="line-through tabular-nums text-muted-foreground">£{Number(inv.amount).toFixed(2)}</span>
+                                                ) : (
+                                                    <span className="font-bold tabular-nums text-foreground">£{Number(inv.amount).toFixed(2)}</span>
+                                                )}
+                                                {isVoid ? (
+                                                    <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-semibold ${COLLECTION_STAGE_STYLES.void.badge}`}>
+                                                        <Receipt className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                                                        <span>Void</span>
+                                                    </span>
+                                                ) : (
+                                                    <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+                                                        <CheckCircle2 className="w-4 h-4 shrink-0" aria-hidden="true" />
+                                                        <span>{paidDate ? `Paid in full (${paidDate})` : 'Paid in full'}</span>
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
                     </section>
                 )}
             </main>

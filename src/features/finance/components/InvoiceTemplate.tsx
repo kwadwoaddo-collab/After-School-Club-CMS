@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
 import { billingStylesBase, safeFormatDate, buildCentreAddressLines, getCoveredChildNames } from './billingPdfStyles';
+import { evaluateInvoiceCollectionState, toLondonBusinessDate } from '@/features/finance/domain/invoice-collection-state';
 
 const styles = StyleSheet.create({
     ...billingStylesBase,
@@ -39,6 +40,49 @@ export const InvoiceTemplate = ({ invoice, organisationName }: InvoiceTemplatePr
     const totalPaid = verifiedPayments.reduce((sum: number, p: any) => sum + Number(p.amount), 0);
     const balanceRemaining = Math.max(0, Number(amount) - totalPaid);
 
+    const collectionState = evaluateInvoiceCollectionState(
+        {
+            amount: amount ?? 0,
+            status: status ?? 'sent',
+            dueDate,
+            billingPeriodStart,
+            billingPeriodEnd,
+            payments,
+        },
+        toLondonBusinessDate(),
+        { strictPayments: false },
+    );
+
+    const statusConfig: { label: string; color: string } = (() => {
+        switch (collectionState.stage) {
+            case 'paid':
+                return { label: 'PAID', color: '#059669' };
+            case 'overdue':
+                return {
+                    label: collectionState.isPartPaid ? 'OVERDUE (PART PAID)' : 'OVERDUE',
+                    color: '#e11d48',
+                };
+            case 'in_period':
+                return {
+                    label: collectionState.isPartPaid ? 'PART PAID' : 'DUE (CURRENT PERIOD)',
+                    color: '#d97706',
+                };
+            case 'upcoming':
+                return {
+                    label: collectionState.isPartPaid ? 'PART PAID' : 'AWAITING PAYMENT',
+                    color: '#2563eb',
+                };
+            case 'draft':
+                return { label: 'DRAFT', color: '#64748b' };
+            case 'void':
+                return { label: 'VOID', color: '#94a3b8' };
+            case 'needs_checking':
+                return status === 'paid'
+                    ? { label: 'PAID', color: '#059669' }
+                    : { label: 'UNDER REVIEW', color: '#d97706' };
+        }
+    })();
+
     // Build the canonical list of all children covered by this invoice.
     // coveredChildrenJson is the source of truth (supports multiple children);
     // fall back to the single child relation or free-text childDisplayName.
@@ -49,7 +93,7 @@ export const InvoiceTemplate = ({ invoice, organisationName }: InvoiceTemplatePr
             <Page size="A4" style={styles.page}>
                 {/* Watermark */}
                 <Text style={styles.watermark}>
-                    {status === 'paid' ? 'PAID' : (centre?.name?.toUpperCase() || 'INVOICE')}
+                    {collectionState.stage === 'paid' || status === 'paid' ? 'PAID' : (centre?.name?.toUpperCase() || 'INVOICE')}
                 </Text>
 
                 {/* Header */}
@@ -82,20 +126,11 @@ export const InvoiceTemplate = ({ invoice, organisationName }: InvoiceTemplatePr
                             <Text style={[
                                 styles.infoValue,
                                 {
-                                    color: status === 'paid' ? '#10b981' :
-                                           status === 'partially_paid' ? '#d97706' :
-                                           status === 'void' ? '#94a3b8' :
-                                           status === 'overdue' ? '#dc2626' : '#2563eb',
+                                    color: statusConfig.color,
                                     fontWeight: 'bold'
                                 }
                             ]}>
-                                {status === 'draft' ? 'DRAFT' :
-                                 status === 'paid' ? 'PAID' :
-                                 status === 'partially_paid' ? 'PART PAID' :
-                                 status === 'sent' ? 'AWAITING PAYMENT' :
-                                 status === 'void' ? 'VOID' :
-                                 status === 'overdue' ? 'OVERDUE' :
-                                 'PENDING'}
+                                {statusConfig.label}
                             </Text>
                         </View>
                     </View>
@@ -117,7 +152,11 @@ export const InvoiceTemplate = ({ invoice, organisationName }: InvoiceTemplatePr
                         {allChildNames.length > 0 && allChildNames.map((name: string, i: number) => (
                             <Text key={i}>{allChildNames.length > 1 ? `Child ${i + 1}: ` : 'Child: '}{name}</Text>
                         ))}
-                        <Text>Period: {safeFormatDate(billingPeriodStart, 'dd/MM/yyyy')} – {safeFormatDate(billingPeriodEnd, 'dd/MM/yyyy')}</Text>
+                        {billingPeriodStart && billingPeriodEnd ? (
+                            <Text>Assessment Period: {safeFormatDate(billingPeriodStart, 'dd/MM/yyyy')} – {safeFormatDate(billingPeriodEnd, 'dd/MM/yyyy')}</Text>
+                        ) : (
+                            <Text>Period: {safeFormatDate(billingPeriodStart, 'dd/MM/yyyy')} – {safeFormatDate(billingPeriodEnd, 'dd/MM/yyyy')}</Text>
+                        )}
                         <Text>Centre: {centre?.name || 'Centre'}</Text>
                     </View>
                 </View>

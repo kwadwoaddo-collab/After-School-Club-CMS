@@ -1,4 +1,6 @@
 import { stableReceiptNumber } from '@/lib/finance/receipt-number';
+import { formatInvoicePeriod } from '@/features/finance/domain/invoice-display';
+import { resolveOpenAgingStage, toLondonBusinessDate } from '@/features/finance/domain/invoice-collection-state';
 import { logger } from '@/lib/logger';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /**
@@ -1233,12 +1235,22 @@ export class EmailService {
     invoiceNumber: string;
     amount: number;
     dueDate: Date;
+    billingPeriodStart?: Date | string | null;
+    billingPeriodEnd?: Date | string | null;
     centreName: string;
     portalUrl: string;
   }): Promise<EmailResult & { outcome?: 'not_sent' | 'unknown' }> {
     if (!resend) return { success: false, error: 'Email service not configured', outcome: 'not_sent' };
 
-    const formattedDue = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }).format(data.dueDate);
+    const formattedDue = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(data.dueDate);
+    const formattedPeriod =
+      data.billingPeriodStart && data.billingPeriodEnd
+        ? formatInvoicePeriod(data.billingPeriodStart, data.billingPeriodEnd)
+        : null;
+    const assessmentPeriodRowHtml =
+      formattedPeriod && formattedPeriod !== 'Period missing' && formattedPeriod !== 'Check period'
+        ? `<div style="display:flex;justify-content:space-between;margin-bottom:12px;"><span style="color:#64748b;font-size:14px;font-weight:600;">Assessment Period</span><span style="color:#1e293b;font-weight:700;">${formattedPeriod}</span></div>`
+        : '';
 
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Invoice ${data.invoiceNumber}</title></head>
 <body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f9fafb;margin:0;padding:40px 20px;">
@@ -1254,7 +1266,8 @@ export class EmailService {
       <div style="background:#f8fafc;border-radius:12px;padding:24px;margin-bottom:28px;">
         <div style="display:flex;justify-content:space-between;margin-bottom:12px;"><span style="color:#64748b;font-size:14px;font-weight:600;">Invoice Number</span><span style="color:#1e293b;font-weight:700;">${data.invoiceNumber}</span></div>
         <div style="display:flex;justify-content:space-between;margin-bottom:12px;"><span style="color:#64748b;font-size:14px;font-weight:600;">Amount Due</span><span style="color:#4F46E5;font-size:20px;font-weight:800;">£${data.amount.toFixed(2)}</span></div>
-        <div style="display:flex;justify-content:space-between;"><span style="color:#64748b;font-size:14px;font-weight:600;">Due Date</span><span style="color:#ef4444;font-weight:700;">${formattedDue}</span></div>
+        ${assessmentPeriodRowHtml}
+        <div style="display:flex;justify-content:space-between;"><span style="color:#64748b;font-size:14px;font-weight:600;">Due Date</span><span style="color:#1e293b;font-weight:700;">${formattedDue}</span></div>
       </div>
       <div style="text-align:center;">
         <a href="${data.portalUrl}" style="display:inline-block;background:linear-gradient(135deg,#4F46E5,#7c3aed);color:#ffffff;font-size:16px;font-weight:700;text-decoration:none;padding:16px 40px;border-radius:12px;">View Invoice & Pay →</a>
@@ -1290,29 +1303,66 @@ export class EmailService {
     invoiceNumber: string;
     amountDue: number;
     dueDate: Date;
+    billingPeriodStart?: Date | string | null;
+    billingPeriodEnd?: Date | string | null;
     portalUrl: string;
   }): Promise<EmailResult> {
     if (!resend) return { success: false, error: 'Email service not configured' };
 
-    const formattedDue = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }).format(data.dueDate);
-    const isOverdue = data.dueDate < new Date();
+    const formattedDue = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(data.dueDate);
+    const stage = resolveOpenAgingStage(
+      {
+        dueDate: data.dueDate,
+        billingPeriodStart: data.billingPeriodStart,
+        billingPeriodEnd: data.billingPeriodEnd,
+      },
+      toLondonBusinessDate()
+    );
+    const isOverdue = stage === 'overdue';
+    const isInPeriod = stage === 'in_period';
+    const formattedPeriod =
+      data.billingPeriodStart && data.billingPeriodEnd
+        ? formatInvoicePeriod(data.billingPeriodStart, data.billingPeriodEnd)
+        : null;
+    const validPeriodLabel =
+      formattedPeriod && formattedPeriod !== 'Period missing' && formattedPeriod !== 'Check period'
+        ? formattedPeriod
+        : null;
+    const headingTitle = isOverdue
+      ? 'Invoice Overdue'
+      : isInPeriod
+        ? 'Assessment Period Payment Reminder'
+        : 'Payment Reminder';
+    const bodyCopy = isOverdue
+      ? `Invoice <strong>${data.invoiceNumber}</strong>${validPeriodLabel ? ` for assessment period <strong>${validPeriodLabel}</strong>` : ''} is now past its assessment period and overdue. Please arrange payment as soon as possible.`
+      : isInPeriod
+        ? `This is a friendly reminder that invoice <strong>${data.invoiceNumber}</strong>${validPeriodLabel ? ` for assessment period <strong>${validPeriodLabel}</strong>` : ''} is currently within its active assessment period (requested by <strong>${formattedDue}</strong>).`
+        : `This is a friendly reminder that invoice <strong>${data.invoiceNumber}</strong> is due on <strong>${formattedDue}</strong>.`;
+    const headerGradient = isOverdue
+      ? 'linear-gradient(135deg,#e11d48,#be123c)'
+      : 'linear-gradient(135deg,#f59e0b,#d97706)';
+    const subjectPrefix = isOverdue
+      ? '⚠️ Overdue'
+      : isInPeriod
+        ? '🔔 Assessment Period Payment Reminder'
+        : '🔔 Payment Reminder';
 
-    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Invoice Reminder</title></head>
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${headingTitle}</title></head>
 <body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f9fafb;margin:0;padding:40px 20px;">
   <div style="max-width:560px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
-    <div style="background:linear-gradient(135deg,#f59e0b,#ef4444);padding:40px 32px;text-align:center;">
+    <div style="background:${headerGradient};padding:40px 32px;text-align:center;">
       <div style="font-size:36px;margin-bottom:8px;">${isOverdue ? '⚠️' : '🔔'}</div>
-      <h1 style="color:#fff;font-size:22px;font-weight:700;margin:0;">${isOverdue ? 'Invoice Overdue' : 'Payment Reminder'}</h1>
+      <h1 style="color:#fff;font-size:22px;font-weight:700;margin:0;">${headingTitle}</h1>
     </div>
     <div style="padding:40px 32px;">
       <p style="color:#374151;font-size:16px;margin:0 0 8px;">Hi ${data.parentFirstName},</p>
-      <p style="color:#6b7280;font-size:15px;margin:0 0 28px;">${isOverdue ? `Invoice <strong>${data.invoiceNumber}</strong> was due on <strong>${formattedDue}</strong> and is now overdue. Please arrange payment as soon as possible.` : `This is a friendly reminder that invoice <strong>${data.invoiceNumber}</strong> is due on <strong>${formattedDue}</strong>.`}</p>
+      <p style="color:#6b7280;font-size:15px;margin:0 0 28px;">${bodyCopy}</p>
       <div style="background:#fff7ed;border:2px solid #fed7aa;border-radius:12px;padding:24px;text-align:center;margin-bottom:28px;">
         <p style="color:#9a3412;font-size:13px;font-weight:700;text-transform:uppercase;margin:0 0 8px;">Outstanding Balance</p>
         <p style="color:#ea580c;font-size:36px;font-weight:800;margin:0;">£${data.amountDue.toFixed(2)}</p>
       </div>
       <div style="text-align:center;">
-        <a href="${data.portalUrl}" style="display:inline-block;background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff;font-size:16px;font-weight:700;text-decoration:none;padding:16px 40px;border-radius:12px;">Pay Now →</a>
+        <a href="${data.portalUrl}" style="display:inline-block;background:${headerGradient};color:#fff;font-size:16px;font-weight:700;text-decoration:none;padding:16px 40px;border-radius:12px;">Pay Now →</a>
       </div>
     </div>
     <div style="background:#f9fafb;padding:20px 32px;text-align:center;border-top:1px solid #e5e7eb;">
@@ -1325,7 +1375,7 @@ export class EmailService {
       const { data: result, error } = await resend.emails.send({
         from: `${FROM_NAME} <${FROM_EMAIL}>`,
         to: data.parentEmail,
-        subject: `${isOverdue ? '⚠️ Overdue' : '🔔 Reminder'}: Invoice ${data.invoiceNumber} — £${data.amountDue.toFixed(2)}`,
+        subject: `${subjectPrefix}: Invoice ${data.invoiceNumber} — £${data.amountDue.toFixed(2)}`,
         html,
       });
       if (error) return { success: false, error: error.message };
