@@ -91,6 +91,23 @@ export default function ForgotPasswordPage() {
                         </p>
                     </div>
 
+                    <div className="mb-6 p-4 rounded-xl bg-[var(--if-accent-soft)] border border-[var(--if-border-subtle)] text-sm text-[var(--if-text-secondary)] space-y-1.5">
+                        <p className="text-[var(--if-text)]">
+                            <strong>Parents do not use passwords</strong> — sign in with a magic link at the{' '}
+                            <Link href="/portal/login" className={linkClass}>
+                                Parent Portal
+                            </Link>
+                            .
+                        </p>
+                        <p>
+                            Staff magic links are available at{' '}
+                            <Link href="/staff-login" className={linkClass}>
+                                Staff Login
+                            </Link>
+                            .
+                        </p>
+                    </div>
+
                     <div className="bg-[var(--if-surface-elevated)] rounded-2xl p-6 sm:p-8 border border-[var(--if-border-subtle)] space-y-6">
 
                         {/* Google Sign-In Option */}
