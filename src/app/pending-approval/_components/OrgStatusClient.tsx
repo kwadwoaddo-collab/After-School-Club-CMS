@@ -1,6 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
+import { signOut } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 
 type ApprovalStatus = 'PENDING' | 'SUSPENDED' | 'REJECTED';
 
@@ -32,7 +34,7 @@ const STATUS_CONFIG: Record<
     badge: 'Pending Review',
     badgeBg: 'bg-amber-500/10 text-amber-400 border border-amber-500/20',
     heading: 'Your account is under review',
-    body: 'We have received your registration for {orgName}. Our team typically reviews new accounts within 1–2 business days. You will receive a confirmation email once your account has been approved.',
+    body: 'We have received your registration for {orgName}. New club accounts undergo manual platform verification (typically within 1–2 business days). Check back here anytime or use Check Status below to refresh your approval status.',
     showTimeline: true,
     showReason: false,
   },
@@ -66,24 +68,22 @@ export default function OrgStatusClient({
   rejectionReason,
   userEmail,
 }: OrgStatusClientProps) {
+  const router = useRouter();
+  const [isChecking, startTransition] = useTransition();
   const [signingOut, setSigningOut] = useState(false);
   const cfg = STATUS_CONFIG[status];
 
   const bodyText = cfg.body.replace('{orgName}', orgName);
 
+  function handleCheckStatus() {
+    startTransition(() => {
+      router.refresh();
+    });
+  }
+
   async function handleSignOut() {
     setSigningOut(true);
-    // Use the built-in NextAuth sign-out
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = '/api/auth/signout';
-    const csrf = document.createElement('input');
-    csrf.type = 'hidden';
-    csrf.name = 'csrfToken';
-    // NextAuth CSRF is handled server-side; a direct POST to /api/auth/signout works
-    form.appendChild(csrf);
-    document.body.appendChild(form);
-    form.submit();
+    await signOut({ callbackUrl: '/login' });
   }
 
   return (
@@ -171,15 +171,30 @@ export default function OrgStatusClient({
           </p>
         </div>
 
-        {/* Sign out */}
-        <button
-          id="pending-approval-sign-out"
-          onClick={handleSignOut}
-          disabled={signingOut}
-          className="w-full py-2.5 rounded-xl text-sm font-medium text-white/50 hover:text-white/80 border border-white/[0.08] hover:border-white/20 transition-all duration-200 disabled:opacity-50"
-        >
-          {signingOut ? 'Signing out…' : 'Sign out'}
-        </button>
+        {/* Actions */}
+        <div className="space-y-3">
+          {status === 'PENDING' && (
+            <button
+              type="button"
+              id="pending-approval-check-status"
+              onClick={handleCheckStatus}
+              disabled={isChecking}
+              className="w-full py-2.5 rounded-xl text-sm font-semibold text-white bg-[#0F5F5C] hover:bg-[#0C4A47] transition-all duration-200 disabled:opacity-50"
+            >
+              {isChecking ? 'Checking status…' : 'Check Status'}
+            </button>
+          )}
+
+          <button
+            type="button"
+            id="pending-approval-sign-out"
+            onClick={handleSignOut}
+            disabled={signingOut}
+            className="w-full py-2.5 rounded-xl text-sm font-medium text-white/50 hover:text-white/80 border border-white/[0.08] hover:border-white/20 transition-all duration-200 disabled:opacity-50"
+          >
+            {signingOut ? 'Signing out…' : 'Sign out'}
+          </button>
+        </div>
       </div>
 
       {/* Footer */}
