@@ -76,7 +76,7 @@ const STEPS = [
     { title: "Add families", body: "Record students and their parents or carers, then start running sessions." },
 ];
 
-const FAQS = [
+const FAQS: { question: string; answer: ReactNode }[] = [
     {
         question: "Who is the After-School Club CMS for?",
         answer: "It is built for after-school clubs, tuition centres and similar providers that need to manage sessions, student and family records, billing and staff access in one place.",
@@ -87,7 +87,15 @@ const FAQS = [
     },
     {
         question: "How do staff sign in?",
-        answer: "Invited staff can request a one-time sign-in link by email from the staff login page. Administrators sign in with their email and password or with Google.",
+        answer: (
+            <>
+                Invited staff can request a one-time sign-in link by email from{" "}
+                <Link href="/staff-login" className="underline font-medium" style={{ color: 'var(--if-accent)' }}>
+                    the staff login page
+                </Link>
+                . Administrators sign in with their email and password or with Google.
+            </>
+        ),
     },
     {
         question: "Can I manage more than one centre?",
@@ -323,7 +331,7 @@ export default function Home() {
             {/* Footer */}
             <footer className="landing-footer py-12 px-6 md:px-8">
                 <div className="max-w-7xl mx-auto">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-10 mb-10">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-10 mb-10">
                         <div>
                             <div className="mb-4">
                                 <BrandLockup href={CORPORATE_URL} external />
@@ -340,7 +348,15 @@ export default function Home() {
                                 <li><a href="#how-it-works" className="footer-link">How It Works</a></li>
                                 <li><a href="#pricing" className="footer-link">Early Access</a></li>
                                 <li><a href="#faq" className="footer-link">FAQ</a></li>
-                                <li><Link href="/dashboard" className="footer-link">Dashboard</Link></li>
+                            </ul>
+                        </div>
+
+                        <div>
+                            <h3 className="text-lg font-semibold mb-3">Log in</h3>
+                            <ul>
+                                <li><Link href="/login" className="footer-link">Admin / owner</Link></li>
+                                <li><Link href="/staff-login" className="footer-link">Staff</Link></li>
+                                <li><Link href="/portal/login" className="footer-link">Parents</Link></li>
                             </ul>
                         </div>
 
@@ -364,7 +380,7 @@ export default function Home() {
                         <p className="text-sm landing-faint">© 2026 SprintScale IT. All rights reserved.</p>
                         <div className="flex gap-4">
                             <Link href="/privacy" className="footer-link">Privacy Policy</Link>
-                            <Link href="/terms" className="footer-link">Terms and Conditions</Link>
+                            <Link href="/terms" className="footer-link">Terms of Service</Link>
                         </div>
                     </div>
                 </div>
