@@ -1,7 +1,8 @@
 import { db } from '@/db';
 import { centres, organisations } from '@/db/schema';
 import { eq } from 'drizzle-orm';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
+import { getTrustedApplicationUrl } from '@/lib/base-url';
 import BookingForm from '@/features/bookings/components/BookingForm';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
@@ -11,34 +12,56 @@ interface Props {
     params: Promise<{ subdomain: string }>;
 }
 
-async function getCentreBySubdomain(subdomain: string) {
+async function resolveBookBySubdomain(subdomain: string) {
     const centre = await db.query.centres.findFirst({
         where: eq(centres.subdomain, subdomain),
     });
-    if (!centre) return null;
+
+    if (centre) {
+        const org = await db.query.organisations.findFirst({
+            where: eq(organisations.id, centre.organisationId),
+            columns: { id: true, name: true, logoUrl: true, brandColor: true, slug: true, approvalStatus: true },
+        });
+        if (org && org.approvalStatus === 'ACTIVE') {
+            return { kind: 'centre' as const, centre, org };
+        }
+    }
 
     const org = await db.query.organisations.findFirst({
-        where: eq(organisations.id, centre.organisationId),
-        columns: { id: true, name: true, logoUrl: true, brandColor: true, slug: true },
+        where: eq(organisations.subdomain, subdomain),
+        columns: { id: true, name: true, logoUrl: true, brandColor: true, slug: true, approvalStatus: true },
     });
-    return org ? { centre, org } : null;
+
+    if (!org || org.approvalStatus !== 'ACTIVE') {
+        return null;
+    }
+
+    return { kind: 'org' as const, org };
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const { subdomain } = await params;
-    const data = await getCentreBySubdomain(subdomain);
+    const data = await resolveBookBySubdomain(subdomain);
     if (!data) return { title: 'Centre Not Found' };
+    const displayName = data.kind === 'centre' ? data.centre.name : data.org.name;
     return {
-        title: `Book a Session — ${data.centre.name}`,
-        description: `Book your child's session at ${data.centre.name}.`,
+        title: `Book a Session — ${displayName}`,
+        description: `Book your child's session at ${displayName}.`,
     };
 }
 
 export default async function CentrePortalBook({ params }: Props) {
     const { subdomain } = await params;
-    const data = await getCentreBySubdomain(subdomain);
+    const data = await resolveBookBySubdomain(subdomain);
 
     if (!data) notFound();
+
+    // Org-level subdomain fallback (JC-04): redirect to canonical app URL
+    // (DC-01: never use a relative /book/... redirect on a subdomain host,
+    // because proxy.ts rewrites /book/* back to /centre-portal/[subdomain]/book).
+    if (data.kind === 'org') {
+        redirect(`${getTrustedApplicationUrl()}/book/${data.org.slug}`);
+    }
 
     const { centre, org } = data;
     const brandColor = org.brandColor || '#4F46E5';
