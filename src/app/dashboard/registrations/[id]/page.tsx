@@ -8,6 +8,7 @@ import { eq, and, inArray } from 'drizzle-orm';
 import Link from 'next/link';
 import { Building2 } from 'lucide-react';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
+import { isValidUuid } from '@/lib/uuid';
 import RegistrationStatusUpdater from './StatusUpdater';
 import DownloadButton from './DownloadButton';
 import EditRegistrationForm from './EditRegistrationForm';
@@ -38,9 +39,8 @@ export default async function RegistrationDetailPage({ params }: { params: Promi
         return redirect('/dashboard/attendance');
     }
 
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(id)) {
-        notFound();
+    if (!isValidUuid(id)) {
+        return notFound();
     }
 
     const reg = await db.query.registrations.findFirst({
@@ -54,13 +54,13 @@ export default async function RegistrationDetailPage({ params }: { params: Promi
             },
         },
     });
-    if (!reg) notFound();
+    if (!reg) return notFound();
 
     // DC-03: Multi-centre isolation for non-ORG_OWNER staff (MANAGER, FRONT_DESK).
     // Org-wide submissions (/register/[orgSlug]) have centreId === null and MUST
     // remain triageable by staff who have at least one accessible centre.
     if (userRole !== 'ORG_OWNER') {
-        const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
+        const accessibleCentreIds = (await getUserAccessibleCentreIds(session.user.id)).filter(isValidUuid);
         if (accessibleCentreIds.length === 0) {
             return notFound();
         }
@@ -81,7 +81,7 @@ export default async function RegistrationDetailPage({ params }: { params: Promi
     let centreEmail: string | null = null;
     let centreOfstedId: string | null = null;
     let centreSessionSlots: string[] | undefined;
-    if (reg.centreId) {
+    if (isValidUuid(reg.centreId)) {
         const centre = await db.query.centres.findFirst({
             where: eq(centres.id, reg.centreId),
             columns: {
@@ -111,7 +111,7 @@ export default async function RegistrationDetailPage({ params }: { params: Promi
 
     const linkedChildIds = kids
         .map(k => k.childId)
-        .filter((cid): cid is string => Boolean(cid));
+        .filter(isValidUuid);
 
     const [linkedChildren, linkedCollectors] = linkedChildIds.length > 0
         ? await Promise.all([

@@ -2,9 +2,10 @@
 import { requireAuth } from '@/lib/require-auth';
 import { notFound } from 'next/navigation';
 import { db } from '@/db';
-import { parents, children, invoices, payments, billingConfigs } from '@/db/schema';
+import { parents, children, invoices, billingConfigs } from '@/db/schema';
 import { eq, desc, and, inArray, isNull, sql } from 'drizzle-orm';
 import { getUserAccessibleCentres } from '@/lib/permissions';
+import { isValidUuid } from '@/lib/uuid';
 import { confirmedEnrolmentChildSql, currentLifecycleStatusChildSql } from '@/lib/enrolment/finance-eligibility';
 import type { ParentBillingGroup } from '@/features/billing/components/ParentBillingSection';
 import ParentProfileClient from './ParentProfileClient';
@@ -34,6 +35,16 @@ export default async function ParentProfilePage({ params, searchParams }: Parent
     const organisationId = (session.user as any).organisationId;
     const userRole = (session.user as any).role as string | undefined;
 
+    if (!isValidUuid(id)) return notFound();
+
+    const rawAccessibleCentres = await getUserAccessibleCentres(session.user.id);
+    const accessibleCentres = (rawAccessibleCentres ?? []).filter((c: { id: string }) => isValidUuid(c?.id));
+    const accessibleCentreIds = accessibleCentres.map(c => c.id);
+
+    if (userRole !== 'ORG_OWNER' && accessibleCentreIds.length === 0) {
+        return notFound();
+    }
+
     // 1. Fetch Parent & Active Children
     const parent = await db.query.parents.findFirst({
         where: and(
@@ -55,16 +66,12 @@ export default async function ParentProfilePage({ params, searchParams }: Parent
 
     const activeChildren = (parent.children ?? []).filter(c => !c.deletedAt && c.organisationId === organisationId);
 
-    const accessibleCentres = await getUserAccessibleCentres(session.user.id);
-    const accessibleCentreIds = accessibleCentres.map(c => c.id);
-
-    if (userRole !== 'ORG_OWNER') {
-        if (
-            accessibleCentreIds.length === 0 ||
-            (activeChildren.length > 0 && !activeChildren.some(c => !c.centreId || accessibleCentreIds.includes(c.centreId)))
-        ) {
-            return notFound();
-        }
+    if (
+        userRole !== 'ORG_OWNER' &&
+        activeChildren.length > 0 &&
+        !activeChildren.some(c => !c.centreId || accessibleCentreIds.includes(c.centreId))
+    ) {
+        return notFound();
     }
 
     const visibleChildren = userRole === 'ORG_OWNER'
@@ -72,7 +79,7 @@ export default async function ParentProfilePage({ params, searchParams }: Parent
         : activeChildren.filter(c => !c.centreId || accessibleCentreIds.includes(c.centreId));
 
     const canManageBilling=['ORG_OWNER','MANAGER'].includes(userRole ?? '');
-    const activeFamilyChildIds = visibleChildren.map(c => c.id);
+    const activeFamilyChildIds = visibleChildren.map(c => c.id).filter(isValidUuid);
     let childStatusMap: Map<string, { confirmedEnrolment: boolean; lifecycleStatus: string }> | null = null;
     if (canManageBilling && activeFamilyChildIds.length > 0) {
         try {
@@ -106,7 +113,7 @@ export default async function ParentProfilePage({ params, searchParams }: Parent
             }
         }
     }
-    const plans=canManageBilling&&accessibleCentres.length?await db.query.billingConfigs.findMany({where:and(eq(billingConfigs.parentId,id),eq(billingConfigs.organisationId,organisationId),inArray(billingConfigs.centreId,accessibleCentreIds)),with:{children:{with:{child:true}}}}):[];
+    const plans=canManageBilling&&accessibleCentreIds.length>0?await db.query.billingConfigs.findMany({where:and(eq(billingConfigs.parentId,id),eq(billingConfigs.organisationId,organisationId),inArray(billingConfigs.centreId,accessibleCentreIds)),with:{children:{with:{child:true}}}}):[];
     const billingGroups:ParentBillingGroup[]=canManageBilling?accessibleCentres.map(centre=>{
       const siblings=visibleChildren.filter(c=>c.centreId===centre.id).map(c=>({id:c.id,firstName:c.firstName,lastName:c.lastName,...(childStatusMap?.has(c.id)?childStatusMap.get(c.id):{})}));
       const config=plans.find(p=>p.centreId===centre.id);
@@ -131,7 +138,7 @@ export default async function ParentProfilePage({ params, searchParams }: Parent
     let activityRecords: Awaited<ReturnType<typeof getFamilyActivityRecords>> = {bookings:[],registrations:[],lifecycle:[],contacts:[],audit:[]};
     let activityUnavailable = false;
     try {
-        activityRecords = await getFamilyActivityRecords(organisationId, id, visibleChildren.map(child=>child.id), familyInvoices.map(invoice=>invoice.id));
+        activityRecords = await getFamilyActivityRecords(organisationId, id, activeFamilyChildIds, familyInvoices.map(invoice=>invoice.id).filter(isValidUuid));
     } catch (error) {
         activityUnavailable = true;
         logger.error('[parent] Supplemental family activity unavailable', error);

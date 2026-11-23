@@ -6,7 +6,7 @@ import { logger } from '@/lib/logger';
 import { requireAuth } from '@/lib/require-auth';
 import { db } from '@/db';
 import { registrations, organisations, registrationParents, registrationChildren } from '@/db/schema';
-import { eq, desc, and, inArray, or, ilike, sql } from 'drizzle-orm';
+import { eq, desc, and, inArray, isNull, or, ilike, sql } from 'drizzle-orm';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import RegistrationsBulkClient from '@/components/dashboard/RegistrationsBulkClient';
@@ -14,6 +14,8 @@ import RegistrationsFilters from '@/features/registration/components/Registratio
 import { getUserAccessibleCentres } from '@/lib/permissions';
 import { resolveActiveCentreId } from '@/lib/centre-filter';
 import { getTrustedApplicationUrl } from '@/lib/base-url';
+import { isValidUuid } from '@/lib/uuid';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { Building2, Share2 } from 'lucide-react';
 import HeaderPortal from '@/components/dashboard/HeaderPortal';
 
@@ -48,8 +50,10 @@ export default async function RegistrationsPage(props: {
 
     const { session } = await requireAuth({ roles: ['ORG_OWNER', 'MANAGER', 'FRONT_DESK'] });
     const orgId = (session.user as any).organisationId;
+    const userRole = (session.user as any).role as string | undefined;
 
     let hasError = false;
+    let hasZeroAccessibleCentres = false;
     let org: any = null;
     let orgCentres: any[] = [];
     let centreIds: string[] = [];
@@ -78,96 +82,106 @@ export default async function RegistrationsPage(props: {
 
         const baseUrl = getTrustedApplicationUrl();
 
-        orgCentres = fetchedCentres;
+        orgCentres = (fetchedCentres ?? []).filter((c: any) => isValidUuid(c?.id));
         centreIds = orgCentres.map(c => c.id);
 
-        activeCentreId = await resolveActiveCentreId(searchParams.centre, centreIds);
-        const activeCentreObj = activeCentreId !== 'all'
-            ? orgCentres.find(c => c.id === activeCentreId)
-            : null;
-        fullRegistrationUrl = org
-            ? activeCentreObj?.slug
-                ? `${baseUrl}/register/${org.slug}/${activeCentreObj.slug}`
-                : `${baseUrl}/register/${org.slug}`
-            : null;
+        if (userRole !== 'ORG_OWNER' && centreIds.length === 0) {
+            hasZeroAccessibleCentres = true;
+            activeCentreId = 'all';
+            fullRegistrationUrl = null;
+        } else {
+            activeCentreId = centreIds.length > 0
+                ? await resolveActiveCentreId(searchParams.centre, centreIds)
+                : 'all';
+            const activeCentreObj = activeCentreId !== 'all'
+                ? orgCentres.find(c => c.id === activeCentreId)
+                : null;
+            fullRegistrationUrl = org
+                ? activeCentreObj?.slug
+                    ? `${baseUrl}/register/${org.slug}/${activeCentreObj.slug}`
+                    : `${baseUrl}/register/${org.slug}`
+                : null;
 
-        const centreScopeCondition = activeCentreId !== 'all'
-            ? eq(registrations.centreId, activeCentreId)
-            : centreIds.length > 0
-                ? inArray(registrations.centreId, centreIds)
-                : eq(registrations.centreId, 'unauthorized_centre_id');
+            const centreScopeCondition = activeCentreId !== 'all' && isValidUuid(activeCentreId)
+                ? eq(registrations.centreId, activeCentreId)
+                : userRole === 'ORG_OWNER'
+                    ? undefined
+                    : or(
+                        inArray(registrations.centreId, centreIds),
+                        isNull(registrations.centreId)
+                    );
 
-        // Fetch status counts via aggregation
-        const aggWhere = and(
-            eq(registrations.organisationId, orgId),
-            summaryRangeSql(registrations.createdAt, summaryRange),
-            centreScopeCondition
-        );
+            // Fetch status counts via aggregation
+            const aggWhere = and(
+                eq(registrations.organisationId, orgId),
+                summaryRangeSql(registrations.createdAt, summaryRange),
+                centreScopeCondition
+            );
 
-        statusCountsAgg = await db.select({
-            status: registrations.status,
-            count: sql<number>`count(*)::int`
-        })
-        .from(registrations)
-        .where(aggWhere)
-        .groupBy(registrations.status);
+            statusCountsAgg = await db.select({
+                status: registrations.status,
+                count: sql<number>`count(*)::int`
+            })
+            .from(registrations)
+            .where(aggWhere)
+            .groupBy(registrations.status);
 
-        awaitingConfirmationCount = statusCountsAgg.find(s => s.status === 'awaiting_confirmation')?.count || 0;
-        signedUpCount = statusCountsAgg.find(s => s.status === 'signed_up')?.count || 0;
-        notInterestedCount = statusCountsAgg.find(s => s.status === 'not_interested')?.count || 0;
-        totalCount = statusCountsAgg.reduce((sum, s) => sum + s.count, 0);
+            awaitingConfirmationCount = statusCountsAgg.find(s => s.status === 'awaiting_confirmation')?.count || 0;
+            signedUpCount = statusCountsAgg.find(s => s.status === 'signed_up')?.count || 0;
+            notInterestedCount = statusCountsAgg.find(s => s.status === 'not_interested')?.count || 0;
+            totalCount = statusCountsAgg.reduce((sum, s) => sum + s.count, 0);
 
-        if (searchParams.search) {
-            const searchPattern = `%${searchParams.search}%`;
-            const matchingRegistrations = await db
-                .select({ id: registrations.id })
-                .from(registrations)
-                .leftJoin(registrationParents, eq(registrations.id, registrationParents.registrationId))
-                .leftJoin(registrationChildren, eq(registrations.id, registrationChildren.registrationId))
-                .where(
-                    and(
-                        eq(registrations.organisationId, orgId),
-                        centreScopeCondition,
-                        or(
-                            ilike(registrationParents.submittedFirstName, searchPattern),
-                            ilike(registrationParents.submittedLastName, searchPattern),
-                            ilike(registrationParents.submittedEmail, searchPattern),
-                            ilike(registrationParents.submittedPhone, searchPattern),
-                            ilike(registrationChildren.submittedFirstName, searchPattern),
-                            ilike(registrationChildren.submittedLastName, searchPattern)
+            if (searchParams.search) {
+                const searchPattern = `%${searchParams.search}%`;
+                const matchingRegistrations = await db
+                    .select({ id: registrations.id })
+                    .from(registrations)
+                    .leftJoin(registrationParents, eq(registrations.id, registrationParents.registrationId))
+                    .leftJoin(registrationChildren, eq(registrations.id, registrationChildren.registrationId))
+                    .where(
+                        and(
+                            eq(registrations.organisationId, orgId),
+                            centreScopeCondition,
+                            or(
+                                ilike(registrationParents.submittedFirstName, searchPattern),
+                                ilike(registrationParents.submittedLastName, searchPattern),
+                                ilike(registrationParents.submittedEmail, searchPattern),
+                                ilike(registrationParents.submittedPhone, searchPattern),
+                                ilike(registrationChildren.submittedFirstName, searchPattern),
+                                ilike(registrationChildren.submittedLastName, searchPattern)
+                            )
                         )
-                    )
-                );
-            matchingIds = matchingRegistrations.map(mr => mr.id);
-            if (matchingIds.length === 0) {
-                searchActiveAndNoResults = true;
-            }
-        }
-
-        if (!searchActiveAndNoResults) {
-            const conditions = [eq(registrations.organisationId, orgId)];
-            const periodCondition = summaryRangeSql(registrations.createdAt, summaryRange);
-            if (periodCondition) conditions.push(periodCondition);
-
-            conditions.push(centreScopeCondition);
-
-            if (searchParams.status && searchParams.status !== 'all') {
-                conditions.push(eq(registrations.status, searchParams.status as any));
+                    );
+                matchingIds = matchingRegistrations.map(mr => mr.id).filter(isValidUuid);
+                if (matchingIds.length === 0) {
+                    searchActiveAndNoResults = true;
+                }
             }
 
-            if (searchParams.search && matchingIds.length > 0) {
-                conditions.push(inArray(registrations.id, matchingIds));
-            }
+            if (!searchActiveAndNoResults) {
+                const conditions = [eq(registrations.organisationId, orgId)];
+                const periodCondition = summaryRangeSql(registrations.createdAt, summaryRange);
+                if (periodCondition) conditions.push(periodCondition);
+                if (centreScopeCondition) conditions.push(centreScopeCondition);
 
-            // Use relational query to fetch all registration data in ONE trip
-            rows = await db.query.registrations.findMany({
-                where: and(...conditions),
-                with: {
-                    registrationChildren: true,
-                    registrationParents: true,
-                },
-                orderBy: [desc(registrations.createdAt)],
-            });
+                if (searchParams.status && searchParams.status !== 'all') {
+                    conditions.push(eq(registrations.status, searchParams.status as any));
+                }
+
+                if (searchParams.search && matchingIds.length > 0) {
+                    conditions.push(inArray(registrations.id, matchingIds));
+                }
+
+                // Use relational query to fetch all registration data in ONE trip
+                rows = await db.query.registrations.findMany({
+                    where: and(...conditions),
+                    with: {
+                        registrationChildren: true,
+                        registrationParents: true,
+                    },
+                    orderBy: [desc(registrations.createdAt)],
+                });
+            }
         }
     } catch (e: any) {
         logger.error("Error fetching registrations", e);
@@ -266,15 +280,23 @@ export default async function RegistrationsPage(props: {
             )}
 
             {/* Filters — sticky */}
-            <div className="sticky top-16 sm:top-20 z-20 -mx-4 sm:-mx-8 px-4 sm:px-8 py-3 bg-background/80 backdrop-blur-xl border-b border-border">
-                <SummaryRangeNotice range={summaryRange} basis="Registration forms received" clearHref={`/dashboard/registrations?${new URLSearchParams(Object.entries(searchParams).filter(([,value]) => typeof value === 'string') as [string,string][])}`}/>
-            <Suspense fallback={<div className="h-10 animate-pulse bg-slate-800/50 rounded-xl w-full" />}>
-                    <RegistrationsFilters centres={orgCentres} resultsCount={rows.length} />
-                </Suspense>
-            </div>
+            {!hasZeroAccessibleCentres && (
+                <div className="sticky top-16 sm:top-20 z-20 -mx-4 sm:-mx-8 px-4 sm:px-8 py-3 bg-background/80 backdrop-blur-xl border-b border-border">
+                    <SummaryRangeNotice range={summaryRange} basis="Registration forms received" clearHref={`/dashboard/registrations?${new URLSearchParams(Object.entries(searchParams).filter(([,value]) => typeof value === 'string') as [string,string][])}`}/>
+                    <Suspense fallback={<div className="h-10 animate-pulse bg-slate-800/50 rounded-xl w-full" />}>
+                        <RegistrationsFilters centres={orgCentres} resultsCount={rows.length} />
+                    </Suspense>
+                </div>
+            )}
 
             {/* Empty state or list */}
-            {hasError && rows.length === 0 ? (
+            {hasZeroAccessibleCentres ? (
+                <EmptyState
+                    icon={<Building2 className="w-8 h-8" />}
+                    title="No centres assigned"
+                    description="You are not currently assigned to any centres. Ask an organisation owner to assign you to a centre to view and triage registrations."
+                />
+            ) : hasError && rows.length === 0 ? (
                 <div role="alert" className="flex flex-col items-center justify-center py-16 text-center bg-card border border-border rounded-2xl">
                     <h3 className="text-foreground font-bold mb-2">
                         Temporary error loading registrations

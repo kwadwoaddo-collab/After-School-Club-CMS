@@ -13,6 +13,7 @@ import BookingOutcomeActions from '@/features/bookings/components/BookingOutcome
 import InternalNotesTimeline from '@/features/students/components/InternalNotesTimeline';
 import { getStudentNotes } from '@/features/students/notes.actions';
 import { getUserAccessibleCentres, getUserAccessibleCentreIds } from '@/lib/permissions';
+import { isValidUuid } from '@/lib/uuid';
 import ReassignCentreButton from '@/features/bookings/components/ReassignCentreButton';
 import AttendanceDropdown from './AttendanceDropdown';
 import type { AttendanceStatus } from '@/lib/attendance';
@@ -54,10 +55,7 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
         return redirect('/dashboard/attendance');
     }
 
-    if (bookingId === 'new') return notFound();
-
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(bookingId)) return notFound();
+    if (!isValidUuid(bookingId)) return notFound();
 
     const booking = await db.query.bookings.findFirst({
         where: eq(bookings.id, bookingId),
@@ -77,7 +75,7 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
     if (!booking.centre || booking.centre.organisationId !== session.user.organisationId) return notFound();
 
     if (userRole !== 'ORG_OWNER') {
-        const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
+        const accessibleCentreIds = (await getUserAccessibleCentreIds(session.user.id)).filter(isValidUuid);
         if (accessibleCentreIds.length === 0 || (booking.centreId !== null && booking.centreId !== undefined && !accessibleCentreIds.includes(booking.centreId))) {
             return notFound();
         }
@@ -94,7 +92,7 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
     };
 
     const student = getStudentInfo();
-    const initialNotes = student.id ? await getStudentNotes(student.id) : [];
+    const initialNotes = isValidUuid(student.id) ? await getStudentNotes(student.id) : [];
 
     const isSignedUpOutcome = booking.enrolmentOutcome === 'signed_up' || booking.status === 'signed_up';
     const isDidNotSignUpOutcome = booking.enrolmentOutcome === 'did_not_sign_up';

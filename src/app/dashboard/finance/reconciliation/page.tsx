@@ -5,8 +5,10 @@ import { requireTenantSession } from '@/lib/session';
 import { redirect } from 'next/navigation';
 import { resolveActiveCentreId } from '@/lib/centre-filter';
 import { getUserAccessibleCentres } from '@/lib/permissions';
+import { isValidUuid } from '@/lib/uuid';
 import { ReconciliationClient } from './reconciliation-client';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { Building2, CheckCircle } from 'lucide-react';
 import { extractInvoiceStudents } from '@/features/finance/cash-receipts-queries';
 
 export const metadata = {
@@ -31,16 +33,41 @@ export default async function ReconciliationPage(props: {
   }
 
   const organisationId = session.user.organisationId;
-  
-  const orgCentres = await getUserAccessibleCentres(session.user.id);
-  const validCentreIds = orgCentres.map((c: { id: string }) => c.id);
-  const activeCentreId = await resolveActiveCentreId(searchParams.centre, validCentreIds);
 
-  const centreFilter = activeCentreId !== 'all'
+  const orgCentres = await getUserAccessibleCentres(session.user.id);
+  const validCentreIds = orgCentres
+    .map((c: { id: string }) => c.id)
+    .filter(isValidUuid);
+
+  if (userRole !== 'ORG_OWNER' && validCentreIds.length === 0) {
+    return (
+      <div className="flex flex-col h-full bg-background">
+        <div className="p-6 pb-0">
+          <h1 className="text-3xl sm:text-4xl font-black text-foreground tracking-tight">Payment Reconciliation</h1>
+          <p className="text-muted-foreground font-medium mt-1 text-sm sm:text-base">
+            Match incoming Tax-Free Childcare and voucher payments to pending invoices.
+          </p>
+        </div>
+        <div className="p-6 flex-1">
+          <EmptyState
+            icon={<Building2 className="w-8 h-8" />}
+            title="No centres assigned"
+            description="You are not currently assigned to any centres. Ask an organisation owner to grant centre access to reconcile payments."
+          />
+        </div>
+      </div>
+    );
+  }
+
+  const activeCentreId = validCentreIds.length > 0
+    ? await resolveActiveCentreId(searchParams.centre, validCentreIds)
+    : 'all';
+
+  const centreFilter = activeCentreId !== 'all' && isValidUuid(activeCentreId)
     ? eq(invoices.centreId, activeCentreId)
     : validCentreIds.length > 0
       ? inArray(invoices.centreId, validCentreIds)
-      : eq(invoices.centreId, 'unauthorized_centre_id');
+      : undefined;
 
   // Find all payable invoices (sent or partially_paid — overdue is derived from dueDate, not an enum status)
   const pendingInvoices = await db.select({
@@ -73,8 +100,8 @@ export default async function ReconciliationPage(props: {
   .orderBy(desc(invoices.createdAt));
 
   // Fetch verified, unreversed payments to calculate remaining balances in pence
-  const allInvoiceIds = pendingInvoices.map(i => i.id);
-  
+  const allInvoiceIds = pendingInvoices.map(i => i.id).filter(isValidUuid);
+
   let verifiedPaidPenceByInvoice: Record<string, number> = {};
   if (allInvoiceIds.length > 0) {
     const existingPayments = await db.select({
@@ -89,7 +116,7 @@ export default async function ReconciliationPage(props: {
         isNull(payments.reversedAt)
       )
     );
-    
+
     verifiedPaidPenceByInvoice = existingPayments.reduce((acc, p) => {
       const amountPence = Math.round(parseFloat(p.amount as string) * 100);
       acc[p.invoiceId] = (acc[p.invoiceId] || 0) + (Number.isFinite(amountPence) ? amountPence : 0);
@@ -129,10 +156,10 @@ export default async function ReconciliationPage(props: {
 
       <div className="p-6 flex-1">
         {enhancedInvoices.length === 0 ? (
-          <EmptyState 
-            title="All caught up!" 
-            description="There are no pending invoices to reconcile." 
-            icon="CheckCircle"
+          <EmptyState
+            title="All caught up!"
+            description="There are no pending invoices to reconcile."
+            icon={<CheckCircle className="w-8 h-8" />}
           />
         ) : (
           <ReconciliationClient invoices={enhancedInvoices} />

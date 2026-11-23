@@ -9,6 +9,7 @@ import { ChevronLeft, Calendar, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 import RescheduleForm from '@/features/bookings/components/RescheduleForm';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
+import { isValidUuid } from '@/lib/uuid';
 import { Card } from '@/components/ui/Card';
 
 export default async function ReschedulePage({ params }: { params: Promise<{ bookingId: string }> }) {
@@ -21,6 +22,10 @@ export default async function ReschedulePage({ params }: { params: Promise<{ boo
     const userRole = ((session.user as any).role as string | undefined) || 'TUTOR';
     if (userRole === 'TUTOR' || !['ORG_OWNER', 'MANAGER', 'FRONT_DESK'].includes(userRole)) {
         return redirect('/dashboard/attendance');
+    }
+
+    if (!isValidUuid(bookingId)) {
+        return notFound();
     }
 
     // Fetch booking details with attendees
@@ -56,7 +61,7 @@ export default async function ReschedulePage({ params }: { params: Promise<{ boo
 
     // Centre-membership check for non-ORG_OWNER users (DC-02)
     if (userRole !== 'ORG_OWNER') {
-        const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
+        const accessibleCentreIds = (await getUserAccessibleCentreIds(session.user.id)).filter(isValidUuid);
         if (accessibleCentreIds.length === 0 || (booking.centreId !== null && booking.centreId !== undefined && !accessibleCentreIds.includes(booking.centreId))) {
             return notFound();
         }

@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { requireAuth } from '@/lib/require-auth';
 import { db } from '@/db';
@@ -7,6 +8,8 @@ import { AlertTriangle, Building2 } from 'lucide-react';
 import IncidentsClient from './IncidentsClient';
 import { resolveActiveCentreId } from '@/lib/centre-filter';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
+import { isValidUuid } from '@/lib/uuid';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { logger } from '@/lib/logger';
 
 export default async function IncidentsPage() {
@@ -18,10 +21,11 @@ export default async function IncidentsPage() {
     // sidebar visibility and the existing createIncident action having no role gate for
     // non-safeguarding types (see milestone-3k-incidents-audit.md, Ambiguity A-1).
     const { session } = await requireAuth({ roles: ['ORG_OWNER', 'MANAGER', 'FRONT_DESK'] });
+    const userRole = String((session.user as { role?: string }).role || '');
 
     let org = null;
     let centreIds: string[] = [];
-    let activeCentreId = 'all';
+    let activeCentreId = '';
     let activeCentre: { name: string; ofstedId: string | null } | null = null;
     let hasError = false;
 
@@ -33,17 +37,22 @@ export default async function IncidentsPage() {
             .limit(1);
         org = foundOrg;
 
-        centreIds = await getUserAccessibleCentreIds(session.user.id);
-        activeCentreId = await resolveActiveCentreId(undefined, centreIds);
-        if ((!activeCentreId || activeCentreId === 'all') && centreIds.length > 0) {
-            activeCentreId = centreIds[0];
-        }
-        if (activeCentreId && activeCentreId !== 'all') {
-            const foundCentre = await db.query.centres.findFirst({
-                where: eq(centres.id, activeCentreId),
-                columns: { name: true, ofstedId: true },
-            });
-            activeCentre = foundCentre ?? null;
+        const rawCentreIds = await getUserAccessibleCentreIds(session.user.id);
+        centreIds = (rawCentreIds ?? []).filter(isValidUuid);
+
+        if (centreIds.length > 0) {
+            const resolved = await resolveActiveCentreId(undefined, centreIds);
+            activeCentreId = isValidUuid(resolved) && centreIds.includes(resolved)
+                ? resolved
+                : centreIds[0];
+
+            if (isValidUuid(activeCentreId)) {
+                const foundCentre = await db.query.centres.findFirst({
+                    where: eq(centres.id, activeCentreId),
+                    columns: { name: true, ofstedId: true },
+                });
+                activeCentre = foundCentre ?? null;
+            }
         }
     } catch (e) {
         logger.error('Error fetching incidents data', e);
@@ -52,15 +61,8 @@ export default async function IncidentsPage() {
 
     if (!org && !hasError) return redirect('/onboarding');
 
-    if ((!activeCentreId || activeCentreId === 'all') && centreIds.length > 0) {
-        activeCentreId = centreIds[0];
-    }
-
-    if ((!activeCentreId || activeCentreId === 'all') && !hasError) {
-        return redirect('/dashboard');
-    }
-
     const centreName = activeCentre?.name || undefined;
+    const hasValidCentre = isValidUuid(activeCentreId);
 
     return (
         <div className="space-y-8 animate-in fade-in duration-700">
@@ -90,11 +92,41 @@ export default async function IncidentsPage() {
             )}
 
             {/* Content */}
-            <IncidentsClient
-                centreId={activeCentreId}
-                centreName={centreName}
-                userRole={String((session.user as { role?: string }).role || '')}
-            />
+            {!hasValidCentre ? (
+                hasError ? (
+                    <EmptyState
+                        icon={<AlertTriangle className="w-8 h-8" />}
+                        title="Unable to load centres"
+                        description="Incident records could not be loaded right now. Please refresh the page and try again."
+                    />
+                ) : userRole === 'ORG_OWNER' ? (
+                    <EmptyState
+                        icon={<Building2 className="w-8 h-8" />}
+                        title="No centres set up yet"
+                        description="Create your first centre before logging or viewing incident and accident records."
+                        action={
+                            <Link
+                                href="/dashboard/centres/add"
+                                className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-white text-xs font-bold rounded-xl hover:bg-primary/90 transition-all"
+                            >
+                                Add Centre
+                            </Link>
+                        }
+                    />
+                ) : (
+                    <EmptyState
+                        icon={<Building2 className="w-8 h-8" />}
+                        title="No centres assigned"
+                        description="You are not currently assigned to any centres. Ask an organisation owner to assign you to a centre to view or log incident records."
+                    />
+                )
+            ) : (
+                <IncidentsClient
+                    centreId={activeCentreId}
+                    centreName={centreName}
+                    userRole={userRole}
+                />
+            )}
         </div>
     );
 }
