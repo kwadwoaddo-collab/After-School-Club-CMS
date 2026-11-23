@@ -6,8 +6,11 @@ import { db } from '@/db';
 import { studentNotes, children } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
+import { notifyOwners } from '@/lib/db-notifications';
 
-export async function addMedicalNote(childId: string, content: string) {
+const HEALTH_RELEVANT_CATEGORIES = new Set(['Medical', 'Safeguarding', 'Health', 'Allergy', 'Dietary']);
+
+export async function addMedicalNote(childId: string, content: string, category: string = 'Medical') {
     try {
         const parent = await getCurrentParent();
         if (!parent) return { success: false, error: 'Unauthorized' };
@@ -22,14 +25,32 @@ export async function addMedicalNote(childId: string, content: string) {
 
         if (!child) return { success: false, error: 'Child not found' };
 
-        if (!content.trim()) return { success: false, error: 'Note content cannot be empty' };
+        const trimmedContent = content.trim();
+        if (!trimmedContent) return { success: false, error: 'Note content cannot be empty' };
+
+        const noteCategory = category?.trim() || 'Medical';
 
         await db.insert(studentNotes).values({
             childId: child.id,
-            content: content.trim(),
+            content: trimmedContent,
             authorName: `${parent.firstName} ${parent.lastName} (Parent)`,
-            category: 'Medical',
+            category: noteCategory,
         });
+
+        // Notify club owners in-app (never block saving the parent's note; never send external parent emails)
+        const orgId = child.organisationId || parent.organisationId;
+        if (orgId && HEALTH_RELEVANT_CATEGORIES.has(noteCategory)) {
+            try {
+                await notifyOwners({
+                    orgId,
+                    type: 'system',
+                    title: `Parent Added ${noteCategory} Note`,
+                    message: `${parent.firstName} ${parent.lastName} submitted a ${noteCategory.toLowerCase()} note for ${child.firstName} ${child.lastName}.`,
+                });
+            } catch (err) {
+                logger.warn('[portal] Failed to notify club owners about parent medical note:', err);
+            }
+        }
 
         revalidatePath(`/portal/children/${childId}`);
         revalidatePath(`/dashboard/students/${childId}`);
