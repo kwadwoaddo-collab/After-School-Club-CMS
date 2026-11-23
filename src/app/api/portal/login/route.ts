@@ -2,7 +2,7 @@ import { logger } from '@/lib/logger';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { db } from '@/db';
 import { parents } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { and, desc, eq, isNull } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 import { strictRateLimit, checkRateLimit, getClientIP } from '@/lib/rate-limit';
 import { generateMagicLinkToken, hashToken } from '@/lib/magic-link';
@@ -48,9 +48,14 @@ export async function POST(req: NextRequest) {
 
         const normalizedEmail = normalizeEmail(email);
 
-        // Find parent
+        // DC-05: Exclude soft-deleted parent records and order deterministically so
+        // deleted rows cannot authenticate or shadow active parent accounts.
         const parent = await db.query.parents.findFirst({
-            where: eq(parents.email, normalizedEmail),
+            where: and(
+                eq(parents.email, normalizedEmail),
+                isNull(parents.deletedAt),
+            ),
+            orderBy: [desc(parents.updatedAt), desc(parents.createdAt)],
         });
 
         if (!parent) {
