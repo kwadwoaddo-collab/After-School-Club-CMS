@@ -20,6 +20,7 @@ vi.mock('next/navigation', () => ({
     // correctly (unauthenticated → doesn't proceed to the action body).
     // Tests that need to assert on redirect behaviour: use try/catch or rejects.toThrow('REDIRECT').
     redirect: vi.fn((url: string) => { throw new Error(`REDIRECT:${url}`); }),
+    notFound: vi.fn(() => { throw new Error('NOT_FOUND'); }),
 }))
 
 vi.mock('next/cache', () => ({
@@ -29,20 +30,42 @@ vi.mock('next/cache', () => ({
 }))
 
 /**
- * PM-1.2 — Global mock for org-approval-guard.
+ * PM-1.2 — Pure DB-free global mock for org-approval-guard.
  *
- * assertOrgActive always resolves (no-op) in the test environment.
- * All existing tests assume an ACTIVE organisation — this preserves that assumption
- * without requiring 26 test files to add per-test DB mocking.
- *
- * To test a non-ACTIVE org path in a specific test:
- *   import { assertOrgActive, OrgNotActiveError } from '@/lib/org-approval-guard';
- *   vi.mocked(assertOrgActive).mockRejectedValueOnce(new OrgNotActiveError('org-1', 'PENDING'));
+ * Avoids calling importOriginal() so unit tests that do not mock @/db never
+ * evaluate src/db/index.ts (assertTestDatabaseIsolation) via dynamic import in session.ts.
+ * Tests that explicitly verify real org-approval-guard logic use vi.importActual() directly.
  */
-vi.mock('@/lib/org-approval-guard', async (importOriginal) => {
-    const actual = await importOriginal<typeof import('@/lib/org-approval-guard')>();
+vi.mock('@/lib/org-approval-guard', () => {
+    class OrgNotActiveError extends Error {
+        constructor(
+            public readonly orgId: string,
+            public readonly approvalStatus: string,
+        ) {
+            super(`Organisation ${orgId} is not ACTIVE (current status: ${approvalStatus})`);
+            this.name = 'OrgNotActiveError';
+        }
+    }
+
+    class PlatformAdminRequiredError extends Error {
+        constructor() {
+            super('Platform administrator access required');
+            this.name = 'PlatformAdminRequiredError';
+        }
+    }
+
+    function isPlatformAdmin(email: string | null | undefined): boolean {
+        if (!email) return false;
+        const raw = process.env.PLATFORM_ADMIN_EMAILS ?? '';
+        if (!raw.trim()) return false;
+        const allowlist = raw.split(',').map((e) => e.trim().toLowerCase()).filter(Boolean);
+        return allowlist.includes(email.toLowerCase());
+    }
+
     return {
-        ...actual,
+        OrgNotActiveError,
+        PlatformAdminRequiredError,
+        isPlatformAdmin,
         assertOrgActive: vi.fn().mockResolvedValue(undefined),
         requirePlatformAdmin: vi.fn().mockResolvedValue({ email: 'admin@test.com', userId: 'admin-1' }),
     };
