@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import {
     CalendarCheck, CalendarPlus, Users, ChevronRight, Clock,
-    MapPin, Video, ArrowRight, LogOut, AlertTriangle, CalendarClock
+    MapPin, ArrowRight, LogOut, AlertTriangle, CalendarClock
 } from 'lucide-react';
 import { CancelBookingButton } from '@/features/portal/components/CancelBookingButton';
 import NotificationBell from '@/features/portal/components/NotificationBell';
@@ -18,6 +18,8 @@ import {
     evaluateInvoiceCollectionState,
     toLondonBusinessDate,
 } from '@/features/finance/domain/invoice-collection-state';
+
+const INACTIVE_UPCOMING_STATUSES = new Set(['cancelled', 'rejected', 'rescheduled']);
 
 export default async function PortalDashboard() {
     const parent = await getCurrentParent();
@@ -64,14 +66,15 @@ export default async function PortalDashboard() {
         currency: 'GBP',
     }).format(totalOutstandingPence / 100);
 
-    // Sort bookings
+    // Sort bookings (DC-13: exclude cancelled/rejected/rescheduled sessions from Upcoming)
     const allBookings = parent.bookings || [];
+    const now = new Date();
     const upcomingBookings = allBookings
-        .filter(b => new Date(b.startAt) >= new Date())
+        .filter(b => new Date(b.startAt) >= now && !INACTIVE_UPCOMING_STATUSES.has(String(b.status)))
         .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
 
     const pastBookings = allBookings
-        .filter(b => new Date(b.startAt) < new Date())
+        .filter(b => new Date(b.startAt) < now)
         .sort((a, b) => new Date(b.startAt).getTime() - new Date(a.startAt).getTime());
 
     // Derive the family's primary centre name(s) from enrolled children and bookings
@@ -258,13 +261,17 @@ export default async function PortalDashboard() {
                                                 <h3 className="font-bold text-foreground">
                                                     {booking.assessmentType === 'initial_assessment' ? 'Initial Assessment' : 'Club Session'}
                                                 </h3>
-                                                <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${COLLECTION_STAGE_STYLES.paid.badge}`}>
-                                                    Confirmed
+                                                <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${
+                                                    booking.status === 'pending'
+                                                        ? COLLECTION_STAGE_STYLES.in_period.badge
+                                                        : COLLECTION_STAGE_STYLES.paid.badge
+                                                }`}>
+                                                    {booking.status === 'pending' ? 'Pending' : 'Confirmed'}
                                                 </span>
                                             </div>
                                             <p className="text-sm text-muted-foreground flex items-center gap-1.5 tabular-nums">
                                                 <Clock className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-                                                {new Date(booking.startAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })} · {booking.duration} mins · {booking.modality === 'online' ? 'Online' : 'In Person'}
+                                                {new Date(booking.startAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })} · {booking.duration} mins · In Person
                                             </p>
                                             <p className="text-xs text-primary font-medium mt-1 flex items-center gap-1">
                                                 <MapPin className="w-3 h-3" aria-hidden="true" /> {(booking as any).centre?.name || 'Centre'}
@@ -272,11 +279,6 @@ export default async function PortalDashboard() {
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        {booking.modality === 'online' && (
-                                            <button type="button" className="px-4 py-2 bg-primary text-primary-foreground text-sm font-bold rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-1.5">
-                                                <Video className="w-3.5 h-3.5" aria-hidden="true" /> Join Call
-                                            </button>
-                                        )}
                                         {(() => {
                                             const bookingDate = new Date(booking.startAt);
                                             const canReschedule = (bookingDate.getTime() - Date.now()) > (24 * 60 * 60 * 1000);
@@ -321,7 +323,17 @@ export default async function PortalDashboard() {
                                         {(booking as any).centre?.name}
                                     </span>
                                 </div>
-                                <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${COLLECTION_STAGE_STYLES.paid.badge}`}>Completed</span>
+                                <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${
+                                    booking.status === 'cancelled'
+                                        ? COLLECTION_STAGE_STYLES.void.badge
+                                        : COLLECTION_STAGE_STYLES.paid.badge
+                                }`}>
+                                    {booking.status === 'cancelled'
+                                        ? 'Cancelled'
+                                        : booking.status === 'did_not_attend'
+                                        ? 'Did Not Attend'
+                                        : 'Completed'}
+                                </span>
                             </div>
                         ))}
                     </div>
