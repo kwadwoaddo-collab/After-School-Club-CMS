@@ -98,7 +98,8 @@ export default async function BillingDashboard(props: { searchParams: Promise<{ 
             centre: true,
             child: true,
             payments: {
-                where: (payments, { ne }) => ne(payments.status, 'reversed')
+                where: (payments, { ne, and, isNull }) =>
+                    and(ne(payments.status, 'reversed'), isNull(payments.reversedAt)),
             }
         }
     });
@@ -125,7 +126,7 @@ export default async function BillingDashboard(props: { searchParams: Promise<{ 
     const paymentEntries = parentInvoices
         .flatMap(inv =>
             (inv.payments ?? [])
-                .filter(p => p.status === 'verified' || p.status === 'pending')
+                .filter(p => (p.status === 'verified' || p.status === 'pending') && !p.reversedAt)
                 .map(p => ({
                     ...p,
                     invoiceNumber: inv.invoiceNumber,
@@ -216,6 +217,9 @@ export default async function BillingDashboard(props: { searchParams: Promise<{ 
                                     ? formatInvoicePeriod(inv.billingPeriodStart, inv.billingPeriodEnd)
                                     : inv.billingPeriodLabel;
                                 const hasBankDetails = Boolean(inv.centre?.bankName || inv.centre?.sortCode || inv.centre?.accountNo);
+                                const hasNonReversedPendingPayment =
+                                    state.hasPendingPayment ||
+                                    (inv.payments ?? []).some((p: any) => p.status === 'pending' && !p.reversedAt);
 
                                 return (
                                     <div key={inv.id} className="bg-card p-6 rounded-xl border border-border flex flex-col md:flex-row gap-6">
@@ -319,6 +323,17 @@ export default async function BillingDashboard(props: { searchParams: Promise<{ 
                                         </div>
 
                                         <div className="w-full md:w-72 flex flex-col justify-center gap-3 border-t md:border-t-0 md:border-l border-border pt-4 md:pt-0 md:pl-6">
+                                            {hasNonReversedPendingPayment && (
+                                                <div
+                                                    role="status"
+                                                    className={`rounded-lg px-3.5 py-2.5 text-xs font-medium flex items-start gap-2 ${COLLECTION_STAGE_STYLES.in_period.badge}`}
+                                                >
+                                                    <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" />
+                                                    <span>
+                                                        Childcare Voucher / Tax-Free Childcare payment pending verification — avoid paying twice by card unless Replacing
+                                                    </span>
+                                                </div>
+                                            )}
                                             {stripeEnabled && (
                                                 <StripePayButton invoiceId={inv.id} amountDue={remaining} />
                                             )}
