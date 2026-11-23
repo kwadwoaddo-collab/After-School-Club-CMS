@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { requireTenantSession } from '@/lib/session';
-import { redirect } from 'next/navigation';
+import { redirect, notFound } from 'next/navigation';
 import { db } from '@/db';
 import { bookings, bookingAttendees, children, parents, centres } from '@/db/schema';
 import { eq } from 'drizzle-orm';
@@ -17,6 +17,11 @@ export default async function ReschedulePage({ params }: { params: Promise<{ boo
 
     if (!session?.user) return redirect('/login');
     if (!session.user.organisationId) return redirect('/onboarding');
+
+    const userRole = ((session.user as any).role as string | undefined) || 'TUTOR';
+    if (userRole === 'TUTOR' || !['ORG_OWNER', 'MANAGER', 'FRONT_DESK'].includes(userRole)) {
+        return redirect('/dashboard/attendance');
+    }
 
     // Fetch booking details with attendees
     const [booking] = await db
@@ -41,25 +46,19 @@ export default async function ReschedulePage({ params }: { params: Promise<{ boo
         .limit(1);
 
     if (!booking) {
-        return redirect('/dashboard/bookings');
+        return notFound();
     }
 
-    // Organisation-ownership check — this page previously had none at all
-    // (unlike Booking Detail, which at least checked organisation match).
-    // A booking with no centre (centreOrganisationId null) has no
-    // resolvable organisation and is treated as inaccessible.
+    // Organisation-ownership check
     if (!booking.centreOrganisationId || booking.centreOrganisationId !== session.user.organisationId) {
         return redirect('/dashboard/bookings');
     }
 
-    // Centre-membership check for non-ORG_OWNER users — matches the check
-    // already enforced by the reschedule mutation
-    // (POST /api/bookings/[bookingId]/reschedule) and by Booking Detail.
-    const userRole = (session.user as any).role as string | undefined;
-    if (userRole !== 'ORG_OWNER' && booking.centreId) {
+    // Centre-membership check for non-ORG_OWNER users (DC-02)
+    if (userRole !== 'ORG_OWNER') {
         const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
-        if (!accessibleCentreIds.includes(booking.centreId)) {
-            return redirect('/dashboard/bookings');
+        if (accessibleCentreIds.length === 0 || (booking.centreId !== null && booking.centreId !== undefined && !accessibleCentreIds.includes(booking.centreId))) {
+            return notFound();
         }
     }
 

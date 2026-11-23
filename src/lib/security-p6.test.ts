@@ -276,12 +276,12 @@ describe('Dashboard page authorisation — denial paths', () => {
     ).rejects.toThrow('REDIRECT:/dashboard');
   });
 
-  it('/dashboard/share denies FRONT_DESK', async () => {
+  it('/dashboard/share denies TUTOR and redirects to /dashboard/attendance (DC-19)', async () => {
     const { auth } = await import('@/lib/auth');
-    (auth as any).mockResolvedValueOnce(sessionFor('FRONT_DESK'));
+    (auth as any).mockResolvedValueOnce(sessionFor('TUTOR'));
     const { default: SharePage } = await import('@/app/dashboard/share/page');
 
-    await expect(SharePage()).rejects.toThrow('REDIRECT:/dashboard');
+    await expect(SharePage()).rejects.toThrow('REDIRECT:/dashboard/attendance');
   });
 
   it('every tested page also denies an unauthenticated request (/dashboard/students → /login)', async () => {

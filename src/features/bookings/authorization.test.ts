@@ -241,18 +241,31 @@ describe('PATCH /api/bookings/[bookingId]/centre — source-centre membership (c
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 3. /dashboard/bookings/[bookingId] — detail page centre scoping
+// 3. /dashboard/bookings/[bookingId] — detail page centre scoping & DC-02 RBAC
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('BookingDetailPage — centre membership on view (closed in Milestone 3E)', () => {
+describe('BookingDetailPage — centre membership on view (closed in Milestone 3E + DC-02)', () => {
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
   });
 
-  it('404s for a non-ORG_OWNER user with no membership to the booking centre', async () => {
+  it('redirects TUTOR to /dashboard/attendance before touching the database (DC-02)', async () => {
     const { auth } = await import('@/lib/auth');
     (auth as any).mockResolvedValueOnce(sessionFor('TUTOR'));
+    const { db } = await import('@/db');
+
+    const { default: BookingDetailPage } = await import('@/app/dashboard/bookings/[bookingId]/page');
+
+    await expect(
+      BookingDetailPage({ params: Promise.resolve({ bookingId: BOOKING_ID }) } as any)
+    ).rejects.toThrow('REDIRECT:/dashboard/attendance');
+    expect(db.query.bookings.findFirst).not.toHaveBeenCalled();
+  });
+
+  it('404s for a non-ORG_OWNER user with no membership to the booking centre', async () => {
+    const { auth } = await import('@/lib/auth');
+    (auth as any).mockResolvedValueOnce(sessionFor('FRONT_DESK'));
     const { db } = await import('@/db');
     (db.query.bookings.findFirst as any).mockResolvedValueOnce({
       id: BOOKING_ID,
@@ -273,7 +286,7 @@ describe('BookingDetailPage — centre membership on view (closed in Milestone 3
 
   it('renders for a non-ORG_OWNER user with membership to the booking centre', async () => {
     const { auth } = await import('@/lib/auth');
-    (auth as any).mockResolvedValueOnce(sessionFor('TUTOR'));
+    (auth as any).mockResolvedValueOnce(sessionFor('FRONT_DESK'));
     const { db } = await import('@/db');
     (db.query.bookings.findFirst as any).mockResolvedValueOnce({
       id: BOOKING_ID,
@@ -328,7 +341,7 @@ describe('BookingDetailPage — centre membership on view (closed in Milestone 3
 // 4. /dashboard/bookings/[bookingId]/reschedule — orchestrator follow-up
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('ReschedulePage — organisation + centre isolation (closed post Stage-A review)', () => {
+describe('ReschedulePage — organisation + centre isolation (closed post Stage-A review + DC-02)', () => {
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
@@ -362,7 +375,7 @@ describe('ReschedulePage — organisation + centre isolation (closed post Stage-
     ).rejects.toThrow('REDIRECT:/dashboard/bookings');
   });
 
-  it('redirects for a non-ORG_OWNER user with no membership to the (same-org) booking centre', async () => {
+  it('404s for a non-ORG_OWNER user with no membership to the (same-org) booking centre (DC-02)', async () => {
     const { auth } = await import('@/lib/auth');
     (auth as any).mockResolvedValueOnce(sessionFor('FRONT_DESK', { organisationId: 'org-1' }));
     const { db } = await import('@/db');
@@ -389,7 +402,7 @@ describe('ReschedulePage — organisation + centre isolation (closed post Stage-
 
     await expect(
       ReschedulePage({ params: Promise.resolve({ bookingId: BOOKING_ID }) } as any)
-    ).rejects.toThrow('REDIRECT:/dashboard/bookings');
+    ).rejects.toThrow('NOT_FOUND');
   });
 
   it('renders for a non-ORG_OWNER user with membership to the booking centre', async () => {
