@@ -135,9 +135,8 @@ export interface InlineEnrolmentConfirmationInput {
  * Only confirms students proven to belong to (orgId, parentId, centreId) and records
  * the required actor/reason/start-date audit trail without sending unsolicited emails.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function confirmChildrenEnrolmentInTx(
-    tx: any,
+    tx: Pick<typeof db, 'select' | 'update' | 'insert'>,
     orgId: string,
     actorId: string,
     parentId: string,
