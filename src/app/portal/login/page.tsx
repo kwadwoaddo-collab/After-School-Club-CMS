@@ -46,9 +46,10 @@ function PortalLoginForm() {
     return (
         <div className="w-full max-w-md bg-card border border-border rounded-2xl shadow-xl overflow-hidden">
             <div className="p-8 text-center">
-                <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center text-3xl mx-auto mb-6">
+                <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center text-3xl mx-auto mb-4">
                     👋
                 </div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-1">For Parents &amp; Carers</p>
                 <h1 className="text-2xl font-bold text-foreground mb-2">Parent Portal</h1>
                 <p className="text-sm text-muted-foreground mb-8">
                     Enter your registered email and we&apos;ll send a secure sign-in link.
@@ -88,7 +89,7 @@ function PortalLoginForm() {
                             disabled={isSubmitting}
                             className="w-full py-3 px-4 rounded-lg bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50"
                         >
-                            {isSubmitting ? 'Sending Link…' : 'Send Magic Link'}
+                            {isSubmitting ? 'Sending Link…' : 'Send Sign-In Link'}
                         </button>
                     </form>
                 ) : (

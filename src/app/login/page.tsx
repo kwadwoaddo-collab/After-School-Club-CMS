@@ -135,8 +135,10 @@ function LoginForm() {
   return (
     <>
       <div className="text-center mb-8">
-        <h1 className="text-3xl md:text-4xl font-extrabold text-[var(--if-text)] mb-2 tracking-tight">Welcome Back</h1>
-        <p className="text-sm font-medium text-[var(--if-text-secondary)]">Sign in to your After-School Club CMS</p>
+        <h1 className="text-3xl md:text-4xl font-extrabold text-[var(--if-text)] mb-2 tracking-tight">Admin &amp; Staff Sign In</h1>
+        <p className="text-sm font-medium text-[var(--if-text-secondary)]">
+          For club owners, administrators, and invited staff members.
+        </p>
       </div>
 
       {verified && (
@@ -350,7 +352,7 @@ function LoginForm() {
                     </svg>
                   </div>
                   <p className="text-[var(--if-text-secondary)] text-sm leading-relaxed">
-                    Enter your work email and we&apos;ll send you a one-click login link. No password needed.
+                    Enter your work email and we&apos;ll send a secure sign-in link. No password needed.
                   </p>
                 </div>
 
@@ -388,7 +390,7 @@ function LoginForm() {
                         Sending…
                       </>
                     ) : (
-                      'Send me a login link'
+                      'Send Sign-In Link'
                     )}
                   </button>
                 </form>
