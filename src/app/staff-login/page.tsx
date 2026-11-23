@@ -89,7 +89,7 @@ export default function StaffLoginPage() {
                         <div className="flex justify-center mb-5"><BrandLockup /></div>
                         <h1 className="text-2xl font-bold">Staff Login</h1>
                         <p className="text-[var(--if-text-secondary)] text-sm mt-1">
-                            Enter your email to receive a sign-in link
+                            For invited club staff — enter your work email and we&apos;ll send a secure sign-in link.
                         </p>
                     </div>
 
@@ -102,7 +102,7 @@ export default function StaffLoginPage() {
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div>
                             <label htmlFor="staff-login-email" className="block text-sm font-medium text-[var(--if-text-secondary)] mb-2">
-                                Email Address
+                                Work Email
                             </label>
                             <div className="relative">
                                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--if-text-muted)]" aria-hidden="true" />
@@ -113,7 +113,7 @@ export default function StaffLoginPage() {
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     className="w-full pl-12 pr-4 py-3 min-h-[44px] bg-[var(--if-surface)] border border-[var(--if-text-muted)] rounded-xl text-[var(--if-text)] placeholder:text-[var(--if-text-muted)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--if-accent)] focus:border-[var(--if-accent)]"
-                                    placeholder="you@example.com"
+                                    placeholder="you@yourcentre.com"
                                     required
                                     autoFocus
                                 />
@@ -132,7 +132,7 @@ export default function StaffLoginPage() {
                                 </>
                             ) : (
                                 <>
-                                    Send Login Link
+                                    Send Sign-In Link
                                     <ArrowRight className="w-5 h-5" aria-hidden="true" />
                                 </>
                             )}
