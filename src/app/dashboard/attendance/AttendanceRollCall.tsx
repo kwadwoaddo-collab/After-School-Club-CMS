@@ -1,14 +1,14 @@
 'use client';
 
-import { useState, useTransition, useOptimistic, useRef, useEffect } from 'react';
+import { useState, useTransition, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getAvatarGradient } from '@/components/ui/utils';
 import Link from 'next/link';
 import { markAttendeeAttendance, registerWalkInChild, registerExistingChildWalkIn } from '@/features/bookings/actions';
 import { updateAttendanceTimelog } from '@/features/attendance/actions';
 import {
-    CheckCircle2, XCircle, AlertCircle, Loader2, Plus, Search, X,
-    Users, Sparkles, UserCheck, LogIn, LogOut, ChevronDown, BookOpen, AlertTriangle, BookMarked
+    CheckCircle2, AlertCircle, Loader2, Plus, Search, X,
+    Users, Sparkles, UserCheck, LogOut, BookOpen, AlertTriangle, BookMarked, Stethoscope
 } from 'lucide-react';
 import { useToast } from '@/components/ui/ToastProvider';
 import { Button } from '@/components/ui/Button';
@@ -19,6 +19,24 @@ import { CANONICAL_SCHOOL_YEARS, formatSchoolYearLabel } from '@/lib/school-year
 
 
 type AttendanceStatus = 'present' | 'absent' | 'late' | 'no_show' | 'excused' | null;
+
+export interface AuthorisedCollectorSummary {
+    id: string;
+    name: string;
+    relationship: string;
+    phone?: string | null;
+    collectionPassword?: string | null;
+    notes?: string | null;
+}
+
+export interface MedicalNoteSummary {
+    id: string;
+    content: string;
+    authorName: string;
+    category?: string;
+    isSafeguarding?: boolean;
+    createdAt?: string | null;
+}
 
 interface Attendee {
     id: string;
@@ -43,6 +61,12 @@ interface Attendee {
     flagBehaviour: boolean;
     flagNote: string | null;
     notes: string | null;
+    allergies?: string[] | null;
+    dietaryRequirements?: string | null;
+    medicalConditions?: string | null;
+    medicationNotes?: string | null;
+    medicalNotes?: MedicalNoteSummary[];
+    authorisedCollectors?: AuthorisedCollectorSummary[];
 }
 
 interface CompiledSlot {
@@ -111,10 +135,32 @@ export function AttendeeCard({
     const [checkOut, setCheckOut] = useState<string>(attendee.checkOutTime ?? '');
     const [isAbsent, setIsAbsent] = useState<boolean>(attendee.attendanceStatus === 'absent');
     const [absenceReason, setAbsenceReason] = useState<string>(attendee.attendanceStatus === 'absent' ? attendee.attendanceNote || 'other' : '');
-    const [note, setNote] = useState<string>(attendee.attendanceNote ?? '');
+    const [note] = useState<string>(attendee.attendanceNote ?? '');
     const [showAbsenceSheet, setShowAbsenceSheet] = useState(false);
+    const [showMedicalModal, setShowMedicalModal] = useState(false);
     const [saved, setSaved]   = useState(false);
     const [isPending, startTransition] = useTransition();
+
+    const safeAllergies = (attendee.allergies ?? []).map(a => a?.trim()).filter(Boolean) as string[];
+    const dietaryRequirements = attendee.dietaryRequirements?.trim() || null;
+    const medicalConditions = attendee.medicalConditions?.trim() || null;
+    const medicationNotes = attendee.medicationNotes?.trim() || null;
+    const generalChildNote = attendee.notes?.trim() || null;
+    // Strictly exclude any safeguarding rows if passed in
+    const safeMedicalNotes = (attendee.medicalNotes ?? []).filter(
+        n => n.isSafeguarding !== true && (!n.category || n.category === 'Medical')
+    );
+    const collectors = attendee.authorisedCollectors ?? [];
+
+    const hasMedicalInfo =
+        safeAllergies.length > 0 ||
+        Boolean(dietaryRequirements) ||
+        Boolean(medicalConditions) ||
+        Boolean(medicationNotes) ||
+        Boolean(generalChildNote) ||
+        safeMedicalNotes.length > 0;
+    const hasCollectorInfo = collectors.length > 0;
+    const hasMedicalOrCollector = hasMedicalInfo || hasCollectorInfo;
 
     const derivedLate = checkIn ? lateMinutesFrom(checkIn, sessionTime) : null;
     const isIn  = !!checkIn;
@@ -147,6 +193,16 @@ export function AttendeeCard({
         confirmed.current = next;
         setCheckIn(next.checkIn); setCheckOut(next.checkOut); setIsAbsent(next.isAbsent); setAbsenceReason('');
     }, [attendee.checkInTime, attendee.checkOutTime, attendee.attendanceStatus]);
+
+    useEffect(() => {
+        if (!showMedicalModal) return;
+        const onKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') setShowMedicalModal(false);
+        };
+        window.addEventListener('keydown', onKeyDown);
+        return () => window.removeEventListener('keydown', onKeyDown);
+    }, [showMedicalModal]);
+
     const flashSaved = () => { setSaved(true); setTimeout(() => setSaved(false), 2000); };
     type Snapshot = typeof confirmed.current;
     const applyState = (state: Snapshot) => {
@@ -200,125 +256,269 @@ export function AttendeeCard({
     const avatarClass = `bg-gradient-to-br ${getAvatarGradient(attendee.firstName)} text-white`;
 
     return (
-        <div className={`group flex flex-col xl:flex-row xl:items-center justify-between gap-3 p-3 rounded-md ${cardClass} hover:bg-page/40 transition-colors ${isAbsent ? 'opacity-70' : ''}`}>
-            <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${avatarClass}`}>
-                    {initials}
-                </div>
-                <div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                        <Link href={`/dashboard/students/${attendee.childId}`} className="font-semibold text-text hover:text-accent transition-colors text-sm">
-                            {attendee.firstName} {attendee.lastName}
-                        </Link>
-                        {isExtra && <Badge variant="warning">Extra</Badge>}
-                        {attendee.flagBehaviour && <span title="Behaviour Note"><AlertTriangle className="w-3.5 h-3.5 text-danger" /></span>}
-                        {attendee.flagHomework && <span title="Homework Note"><BookOpen className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" /></span>}
-                        {derivedLate !== null && isIn && (
-                            <span className="text-[10px] font-semibold text-amber-700 dark:text-amber-400 ml-1">Late {derivedLate}m</span>
-                        )}
+        <>
+            <div className={`group flex flex-col xl:flex-row xl:items-center justify-between gap-3 p-3 rounded-md ${cardClass} hover:bg-page/40 transition-colors ${isAbsent ? 'opacity-70' : ''}`}>
+                <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${avatarClass}`}>
+                        {initials}
                     </div>
-                    <div className="flex items-center gap-1.5 text-xs text-text-muted mt-0.5">
-                        <span>{formatSchoolYearLabel(attendee.schoolYear)} · </span>
-                        <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[7px] font-bold text-white bg-gradient-to-br ${getAvatarGradient(attendee.parentFirstName)}`}>
-                            {attendee.parentFirstName?.[0]}{attendee.parentLastName?.[0]}
-                        </div>
-                        {attendee.parentId ? (
-                            <Link href={`/dashboard/parents/${attendee.parentId}`} className="hover:text-accent hover:underline transition-colors">
-                                {attendee.parentFirstName} {attendee.parentLastName}
+                    <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                            <Link href={`/dashboard/students/${attendee.childId}`} className="font-semibold text-text hover:text-accent transition-colors text-sm">
+                                {attendee.firstName} {attendee.lastName}
                             </Link>
-                        ) : (
-                            <span>{attendee.parentFirstName} {attendee.parentLastName}</span>
-                        )}
-                        {attendee.parentPhone ? <span>· {attendee.parentPhone}</span> : null}
+                            {isExtra && <Badge variant="warning">Extra</Badge>}
+                            {hasMedicalOrCollector && (
+                                <button
+                                    type="button"
+                                    onClick={() => setShowMedicalModal(true)}
+                                    aria-label={`Medical and pickup info for ${attendee.firstName} ${attendee.lastName}`}
+                                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold border transition-colors ${
+                                        hasMedicalInfo
+                                            ? 'bg-danger-soft text-danger border-danger/25 hover:opacity-90'
+                                            : 'bg-info-soft text-accent border-accent/25 hover:opacity-90'
+                                    }`}
+                                >
+                                    <Stethoscope className="w-3 h-3 shrink-0" />
+                                    <span>{hasMedicalInfo ? 'Medical' : 'Collectors'}{hasMedicalInfo && hasCollectorInfo ? ' / Pickup' : ''}</span>
+                                </button>
+                            )}
+                            {attendee.flagBehaviour && <span title="Behaviour Note"><AlertTriangle className="w-3.5 h-3.5 text-danger" /></span>}
+                            {attendee.flagHomework && <span title="Homework Note"><BookOpen className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" /></span>}
+                            {derivedLate !== null && isIn && (
+                                <span className="text-[10px] font-semibold text-amber-700 dark:text-amber-400 ml-1">Late {derivedLate}m</span>
+                            )}
+                        </div>
+                        <div className="flex items-center gap-1.5 text-xs text-text-muted mt-0.5">
+                            <span>{formatSchoolYearLabel(attendee.schoolYear)} · </span>
+                            <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[7px] font-bold text-white bg-gradient-to-br ${getAvatarGradient(attendee.parentFirstName)}`}>
+                                {attendee.parentFirstName?.[0]}{attendee.parentLastName?.[0]}
+                            </div>
+                            {attendee.parentId ? (
+                                <Link href={`/dashboard/parents/${attendee.parentId}`} className="hover:text-accent hover:underline transition-colors">
+                                    {attendee.parentFirstName} {attendee.parentLastName}
+                                </Link>
+                            ) : (
+                                <span>{attendee.parentFirstName} {attendee.parentLastName}</span>
+                            )}
+                            {attendee.parentPhone ? <span>· {attendee.parentPhone}</span> : null}
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div className="flex flex-col gap-2">
-                {saveError && <div role="alert" className="max-w-md text-sm text-destructive">
-                    <p>Save not confirmed. Showing the last confirmed values. Some changes may have reached the server.</p>
-                    <div className="mt-1 flex gap-2"><Button size="sm" variant="outline" disabled={isPending} onClick={() => retry.current?.()}>Retry save</Button><Button size="sm" variant="ghost" onClick={() => window.location.reload()}>Reload saved register</Button></div>
-                </div>}
-            <div className="flex items-center gap-2 flex-wrap xl:flex-nowrap">
-                {isAbsent ? (
-                    <div className="flex items-center gap-2 w-full xl:w-auto justify-end">
-                        <span className="text-xs font-semibold text-danger mr-2">Absent{absenceReason ? ` — ${absenceReason}` : ''}</span>
-                        <Button size="sm" variant="outline" onClick={handleUndoAbsent} disabled={isPending}>Undo</Button>
-                    </div>
-                ) : (
-                    <div className="flex items-center gap-3 w-full xl:w-auto justify-between xl:justify-end">
-                        <div className="flex items-center gap-2">
-                            <Button
-                                size="sm"
-                                variant={isIn ? 'secondary' : 'outline'}
-                                onClick={handleCheckIn}
-                                disabled={isPending || isIn}
-                                className={isIn ? 'text-emerald-700 dark:text-emerald-400 border-emerald-500/30' : ''}
-                            >
-                                {isIn ? 'In' : 'Check In'}
-                            </Button>
-                            {isIn && (
-                                <input
-                                    type="time"
-                                    aria-label={`Check-in time for ${attendee.firstName} ${attendee.lastName}`}
-                                    value={checkIn}
-                                    onChange={e => setCheckIn(e.target.value)}
-                                    onBlur={e => saveTimeBlur('in', e.target.value)}
-                                    disabled={!isIn || isPending}
-                                    className="h-8 w-24 px-2 text-xs rounded-sm border border-border bg-surface text-text focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent"
-                                />
-                            )}
-                        </div>
+                <div className="flex flex-col gap-2">
+                    {saveError && <div role="alert" className="max-w-md text-sm text-destructive">
+                        <p>Save not confirmed. Showing the last confirmed values. Some changes may have reached the server.</p>
+                        <div className="mt-1 flex gap-2"><Button size="sm" variant="outline" disabled={isPending} onClick={() => retry.current?.()}>Retry save</Button><Button size="sm" variant="ghost" onClick={() => window.location.reload()}>Reload saved register</Button></div>
+                    </div>}
+                    <div className="flex items-center gap-2 flex-wrap xl:flex-nowrap">
+                        {isAbsent ? (
+                            <div className="flex items-center gap-2 w-full xl:w-auto justify-end">
+                                <span className="text-xs font-semibold text-danger mr-2">Absent{absenceReason ? ` — ${absenceReason}` : ''}</span>
+                                <Button size="sm" variant="outline" onClick={handleUndoAbsent} disabled={isPending}>Undo</Button>
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-3 w-full xl:w-auto justify-between xl:justify-end">
+                                <div className="flex items-center gap-2">
+                                    <Button
+                                        size="sm"
+                                        variant={isIn ? 'secondary' : 'outline'}
+                                        onClick={handleCheckIn}
+                                        disabled={isPending || isIn}
+                                        className={isIn ? 'text-emerald-700 dark:text-emerald-400 border-emerald-500/30' : ''}
+                                    >
+                                        {isIn ? 'In' : 'Check In'}
+                                    </Button>
+                                    {isIn && (
+                                        <input
+                                            type="time"
+                                            aria-label={`Check-in time for ${attendee.firstName} ${attendee.lastName}`}
+                                            value={checkIn}
+                                            onChange={e => setCheckIn(e.target.value)}
+                                            onBlur={e => saveTimeBlur('in', e.target.value)}
+                                            disabled={!isIn || isPending}
+                                            className="h-8 w-24 px-2 text-xs rounded-sm border border-border bg-surface text-text focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent"
+                                        />
+                                    )}
+                                </div>
 
-                        <div className="flex items-center gap-2">
-                            <Button
-                                size="sm"
-                                variant={isOut ? 'secondary' : 'outline'}
-                                onClick={handleCheckOut}
-                                disabled={isPending || isOut || !isIn}
-                                className={isOut ? 'text-accent border-accent/30' : ''}
-                            >
-                                {isOut ? 'Out' : 'Check Out'}
-                            </Button>
-                            {isOut && (
-                                <input
-                                    type="time"
-                                    aria-label={`Check-out time for ${attendee.firstName} ${attendee.lastName}`}
-                                    value={checkOut}
-                                    onChange={e => setCheckOut(e.target.value)}
-                                    onBlur={e => saveTimeBlur('out', e.target.value)}
-                                    disabled={!isOut || isPending}
-                                    className="h-8 w-24 px-2 text-xs rounded-sm border border-border bg-surface text-text focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent"
-                                />
-                            )}
-                        </div>
+                                <div className="flex items-center gap-2">
+                                    <Button
+                                        size="sm"
+                                        variant={isOut ? 'secondary' : 'outline'}
+                                        onClick={handleCheckOut}
+                                        disabled={isPending || isOut || !isIn}
+                                        className={isOut ? 'text-accent border-accent/30' : ''}
+                                    >
+                                        {isOut ? 'Out' : 'Check Out'}
+                                    </Button>
+                                    {isOut && (
+                                        <input
+                                            type="time"
+                                            aria-label={`Check-out time for ${attendee.firstName} ${attendee.lastName}`}
+                                            value={checkOut}
+                                            onChange={e => setCheckOut(e.target.value)}
+                                            onBlur={e => saveTimeBlur('out', e.target.value)}
+                                            disabled={!isOut || isPending}
+                                            className="h-8 w-24 px-2 text-xs rounded-sm border border-border bg-surface text-text focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent"
+                                        />
+                                    )}
+                                </div>
 
-                        {!isIn && (
-                            <div className="relative">
-                                <Button size="sm" variant="outline" onClick={() => setShowAbsenceSheet(v => !v)} disabled={isPending} className="hover:text-danger hover:border-danger/30">
-                                    Mark Absent
-                                </Button>
-                                {showAbsenceSheet && (
-                                    <div className="absolute top-full right-0 mt-1 w-48 bg-surface border border-border rounded-md shadow-[var(--shadow-popover)] z-10 p-2 grid grid-cols-2 gap-1">
-                                        {ABSENCE_REASONS.map(r => (
-                                            <button key={r.key} onClick={() => handleMarkAbsent(r.key)} className="flex flex-col items-center py-2 rounded-sm hover:bg-danger-soft border border-transparent hover:border-danger/20">
-                                                <span className="text-lg mb-1">{r.emoji}</span>
-                                                <span className="text-[10px] font-semibold text-text">{r.label}</span>
-                                            </button>
-                                        ))}
+                                {!isIn && (
+                                    <div className="relative">
+                                        <Button size="sm" variant="outline" onClick={() => setShowAbsenceSheet(v => !v)} disabled={isPending} className="hover:text-danger hover:border-danger/30">
+                                            Mark Absent
+                                        </Button>
+                                        {showAbsenceSheet && (
+                                            <div className="absolute top-full right-0 mt-1 w-48 bg-surface border border-border rounded-md shadow-[var(--shadow-popover)] z-10 p-2 grid grid-cols-2 gap-1">
+                                                {ABSENCE_REASONS.map(r => (
+                                                    <button key={r.key} onClick={() => handleMarkAbsent(r.key)} className="flex flex-col items-center py-2 rounded-sm hover:bg-danger-soft border border-transparent hover:border-danger/20">
+                                                        <span className="text-lg mb-1">{r.emoji}</span>
+                                                        <span className="text-[10px] font-semibold text-text">{r.label}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                             </div>
                         )}
+                        <div className="w-5 shrink-0 flex justify-center">
+                            {isPending && <span role="status" aria-label="Saving attendance"><Loader2 className="w-4 h-4 text-text-muted animate-spin" /></span>}
+                            {saved && <span className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold">✓</span>}
+                        </div>
                     </div>
-                )}
-                <div className="w-5 shrink-0 flex justify-center">
-                    {isPending && <span role="status" aria-label="Saving attendance"><Loader2 className="w-4 h-4 text-text-muted animate-spin" /></span>}
-                    {saved && <span className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold">✓</span>}
                 </div>
             </div>
-            </div>
-        </div>
+
+            {/* Medical & Authorised Collectors Detail Modal (non-safeguarding rows only) */}
+            {showMedicalModal && (
+                <div
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby={`rollcall-medical-title-${attendee.id}`}
+                    className="fixed inset-0 z-[300] flex items-center justify-center bg-black/50 px-4 py-6"
+                >
+                    <div className="bg-surface border border-border rounded-lg shadow-[var(--shadow-popover)] max-w-md w-full max-h-[85vh] overflow-y-auto p-6 space-y-4">
+                        <div className="flex items-start justify-between gap-3 border-b border-border-subtle pb-3">
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <Stethoscope className="w-4 h-4 text-danger" />
+                                    <h3 id={`rollcall-medical-title-${attendee.id}`} className="text-base font-bold text-text">
+                                        Medical &amp; Pickup Summary
+                                    </h3>
+                                </div>
+                                <p className="text-xs text-text-muted mt-0.5">
+                                    {attendee.firstName} {attendee.lastName} · {formatSchoolYearLabel(attendee.schoolYear)}
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setShowMedicalModal(false)}
+                                aria-label="Close medical summary"
+                                className="p-1.5 rounded-sm text-text-muted hover:text-text hover:bg-page transition-colors"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+
+                        <div className="space-y-2.5">
+                            <h4 className="text-xs font-bold uppercase tracking-wider text-text-muted">
+                                Health, Allergies &amp; Dietary
+                            </h4>
+                            {!hasMedicalInfo ? (
+                                <p className="text-xs text-text-muted italic">No medical or dietary alerts recorded.</p>
+                            ) : (
+                                <div className="space-y-2 text-xs">
+                                    {safeAllergies.length > 0 && (
+                                        <div className="rounded-md bg-danger-soft border border-danger/20 p-3">
+                                            <p className="font-bold text-danger uppercase tracking-wider mb-0.5">Allergies</p>
+                                            <p className="text-sm font-semibold text-text">{safeAllergies.join(', ')}</p>
+                                        </div>
+                                    )}
+                                    {dietaryRequirements && (
+                                        <div className="rounded-md bg-warning-soft border border-amber-500/20 p-3">
+                                            <p className="font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider mb-0.5">Dietary Requirements</p>
+                                            <p className="text-sm text-text">{dietaryRequirements}</p>
+                                        </div>
+                                    )}
+                                    {medicalConditions && (
+                                        <div className="rounded-md bg-page border border-border p-3">
+                                            <p className="font-bold text-text-muted uppercase tracking-wider mb-0.5">Medical Conditions</p>
+                                            <p className="text-sm text-text">{medicalConditions}</p>
+                                        </div>
+                                    )}
+                                    {medicationNotes && (
+                                        <div className="rounded-md bg-page border border-border p-3">
+                                            <p className="font-bold text-text-muted uppercase tracking-wider mb-0.5">Medication Notes</p>
+                                            <p className="text-sm text-text">{medicationNotes}</p>
+                                        </div>
+                                    )}
+                                    {generalChildNote && (
+                                        <div className="rounded-md bg-page border border-border p-3">
+                                            <p className="font-bold text-text-muted uppercase tracking-wider mb-0.5">Care Notes</p>
+                                            <p className="text-sm text-text">{generalChildNote}</p>
+                                        </div>
+                                    )}
+                                    {safeMedicalNotes.length > 0 && (
+                                        <div className="space-y-1.5">
+                                            <p className="font-bold text-text-muted uppercase tracking-wider">Medical Notes</p>
+                                            {safeMedicalNotes.map(mn => (
+                                                <div key={mn.id} className="rounded-md bg-danger-soft/50 border border-danger/20 p-3">
+                                                    <p className="text-sm text-text">{mn.content}</p>
+                                                    <p className="text-[11px] text-text-muted mt-1">Recorded by {mn.authorName}</p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="space-y-2 border-t border-border-subtle pt-3">
+                            <div className="flex items-center gap-1.5">
+                                <UserCheck className="w-3.5 h-3.5 text-accent" />
+                                <h4 className="text-xs font-bold uppercase tracking-wider text-text-muted">
+                                    Authorised Collectors
+                                </h4>
+                            </div>
+                            <div className="rounded-md bg-page border border-border p-2.5 text-xs text-text-secondary">
+                                Primary Parent/Guardian: <strong className="text-text">{attendee.parentFirstName} {attendee.parentLastName}</strong>
+                                {attendee.parentPhone ? ` · ${attendee.parentPhone}` : ''}
+                            </div>
+                            {collectors.length === 0 ? (
+                                <p className="text-xs text-text-muted italic">No additional authorised collectors listed.</p>
+                            ) : (
+                                <div className="space-y-2">
+                                    {collectors.map(col => (
+                                        <div key={col.id} className="rounded-md bg-page border border-border p-3 space-y-1 text-xs">
+                                            <div className="flex items-center justify-between gap-2">
+                                                <span className="font-semibold text-sm text-text">{col.name}</span>
+                                                <Badge variant="info">{col.relationship}</Badge>
+                                            </div>
+                                            {col.phone && <p className="text-text-secondary">Phone: {col.phone}</p>}
+                                            {col.collectionPassword && (
+                                                <p className="text-text font-semibold">
+                                                    Collection Password: <span className="font-mono bg-surface px-1.5 py-0.5 rounded border border-border">{col.collectionPassword}</span>
+                                                </p>
+                                            )}
+                                            {col.notes && <p className="text-text-muted">{col.notes}</p>}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="flex justify-end pt-2 border-t border-border-subtle">
+                            <Button size="sm" variant="outline" onClick={() => setShowMedicalModal(false)}>
+                                Close
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </>
     );
 }
 
@@ -718,7 +918,7 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
                                         <div className="flex items-center gap-1.5">
                                             <Sparkles className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                                             <h4 className="text-label text-amber-700 dark:text-amber-400">
-                                                Catch-Ups & Walk-Ins
+                                                Catch-Ups &amp; Walk-Ins
                                             </h4>
                                         </div>
                                         <Badge variant="warning">

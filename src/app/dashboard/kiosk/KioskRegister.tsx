@@ -9,7 +9,8 @@ import { queueOfflineAction, getUnsyncedActions, markActionSynced } from '@/lib/
 import {
     CheckCircle2, XCircle, Clock,
     Loader2, ChevronLeft, ChevronRight, LayoutGrid, LayoutList, Users,
-    Maximize2, Minimize2, RefreshCw, Stethoscope, Edit2, Sparkles, Search, Building2
+    Maximize2, Minimize2, RefreshCw, Stethoscope, Edit2, Sparkles, Search, Building2,
+    ShieldCheck, X, UserCheck
 } from 'lucide-react';
 import Link from 'next/link';
 import { format } from 'date-fns';
@@ -71,13 +72,37 @@ const playChime = (type: 'success' | 'error') => {
 
 type AttendanceStatus = 'present' | 'absent' | 'late' | 'excused' | 'check_out' | null;
 
-interface Attendee {
+export interface AuthorisedCollectorSummary {
+    id: string;
+    name: string;
+    relationship: string;
+    phone?: string | null;
+    collectionPassword?: string | null;
+    notes?: string | null;
+}
+
+export interface MedicalNoteSummary {
+    id: string;
+    content: string;
+    authorName: string;
+    category?: string;
+    isSafeguarding?: boolean;
+    createdAt?: string | null;
+}
+
+export interface Attendee {
     id: string;
     childId: string;
     firstName: string;
     lastName: string;
     schoolYear: string;
     notes?: string | null;
+    allergies?: string[] | null;
+    dietaryRequirements?: string | null;
+    medicalConditions?: string | null;
+    medicationNotes?: string | null;
+    medicalNotes?: MedicalNoteSummary[];
+    authorisedCollectors?: AuthorisedCollectorSummary[];
     parentFirstName: string;
     parentLastName: string;
     parentPhone: string | null;
@@ -110,6 +135,36 @@ interface Props {
     activeCentreId: string;
 }
 
+function getSafeMedicalNotes(attendee: Attendee): MedicalNoteSummary[] {
+    return (attendee.medicalNotes ?? []).filter(
+        n => n.isSafeguarding !== true && (!n.category || n.category === 'Medical')
+    );
+}
+
+function hasMedicalAlerts(attendee: Attendee): boolean {
+    const allergies = (attendee.allergies ?? []).map(a => a?.trim()).filter(Boolean);
+    return (
+        allergies.length > 0 ||
+        Boolean(attendee.dietaryRequirements?.trim()) ||
+        Boolean(attendee.medicalConditions?.trim()) ||
+        Boolean(attendee.medicationNotes?.trim()) ||
+        Boolean(attendee.notes?.trim()) ||
+        getSafeMedicalNotes(attendee).length > 0
+    );
+}
+
+function hasMedicalOrCollectorInfo(attendee: Attendee): boolean {
+    return hasMedicalAlerts(attendee) || (attendee.authorisedCollectors ?? []).length > 0;
+}
+
+function resolveValidPin(attendee: Attendee): string | null {
+    if (attendee.parentPhoneLast4 && /^\d{4}$/.test(attendee.parentPhoneLast4)) {
+        return attendee.parentPhoneLast4;
+    }
+    const digits = (attendee.parentPhone || '').replace(/\D/g, '');
+    return digits.length >= 4 ? digits.slice(-4) : null;
+}
+
 // ── Individual student card ───────────────────────────────────────────────────
 function StudentCard({
     attendee,
@@ -132,7 +187,7 @@ function StudentCard({
     const [curAttendeeId, setCurAttendeeId] = useState<string>(attendee.id);
     const [status, addOptimisticStatus] = useOptimistic<AttendanceStatus, AttendanceStatus>(
         attendee.attendanceStatus,
-        (state, newStatus) => newStatus
+        (_state, newStatus) => newStatus
     );
     const [isCheckedOut, setIsCheckedOut] = useState<boolean>(!!attendee.checkOutTime);
     const [note, setNote] = useState<string>(attendee.attendanceNote || '');
@@ -140,13 +195,44 @@ function StudentCard({
         attendee.lateMinutes != null ? attendee.lateMinutes.toString() : ''
     );
     const [showDetails, setShowDetails] = useState(false);
+    const [medicalModalOpen, setMedicalModalOpen] = useState(false);
     const [isPending, startTransition] = useTransition();
     const [flash, setFlash] = useState(false);
+
+    // Sign-out verification state (PIN + Staff Override)
+    const expectedPin = resolveValidPin(attendee);
+    const hasValidPin = expectedPin !== null;
+
     const [pinPadOpen, setPinPadOpen] = useState(false);
     const [pin, setPin] = useState('');
     const [pinError, setPinError] = useState<string | null>(null);
+    const [showStaffOverride, setShowStaffOverride] = useState<boolean>(!hasValidPin);
+    const [staffOverrideVerified, setStaffOverrideVerified] = useState<boolean>(false);
+    const [collectorName, setCollectorName] = useState<string>('');
+    const [overrideError, setOverrideError] = useState<string | null>(null);
 
-    const executeMark = (s: AttendanceStatus) => {
+    const safeAllergies = (attendee.allergies ?? []).map(a => a?.trim()).filter(Boolean) as string[];
+    const dietaryRequirements = attendee.dietaryRequirements?.trim() || null;
+    const medicalConditions = attendee.medicalConditions?.trim() || null;
+    const medicationNotes = attendee.medicationNotes?.trim() || null;
+    const generalChildNote = attendee.notes?.trim() || null;
+    const safeMedicalNotes = getSafeMedicalNotes(attendee);
+    const collectors = attendee.authorisedCollectors ?? [];
+
+    const hasMedical = hasMedicalAlerts(attendee);
+    const hasModalBadge = hasMedicalOrCollectorInfo(attendee);
+
+    const closePinModal = () => {
+        setPinPadOpen(false);
+        setPin('');
+        setPinError(null);
+        setShowStaffOverride(!hasValidPin);
+        setStaffOverrideVerified(false);
+        setCollectorName('');
+        setOverrideError(null);
+    };
+
+    const executeMark = (s: AttendanceStatus, overrideNote?: string) => {
         const next = s === 'check_out'
             ? 'check_out'
             : (status === s && !isCheckedOut ? null : s);
@@ -156,6 +242,8 @@ function StudentCard({
         const effectiveStatus: AttendanceStatus = next === 'check_out' ? 'present' : next;
         setIsCheckedOut(nextCheckedOut);
         onStatusChange?.(attendee.childId, effectiveStatus, nextCheckedOut);
+
+        const persistedNote = overrideNote !== undefined ? overrideNote : (note || null);
 
         startTransition(async () => {
             addOptimisticStatus(effectiveStatus);
@@ -174,7 +262,7 @@ function StudentCard({
                         bookingId: curBookingId,
                         attendeeId: curAttendeeId,
                         status: next,
-                        note: note || null,
+                        note: persistedNote,
                         lateMinutes: lateMinutes ? parseInt(lateMinutes, 10) : null,
                         childId: attendee.childId,
                         dateStr,
@@ -215,6 +303,10 @@ function StudentCard({
             if (isCheckedOut) return;
             setPin('');
             setPinError(null);
+            setShowStaffOverride(!hasValidPin);
+            setStaffOverrideVerified(false);
+            setCollectorName('');
+            setOverrideError(null);
             setPinPadOpen(true);
             return;
         }
@@ -222,42 +314,68 @@ function StudentCard({
     };
 
     const handlePinDigit = (num: number) => {
+        if (!hasValidPin || !expectedPin) {
+            playChime('error');
+            setPin('');
+            setPinError('PIN matching is disabled because no valid 4-digit parent phone number is on file. Verify ID in person and use Staff Override below.');
+            return;
+        }
         if (pin.length < 4) {
             const newPin = pin + num;
             setPin(newPin);
             setPinError(null);
             if (newPin.length === 4) {
-                const expectedPin = attendee.parentPhoneLast4 || '0000';
                 if (newPin !== expectedPin) {
                     playChime('error');
                     setTimeout(() => {
                         setPin('');
-                        setPinError(
-                            attendee.parentPhoneLast4
-                                ? 'Incorrect PIN. Enter the last 4 digits of the registered parent phone number.'
-                                : 'Incorrect PIN.'
-                        );
+                        setPinError('Incorrect PIN. Enter the last 4 digits of the registered parent phone number.');
                     }, 200);
                     return;
                 }
                 setTimeout(() => {
-                    setPinPadOpen(false);
-                    setPin('');
-                    setPinError(null);
+                    closePinModal();
                     executeMark('check_out');
                 }, 200);
             }
         }
     };
 
+    const handleStaffOverrideConfirm = () => {
+        const trimmedCollector = collectorName.trim();
+        if (!staffOverrideVerified) {
+            setOverrideError('Confirm collector ID was verified in person.');
+            return;
+        }
+        if (!trimmedCollector) {
+            setOverrideError('Enter the collector name before signing out.');
+            return;
+        }
+        const auditNote = [
+            note.trim(),
+            `Staff Override (ID verified in person): collected by ${trimmedCollector}`,
+        ]
+            .filter(Boolean)
+            .join(' · ');
+
+        closePinModal();
+        executeMark('check_out', auditNote);
+    };
+
     useEffect(() => {
-        if (!pinPadOpen) return;
+        if (!pinPadOpen && !medicalModalOpen) return;
         const onKeyDown = (e: KeyboardEvent) => {
             if (e.key === 'Escape') {
-                setPinPadOpen(false);
-                setPin('');
-                setPinError(null);
-            } else if (e.key === 'Backspace') {
+                if (pinPadOpen) closePinModal();
+                if (medicalModalOpen) setMedicalModalOpen(false);
+                return;
+            }
+            if (!pinPadOpen) return;
+            const target = e.target as HTMLElement | null;
+            if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) {
+                return;
+            }
+            if (e.key === 'Backspace') {
                 setPin(prev => prev.slice(0, -1));
             } else if (/^[0-9]$/.test(e.key)) {
                 handlePinDigit(parseInt(e.key, 10));
@@ -288,14 +406,13 @@ function StudentCard({
                 setFlash(true);
                 setTimeout(() => setFlash(false), 800);
                 playChime('success');
-            } catch (err) {
+            } catch {
                 playChime('error');
                 onToast({ title: 'Could not save details', message: 'Please try again.', variant: 'error' });
             }
         });
     };
 
-    const hasAlert = !!attendee.notes;
     const initials = `${(attendee.firstName || '')[0] || ''}${(attendee.lastName || '')[0] || ''}`.toUpperCase() || '??';
 
     const statusStyle = {
@@ -329,7 +446,7 @@ function StudentCard({
                         {isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : initials}
                     </div>
 
-                    {/* Info */}
+                    {/* Info — UK GDPR Art. 9 shoulder-surfing safe: NO raw medical/allergy/password strings inline */}
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                             <p className={`font-semibold text-text truncate ${isLarge ? 'text-lg' : 'text-base'}`}>
@@ -343,24 +460,27 @@ function StudentCard({
                                     <Sparkles className="w-2.5 h-2.5" /> Late
                                 </Badge>
                             )}
-                            {hasAlert && (
-                                <span title={attendee.notes!} className="flex-shrink-0">
-                                    <Stethoscope className="w-4 h-4 text-danger" />
-                                </span>
-                            )}
-                            {(hasAlert || (lateMinutes && parseInt(lateMinutes) > 0)) && (
-                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500" title="Has notes/late minutes" />
+                            {hasModalBadge && (
+                                <button
+                                    type="button"
+                                    onClick={() => setMedicalModalOpen(true)}
+                                    aria-label={`Medical / Pickup Info for ${attendee.firstName} ${attendee.lastName}`}
+                                    className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border transition-colors ${
+                                        hasMedical
+                                            ? 'bg-danger-soft text-danger border-danger/25 hover:opacity-90'
+                                            : 'bg-info-soft text-accent border-accent/25 hover:opacity-90'
+                                    }`}
+                                >
+                                    <Stethoscope className="w-3.5 h-3.5 flex-shrink-0" />
+                                    <span>Medical / Pickup Info</span>
+                                </button>
                             )}
                         </div>
                         <p className="text-xs text-text-muted mt-1 leading-relaxed">
                             {formatSchoolYearLabel(attendee.schoolYear)} · {attendee.parentFirstName} {attendee.parentLastName}
-                            {attendee.parentPhone && ` · ${attendee.parentPhone}`}
                             {lateMinutes && ` · Late: ${lateMinutes}m`}
                             {note && ` · "${note}"`}
                         </p>
-                        {hasAlert && (
-                            <p className="text-xs text-danger mt-1.5 font-medium">⚠ {attendee.notes}</p>
-                        )}
                     </div>
                 </div>
 
@@ -432,35 +552,287 @@ function StudentCard({
                 </div>
             )}
 
-            {/* PIN Pad Modal */}
+            {/* Staff-Initiated Medical & Pickup Info Modal (UK GDPR Art. 9 Shoulder-Surfing Protected) */}
+            {medicalModalOpen && (
+                <div
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby={`kiosk-medical-title-${attendee.id}`}
+                    className="fixed inset-0 z-[300] flex items-center justify-center bg-black/50 px-4 py-6"
+                >
+                    <div className="bg-surface border border-border p-6 rounded-lg shadow-[var(--shadow-popover)] max-w-md w-full max-h-[85vh] overflow-y-auto space-y-4">
+                        <div className="flex items-start justify-between gap-3 border-b border-border-subtle pb-3">
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <Stethoscope className="w-4 h-4 text-danger" />
+                                    <h3 id={`kiosk-medical-title-${attendee.id}`} className="text-lg font-bold text-text">
+                                        Medical &amp; Pickup Information
+                                    </h3>
+                                </div>
+                                <p className="text-xs text-text-muted mt-0.5">
+                                    {attendee.firstName} {attendee.lastName} · {formatSchoolYearLabel(attendee.schoolYear)}
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setMedicalModalOpen(false)}
+                                aria-label="Close medical and pickup modal"
+                                className="p-1.5 rounded-sm text-text-muted hover:text-text hover:bg-page transition-colors"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+
+                        {/* Medical & Dietary Section */}
+                        <div className="space-y-3">
+                            <h4 className="text-xs font-bold uppercase tracking-wider text-text-muted">
+                                Health, Allergies &amp; Dietary
+                            </h4>
+                            {!hasMedical ? (
+                                <p className="text-xs text-text-muted italic">No medical or dietary alerts recorded.</p>
+                            ) : (
+                                <div className="space-y-2.5 text-sm">
+                                    {safeAllergies.length > 0 && (
+                                        <div className="rounded-md bg-danger-soft border border-danger/20 p-3">
+                                            <p className="text-xs font-bold text-danger uppercase tracking-wider mb-1">Allergies</p>
+                                            <p className="text-sm font-semibold text-text">{safeAllergies.join(', ')}</p>
+                                        </div>
+                                    )}
+                                    {dietaryRequirements && (
+                                        <div className="rounded-md bg-warning-soft border border-amber-500/20 p-3">
+                                            <p className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider mb-1">Dietary Requirements</p>
+                                            <p className="text-sm text-text">{dietaryRequirements}</p>
+                                        </div>
+                                    )}
+                                    {medicalConditions && (
+                                        <div className="rounded-md bg-page border border-border p-3">
+                                            <p className="text-xs font-bold text-text-muted uppercase tracking-wider mb-1">Medical Conditions</p>
+                                            <p className="text-sm text-text">{medicalConditions}</p>
+                                        </div>
+                                    )}
+                                    {medicationNotes && (
+                                        <div className="rounded-md bg-page border border-border p-3">
+                                            <p className="text-xs font-bold text-text-muted uppercase tracking-wider mb-1">Medication Notes</p>
+                                            <p className="text-sm text-text">{medicationNotes}</p>
+                                        </div>
+                                    )}
+                                    {generalChildNote && (
+                                        <div className="rounded-md bg-page border border-border p-3">
+                                            <p className="text-xs font-bold text-text-muted uppercase tracking-wider mb-1">Care Notes</p>
+                                            <p className="text-sm text-text">{generalChildNote}</p>
+                                        </div>
+                                    )}
+                                    {safeMedicalNotes.length > 0 && (
+                                        <div className="space-y-2">
+                                            <p className="text-xs font-bold text-text-muted uppercase tracking-wider">Medical Notes</p>
+                                            {safeMedicalNotes.map(mn => (
+                                                <div key={mn.id} className="rounded-md bg-danger-soft/50 border border-danger/20 p-3">
+                                                    <p className="text-sm text-text">{mn.content}</p>
+                                                    <p className="text-[11px] text-text-muted mt-1">Recorded by {mn.authorName}</p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Authorised Collectors Section */}
+                        <div className="space-y-2 border-t border-border-subtle pt-3">
+                            <div className="flex items-center gap-1.5">
+                                <UserCheck className="w-3.5 h-3.5 text-accent" />
+                                <h4 className="text-xs font-bold uppercase tracking-wider text-text-muted">
+                                    Authorised Collectors
+                                </h4>
+                            </div>
+                            <div className="rounded-md bg-page border border-border p-2.5 text-xs text-text-secondary">
+                                Primary Parent/Guardian: <strong className="text-text">{attendee.parentFirstName} {attendee.parentLastName}</strong>
+                            </div>
+                            {collectors.length === 0 ? (
+                                <p className="text-xs text-text-muted italic">No additional authorised collectors listed.</p>
+                            ) : (
+                                <div className="space-y-2">
+                                    {collectors.map(col => (
+                                        <div key={col.id} className="rounded-md bg-page border border-border p-3 space-y-1 text-xs">
+                                            <div className="flex items-center justify-between gap-2">
+                                                <span className="font-semibold text-sm text-text">{col.name}</span>
+                                                <Badge variant="info">{col.relationship}</Badge>
+                                            </div>
+                                            {col.phone && (
+                                                <p className="text-text-secondary">Phone: {col.phone}</p>
+                                            )}
+                                            {col.collectionPassword && (
+                                                <p className="text-text font-semibold">
+                                                    Collection Password: <span className="font-mono bg-surface px-1.5 py-0.5 rounded border border-border">{col.collectionPassword}</span>
+                                                </p>
+                                            )}
+                                            {col.notes && (
+                                                <p className="text-text-muted">{col.notes}</p>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="flex justify-end pt-2 border-t border-border-subtle">
+                            <Button size="sm" variant="outline" onClick={() => setMedicalModalOpen(false)}>
+                                Close
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Sign-Out Verification Modal (PIN Pad + Authorised Collectors + Safe Staff Override) */}
             {pinPadOpen && (
                 <div
                     role="dialog"
                     aria-modal="true"
                     aria-labelledby={`kiosk-pin-title-${attendee.id}`}
-                    className="fixed inset-0 z-[300] flex items-center justify-center bg-black/50 px-4"
+                    className="fixed inset-0 z-[300] flex items-center justify-center bg-black/50 px-4 py-6"
                 >
-                    <div className="bg-surface border border-border p-6 rounded-lg shadow-[var(--shadow-popover)] max-w-[320px] w-full">
-                        <h3 id={`kiosk-pin-title-${attendee.id}`} className="text-xl font-bold mb-2 text-center text-text">Confirm Check Out</h3>
-                        <p className="text-center mb-4 text-sm text-text-secondary">
-                            Enter the last 4 digits of the registered parent phone number to check out <strong className="text-text">{attendee.firstName} {attendee.lastName}</strong>
-                        </p>
-                        {pinError && (
-                            <p className="text-xs text-danger text-center mb-4 font-medium">{pinError}</p>
+                    <div className="bg-surface border border-border p-6 rounded-lg shadow-[var(--shadow-popover)] max-w-[380px] w-full max-h-[90vh] overflow-y-auto space-y-4">
+                        <div>
+                            <h3 id={`kiosk-pin-title-${attendee.id}`} className="text-xl font-bold mb-1 text-center text-text">
+                                Confirm Check Out
+                            </h3>
+                            <p className="text-center text-sm text-text-secondary">
+                                Signing out <strong className="text-text">{attendee.firstName} {attendee.lastName}</strong>
+                            </p>
+                        </div>
+
+                        {/* Authorised Collectors surfaced directly inside Sign-Out modal */}
+                        <div className="rounded-md bg-page border border-border p-3 space-y-2">
+                            <p className="text-[11px] font-bold uppercase tracking-wider text-text-muted flex items-center gap-1.5">
+                                <ShieldCheck className="w-3.5 h-3.5 text-accent" />
+                                Authorised for Pickup
+                            </p>
+                            <p className="text-xs text-text-secondary">
+                                Primary Parent: <strong className="text-text">{attendee.parentFirstName} {attendee.parentLastName}</strong>
+                            </p>
+                            {collectors.length > 0 && (
+                                <div className="space-y-1.5 pt-1 border-t border-border-subtle">
+                                    {collectors.map(col => (
+                                        <div key={col.id} className="text-xs space-y-0.5">
+                                            <p className="font-semibold text-text">
+                                                {col.name} <span className="text-text-muted font-normal">({col.relationship})</span>
+                                            </p>
+                                            {col.phone && <p className="text-text-muted">Tel: {col.phone}</p>}
+                                            {col.collectionPassword && (
+                                                <p className="text-text">
+                                                    Password: <span className="font-mono font-semibold">{col.collectionPassword}</span>
+                                                </p>
+                                            )}
+                                            {col.notes && <p className="text-text-muted">{col.notes}</p>}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* PIN Verification (only active when child has a valid 4-digit phone suffix) */}
+                        {hasValidPin ? (
+                            <div className="space-y-3">
+                                <p className="text-center text-xs text-text-secondary">
+                                    Enter the last 4 digits of the registered parent phone number:
+                                </p>
+                                {pinError && (
+                                    <p className="text-xs text-danger text-center font-medium">{pinError}</p>
+                                )}
+                                <div className="flex justify-center gap-4 py-1">
+                                    {[0, 1, 2, 3].map(i => (
+                                        <div key={i} className={`w-3.5 h-3.5 rounded-full transition-colors duration-200 ${pin.length > i ? 'bg-accent' : 'bg-page border border-border'}`} />
+                                    ))}
+                                </div>
+                                <div className="grid grid-cols-3 gap-2">
+                                    {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
+                                        <button key={num} type="button" onClick={() => handlePinDigit(num)} className="h-12 text-xl font-bold bg-page hover:bg-border-subtle rounded-md active:scale-95 transition-all text-text">{num}</button>
+                                    ))}
+                                    <button type="button" onClick={closePinModal} className="h-12 text-xs font-bold bg-danger-soft text-danger hover:opacity-80 rounded-md active:scale-95 transition-all">Cancel</button>
+                                    <button type="button" onClick={() => handlePinDigit(0)} className="h-12 text-xl font-bold bg-page hover:bg-border-subtle rounded-md active:scale-95 transition-all text-text">0</button>
+                                    <button type="button" onClick={() => setPin(prev => prev.slice(0, -1))} className="h-12 text-xs font-bold bg-warning-soft text-amber-700 dark:text-amber-400 hover:opacity-80 rounded-md active:scale-95 transition-all">Del</button>
+                                </div>
+                                <div className="pt-1 text-center">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowStaffOverride(v => !v)}
+                                        className="text-xs font-semibold text-accent hover:underline"
+                                    >
+                                        {showStaffOverride ? 'Hide Staff Override' : 'Staff Override (Verified ID in Person)'}
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="rounded-md bg-warning-soft border border-amber-500/30 p-3 space-y-1">
+                                <p className="text-xs font-semibold text-amber-700 dark:text-amber-400">
+                                    No valid 4-digit parent phone number on file — PIN verification is disabled.
+                                </p>
+                                {pinError && (
+                                    <p className="text-xs text-danger font-medium">{pinError}</p>
+                                )}
+                            </div>
                         )}
-                        <div className="flex justify-center gap-4 mb-6">
-                            {[0, 1, 2, 3].map(i => (
-                                <div key={i} className={`w-3.5 h-3.5 rounded-full transition-colors duration-200 ${pin.length > i ? 'bg-accent' : 'bg-page border border-border'}`} />
-                            ))}
-                        </div>
-                        <div className="grid grid-cols-3 gap-2">
-                            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
-                                <button key={num} onClick={() => handlePinDigit(num)} className="h-14 text-2xl font-bold bg-page hover:bg-border-subtle rounded-md active:scale-95 transition-all text-text">{num}</button>
-                            ))}
-                            <button onClick={() => { setPinPadOpen(false); setPin(''); setPinError(null); }} className="h-14 text-sm font-bold bg-danger-soft text-danger hover:opacity-80 rounded-md active:scale-95 transition-all">Cancel</button>
-                            <button onClick={() => handlePinDigit(0)} className="h-14 text-2xl font-bold bg-page hover:bg-border-subtle rounded-md active:scale-95 transition-all text-text">0</button>
-                            <button onClick={() => setPin(prev => prev.slice(0, -1))} className="h-14 text-sm font-bold bg-warning-soft text-amber-700 dark:text-amber-400 hover:opacity-80 rounded-md active:scale-95 transition-all">Del</button>
-                        </div>
+
+                        {/* Staff Override Section (mandatory when no valid phone PIN; optional toggle otherwise) */}
+                        {showStaffOverride && (
+                            <div className="rounded-md bg-page border border-border p-3.5 space-y-3">
+                                <label className="flex items-start gap-2.5 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={staffOverrideVerified}
+                                        onChange={e => {
+                                            setStaffOverrideVerified(e.target.checked);
+                                            setOverrideError(null);
+                                        }}
+                                        className="mt-0.5 rounded border-border text-accent focus:ring-accent"
+                                    />
+                                    <span className="text-xs font-semibold text-text leading-snug">
+                                        Staff Override: Collector ID Verified in Person
+                                    </span>
+                                </label>
+
+                                <div>
+                                    <label
+                                        htmlFor={`collector-name-${attendee.id}`}
+                                        className="block text-xs font-semibold text-text-muted mb-1"
+                                    >
+                                        Collector Full Name
+                                    </label>
+                                    <input
+                                        id={`collector-name-${attendee.id}`}
+                                        type="text"
+                                        value={collectorName}
+                                        onChange={e => {
+                                            setCollectorName(e.target.value);
+                                            setOverrideError(null);
+                                        }}
+                                        placeholder="e.g. Sarah Jenkins (Aunt)"
+                                        className="w-full h-9 px-3 rounded-sm bg-surface border border-border text-text placeholder:text-text-muted text-xs focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent"
+                                    />
+                                </div>
+
+                                {overrideError && (
+                                    <p className="text-xs text-danger font-medium">{overrideError}</p>
+                                )}
+
+                                <div className="flex items-center justify-end gap-2">
+                                    {!hasValidPin && (
+                                        <Button type="button" size="sm" variant="outline" onClick={closePinModal}>
+                                            Cancel
+                                        </Button>
+                                    )}
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        onClick={handleStaffOverrideConfirm}
+                                        disabled={!staffOverrideVerified || !collectorName.trim()}
+                                    >
+                                        Confirm Sign-Out
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}
@@ -589,8 +961,8 @@ export default function KioskRegister({ slots, date, dateStr, centreName, centre
         .sort((a, b) => {
             const aUnmarked = getEffectiveStatus(a) === null;
             const bUnmarked = getEffectiveStatus(b) === null;
-            const aAlert = !!a.notes;
-            const bAlert = !!b.notes;
+            const aAlert = hasMedicalAlerts(a);
+            const bAlert = hasMedicalAlerts(b);
 
             // Tier 1 — Unmarked with medical alert (most urgent)
             if (aUnmarked && aAlert && !(bUnmarked && bAlert)) return -1;

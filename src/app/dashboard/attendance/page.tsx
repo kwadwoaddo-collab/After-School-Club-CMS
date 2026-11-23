@@ -5,20 +5,21 @@ import { enrolmentBusinessDate } from '@/lib/enrolment/business-date';
 import { requireTenantSession } from '@/lib/session';
 import { redirect } from 'next/navigation';
 import { db } from '@/db';
-import { bookings, children } from '@/db/schema';
+import { authorisedCollectors, bookings, children, studentNotes } from '@/db/schema';
 import { eq, and, gte, lte, inArray, isNull } from 'drizzle-orm';
 import { getUserAccessibleCentres } from '@/lib/permissions';
 import { resolveActiveCentreId } from '@/lib/centre-filter';
 import { startOfDay, endOfDay, addDays, subDays, format } from 'date-fns';
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight, Users, CheckCircle2, CalendarCheck, Download, AlertTriangle, Building2 } from 'lucide-react';
-import AttendanceRollCall from './AttendanceRollCall';
+import AttendanceRollCall, { type AuthorisedCollectorSummary, type MedicalNoteSummary } from './AttendanceRollCall';
 import { compileDailyRegisterSlots } from '@/lib/attendance';
 import { logger } from '@/lib/logger';
 import HeaderPortal from '@/components/dashboard/HeaderPortal';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 export default async function AttendancePage(props: {
     searchParams: Promise<{ date?: string; centre?: string }>;
@@ -45,37 +46,41 @@ export default async function AttendancePage(props: {
     let orgCentres: any[] = [];
     let centreIds: string[] = [];
     let activeCentreId = 'all';
+    let isZeroCentreStaff = false;
+    let hasQueryableScope = false;
     let allChildrenAtCentre: any[] = [];
     let dayBookings: any[] = [];
 
     try {
         orgCentres = await getUserAccessibleCentres(session.user.id);
         centreIds = orgCentres.map(c => c.id);
-        activeCentreId = await resolveActiveCentreId(rawParams.centre, centreIds);
+        isZeroCentreStaff = session.user.role !== 'ORG_OWNER' && centreIds.length === 0;
+        const resolvedCentreId = await resolveActiveCentreId(rawParams.centre, centreIds);
+        activeCentreId = isZeroCentreStaff ? 'all' : resolvedCentreId;
+        hasQueryableScope = !isZeroCentreStaff && (activeCentreId !== 'all' || centreIds.length > 0);
 
-        const centreFilter = activeCentreId !== 'all'
-            ? eq(bookings.centreId, activeCentreId)
-            : centreIds.length > 0
-                ? inArray(bookings.centreId, centreIds)
-                : eq(bookings.centreId, 'no-centre');
+        // Zero-centre short-circuit: never pass empty arrays or invalid 'no-centre' UUIDs to Postgres.
+        if (hasQueryableScope) {
+            const centreFilter = activeCentreId !== 'all'
+                ? eq(bookings.centreId, activeCentreId)
+                : inArray(bookings.centreId, centreIds);
 
-        const centreChildrenCondition = activeCentreId !== 'all'
-            ? eq(children.centreId, activeCentreId)
-            : centreIds.length > 0
-                ? inArray(children.centreId, centreIds)
-                : eq(children.centreId, 'no-centre');
+            const centreChildrenCondition = activeCentreId !== 'all'
+                ? eq(children.centreId, activeCentreId)
+                : inArray(children.centreId, centreIds);
 
-        [allChildrenAtCentre, dayBookings] = await Promise.all([
-            db.query.children.findMany({
-                where: and(centreChildrenCondition, eq(children.isRegistered, true), isNull(children.deletedAt)),
-                with: { parent: true, centre: true },
-                extras: { effectiveEnrolmentStatus: studentLifecycleStatusSql(targetStr).as('effective_enrolment_status') },
-            }),
-            db.query.bookings.findMany({
-                where: and(centreFilter, gte(bookings.startAt, dayStart), lte(bookings.startAt, dayEnd)),
-                with: { parent: true, centre: true, attendees: { with: { child: true } } },
-            }),
-        ]);
+            [allChildrenAtCentre, dayBookings] = await Promise.all([
+                db.query.children.findMany({
+                    where: and(centreChildrenCondition, eq(children.isRegistered, true), isNull(children.deletedAt)),
+                    with: { parent: true, centre: true },
+                    extras: { effectiveEnrolmentStatus: studentLifecycleStatusSql(targetStr).as('effective_enrolment_status') },
+                }),
+                db.query.bookings.findMany({
+                    where: and(centreFilter, gte(bookings.startAt, dayStart), lte(bookings.startAt, dayEnd)),
+                    with: { parent: true, centre: true, attendees: { with: { child: true } } },
+                }),
+            ]);
+        }
     } catch (e) {
         logger.error("Error fetching attendance", e);
         hasError = true;
@@ -86,12 +91,124 @@ export default async function AttendancePage(props: {
     );
     const expectedIds = expectedRosterIds(activeOrPausedChildrenAtCentre);
 
-    const sortedSlots = compileDailyRegisterSlots({
-        targetDate,
-        allChildrenAtCentre: activeOrPausedChildrenAtCentre,
-        expectedChildIds: expectedIds,
-        dayBookings,
-    });
+    const rawSlots = hasQueryableScope
+        ? compileDailyRegisterSlots({
+            targetDate,
+            allChildrenAtCentre: activeOrPausedChildrenAtCentre,
+            expectedChildIds: expectedIds,
+            dayBookings,
+        })
+        : [];
+
+    // Index child health/flag fields for listed attendees
+    const childById = new Map<string, any>();
+    for (const child of allChildrenAtCentre) {
+        if (child?.id) childById.set(child.id, child);
+    }
+    for (const booking of dayBookings) {
+        for (const att of booking?.attendees ?? []) {
+            if (att?.child?.id && !childById.has(att.child.id)) {
+                childById.set(att.child.id, att.child);
+            }
+        }
+    }
+
+    const listedChildIds = Array.from(
+        new Set(
+            rawSlots.flatMap(slot =>
+                [...slot.regulars, ...slot.catchups].map(a => a.childId).filter(Boolean)
+            )
+        )
+    );
+
+    const medicalNotesByChild = new Map<string, MedicalNoteSummary[]>();
+    const collectorsByChild = new Map<string, AuthorisedCollectorSummary[]>();
+
+    if (hasQueryableScope && listedChildIds.length > 0) {
+        try {
+            // Strictly query ONLY non-safeguarding Medical notes — NEVER query or expose safeguarding rows.
+            const safeguardColumn = (studentNotes as Record<string, any>).isSafeguarding;
+            const medicalWhere = safeguardColumn
+                ? and(
+                    inArray(studentNotes.childId, listedChildIds),
+                    eq(studentNotes.category, 'Medical'),
+                    eq(safeguardColumn, false),
+                )
+                : and(
+                    inArray(studentNotes.childId, listedChildIds),
+                    eq(studentNotes.category, 'Medical'),
+                );
+
+            const [rawMedicalNotes, rawCollectors] = await Promise.all([
+                db.query.studentNotes
+                    ? db.query.studentNotes.findMany({
+                        where: medicalWhere,
+                        orderBy: (notes, { desc }) => [desc(notes.createdAt)],
+                    })
+                    : Promise.resolve([]),
+                db.query.authorisedCollectors
+                    ? db.query.authorisedCollectors.findMany({
+                        where: and(
+                            inArray(authorisedCollectors.childId, listedChildIds),
+                            eq(authorisedCollectors.organisationId, session.user.organisationId),
+                        ),
+                    })
+                    : Promise.resolve([]),
+            ]);
+
+            for (const note of rawMedicalNotes as any[]) {
+                if (note.category !== 'Medical' || note.isSafeguarding === true) continue;
+                const list = medicalNotesByChild.get(note.childId) ?? [];
+                list.push({
+                    id: note.id,
+                    content: note.content,
+                    authorName: note.authorName,
+                    createdAt: note.createdAt ? new Date(note.createdAt).toISOString() : null,
+                });
+                medicalNotesByChild.set(note.childId, list);
+            }
+
+            for (const col of rawCollectors as any[]) {
+                const list = collectorsByChild.get(col.childId) ?? [];
+                list.push({
+                    id: col.id,
+                    name: col.name,
+                    relationship: col.relationship,
+                    phone: col.phone ?? null,
+                    collectionPassword: col.collectionPassword ?? null,
+                });
+                collectorsByChild.set(col.childId, list);
+            }
+        } catch (e) {
+            logger.error("Error fetching attendance medical notes or authorised collectors", e);
+        }
+    }
+
+    const enrichAttendee = (att: any) => {
+        const childRecord = childById.get(att.childId);
+        const allergies = Array.isArray(childRecord?.allergies)
+            ? childRecord.allergies.map((a: string) => a?.trim()).filter(Boolean)
+            : [];
+        return {
+            ...att,
+            flagHomework: Boolean(childRecord?.flagHomework ?? att.flagHomework),
+            flagBehaviour: Boolean(childRecord?.flagBehaviour ?? att.flagBehaviour),
+            flagNote: childRecord?.flagNote ?? att.flagNote ?? null,
+            notes: childRecord?.notes?.trim() || att.notes?.trim() || null,
+            allergies,
+            dietaryRequirements: childRecord?.dietaryRequirements?.trim() || null,
+            medicalConditions: childRecord?.medicalConditions?.trim() || null,
+            medicationNotes: childRecord?.medicationNotes?.trim() || null,
+            medicalNotes: medicalNotesByChild.get(att.childId) ?? [],
+            authorisedCollectors: collectorsByChild.get(att.childId) ?? [],
+        };
+    };
+
+    const sortedSlots = rawSlots.map(slot => ({
+        ...slot,
+        regulars: slot.regulars.map(enrichAttendee),
+        catchups: slot.catchups.map(enrichAttendee),
+    }));
 
     // Stats calculations
     let totalStudents = 0;
@@ -116,6 +233,21 @@ export default async function AttendancePage(props: {
         : orgCentres.length === 1
             ? orgCentres[0].name
             : null;
+
+    if (isZeroCentreStaff) {
+        return (
+            <div className="space-y-6">
+                <HeaderPortal targetId="header-left">
+                    <h1 className="text-page-title text-text">Attendance</h1>
+                </HeaderPortal>
+                <EmptyState
+                    icon={<Building2 className="w-7 h-7" />}
+                    title="No centres assigned"
+                    description="You do not currently have access to any centres. Ask an organisation owner or manager to assign your centre membership."
+                />
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">
