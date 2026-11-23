@@ -402,6 +402,13 @@ function LoginForm() {
           </>
         )}
       </div>
+
+      <p className="mt-6 text-center text-sm text-[var(--if-text-secondary)]">
+        Looking for the Parent Portal?{' '}
+        <Link href="/portal/login" className={linkClass}>
+          Sign in as a parent →
+        </Link>
+      </p>
     </>
   );
 }
