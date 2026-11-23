@@ -6,6 +6,7 @@ import { and, asc, eq, inArray } from 'drizzle-orm';
 import { centres, organisations } from '@/db/schema';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { resolveActiveCentreId } from '@/lib/centre-filter';
+import { isValidUuid } from '@/lib/uuid';
 import FormsShareContent from '@/components/dashboard/FormsShareContent';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Share2 } from 'lucide-react';
@@ -38,7 +39,7 @@ export default async function SharePage() {
             orderBy: [asc(centres.name)],
         })) ?? [];
     } else {
-        const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
+        const accessibleCentreIds = (await getUserAccessibleCentreIds(session.user.id)).filter(isValidUuid);
         if (accessibleCentreIds.length === 0) {
             return (
                 <div className="max-w-5xl mx-auto py-8">
