@@ -2,6 +2,7 @@
 import { logger } from '@/lib/logger';
 
 import { getCurrentParent } from '@/lib/parent-auth';
+import { getTrustedApplicationUrl } from '@/lib/base-url';
 import { db } from '@/db';
 import { bookings, bookingAttendees, centres, children } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
@@ -122,7 +123,7 @@ export async function createPortalBooking({
                             startAt: startDate.toISOString(),
                             duration,
                             confirmationCode: code,
-                            magicLink: `${process.env.NEXTAUTH_URL || ''}/portal`,
+                            magicLink: `${getTrustedApplicationUrl()}/portal`,
                         };
                         const enq = await enqueueBookingEmail(tx, {
                             organisationId: parent.organisationId,

@@ -3,6 +3,7 @@ import { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { requireAuth } from '@/lib/require-auth';
 import { getUserAccessibleCentres } from '@/lib/permissions';
+import { getTrustedApplicationUrl } from '@/lib/base-url';
 import { db } from '@/db';
 import { organisations, centres } from '@/db/schema';
 import { eq, sql } from 'drizzle-orm';
@@ -42,7 +43,7 @@ export default async function SettingsPage() {
         })
         : await getUserAccessibleCentres(session.user.id);
 
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://after-school-club-live.vercel.app';
+    const baseUrl = getTrustedApplicationUrl();
 
     // Augment org with discountRules
     const orgWithDiscounts = {

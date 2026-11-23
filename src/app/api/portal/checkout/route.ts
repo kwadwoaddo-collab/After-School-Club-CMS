@@ -5,6 +5,7 @@ import { db } from '@/db';
 import { invoices, payments, organisations } from '@/db/schema';
 import { and, eq, ne } from 'drizzle-orm';
 import { stripeService } from '@/lib/services/stripe';
+import { getTrustedApplicationUrl } from '@/lib/base-url';
 
 /**
  * POST /api/portal/checkout
@@ -74,8 +75,10 @@ export async function POST(req: NextRequest) {
         .from(organisations)
         .where(eq(organisations.id, invoice.organisationId))
         .limit(1);
+    void org;
+    void payments;
 
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://after-school-club-live.vercel.app';
+    const baseUrl = getTrustedApplicationUrl();
     const description = `Invoice #${invoice.invoiceNumber}${invoice.centre ? ` — ${invoice.centre.name}` : ''}`;
 
     const result = await stripeService.createInvoicePaymentSession({

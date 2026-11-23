@@ -20,12 +20,13 @@ interface Props {
     organisation: Organisation;
     centres: Centre[];
     initialCentreSlug?: string;
+    baseUrl?: string;
 }
 
 type EmbedSize = 'small' | 'medium' | 'large' | 'custom';
 type PortalType = 'booking' | 'registration';
 
-export default function FormsShareContent({ organisation, centres, initialCentreSlug }: Props) {
+export default function FormsShareContent({ organisation, centres, initialCentreSlug, baseUrl: propBaseUrl }: Props) {
     const [activeTab, setActiveTab] = useState<PortalType>('booking');
     const [selectedCentre, setSelectedCentre] = useState<string>(
         initialCentreSlug ?? (centres?.length === 1 ? centres[0].slug : '')
@@ -37,7 +38,11 @@ export default function FormsShareContent({ organisation, centres, initialCentre
     const [customHeight, setCustomHeight] = useState('800');
     const [showPreview, setShowPreview] = useState(false);
 
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://after-school-club-live.vercel.app';
+    const baseUrl = (
+        propBaseUrl?.trim() ||
+        process.env.NEXT_PUBLIC_APP_URL?.trim() ||
+        (typeof window !== 'undefined' ? window.location.origin : 'https://app.sprintscaleit.co.uk')
+    ).replace(/\/+$/, '');
 
     const getShareLink = () => {
         const prefix = activeTab === 'booking' ? 'b' : 'r';
