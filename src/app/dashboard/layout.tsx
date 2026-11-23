@@ -157,6 +157,7 @@ export default async function DashboardLayout({
                                 userInitial={session.user?.name?.[0]?.toUpperCase() || 'A'}
                                 userRole={userRole}
                                 hideSearch={
+                                    userRole === 'TUTOR' ||
                                     currentPath.startsWith('/dashboard/registrations') ||
                                     currentPath.startsWith('/dashboard/bookings') ||
                                     currentPath.startsWith('/dashboard/students')

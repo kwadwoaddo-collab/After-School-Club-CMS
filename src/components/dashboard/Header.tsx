@@ -37,6 +37,7 @@ const ROLE_LABELS: Record<string, string> = {
 
 export default function Header({ userName, userInitial, userRole, hideSearch }: HeaderProps) {
     const { collapsed, setCollapsed } = useSidebar();
+    const shouldHideSearch = Boolean(hideSearch || userRole === 'TUTOR');
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<any[]>([]);
     const [activeSearchIdx, setActiveSearchIdx] = useState(-1);
@@ -173,6 +174,7 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
 
     // Keyboard shortcut for Cmd+K or Ctrl+K
     useEffect(() => {
+        if (shouldHideSearch) return;
         const handleKeyDown = (e: KeyboardEvent) => {
             if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
                 e.preventDefault();
@@ -181,10 +183,11 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
         };
         document.addEventListener('keydown', handleKeyDown);
         return () => document.removeEventListener('keydown', handleKeyDown);
-    }, []);
+    }, [shouldHideSearch]);
 
     // Debounced search
     useEffect(() => {
+        if (shouldHideSearch) return;
         const fetchResults = async () => {
             if (searchQuery.trim().length < 2) {
                 setSearchResults([]);
@@ -211,7 +214,7 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
         }, 300);
 
         return () => clearTimeout(timer);
-    }, [searchQuery]);
+    }, [searchQuery, shouldHideSearch]);
 
     // Close panels on outside click
     useEffect(() => {
@@ -232,6 +235,7 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
+        if (shouldHideSearch) return;
         if (activeSearchIdx >= 0 && searchResults[activeSearchIdx]) {
             router.push(searchResults[activeSearchIdx].url);
             setShowSearchResults(false);
@@ -292,7 +296,7 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                 <div id="header-middle" className="hidden lg:flex justify-center max-w-2xl px-4 empty:hidden" />
             )}
             {/* Search Bar */}
-            {!hideSearch && (
+            {!shouldHideSearch && (
                 <div className="hidden sm:block flex-1 max-w-xl relative mx-auto" ref={searchContainerRef}>
                         <form onSubmit={handleSearch} className="relative group w-full flex items-center h-10 bg-page border border-border rounded-md transition-colors focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent">
                             <Search className="ml-3.5 w-4 h-4 text-text-muted flex-shrink-0 transition-colors group-focus-within:text-accent pointer-events-none" />

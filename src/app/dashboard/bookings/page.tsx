@@ -6,7 +6,7 @@ import { logger } from '@/lib/logger';
 import { requireTenantSession } from '@/lib/session';
 import { redirect } from 'next/navigation';
 import { db } from '@/db';
-import { organisations, bookings, centres, bookingAttendees, parents, children } from '@/db/schema';
+import { organisations, bookings, bookingAttendees, parents, children } from '@/db/schema';
 import { alias } from 'drizzle-orm/pg-core';
 import { eq, desc, and, gte, lte, inArray, or, ilike, sql } from 'drizzle-orm';
 import Link from 'next/link';
@@ -57,6 +57,11 @@ export default async function BookingsPage(props: {
 
     if (!session?.user?.organisationId) redirect('/onboarding');
 
+    const userRole = (session.user as any).role || 'TUTOR';
+    if (userRole === 'TUTOR' || !['ORG_OWNER', 'MANAGER', 'FRONT_DESK'].includes(userRole)) {
+        return redirect('/dashboard/attendance');
+    }
+
     const orgId = session.user.organisationId;
 
     let org;
@@ -82,6 +87,7 @@ export default async function BookingsPage(props: {
     if (!org) redirect('/onboarding');
 
     if (centreIds.length === 0) {
+        const isOwner = userRole === 'ORG_OWNER';
         return (
             <div className="space-y-6">
                 <HeaderPortal targetId="header-left">
@@ -89,15 +95,21 @@ export default async function BookingsPage(props: {
                 </HeaderPortal>
                 <EmptyState
                     icon={<Calendar className="w-8 h-8" />}
-                    title="No centres found"
-                    description="Please set up a centre first before creating bookings."
+                    title={isOwner ? 'No centres found' : 'No centres assigned'}
+                    description={
+                        isOwner
+                            ? 'Please set up a centre first before creating bookings.'
+                            : 'You are not currently assigned to any centres. Ask an organisation owner to assign you to a centre to view and manage bookings.'
+                    }
                     action={
-                        <Button asChild>
-                            <Link href="/dashboard/centres/add">
-                                <Plus className="w-3.5 h-3.5" />
-                                Add Centre
-                            </Link>
-                        </Button>
+                        isOwner ? (
+                            <Button asChild>
+                                <Link href="/dashboard/centres/add">
+                                    <Plus className="w-3.5 h-3.5" />
+                                    Add Centre
+                                </Link>
+                            </Button>
+                        ) : undefined
                     }
                 />
             </div>
@@ -126,19 +138,6 @@ export default async function BookingsPage(props: {
         const searchPattern = `%${searchParams.search}%`;
         const attendeeChildren = alias(children, 'attendee_children');
         try {
-            // Stage B finding: this query referenced the bare `children`
-            // table in its WHERE clause (children.firstName/lastName)
-            // without ever joining it — bookings has no direct child
-            // reference, only bookingAttendees -> children, which is what
-            // `attendeeChildren` (the aliased join actually present below)
-            // already covers. Postgres rejected every search with
-            // "invalid reference to FROM-clause entry for table
-            // \"children\"", which the catch block below silently turned
-            // into "Unable to load bookings" + an always-empty result —
-            // i.e. booking search was completely non-functional. Narrow,
-            // evidenced fix: drop the two unjoined, duplicate conditions;
-            // attendeeChildren.firstName/lastName already provide the
-            // identical child-name search.
             const matchingBookings = await db
                 .select({ id: bookings.id })
                 .from(bookings)
@@ -329,16 +328,6 @@ export default async function BookingsPage(props: {
         activeCentreId !== 'all'
     );
 
-    // Status counts for Segmented Status Tabs
-    //
-    // Stage B finding: this map previously omitted 'signed_up' — one of the
-    // six VALID_BOOKING_STATUSES defined above and one of the six variants
-    // BookingsTable/Booking Detail already render a status badge for — so a
-    // booking in that status was invisible to every status tab and silently
-    // missing from totalAggCount, producing a visibly wrong "X of Y" header
-    // count (X could exceed Y) whenever any booking held that status. Narrow,
-    // evidenced fix: complete the map to match VALID_BOOKING_STATUSES, no new
-    // status or business rule introduced.
     const statusCounts = {
         confirmed:      statusCountsAgg.find(s => s.status === 'confirmed')?.count || 0,
         signed_up:      statusCountsAgg.find(s => s.status === 'signed_up')?.count || 0,

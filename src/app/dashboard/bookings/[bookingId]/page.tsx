@@ -49,6 +49,11 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
     const session = await requireTenantSession();
     if (!session?.user?.organisationId) redirect('/login');
 
+    const userRole = ((session.user as any).role as string | undefined) || 'TUTOR';
+    if (userRole === 'TUTOR' || !['ORG_OWNER', 'MANAGER', 'FRONT_DESK'].includes(userRole)) {
+        return redirect('/dashboard/attendance');
+    }
+
     if (bookingId === 'new') return notFound();
 
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -71,17 +76,11 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
     if (!booking) return notFound();
     if (!booking.centre || booking.centre.organisationId !== session.user.organisationId) return notFound();
 
-    // Centre membership check for non-ORG_OWNER users — matches the check
-    // already enforced by the mutation APIs acting on this same record
-    // (cancel/reschedule/status/PATCH .../centre) and by the List page's
-    // query scoping (which only ever fetches bookings from the viewer's
-    // accessible centres). This detail page previously had no equivalent
-    // check, so a staff member could view another centre's booking (child
-    // name/DOB, parent phone/email, notes) by navigating directly to its URL.
-    const userRole = (session.user as any).role as string | undefined;
-    if (userRole !== 'ORG_OWNER' && booking.centreId) {
+    if (userRole !== 'ORG_OWNER') {
         const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
-        if (!accessibleCentreIds.includes(booking.centreId)) return notFound();
+        if (accessibleCentreIds.length === 0 || (booking.centreId !== null && booking.centreId !== undefined && !accessibleCentreIds.includes(booking.centreId))) {
+            return notFound();
+        }
     }
 
     const orgCentres = await getUserAccessibleCentres(session.user.id);

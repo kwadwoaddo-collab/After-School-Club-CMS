@@ -13,6 +13,7 @@ import RegistrationsBulkClient from '@/components/dashboard/RegistrationsBulkCli
 import RegistrationsFilters from '@/features/registration/components/RegistrationsFilters';
 import { getUserAccessibleCentres } from '@/lib/permissions';
 import { resolveActiveCentreId } from '@/lib/centre-filter';
+import { getTrustedApplicationUrl } from '@/lib/base-url';
 import { Building2, Share2 } from 'lucide-react';
 import HeaderPortal from '@/components/dashboard/HeaderPortal';
 
@@ -75,7 +76,7 @@ export default async function RegistrationsPage(props: {
         ]);
         org = fetchedOrg;
 
-        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://after-school-club-live.vercel.app';
+        const baseUrl = getTrustedApplicationUrl();
 
         orgCentres = fetchedCentres;
         centreIds = orgCentres.map(c => c.id);
@@ -266,7 +267,7 @@ export default async function RegistrationsPage(props: {
 
             {/* Filters — sticky */}
             <div className="sticky top-16 sm:top-20 z-20 -mx-4 sm:-mx-8 px-4 sm:px-8 py-3 bg-background/80 backdrop-blur-xl border-b border-border">
-                <SummaryRangeNotice range={summaryRange} basis="Registration forms received" clearHref={`/dashboard/registrations?${new URLSearchParams(Object.entries(searchParams).filter(([key,value]) => typeof value === 'string') as [string,string][])}`}/>
+                <SummaryRangeNotice range={summaryRange} basis="Registration forms received" clearHref={`/dashboard/registrations?${new URLSearchParams(Object.entries(searchParams).filter(([,value]) => typeof value === 'string') as [string,string][])}`}/>
             <Suspense fallback={<div className="h-10 animate-pulse bg-slate-800/50 rounded-xl w-full" />}>
                     <RegistrationsFilters centres={orgCentres} resultsCount={rows.length} />
                 </Suspense>

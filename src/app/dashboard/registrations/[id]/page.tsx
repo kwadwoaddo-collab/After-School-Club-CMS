@@ -3,22 +3,15 @@ import JoiningJourneyGuide from '@/features/students/components/JoiningJourneyGu
 import { requireTenantSession } from '@/lib/session';
 import { redirect, notFound } from 'next/navigation';
 import { db } from '@/db';
-import { registrations, registrationChildren, registrationParents, organisations, centres, children, authorisedCollectors } from '@/db/schema';
+import { registrations, organisations, centres, children, authorisedCollectors } from '@/db/schema';
 import { eq, and, inArray } from 'drizzle-orm';
 import Link from 'next/link';
-import { Building2, Check, ChevronLeft } from 'lucide-react';
+import { Building2 } from 'lucide-react';
+import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import RegistrationStatusUpdater from './StatusUpdater';
 import DownloadButton from './DownloadButton';
 import EditRegistrationForm from './EditRegistrationForm';
 import BackButton from './BackButton';
-const FUNDING_LABELS: Record<string, string> = {
-    tax_free_childcare: 'Tax-Free Childcare',
-    childcare_vouchers: 'Childcare Vouchers',
-    universal_credit: 'Universal Credit',
-    student_finance: 'Student Finance (CCG)',
-    self_funded: 'Self-Funded',
-    other: 'Other',
-};
 
 const STATUS_BADGE: Record<string, string> = {
     awaiting_confirmation: 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20',
@@ -34,27 +27,21 @@ const STATUS_LABEL: Record<string, string> = {
 
 export default async function RegistrationDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
- 
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(id)) {
-        notFound();
-    }
- 
+
     const session = await requireTenantSession();
     if (!session?.user) redirect('/login');
     const orgId = (session.user as any).organisationId;
     if (!orgId) redirect('/onboarding');
- 
+
     const userRole = (session.user as any).role || 'TUTOR';
-    if (!['ORG_OWNER', 'MANAGER', 'FRONT_DESK'].includes(userRole)) {
-        redirect('/dashboard');
+    if (userRole === 'TUTOR' || !['ORG_OWNER', 'MANAGER', 'FRONT_DESK'].includes(userRole)) {
+        return redirect('/dashboard/attendance');
     }
 
-    const org = await db.query.organisations.findFirst({
-        where: eq(organisations.id, orgId),
-        columns: { name: true },
-    });
-    const orgName = org?.name || 'SprintScale';
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(id)) {
+        notFound();
+    }
 
     const reg = await db.query.registrations.findFirst({
         where: and(eq(registrations.id, id), eq(registrations.organisationId, orgId)),
@@ -68,6 +55,25 @@ export default async function RegistrationDetailPage({ params }: { params: Promi
         },
     });
     if (!reg) notFound();
+
+    // DC-03: Multi-centre isolation for non-ORG_OWNER staff (MANAGER, FRONT_DESK).
+    // Org-wide submissions (/register/[orgSlug]) have centreId === null and MUST
+    // remain triageable by staff who have at least one accessible centre.
+    if (userRole !== 'ORG_OWNER') {
+        const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
+        if (accessibleCentreIds.length === 0) {
+            return notFound();
+        }
+        if (reg.centreId !== null && reg.centreId !== undefined && !accessibleCentreIds.includes(reg.centreId)) {
+            return notFound();
+        }
+    }
+
+    const org = await db.query.organisations.findFirst({
+        where: eq(organisations.id, orgId),
+        columns: { name: true },
+    });
+    const orgName = org?.name || 'SprintScale';
 
     let centreName: string | null = null;
     let centreAddress: string | null = null;
@@ -379,6 +385,7 @@ export default async function RegistrationDetailPage({ params }: { params: Promi
                         <h2 className="text-foreground font-bold mb-4">Parent Signature</h2>
                         {reg.parentSignature.startsWith('data:image/') ? (
                             <div className="bg-secondary/30 rounded-xl p-4 border border-border">
+                                { }
                                 <img
                                     src={reg.parentSignature}
                                     alt="Parent signature"
