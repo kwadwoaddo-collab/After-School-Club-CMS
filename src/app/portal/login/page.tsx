@@ -50,8 +50,9 @@ function PortalLoginForm() {
                     👋
                 </div>
                 <h1 className="text-2xl font-bold text-foreground mb-2">Parent Portal</h1>
-                <p className="text-muted-foreground mb-2">Parent Portal — Access your centre bookings, attendance, and billing</p>
-                <p className="text-sm text-muted-foreground mb-8">No password needed — we&apos;ll email you a secure one-tap login link.</p>
+                <p className="text-sm text-muted-foreground mb-8">
+                    Enter your registered email and we&apos;ll send a secure sign-in link.
+                </p>
 
                 {errorParam === 'ExpiredOrInvalid' && (
                     <div className="bg-destructive/10 text-destructive border border-destructive/20 p-3 rounded-lg text-sm mb-6">
@@ -69,15 +70,12 @@ function PortalLoginForm() {
                         <div>
                             {/* A11Y-2: label is programmatically associated with input via htmlFor/id */}
                             <label htmlFor="portal-login-email" className="block text-sm font-medium text-foreground mb-1">Email Address</label>
-                            <input
-                                id="portal-login-email"
-                                type="email"
+                            <input id="portal-login-email" type="email" className="w-full px-4 py-3 bg-card text-foreground placeholder:text-muted-foreground border border-border rounded-lg outline-none focus:border-primary transition-all"
                                 required
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 placeholder="parent@example.com"
                                 autoComplete="email"
-                                className="w-full px-4 py-3 bg-card text-foreground placeholder:text-muted-foreground border border-border rounded-lg outline-none focus:border-primary transition-all"
                             />
                         </div>
                         {error && (
@@ -117,7 +115,7 @@ function PortalLoginForm() {
             </div>
             <div className="bg-secondary/40 px-8 py-4 border-t border-border text-center">
                 <p className="text-xs text-muted-foreground">
-                    Not a parent? <Link href="/login" className="text-primary hover:underline">Staff Login</Link>
+                    Not a parent? <Link href="/staff-login" className="text-primary hover:underline">Staff Login</Link>
                 </p>
             </div>
         </div>
