@@ -119,7 +119,7 @@ export default function SignupPage() {
           </h1>
 
           <p className="text-lg mb-10 text-[var(--if-text-secondary)]">
-            Create an administrator account to manage sessions, student and family records, billing and staff access.
+            Any club administrator can sign up to set up their organisation. New club accounts undergo manual platform verification before dashboard access is activated.
           </p>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-10">
@@ -139,10 +139,10 @@ export default function SignupPage() {
           <div className="space-y-4">
             <p className="text-[var(--if-text-muted)] text-xs uppercase tracking-widest font-semibold">After signing up you&apos;ll</p>
             {[
-              'Set up your organisation name',
-              'Create your first centre',
+              'Set up your organisation and first centre',
               'Choose your brand colour',
-              'Invite your team',
+              'Complete manual platform verification',
+              'Access your dashboard and invite your team once active',
             ].map((item) => (
               <div key={item} className="flex items-center gap-3">
                 <div className="w-6 h-6 rounded-full bg-[var(--if-accent-soft)] text-[var(--if-accent)] flex items-center justify-center flex-shrink-0">
@@ -171,7 +171,7 @@ export default function SignupPage() {
           <div className="text-center mb-8">
             <h2 className="text-3xl md:text-4xl font-bold mb-2">Create your account</h2>
             <p className="text-sm text-[var(--if-text-secondary)]">
-              Create an administrator account to start setting up your centre
+              Any club administrator can sign up. New club accounts undergo manual platform verification before dashboard access is activated.
             </p>
           </div>
 

@@ -71,9 +71,9 @@ const FEATURES: { title: string; body: string; icon: ReactNode }[] = [
 ];
 
 const STEPS = [
-    { title: "Create your account", body: "Sign up as an administrator and set up your organisation." },
-    { title: "Set up your centre", body: "Add your centre, classes and sessions, and invite your team." },
-    { title: "Add families", body: "Record students and their parents or carers, then start running sessions." },
+    { title: "Create your account", body: "Any club administrator can sign up and register their organisation details." },
+    { title: "Manual platform verification", body: "New club accounts undergo manual platform verification before dashboard access is activated." },
+    { title: "Set up & invite families", body: "Once activated, add your classes and sessions, invite your team, and welcome families." },
 ];
 
 const FAQS: { question: string; answer: ReactNode }[] = [
@@ -83,7 +83,7 @@ const FAQS: { question: string; answer: ReactNode }[] = [
     },
     {
         question: "Is the CMS available to everyone?",
-        answer: "The CMS is currently in early access. Pricing and plan terms are not published yet, so please get in touch with SprintScale IT to talk about your centre.",
+        answer: "Any club administrator can sign up during early access. New club accounts undergo manual platform verification before dashboard access is activated. Pricing and plan terms are not published yet, so please get in touch with SprintScale IT if you would like to talk about your centre.",
     },
     {
         question: "How do staff sign in?",
@@ -242,7 +242,7 @@ export default function Home() {
                         <div className="pricing-card active">
                             <h3 className="text-2xl font-bold mb-2">Early Access Workspace</h3>
                             <p className="landing-muted mb-6">
-                                Create an administrator account and start setting up your centre.
+                                Any club administrator can sign up and set up their organisation. New club accounts undergo manual platform verification before dashboard access is activated.
                             </p>
                             <Link href="/signup" className="btn-primary-landing w-full text-center">Create an Account</Link>
                         </div>
@@ -320,7 +320,7 @@ export default function Home() {
                         <div className="max-w-3xl mx-auto">
                             <h2 className="text-3xl md:text-4xl font-bold mb-6">Ready to set up your club?</h2>
                             <p className="text-lg mb-8 landing-muted">
-                                Create an administrator account, or get in touch to talk it through first.
+                                Any club administrator can create an account — new organisations undergo manual platform verification before dashboard access is activated, or get in touch to talk it through first.
                             </p>
                             <Link href="/signup" className="btn-primary-landing">Create an Account</Link>
                         </div>
