@@ -1,5 +1,5 @@
 import { db } from '@/db';
-import { organisations, centres } from '@/db/schema';
+import { organisations } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
@@ -19,7 +19,7 @@ export async function generateMetadata({
         where: eq(organisations.slug, orgSlug),
     });
 
-    if (!org) {
+    if (!org || org.approvalStatus !== 'ACTIVE') {
         return {
             title: 'Organisation Not Found',
         };
@@ -45,7 +45,7 @@ export default async function OrgBookingPage({
         },
     });
 
-    if (!org) {
+    if (!org || org.approvalStatus !== 'ACTIVE') {
         notFound();
     }
 

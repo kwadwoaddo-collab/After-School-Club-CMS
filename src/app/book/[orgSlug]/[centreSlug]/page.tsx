@@ -1,7 +1,8 @@
 import BookingForm from '@/features/bookings/components/BookingForm';
 import { db } from '@/db';
-import { centres, organisations, bookings } from '@/db/schema';
+import { centres, organisations } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+import { notFound } from 'next/navigation';
 import { type Metadata } from 'next';
 import { normalizeString } from '@/lib/search-params';
 import { MapPin } from 'lucide-react';
@@ -51,7 +52,7 @@ export async function generateMetadata({
     },
   });
 
-  if (!org || org.centres.length === 0) {
+  if (!org || org.approvalStatus !== 'ACTIVE' || org.centres.length === 0) {
     return { title: 'Centre Not Found' };
   }
 
@@ -80,13 +81,8 @@ export default async function BookingPage({
     .where(eq(organisations.slug, orgSlug))
     .limit(1);
 
-  if (!org) {
-    return (
-      <PublicErrorCard
-        title="Organisation Not Found"
-        description="We couldn't find the organisation you're looking for."
-      />
-    );
+  if (!org || org.approvalStatus !== 'ACTIVE') {
+    notFound();
   }
 
   // Fetch all centres for this organisation

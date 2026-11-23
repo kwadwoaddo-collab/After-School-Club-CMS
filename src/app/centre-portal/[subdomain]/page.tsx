@@ -2,6 +2,7 @@ import { db } from '@/db';
 import { centres, organisations } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { notFound } from 'next/navigation';
+import { getTrustedApplicationUrl } from '@/lib/base-url';
 import { CalendarDays, ClipboardList, MapPin, Clock, ArrowRight, Phone, Mail } from 'lucide-react';
 import Link from 'next/link';
 import type { Metadata } from 'next';
@@ -10,7 +11,7 @@ interface Props {
     params: Promise<{ subdomain: string }>;
 }
 
-async function getCentreBySubdomain(subdomain: string) {
+async function resolvePortalBySubdomain(subdomain: string) {
     const centre = await db.query.centres.findFirst({
         where: eq(centres.subdomain, subdomain),
         columns: {
@@ -18,33 +19,69 @@ async function getCentreBySubdomain(subdomain: string) {
             organisationId: true, slug: true, billingPhone: true, billingEmail: true,
         },
     });
-    if (!centre) return null;
+
+    if (centre) {
+        const org = await db.query.organisations.findFirst({
+            where: eq(organisations.id, centre.organisationId),
+            columns: { id: true, name: true, logoUrl: true, brandColor: true, slug: true, approvalStatus: true },
+        });
+        if (org && org.approvalStatus === 'ACTIVE') {
+            return { kind: 'centre' as const, centre, org };
+        }
+    }
 
     const org = await db.query.organisations.findFirst({
-        where: eq(organisations.id, centre.organisationId),
-        columns: { id: true, name: true, logoUrl: true, brandColor: true, slug: true },
+        where: eq(organisations.subdomain, subdomain),
+        columns: {
+            id: true, name: true, logoUrl: true, brandColor: true, slug: true,
+            address: true, contactPhone: true, contactEmail: true, approvalStatus: true,
+        },
+        with: {
+            centres: {
+                columns: { id: true, name: true, slug: true, address: true },
+            },
+        },
     });
-    return org ? { centre, org } : null;
+
+    if (!org || org.approvalStatus !== 'ACTIVE') {
+        return null;
+    }
+
+    return { kind: 'org' as const, org, centres: org.centres };
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const { subdomain } = await params;
-    const data = await getCentreBySubdomain(subdomain);
+    const data = await resolvePortalBySubdomain(subdomain);
     if (!data) return { title: 'Centre Not Found' };
+    const displayName = data.kind === 'centre' ? data.centre.name : data.org.name;
     return {
-        title: `${data.centre.name} — Book or Register`,
-        description: `Book a session or register your child at ${data.centre.name}, powered by SprintScale.`,
+        title: `${displayName} — Book or Register`,
+        description: `Book a session or register your child at ${displayName}, powered by SprintScale.`,
     };
 }
 
 export default async function CentrePortalLanding({ params }: Props) {
     const { subdomain } = await params;
-    const data = await getCentreBySubdomain(subdomain);
+    const data = await resolvePortalBySubdomain(subdomain);
 
     if (!data) notFound();
 
-    const { centre, org } = data;
+    const { org } = data;
     const brandColor = org.brandColor || '#4F46E5';
+    const appUrl = getTrustedApplicationUrl();
+
+    const displayName = data.kind === 'centre' ? data.centre.name : data.org.name;
+    const address = data.kind === 'centre' ? data.centre.address : data.org.address;
+    const phone = data.kind === 'centre' ? data.centre.billingPhone : data.org.contactPhone;
+    const email = data.kind === 'centre' ? data.centre.billingEmail : data.org.contactEmail;
+    const operatingHours = data.kind === 'centre' ? data.centre.operatingHours : null;
+
+    const bookHref = data.kind === 'centre' ? '/book' : `${appUrl}/book/${org.slug}`;
+    const registerHref =
+        data.kind === 'centre'
+            ? `${appUrl}/register/${org.slug}/${data.centre.slug}`
+            : `${appUrl}/register/${org.slug}`;
 
     return (
         <div className="min-h-screen flex flex-col items-center justify-center px-4 py-16">
@@ -53,7 +90,7 @@ export default async function CentrePortalLanding({ params }: Props) {
                 {org.logoUrl ? (
                     <img
                         src={org.logoUrl}
-                        alt={centre.name}
+                        alt={displayName}
                         className="h-16 w-auto object-contain rounded-2xl"
                     />
                 ) : (
@@ -61,37 +98,37 @@ export default async function CentrePortalLanding({ params }: Props) {
                         className="w-16 h-16 rounded-2xl flex items-center justify-center text-white text-2xl font-black shadow-lg"
                         style={{ backgroundColor: brandColor }}
                     >
-                        {centre.name[0] || org.name[0]}
+                        {displayName[0] || org.name[0]}
                     </div>
                 )}
                 <div>
-                    <h1 className="text-3xl font-black text-white tracking-tight">{centre.name}</h1>
-                    {org.name !== centre.name && (
+                    <h1 className="text-3xl font-black text-white tracking-tight">{displayName}</h1>
+                    {org.name !== displayName && (
                         <p className="text-white/40 text-xs mt-1">{org.name}</p>
                     )}
                 </div>
 
-                {/* Centre info pills */}
+                {/* Centre / Org info pills */}
                 <div className="flex flex-wrap gap-2 justify-center mt-2">
-                    {centre.address && (
+                    {address && (
                         <span className="flex items-center gap-1.5 text-xs text-white/60 bg-white/5 border border-white/10 rounded-full px-3 py-1.5">
                             <MapPin className="w-3 h-3" />
-                            {centre.address}
+                            {address}
                         </span>
                     )}
-                    {centre.billingPhone && (
-                        <a href={`tel:${centre.billingPhone}`} className="flex items-center gap-1.5 text-xs text-white/60 hover:text-white bg-white/5 border border-white/10 rounded-full px-3 py-1.5 transition-colors">
+                    {phone && (
+                        <a href={`tel:${phone}`} className="flex items-center gap-1.5 text-xs text-white/60 hover:text-white bg-white/5 border border-white/10 rounded-full px-3 py-1.5 transition-colors">
                             <Phone className="w-3 h-3" />
-                            {centre.billingPhone}
+                            {phone}
                         </a>
                     )}
-                    {centre.billingEmail && (
-                        <a href={`mailto:${centre.billingEmail}`} className="flex items-center gap-1.5 text-xs text-white/60 hover:text-white bg-white/5 border border-white/10 rounded-full px-3 py-1.5 transition-colors">
+                    {email && (
+                        <a href={`mailto:${email}`} className="flex items-center gap-1.5 text-xs text-white/60 hover:text-white bg-white/5 border border-white/10 rounded-full px-3 py-1.5 transition-colors">
                             <Mail className="w-3 h-3" />
-                            {centre.billingEmail}
+                            {email}
                         </a>
                     )}
-                    {centre.operatingHours && (
+                    {operatingHours && (
                         <span className="flex items-center gap-1.5 text-xs text-white/60 bg-white/5 border border-white/10 rounded-full px-3 py-1.5">
                             <Clock className="w-3 h-3" />
                             Open
@@ -104,7 +141,7 @@ export default async function CentrePortalLanding({ params }: Props) {
             <div className="w-full max-w-md space-y-4">
                 {/* Book a Session */}
                 <Link
-                    href="/book"
+                    href={bookHref}
                     id="portal-book-btn"
                     className="group flex items-center gap-5 w-full p-6 rounded-[24px] bg-white/5 border border-white/10 backdrop-blur-xl hover:bg-white/8 hover:border-white/20 transition-all duration-300 hover:shadow-[0_8px_32px_rgba(0,0,0,0.3)] hover:scale-[1.02] active:scale-[0.99]"
                 >
@@ -123,7 +160,7 @@ export default async function CentrePortalLanding({ params }: Props) {
 
                 {/* Register My Child */}
                 <Link
-                    href="/register"
+                    href={registerHref}
                     id="portal-register-btn"
                     className="group flex items-center gap-5 w-full p-6 rounded-[24px] bg-white/5 border border-white/10 backdrop-blur-xl hover:bg-white/8 hover:border-white/20 transition-all duration-300 hover:shadow-[0_8px_32px_rgba(0,0,0,0.3)] hover:scale-[1.02] active:scale-[0.99]"
                 >
@@ -141,7 +178,7 @@ export default async function CentrePortalLanding({ params }: Props) {
             {/* Staff login link */}
             <div className="mt-12 text-center">
                 <Link
-                    href="/login"
+                    href="/staff-login"
                     className="text-xs text-white/30 hover:text-white/50 transition-colors"
                 >
                     Staff login →
