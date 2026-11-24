@@ -24,7 +24,7 @@ import { signOut } from '@/lib/auth';
 import OrgStatusClient from './_components/OrgStatusClient';
 
 export const metadata = {
-  title: 'Account Status | SprintScale',
+  title: 'Account Status',
   description: 'Your organisation account status with SprintScale.',
   robots: { index: false, follow: false },
 };
