@@ -9,6 +9,9 @@ interface LogContext {
   [key: string]: unknown;
 }
 
+const EMAIL_IN_STRING_RE = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
+const TOKEN_QUERY_RE = /(?:^|[?&\s])token=|magicLinkToken=/i;
+
 /**
  * Every call site in this codebase logs like `logger.error('message', err)`
  * or `logger.error('message', someValue)` — i.e. treats the second argument
@@ -54,14 +57,12 @@ function redact(obj: unknown): unknown {
   if (!obj) return obj;
   if (typeof obj !== 'object') {
     if (typeof obj === 'string') {
-      // Redact email-like strings
-      if (obj.includes('@') && obj.includes('.')) {
-        return '[REDACTED_EMAIL]';
-      }
-      // Redact magic links / authorization tokens
-      if (obj.includes('token=') || obj.includes('magic_link_token') || obj.includes('magicLinkToken')) {
+      // Redact magic links / authorization query tokens without wiping SQL column names (e.g. magic_link_token)
+      if (TOKEN_QUERY_RE.test(obj)) {
         return '[REDACTED_TOKEN_URL]';
       }
+      // Redact email addresses in-place without wiping stack traces containing @scope/package.js
+      return obj.replace(EMAIL_IN_STRING_RE, '[REDACTED_EMAIL]');
     }
     return obj;
   }

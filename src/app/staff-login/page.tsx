@@ -55,8 +55,8 @@ export default function StaffLoginPage() {
 
     if (step === 'sent') {
         return (
-            <div className="min-h-screen bg-[var(--if-page)] text-[var(--if-text)] flex items-center justify-center p-4 overflow-x-hidden">
-                <div className="max-w-md w-full bg-[var(--if-surface-elevated)] rounded-3xl p-6 sm:p-8 border border-[var(--if-border-subtle)] text-center">
+            <main className="min-h-screen bg-[var(--if-page)] text-[var(--if-text)] flex items-center justify-center p-4 overflow-x-hidden">
+                <div className="max-w-md w-full bg-[var(--if-surface-elevated)] rounded-[14px] p-6 sm:p-8 border border-[var(--if-border-subtle)] text-center">
                     <div className="flex justify-center mb-6"><BrandLockup /></div>
                     <div className="w-16 h-16 bg-[var(--if-accent-soft)] rounded-2xl flex items-center justify-center mx-auto mb-6 text-[var(--if-accent)]">
                         <CheckCircle className="w-8 h-8" aria-hidden="true" />
@@ -77,14 +77,14 @@ export default function StaffLoginPage() {
                         Use a different email
                     </button>
                 </div>
-            </div>
+            </main>
         );
     }
 
     return (
-        <div className="min-h-screen bg-[var(--if-page)] text-[var(--if-text)] flex items-center justify-center p-4 overflow-x-hidden">
+        <main className="min-h-screen bg-[var(--if-page)] text-[var(--if-text)] flex items-center justify-center p-4 overflow-x-hidden">
             <div className="max-w-md w-full">
-                <div className="bg-[var(--if-surface-elevated)] rounded-3xl p-6 sm:p-8 border border-[var(--if-border-subtle)]">
+                <div className="bg-[var(--if-surface-elevated)] rounded-[14px] p-6 sm:p-8 border border-[var(--if-border-subtle)]">
                     <div className="text-center mb-8">
                         <div className="flex justify-center mb-5"><BrandLockup /></div>
                         <h1 className="text-2xl font-bold">Staff Login</h1>
@@ -149,11 +149,11 @@ export default function StaffLoginPage() {
                     <Link href="/login" className={`min-h-[44px] inline-flex items-center text-[var(--if-text-secondary)] hover:text-[var(--if-text)] text-sm transition-colors ${focusRing}`}>
                         Admin login →
                     </Link>
-                    <a href="https://sprintscaleit.co.uk" className={`min-h-[44px] inline-flex items-center text-[var(--if-text-muted)] hover:text-[var(--if-text)] text-xs transition-colors ${focusRing}`}>
-                        Return to sprintscaleit.co.uk
-                    </a>
+                    <Link href="/" className={`min-h-[44px] inline-flex items-center text-[var(--if-text-muted)] hover:text-[var(--if-text)] text-xs transition-colors ${focusRing}`}>
+                        ← Back to Home
+                    </Link>
                 </div>
             </div>
-        </div>
+        </main>
     );
 }

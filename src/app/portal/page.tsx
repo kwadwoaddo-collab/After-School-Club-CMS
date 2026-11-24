@@ -122,13 +122,15 @@ export default async function PortalDashboard() {
                             Billing & Vouchers
                         </Link>
                         <NotificationBell notifications={notifications} unreadCount={unreadCount} />
-                        <a
-                            href="/api/portal/logout"
-                            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors px-3 py-2 rounded-lg hover:bg-card"
-                        >
-                            <LogOut className="w-4 h-4" aria-hidden="true" />
-                            Sign Out
-                        </a>
+                        <form action="/api/portal/logout" method="POST">
+                            <button
+                                type="submit"
+                                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors px-3 py-2 rounded-lg hover:bg-card cursor-pointer"
+                            >
+                                <LogOut className="w-4 h-4" aria-hidden="true" />
+                                Sign Out
+                            </button>
+                        </form>
                     </div>
                 </div>
             </header>
