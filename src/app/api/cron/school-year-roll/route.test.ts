@@ -1,6 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { GET } from './route';
+import * as fs from 'fs';
+import * as path from 'path';
 import { NextRequest } from 'next/server';
+import { PgDialect } from 'drizzle-orm/pg-core';
+import { GET, maxDuration, computeNextSchoolYear } from './route';
 import { db } from '@/db';
 
 vi.mock('@/db', () => ({
@@ -9,12 +12,51 @@ vi.mock('@/db', () => ({
   },
 }));
 
-describe('/api/cron/school-year-roll (D5.R)', () => {
+describe('/api/cron/school-year-roll (D5.R + PR-14)', () => {
   const originalEnv = process.env;
 
   beforeEach(() => {
     vi.clearAllMocks();
     process.env = { ...originalEnv, CRON_SECRET: 'test-cron-secret' };
+  });
+
+  it('schedules /api/cron/school-year-roll on 1 September (0 3 1 9 *) in vercel.json', () => {
+    const vercelPath = path.resolve(process.cwd(), 'vercel.json');
+    const config = JSON.parse(fs.readFileSync(vercelPath, 'utf8')) as {
+      crons: Array<{ path: string; schedule: string }>;
+    };
+
+    expect(config.crons).toContainEqual({
+      path: '/api/cron/school-year-roll',
+      schedule: '0 3 1 9 *',
+    });
+  });
+
+  it('exports numeric maxDuration = 60', () => {
+    expect(maxDuration).toBe(60);
+  });
+
+  it('computes canonical Y1..Y13 / Reception / Graduated transitions without corrupting multi-year strings', () => {
+    expect(computeNextSchoolYear('Nursery')).toBe('Reception');
+    expect(computeNextSchoolYear('yr nursery')).toBe('Reception');
+    expect(computeNextSchoolYear('Reception')).toBe('Y1');
+    expect(computeNextSchoolYear('Year R')).toBe('Y1');
+    expect(computeNextSchoolYear('0')).toBe('Y1');
+    expect(computeNextSchoolYear('Y1')).toBe('Y2');
+    expect(computeNextSchoolYear('4')).toBe('Y5');
+    expect(computeNextSchoolYear('Year 3')).toBe('Y4');
+    expect(computeNextSchoolYear('Y3')).toBe('Y4');
+    expect(computeNextSchoolYear('Y12')).toBe('Y13');
+    expect(computeNextSchoolYear('12')).toBe('Y13');
+    expect(computeNextSchoolYear('Y13')).toBe('Graduated');
+    expect(computeNextSchoolYear('Year 13')).toBe('Graduated');
+    expect(computeNextSchoolYear('13')).toBe('Graduated');
+
+    // Never concatenate digits or re-roll non-standard / already-graduated strings
+    expect(computeNextSchoolYear('Year 3/4')).toBe('Year 3/4');
+    expect(computeNextSchoolYear('Graduated')).toBe('Graduated');
+    expect(computeNextSchoolYear('KS2')).toBe('KS2');
+    expect(computeNextSchoolYear('')).toBe('');
   });
 
   it('rejects requests without Authorization header with 401', async () => {
@@ -43,11 +85,11 @@ describe('/api/cron/school-year-roll (D5.R)', () => {
   });
 
   it('handles concurrency safely: returns skipped when advisory lock cannot be acquired', async () => {
-    (db.transaction as any).mockImplementationOnce(async (cb: any) => {
+    vi.mocked(db.transaction).mockImplementationOnce(async (cb) => {
       const tx = {
         execute: vi.fn().mockResolvedValueOnce([{ locked: false }]),
       };
-      return cb(tx);
+      return cb(tx as never);
     });
 
     const req = new NextRequest('http://localhost:3000/api/cron/school-year-roll?year=2026', {
@@ -62,7 +104,7 @@ describe('/api/cron/school-year-roll (D5.R)', () => {
   });
 
   it('handles duplicate/sequential execution: returns skipped when year already rolled in auditEvents', async () => {
-    (db.transaction as any).mockImplementationOnce(async (cb: any) => {
+    vi.mocked(db.transaction).mockImplementationOnce(async (cb) => {
       const tx = {
         execute: vi.fn().mockResolvedValueOnce([{ locked: true }]),
         select: vi.fn(() => ({
@@ -73,7 +115,7 @@ describe('/api/cron/school-year-roll (D5.R)', () => {
           })),
         })),
       };
-      return cb(tx);
+      return cb(tx as never);
     });
 
     const req = new NextRequest('http://localhost:3000/api/cron/school-year-roll?year=2026', {
@@ -87,55 +129,44 @@ describe('/api/cron/school-year-roll (D5.R)', () => {
     expect(body.reason).toContain('already completed');
   });
 
-  it('executes rollover successfully and advances year groups correctly', async () => {
-    const updatedChildren: Array<{ id: string; schoolYear: string }> = [];
-    const insertedAuditEvents: any[] = [];
+  it('executes set-based rollover excluding soft-deleted children and bulk-inserts audit events', async () => {
+    const insertedAuditBatches: Array<Array<{ organisationId: string; eventType: string; eventData: string }>> = [];
+    const executeMock = vi
+      .fn()
+      .mockResolvedValueOnce([{ locked: true }])
+      .mockResolvedValueOnce([{ rolled_count: 4 }]);
 
-    (db.transaction as any).mockImplementationOnce(async (cb: any) => {
-      const tx = {
-        execute: vi.fn().mockResolvedValueOnce([{ locked: true }]),
-        select: vi.fn((fields: any) => ({
-          from: vi.fn((table: any) => {
-            return {
-              where: vi.fn(() => ({
-                limit: vi.fn().mockResolvedValueOnce([]), // no existing audit run
-              })),
-              // when select(orgs) or select(children) without where:
-              then: (resolve: any) => {
-                // If selecting organisations
-                if (fields?.id && !fields?.schoolYear) {
-                  resolve([{ id: 'org-1' }]);
-                } else {
-                  // selecting children
-                  resolve([
-                    { id: 'c1', schoolYear: 'Nursery', organisationId: 'org-1' },
-                    { id: 'c2', schoolYear: 'Reception', organisationId: 'org-1' },
-                    { id: 'c3', schoolYear: '4', organisationId: 'org-1' },
-                    { id: 'c4', schoolYear: '13', organisationId: 'org-1' },
-                    { id: 'c5', schoolYear: 'Graduated', organisationId: 'org-1' },
-                  ]);
-                }
-              },
-            };
-          }),
-        })),
-        update: vi.fn(() => ({
-          set: vi.fn((data: any) => ({
-            where: vi.fn((whereClause: any) => {
-              updatedChildren.push(data);
-              return Promise.resolve(true);
+    let selectCall = 0;
+    const selectMock = vi.fn().mockImplementation(() => {
+      selectCall += 1;
+      if (selectCall === 1) {
+        return {
+          from: () => ({
+            where: () => ({
+              limit: vi.fn().mockResolvedValueOnce([]),
             }),
-          })),
-        })),
-        insert: vi.fn(() => ({
-          values: vi.fn((val: any) => {
-            insertedAuditEvents.push(val);
-            return Promise.resolve(true);
           }),
-        })),
+        };
+      }
+      return {
+        from: vi.fn().mockResolvedValueOnce([{ id: 'org-1' }, { id: 'org-2' }]),
       };
-      return cb(tx);
     });
+
+    const insertMock = vi.fn(() => ({
+      values: vi.fn((rows: Array<{ organisationId: string; eventType: string; eventData: string }>) => {
+        insertedAuditBatches.push(rows);
+        return Promise.resolve(true);
+      }),
+    }));
+
+    vi.mocked(db.transaction).mockImplementationOnce(async (cb) =>
+      cb({
+        execute: executeMock,
+        select: selectMock,
+        insert: insertMock,
+      } as never)
+    );
 
     const req = new NextRequest('http://localhost:3000/api/cron/school-year-roll?year=2026', {
       headers: { authorization: 'Bearer test-cron-secret' },
@@ -143,22 +174,47 @@ describe('/api/cron/school-year-roll (D5.R)', () => {
     const res = await GET(req);
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body.success).toBe(true);
-    expect(body.skipped).toBe(false);
-    expect(body.rolledCount).toBe(4); // c1, c2, c3, c4 rolled; c5 (Graduated) remained unchanged
+    expect(body).toEqual({
+      success: true,
+      skipped: false,
+      rolledCount: 4,
+      rolloverYear: 2026,
+    });
 
-    // Check individual progression
-    expect(updatedChildren).toEqual([
-      { schoolYear: 'Reception', updatedAt: expect.any(Date) }, // Nursery -> Reception
-      { schoolYear: '1', updatedAt: expect.any(Date) },         // Reception -> 1
-      { schoolYear: '5', updatedAt: expect.any(Date) },         // 4 -> 5
-      { schoolYear: 'Graduated', updatedAt: expect.any(Date) }, // 13 -> Graduated
-    ]);
+    // 1 advisory lock query + 1 set-based UPDATE CTE excluding soft-deleted children
+    expect(executeMock).toHaveBeenCalledTimes(2);
+    const updateSqlArg = new PgDialect().sqlToQuery(executeMock.mock.calls[1][0]).sql;
+    expect(updateSqlArg).toContain('WHERE deleted_at IS NULL');
+    expect(updateSqlArg).toContain('AND c.deleted_at IS NULL');
+    expect(updateSqlArg).toContain("^(?:year[[:space:]]*|yr[.]?[[:space:]]*|y)?(0?[0-9]|1[0-3])$");
+    expect(updateSqlArg).toContain("^(?:year[[:space:]]*|yr[.]?[[:space:]]*|y)?([0-9]{1,2})$");
+    expect(updateSqlArg).not.toContain('(d{1,2})');
+    expect(updateSqlArg).not.toContain('years*');
 
-    // Check audit event recorded
-    expect(insertedAuditEvents.length).toBe(1);
-    expect(insertedAuditEvents[0].organisationId).toBe('org-1');
-    expect(insertedAuditEvents[0].eventType).toBe('school_year_rollover_completed');
-    expect(JSON.parse(insertedAuditEvents[0].eventData).rolloverYear).toBe(2026);
+    // Single bulk insert across all organisations
+    expect(insertMock).toHaveBeenCalledTimes(1);
+    expect(insertedAuditBatches).toHaveLength(1);
+    expect(insertedAuditBatches[0]).toHaveLength(2);
+    expect(insertedAuditBatches[0][0].organisationId).toBe('org-1');
+    expect(insertedAuditBatches[0][0].eventType).toBe('school_year_rollover_completed');
+    expect(JSON.parse(insertedAuditBatches[0][0].eventData)).toMatchObject({
+      rolloverYear: 2026,
+      academicYearLabel: '2026/2027',
+      totalRolled: 4,
+    });
+  });
+
+  it('returns sanitized 500 error when transaction throws', async () => {
+    vi.mocked(db.transaction).mockRejectedValueOnce(
+      new Error('Neon connection timeout postgres://secret')
+    );
+
+    const req = new NextRequest('http://localhost:3000/api/cron/school-year-roll?year=2026', {
+      headers: { authorization: 'Bearer test-cron-secret' },
+    });
+    const res = await GET(req);
+    expect(res.status).toBe(500);
+    const body = await res.json();
+    expect(body).toEqual({ error: 'Internal database error' });
   });
 });
