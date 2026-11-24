@@ -82,6 +82,7 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
     }
 
     const orgCentres = await getUserAccessibleCentres(session.user.id);
+    const canManageSafeguarding = userRole === 'ORG_OWNER' || userRole === 'MANAGER';
 
     const getStudentInfo = () => {
         if (booking.attendees && booking.attendees.length > 0) {
@@ -391,7 +392,11 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
                     <h3 className="text-section-title text-text">Internal Notes</h3>
                 </div>
                 {student.id ? (
-                    <InternalNotesTimeline childId={student.id} initialNotes={initialNotes} />
+                    <InternalNotesTimeline
+                        childId={student.id}
+                        initialNotes={initialNotes}
+                        canManageSafeguarding={canManageSafeguarding}
+                    />
                 ) : (
                     <p className="text-small-body text-text-muted italic">No student associated with this booking to attach notes to.</p>
                 )}

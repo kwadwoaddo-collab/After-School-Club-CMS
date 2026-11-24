@@ -8,12 +8,23 @@ import { eq, and } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { notifyOwners } from '@/lib/db-notifications';
 
-const HEALTH_RELEVANT_CATEGORIES = new Set(['Medical', 'Safeguarding', 'Health', 'Allergy', 'Dietary']);
+const ALLOWED_PARENT_NOTE_CATEGORIES = new Set([
+    'Medical',
+    'Dietary',
+    'Allergy',
+    'Health',
+    'Medication',
+]);
 
 export async function addMedicalNote(childId: string, content: string, category: string = 'Medical') {
     try {
         const parent = await getCurrentParent();
         if (!parent) return { success: false, error: 'Unauthorized' };
+
+        const noteCategory = category?.trim() || 'Medical';
+        if (!ALLOWED_PARENT_NOTE_CATEGORIES.has(noteCategory)) {
+            return { success: false, error: 'Invalid note category' };
+        }
 
         // Verify child belongs to parent
         const child = await db.query.children.findFirst({
@@ -28,10 +39,9 @@ export async function addMedicalNote(childId: string, content: string, category:
         const trimmedContent = content.trim();
         if (!trimmedContent) return { success: false, error: 'Note content cannot be empty' };
 
-        const noteCategory = category?.trim() || 'Medical';
-
         await db.insert(studentNotes).values({
             childId: child.id,
+            userId: null,
             content: trimmedContent,
             authorName: `${parent.firstName} ${parent.lastName} (Parent)`,
             category: noteCategory,
@@ -39,7 +49,7 @@ export async function addMedicalNote(childId: string, content: string, category:
 
         // Notify club owners in-app (never block saving the parent's note; never send external parent emails)
         const orgId = child.organisationId || parent.organisationId;
-        if (orgId && HEALTH_RELEVANT_CATEGORIES.has(noteCategory)) {
+        if (orgId && ALLOWED_PARENT_NOTE_CATEGORIES.has(noteCategory)) {
             try {
                 await notifyOwners({
                     orgId,

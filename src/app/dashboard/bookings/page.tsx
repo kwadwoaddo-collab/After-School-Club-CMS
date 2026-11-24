@@ -61,6 +61,7 @@ export default async function BookingsPage(props: {
     if (userRole === 'TUTOR' || !['ORG_OWNER', 'MANAGER', 'FRONT_DESK'].includes(userRole)) {
         return redirect('/dashboard/attendance');
     }
+    const canViewSafeguarding = userRole === 'ORG_OWNER' || userRole === 'MANAGER';
 
     const orgId = session.user.organisationId;
 
@@ -293,7 +294,15 @@ export default async function BookingsPage(props: {
                                 feedbackSentAt: true,
                                 updatedAt: true
                             },
-                            with: { child: { with: { notes: true } } }
+                            with: {
+                                child: {
+                                    with: {
+                                        notes: canViewSafeguarding
+                                            ? true
+                                            : { where: (notes, { ne }) => ne(notes.category, 'Safeguarding') }
+                                    }
+                                }
+                            }
                         },
                         staff: true
                     }
@@ -311,7 +320,24 @@ export default async function BookingsPage(props: {
                 };
             }
             totalRecords = totalRes?.count || 0;
-            bookingsData = rows;
+            bookingsData = canViewSafeguarding
+                ? rows
+                : rows.map((row: any) => ({
+                    ...row,
+                    attendees: Array.isArray(row.attendees)
+                        ? row.attendees.map((att: any) => ({
+                            ...att,
+                            child: att?.child
+                                ? {
+                                    ...att.child,
+                                    notes: Array.isArray(att.child.notes)
+                                        ? att.child.notes.filter((n: any) => (n?.category ?? '').trim().toLowerCase() !== 'safeguarding')
+                                        : att.child.notes,
+                                }
+                                : att?.child,
+                        }))
+                        : row.attendees,
+                }));
         } catch (error) {
             logger.error('Failed to fetch bookings data:', error);
             bookingsData = [];

@@ -217,7 +217,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                 </div>
                 <div className="lg:col-span-2">
                     <Suspense fallback={<ActivitySkeleton />}>
-                        <ActivityTab searchParams={searchParams as any} org={org} activeCentreId={activeCentreId} accessibleCentreIds={accessibleCentreIds} hasCentres={hasCentres} isFeedOnly={true} />
+                        <ActivityTab searchParams={searchParams as any} org={org} activeCentreId={activeCentreId} accessibleCentreIds={accessibleCentreIds} hasCentres={hasCentres} userRole={userRole} isFeedOnly={true} />
                     </Suspense>
                 </div>
             </div>
@@ -237,7 +237,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                 )}
                 
                 <Suspense fallback={<ActivitySkeleton />}>
-                    <ActivityTab searchParams={searchParams as any} org={org} activeCentreId={activeCentreId} accessibleCentreIds={accessibleCentreIds} hasCentres={hasCentres} isFunnelOnly={true} />
+                    <ActivityTab searchParams={searchParams as any} org={org} activeCentreId={activeCentreId} accessibleCentreIds={accessibleCentreIds} hasCentres={hasCentres} userRole={userRole} isFunnelOnly={true} />
                 </Suspense>
             </div>
         </div>
