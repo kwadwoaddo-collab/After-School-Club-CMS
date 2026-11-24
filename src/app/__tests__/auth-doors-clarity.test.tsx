@@ -96,3 +96,15 @@ describe('Auth doors role clarity, cross-links & passwordless guidance (PR #8aâ€
         expect(staffLoginLink.closest('form')).toBeNull();
     });
 });
+
+describe('Portal login brand & contrast (X-01)', () => {
+    it('renders the SprintScale brand and a token-based input border', async () => {
+        const { default: PortalLoginPage } = await import('../portal/login/page');
+        const { render, screen } = await import('@testing-library/react');
+        const { container } = render(<PortalLoginPage />);
+        expect(screen.getByTestId('portal-brand').textContent).toBe('SprintScale');
+        const input = container.querySelector('#portal-login-email');
+        expect(input?.className).toContain('border-[var(--if-text-muted)]');
+        expect(input?.className).toContain('text-foreground');
+    });
+});
