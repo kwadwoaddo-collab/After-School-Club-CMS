@@ -36,16 +36,12 @@ export async function GET(request: NextRequest) {
     }
 
     let accessibleCentreIds: string[] | null = null;
-    if (userRole !== 'ORG_OWNER' && 'getUserAccessibleCentreIds' in permissions) {
-      try {
-        const ids = await permissions.getUserAccessibleCentreIds(session.user.id);
-        if (Array.isArray(ids)) {
-          accessibleCentreIds = ids;
-        }
-      } catch {
-        // Fallback when db.query is unmocked in lightweight unit tests
-        accessibleCentreIds = null;
+    if (userRole !== 'ORG_OWNER') {
+      const ids = await permissions.getUserAccessibleCentreIds(session.user.id);
+      if (!Array.isArray(ids)) {
+        throw new Error('Failed to resolve accessible centres for search');
       }
+      accessibleCentreIds = ids;
     }
 
     if (accessibleCentreIds !== null && accessibleCentreIds.length === 0) {
@@ -54,11 +50,6 @@ export async function GET(request: NextRequest) {
 
     const searchPattern = `%${query.trim()}%`;
 
-    // N-2 (Milestone 3N): Centre results are only included for roles that can access
-    // the /dashboard/centres page (ORG_OWNER and MANAGER). FRONT_DESK cannot access
-    // /dashboard/centres/[id] (page gate: ORG_OWNER + MANAGER only), so including
-    // centre results for FRONT_DESK produces dead navigation links. Solve at the API
-    // level following established role policy rather than expanding authorisation.
     const CENTRES_SEARCH_ROLES = ['ORG_OWNER', 'MANAGER'] as const;
     const canSearchCentres = CENTRES_SEARCH_ROLES.includes(userRole as typeof CENTRES_SEARCH_ROLES[number]);
 

@@ -25,6 +25,14 @@ vi.mock('@/lib/auth', () => ({
   auth: vi.fn(),
 }));
 
+vi.mock('@/lib/permissions', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/permissions')>();
+  return {
+    ...actual,
+    getUserAccessibleCentreIds: vi.fn().mockResolvedValue(['centre-1']),
+  };
+});
+
 vi.mock('next/navigation', () => ({
   redirect: vi.fn((path: string) => {
     throw new Error(`REDIRECT:${path}`);
@@ -297,4 +305,23 @@ describe('GET /api/parents/[id] — role enforcement (closed in Milestone 3E)', 
       expect(res.status).toBe(404);
     }
   );
+
+  it('fails closed with 500 when getUserAccessibleCentreIds throws for non-owner role', async () => {
+    const { auth } = await import('@/lib/auth');
+    (auth as any).mockResolvedValueOnce(sessionFor('MANAGER'));
+    const { db } = await import('@/db');
+    (db.query.parents.findFirst as any).mockResolvedValueOnce({
+      id: 'p1',
+      organisationId: 'org-1',
+      deletedAt: null,
+      children: [{ id: 'c1', centreId: 'centre-2', deletedAt: null }],
+    });
+    const perms = await import('@/lib/permissions');
+    (perms.getUserAccessibleCentreIds as any).mockRejectedValueOnce(new Error('DB failure'));
+    const { GET } = await import('@/app/api/parents/[id]/route');
+
+    const req = new Request('http://localhost/api/parents/p1');
+    const res = await GET(req, { params: Promise.resolve({ id: 'p1' }) });
+    expect(res.status).toBe(500);
+  });
 });

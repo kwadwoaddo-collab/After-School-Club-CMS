@@ -1,4 +1,5 @@
 import { logger } from '@/lib/logger';
+import { getPrefillJwtSecret } from '@/lib/prefill-token';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
 import { getApiSession } from '@/lib/session';
@@ -151,8 +152,8 @@ export async function POST(req: NextRequest) {
         let prefillBookingId: string | null = null;
         let prefillChildIds: string[] = [];
         if (prefillToken) {
+            const secret = getPrefillJwtSecret();
             try {
-                const secret = new TextEncoder().encode(process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || 'fallback-secret-at-least-32-chars-long');
                 const { jwtVerify } = await import('jose');
                 const result = await jwtVerify(prefillToken, secret);
                 prefillParentId = (result.payload.parentId as string) || null;

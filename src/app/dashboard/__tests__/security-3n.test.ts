@@ -74,6 +74,14 @@ vi.mock('@/lib/auth', () => ({
     auth: vi.fn(),
 }));
 
+vi.mock('@/lib/permissions', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('@/lib/permissions')>();
+    return {
+        ...actual,
+        getUserAccessibleCentreIds: vi.fn().mockResolvedValue(['centre-1']),
+    };
+});
+
 vi.mock('@/db', () => ({
     db: {
         select: vi.fn().mockReturnThis(),

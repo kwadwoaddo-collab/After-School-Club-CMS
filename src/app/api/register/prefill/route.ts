@@ -6,6 +6,7 @@ import { parents, children, centres } from '@/db/schema';
 import { and, eq, isNull } from 'drizzle-orm';
 import { jwtVerify } from 'jose';
 import { resolveBookingForRegistration } from '@/lib/services/booking-outcome-sync';
+import { getPrefillJwtSecret } from '@/lib/prefill-token';
 
 export async function GET(req: NextRequest) {
     try {
@@ -16,8 +17,8 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ error: 'Token is required' }, { status: 400 });
         }
 
-        // 1. Verify prefill token (JWT signature + expiry)
-        const secret = new TextEncoder().encode(process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || 'fallback-secret-at-least-32-chars-long');
+        // 1. Verify prefill token (JWT signature + expiry) — fail closed in production if secret unset
+        const secret = getPrefillJwtSecret();
         let payload: any;
         try {
             const result = await jwtVerify(token, secret);
@@ -33,20 +34,6 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ error: 'Malformed token payload' }, { status: 400 });
         }
 
-        // S-1 fix: Establish the requested centre's organisation BEFORE fetching
-        // any parent or child PII.
-        //
-        // The original code fetched the parent by parentId alone. A valid prefill
-        // token issued for Org A (parentId=A, centreId=A) could be presented to
-        // the prefill API and receive Org A parent/child PII — even if the caller
-        // were operating in an Org B registration context.
-        //
-        // Resolution:
-        //   (a) Resolve the centre from the token's centreId to get its organisationId.
-        //   (b) Verify the parent's organisationId matches that of the centre.
-        //   (c) Verify neither the parent nor the children are soft-deleted.
-        //   (d) Only then return PII.
-
         // 2. Resolve centre to get organisation context
         const centre = await db.query.centres.findFirst({
             where: eq(centres.id, centreId),
@@ -60,12 +47,11 @@ export async function GET(req: NextRequest) {
         const parent = await db.query.parents.findFirst({
             where: and(
                 eq(parents.id, parentId),
-                eq(parents.organisationId, centre.organisationId),  // S-1: org isolation
-                isNull(parents.deletedAt)                            // S-2 pattern: exclude deleted
+                eq(parents.organisationId, centre.organisationId),
+                isNull(parents.deletedAt)
             ),
         });
         if (!parent) {
-            // Cross-org token or deleted parent — return 404 without revealing which
             return NextResponse.json({ error: 'Parent record not found' }, { status: 404 });
         }
 
@@ -74,7 +60,7 @@ export async function GET(req: NextRequest) {
             where: and(
                 eq(children.parentId, parentId),
                 eq(children.centreId, centreId),
-                isNull(children.deletedAt),  // S-4 pattern: exclude deleted children
+                isNull(children.deletedAt),
             ),
         });
 
@@ -82,7 +68,6 @@ export async function GET(req: NextRequest) {
         if (childIds && Array.isArray(childIds)) {
             parentChildren = parentChildren.filter(c => childIds.includes(c.id));
         }
-
 
         // 5. Transform to match form expected schema
         const transformedParents = [{

@@ -53,21 +53,18 @@ export async function PATCH(
         }
 
         if (userRole !== 'ORG_OWNER') {
-            try {
-                const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
-                if (Array.isArray(accessibleCentreIds)) {
-                    const parentChildren = await db.query.children.findMany({
-                        where: (c, { and: a, eq: e, isNull: isN }) => a(e(c.parentId, id), isN(c.deletedAt)),
-                    });
-                    if (
-                        accessibleCentreIds.length === 0 ||
-                        (parentChildren.length > 0 && !parentChildren.some(c => !c.centreId || accessibleCentreIds.includes(c.centreId)))
-                    ) {
-                        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-                    }
-                }
-            } catch {
-                // Fallback when permissions/db.query.users is not mocked in unit tests
+            const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
+            if (!Array.isArray(accessibleCentreIds)) {
+                throw new Error('Failed to resolve accessible centres for parent PATCH');
+            }
+            const parentChildren = await db.query.children.findMany({
+                where: (c, { and: a, eq: e, isNull: isN }) => a(e(c.parentId, id), isN(c.deletedAt)),
+            });
+            if (
+                accessibleCentreIds.length === 0 ||
+                (parentChildren.length > 0 && !parentChildren.some(c => !c.centreId || accessibleCentreIds.includes(c.centreId)))
+            ) {
+                return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
             }
         }
 
@@ -119,14 +116,6 @@ export async function GET(
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        // Role gate — deliberately left unrestricted in Milestone 3B pending a
-        // properly-scoped Bookings/cross-module audit (see
-        // project-notes/milestone-3b-parents-audit.md §4). That audit has now
-        // been done as part of Milestone 3E: this route's own PATCH handler
-        // (above) already restricts to this exact tuple, the Parents detail
-        // page requires the same tuple, and BookingForm's only authenticated
-        // host page (/dashboard/bookings/new) also requires the same tuple —
-        // so applying it here breaks no evidenced legitimate caller.
         const userRole = (session.user as any).role;
         if (!['ORG_OWNER', 'MANAGER', 'FRONT_DESK'].includes(userRole)) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
@@ -156,23 +145,21 @@ export async function GET(
 
         let visibleChildren = activeChildren;
         if (userRole !== 'ORG_OWNER') {
-            try {
-                const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
-                if (Array.isArray(accessibleCentreIds)) {
-                    if (
-                        accessibleCentreIds.length === 0 ||
-                        (activeChildren.length > 0 && !activeChildren.some(c => !c.centreId || accessibleCentreIds.includes(c.centreId)))
-                    ) {
-                        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-                    }
-                    visibleChildren = activeChildren.filter(c => !c.centreId || accessibleCentreIds.includes(c.centreId));
-                }
-            } catch {
-                // Fallback when permissions/db.query.users is not mocked in unit tests
+            const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
+            if (!Array.isArray(accessibleCentreIds)) {
+                throw new Error('Failed to resolve accessible centres for parent GET');
             }
+            if (
+                accessibleCentreIds.length === 0 ||
+                (activeChildren.length > 0 && !activeChildren.some(c => !c.centreId || accessibleCentreIds.includes(c.centreId)))
+            ) {
+                return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+            }
+            visibleChildren = activeChildren.filter(c => !c.centreId || accessibleCentreIds.includes(c.centreId));
         }
 
         const { children: _ignored, ...parentData } = parent;
+        void _ignored;
 
         return NextResponse.json({
             parent: parentData,
