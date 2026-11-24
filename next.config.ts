@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
+import { buildSecurityHeaders } from "./src/lib/security-headers";
 
 const nextConfig: NextConfig = {
   experimental: {
@@ -10,41 +11,7 @@ const nextConfig: NextConfig = {
     root: process.cwd(),
   },
   async headers() {
-    const allowedFrameAncestors = process.env.ALLOWED_FRAME_ANCESTORS
-      ? process.env.ALLOWED_FRAME_ANCESTORS.split(',').map(domain => domain.trim()).join(' ')
-      : '';
-    const cspFrameAncestors = `frame-ancestors 'self' ${allowedFrameAncestors}`.trim();
-
-    return [
-      {
-        // Allow booking pages to be embedded in iframes
-        source: '/book/:orgSlug/:centreSlug',
-        headers: [
-          {
-            key: 'X-Frame-Options',
-            value: 'SAMEORIGIN',
-          },
-          {
-            key: 'Content-Security-Policy',
-            value: cspFrameAncestors,
-          },
-        ],
-      },
-      {
-        // Allow org-level booking pages to be embedded
-        source: '/book/:orgSlug',
-        headers: [
-          {
-            key: 'X-Frame-Options',
-            value: 'SAMEORIGIN',
-          },
-          {
-            key: 'Content-Security-Policy',
-            value: cspFrameAncestors,
-          },
-        ],
-      },
-    ];
+    return buildSecurityHeaders();
   },
 
   async rewrites() {
