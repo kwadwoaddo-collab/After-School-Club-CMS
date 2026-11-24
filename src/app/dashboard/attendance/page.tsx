@@ -27,6 +27,7 @@ export default async function AttendancePage(props: {
     const rawParams = await props.searchParams;
     const session = await requireTenantSession();
     if (!session?.user?.organisationId) redirect('/login');
+    const canExportCsv = ['ORG_OWNER', 'MANAGER', 'FRONT_DESK'].includes(session.user.role ?? '');
     let targetDate = new Date();
     if (rawParams.date) {
         const parsed = new Date(rawParams.date);
@@ -263,26 +264,30 @@ export default async function AttendancePage(props: {
                 </div>
             </HeaderPortal>
 
-            <HeaderPortal targetId="header-right-actions">
-                {!isToday && (
-                    <Button variant="outline" asChild>
-                        <Link href="/dashboard/attendance">
-                            <CalendarCheck className="w-3.5 h-3.5" />
-                            Go to Today
-                        </Link>
-                    </Button>
-                )}
-                <Button variant="outline" asChild>
-                    <a
-                        href={`/api/export/register?date=${targetStr}${activeCentreId !== 'all' ? `&centre=${activeCentreId}` : ''}`}
-                        download={`register-${targetStr}.csv`}
-                        title={`Download register for ${format(targetDate, 'd MMM yyyy')} as CSV`}
-                    >
-                        <Download className="w-3.5 h-3.5" />
-                        Export CSV
-                    </a>
-                </Button>
-            </HeaderPortal>
+            {(!isToday || canExportCsv) && (
+                <HeaderPortal targetId="header-right-actions">
+                    {!isToday && (
+                        <Button variant="outline" asChild>
+                            <Link href="/dashboard/attendance">
+                                <CalendarCheck className="w-3.5 h-3.5" />
+                                Go to Today
+                            </Link>
+                        </Button>
+                    )}
+                    {canExportCsv && (
+                        <Button variant="outline" asChild>
+                            <a
+                                href={`/api/export/register?date=${targetStr}${activeCentreId !== 'all' ? `&centre=${activeCentreId}` : ''}`}
+                                download={`register-${targetStr}.csv`}
+                                title={`Download register for ${format(targetDate, 'd MMM yyyy')} as CSV`}
+                            >
+                                <Download className="w-3.5 h-3.5" />
+                                Export CSV
+                            </a>
+                        </Button>
+                    )}
+                </HeaderPortal>
+            )}
 
             {/* Date navigation */}
             <div className="flex items-center gap-2">
