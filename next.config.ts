@@ -6,9 +6,6 @@ const nextConfig: NextConfig = {
     // Allow a 3 MB centre PDF plus multipart metadata; file validation stays stricter.
     serverActions: { bodySizeLimit: '4mb' },
   },
-  typescript: {
-    ignoreBuildErrors: true,
-  },
   turbopack: {
     root: process.cwd(),
   },
