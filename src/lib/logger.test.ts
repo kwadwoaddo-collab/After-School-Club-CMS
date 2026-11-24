@@ -169,5 +169,33 @@ describe('logger redact()', () => {
     expect(extra?.errorName).toBe('Error');
     expect(extra?.errorMessage).toBe('DB connection refused');
     expect(typeof extra?.stack).toBe('string');
+    expect(extra?.stack).not.toBe('[REDACTED_EMAIL]');
+  });
+
+  it('preserves scoped @package/name frames in stack traces while redacting embedded emails in-place', () => {
+    const err = new Error('Delivery failed for parent.user@example.co.uk');
+    err.stack = [
+      'Error: Delivery failed for parent.user@example.co.uk',
+      '    at sendMail (/var/task/node_modules/@sentry/nextjs/build/cjs/index.js:42:13)',
+      '    at query (/var/task/node_modules/@neondatabase/serverless/index.mjs:18:5)',
+    ].join('\n');
+
+    const { sentryExtra } = captureLogOutput(() => logger.error('mail failure', err));
+    expect(sentryExtra?.errorMessage).toBe('Delivery failed for [REDACTED_EMAIL]');
+    expect(sentryExtra?.stack).toContain('@sentry/nextjs/build/cjs/index.js:42:13');
+    expect(sentryExtra?.stack).toContain('@neondatabase/serverless/index.mjs:18:5');
+    expect(sentryExtra?.stack).toContain('[REDACTED_EMAIL]');
+    expect(sentryExtra?.stack).not.toContain('parent.user@example.co.uk');
+  });
+
+  it('redacts magic-link query tokens without wiping SQL column names like magic_link_token', () => {
+    const { sentryExtra } = captureLogOutput(() =>
+      logger.error('db error', {
+        sqlDetail: 'column "magic_link_token" of relation "parents" exists',
+        verifyLink: 'https://app.sprintscaleit.co.uk/portal/verify?token=secret123',
+      })
+    );
+    expect(sentryExtra?.sqlDetail).toContain('magic_link_token');
+    expect(sentryExtra?.verifyLink).toBe('[REDACTED_TOKEN_URL]');
   });
 });
