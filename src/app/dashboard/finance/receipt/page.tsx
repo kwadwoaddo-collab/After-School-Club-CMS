@@ -44,7 +44,7 @@ export default async function ReceiptPage(props: { searchParams: Promise<{ payme
                     </Link>
                     <div className="flex-1">
                         <h1 className="text-3xl font-bold text-foreground tracking-tight">
-                            Cash Receipt Generator
+                            Parent Payment Receipt
                         </h1>
                         <p className="text-muted-foreground font-medium mt-1">
                             Create, print, and download quick cash receipts for parents
@@ -162,7 +162,7 @@ export default async function ReceiptPage(props: { searchParams: Promise<{ payme
                 </Link>
                 <div className="flex-1">
                     <h1 className="text-3xl font-bold text-foreground tracking-tight">
-                        Cash Receipt Generator
+                        Parent Payment Receipt
                     </h1>
                     <p className="text-muted-foreground font-medium mt-1">
                         Create, print, and download quick cash receipts for parents

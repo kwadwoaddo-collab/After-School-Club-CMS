@@ -9,7 +9,7 @@ import { parseStrictDecimalToPence } from './payment-eligibility';
 
 export type WorkspaceInvoice = Omit<FinanceInvoice, 'payments'> & { billingConfigId?: string | null; coveredChildrenJson?: unknown; payments?: (NonNullable<FinanceInvoice['payments']>[number] & { reversedAt?: string | Date | null })[] };
 export function isFinanceWorkspaceView(params: {view?: string; status?: string; create?: string}) {
-    return !['former','history','families','cashflow'].includes(params.view ?? '') && params.status !== 'paid' && !['1','true'].includes(params.create ?? '');
+    return !['former','history','families','cashflow','outgoings'].includes(params.view ?? '') && params.status !== 'paid' && !['1','true'].includes(params.create ?? '');
 }
 export function day(value: string | Date | null | undefined): string | null {
     if (!value) return null;
