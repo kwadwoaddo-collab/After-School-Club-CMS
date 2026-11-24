@@ -315,9 +315,22 @@ export async function processBroadcastDeliveries(options: {
   broadcastId?: string;
   limit?: number;
   workerToken?: string;
-}) {
+  startedAt?: number;
+  budgetMs?: number;
+}): Promise<{
+  processedCount: number;
+  sentCount: number;
+  failedCount: number;
+  retriedCount: number;
+  partial?: boolean;
+}> {
   const limit = Math.min(Math.max(options.limit || 50, 1), 100);
   const workerToken = options.workerToken || crypto.randomUUID();
+  const budgetStartedAt = options.startedAt ?? Date.now();
+
+  if (options.budgetMs !== undefined && Date.now() - budgetStartedAt >= options.budgetMs) {
+    return { processedCount: 0, sentCount: 0, failedCount: 0, retriedCount: 0, partial: true };
+  }
 
   const claimed = await claimDeliveries({
     batchSize: limit,
@@ -332,9 +345,11 @@ export async function processBroadcastDeliveries(options: {
     return { processedCount: 0, sentCount: 0, failedCount: 0, retriedCount: 0 };
   }
 
+  let processedCount = 0;
   let sentCount = 0;
   let failedCount = 0;
   let retriedCount = 0;
+  let partial = false;
   const affectedBroadcastIds = new Set<string>();
 
   // Fetch broadcast message details for the batch to avoid N+1 queries
@@ -346,7 +361,28 @@ export async function processBroadcastDeliveries(options: {
 
   const broadcastMap = new Map(broadcastRecords.map((b) => [b.id, b]));
 
-  for (const delivery of claimed) {
+  for (let idx = 0; idx < claimed.length; idx++) {
+    const delivery = claimed[idx];
+
+    if (options.budgetMs !== undefined && Date.now() - budgetStartedAt >= options.budgetMs) {
+      partial = true;
+      for (const unattempted of claimed.slice(idx)) {
+        affectedBroadcastIds.add(unattempted.broadcastId);
+        await db
+          .update(broadcastDeliveries)
+          .set({
+            status: 'PENDING',
+            claimToken: null,
+            leaseExpiresAt: null,
+            attemptCount: Math.max(0, (unattempted.attemptCount || 1) - 1),
+            updatedAt: new Date(),
+          })
+          .where(sql`${broadcastDeliveries.id} = ${unattempted.id} AND ${broadcastDeliveries.claimToken} = ${workerToken}`);
+      }
+      break;
+    }
+
+    processedCount++;
     affectedBroadcastIds.add(delivery.broadcastId);
     const broadcast = broadcastMap.get(delivery.broadcastId);
 
@@ -502,9 +538,10 @@ export async function processBroadcastDeliveries(options: {
   }
 
   return {
-    processedCount: claimed.length,
+    processedCount,
     sentCount,
     failedCount,
     retriedCount,
+    ...(partial ? { partial: true } : {}),
   };
 }

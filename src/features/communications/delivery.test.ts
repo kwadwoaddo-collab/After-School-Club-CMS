@@ -582,5 +582,85 @@ describe('Broadcast Delivery Processor & Utilities', () => {
       expect(call1.idempotencyKey).toBe(delivery1Id);
       expect(call2.idempotencyKey).toBe(delivery2Id);
     });
+
+    it("releases remaining claimed rows back to PENDING with partial: true when cooperative budgetMs expires mid-batch", async () => {
+      let currentNow = Date.UTC(2026, 10, 24, 2, 0, 0);
+      const nowSpy = vi.spyOn(Date, "now").mockImplementation(() => currentNow);
+
+      const claimedRows = [
+        {
+          id: "del-budget-1",
+          organisationId: "org-1",
+          broadcastId: "b-budget",
+          recipientEmail: "first@synthetic.org",
+          recipientName: "First",
+          channel: "email",
+          status: "PROCESSING",
+          attemptCount: 1,
+          claimToken: "worker-budget",
+        },
+        {
+          id: "del-budget-2",
+          organisationId: "org-1",
+          broadcastId: "b-budget",
+          recipientEmail: "second@synthetic.org",
+          recipientName: "Second",
+          channel: "email",
+          status: "PROCESSING",
+          attemptCount: 1,
+          claimToken: "worker-budget",
+        },
+      ];
+
+      vi.spyOn(db, "execute")
+        .mockResolvedValueOnce({ rows: claimedRows } as any)
+        .mockResolvedValueOnce({ rows: [{ sent_count: 1, failed_count: 0, pending_count: 1, total_count: 2 }] } as any);
+
+      vi.spyOn(db, "select").mockReturnValueOnce({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockResolvedValue([{
+            id: "b-budget",
+            organisationId: "org-1",
+            subject: "Budget Test",
+            message: "Hello",
+          }]),
+        }),
+      } as any);
+
+      const updateSetMock = vi.fn().mockReturnValue({
+        where: vi.fn().mockResolvedValue([]),
+      });
+      vi.spyOn(db, "update").mockReturnValue({ set: updateSetMock } as any);
+
+      vi.mocked(sendEmail).mockImplementationOnce(async () => {
+        currentNow += 50_005;
+        return { success: true, messageId: "msg-1" };
+      });
+
+      try {
+        const res = await processBroadcastDeliveries({
+          broadcastId: "b-budget",
+          limit: 10,
+          workerToken: "worker-budget",
+          startedAt: Date.UTC(2026, 10, 24, 2, 0, 0),
+          budgetMs: 50_000,
+        });
+
+        expect(res.partial).toBe(true);
+        expect(res.processedCount).toBe(1);
+        expect(res.sentCount).toBe(1);
+        expect(sendEmail).toHaveBeenCalledTimes(1);
+        expect(updateSetMock).toHaveBeenCalledWith(
+          expect.objectContaining({
+            status: "PENDING",
+            claimToken: null,
+            leaseExpiresAt: null,
+            attemptCount: 0,
+          }),
+        );
+      } finally {
+        nowSpy.mockRestore();
+      }
+    });
   });
 });

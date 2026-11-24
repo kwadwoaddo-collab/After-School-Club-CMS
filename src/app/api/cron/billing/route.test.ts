@@ -411,3 +411,74 @@ describe('Confirmed enrolment admission', () => {
         expect(mockInsert).not.toHaveBeenCalled();
     });
 });
+
+describe("Cron Billing Runtime Budget (PR-15)", () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        process.env.CRON_SECRET = "test-secret";
+        mockEligibleRows.mockResolvedValue([{ id: "child-1" }]);
+        mockDbQuery.billingCycleSkips.findFirst.mockResolvedValue(null);
+        mockDbQuery.invoices.findFirst.mockResolvedValue(null);
+        mockDbQuery.billingRuns.findFirst.mockResolvedValue(null);
+    });
+
+    it("exports maxDuration = 60", async () => {
+        const mod = await import("./route");
+        expect(mod.maxDuration).toBe(60);
+    });
+
+    it("exits cleanly with partial: true when the 50s cooperative time budget is reached", async () => {
+        mockDbQuery.billingConfigs.findMany.mockResolvedValue([
+            {
+                id: "cfg-1",
+                parentId: "parent-regular-1",
+                centreId: "c-1",
+                organisationId: "o-1",
+                status: "active",
+                billingAnchorDate: "2030-01-01",
+                leadTimeUnit: "CALENDAR_MONTHS",
+                leadTimeValue: 1,
+                runs: [],
+                skips: [],
+                children: [{ child: { id: "child-1", firstName: "Alice", lastName: "Smith" } }],
+            },
+            {
+                id: "cfg-2",
+                parentId: "parent-regular-2",
+                centreId: "c-1",
+                organisationId: "o-1",
+                status: "active",
+                billingAnchorDate: "2030-01-01",
+                leadTimeUnit: "CALENDAR_MONTHS",
+                leadTimeValue: 1,
+                runs: [],
+                skips: [],
+                children: [{ child: { id: "child-1", firstName: "Bob", lastName: "Smith" } }],
+            },
+        ]);
+
+        const baseNow = Date.UTC(2026, 10, 24, 6, 0, 0);
+        let calls = 0;
+        const nowSpy = vi.spyOn(Date, "now").mockImplementation(() => {
+            calls++;
+            // Call 1 = startedAt, Call 2 = cfg-1 check (< 50s), Call 3+ = cfg-2 check (>= 50s)
+            if (calls <= 2) return baseNow + calls * 10;
+            return baseNow + 50_010;
+        });
+
+        try {
+            const { POST } = await import("./route");
+            const res = await POST(new NextRequest("http://localhost/api/cron/billing", {
+                headers: { Authorization: "Bearer test-secret" },
+            }));
+            expect(res.status).toBe(200);
+            const data = await res.json();
+            expect(data.ok).toBe(true);
+            expect(data.partial).toBe(true);
+            expect(data.processed).toBe(1);
+            expect(data.skipped_not_due).toBe(1);
+        } finally {
+            nowSpy.mockRestore();
+        }
+    });
+});
