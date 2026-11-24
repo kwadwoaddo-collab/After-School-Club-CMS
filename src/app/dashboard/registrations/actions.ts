@@ -1,5 +1,6 @@
 'use server';
 import { logger } from '@/lib/logger';
+import { getPrefillJwtSecret } from '@/lib/prefill-token';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 
@@ -377,7 +378,7 @@ export async function generateRegistrationLink(parentId: string, centreId: strin
         childIds,
     }));
     const jose = await import('jose');
-    const secret = new TextEncoder().encode(process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || 'fallback-secret-at-least-32-chars-long');
+    const secret = getPrefillJwtSecret();
     const token = await new jose.SignJWT({
         parentId,
         centreId: targetCentreId,

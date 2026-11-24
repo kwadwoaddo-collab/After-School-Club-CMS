@@ -8,13 +8,23 @@
  * S-1 / S-3: Soft-delete filter (isNull) and booking org-isolation (innerJoin centres)
  *      are validated at the route-execution level with a DB mock returning empty results.
  */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach, type MockedFunction } from 'vitest';
 import { NextRequest } from 'next/server';
-import { GET } from '../route';
+
+const mockGetUserAccessibleCentreIds = vi.fn<(...args: any[]) => Promise<string[]>>().mockResolvedValue(['centre-1']);
 
 vi.mock('@/lib/auth', () => ({
     auth: vi.fn(),
 }));
+
+vi.mock('@/lib/permissions', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('@/lib/permissions')>();
+    return {
+        ...actual,
+        getUserAccessibleCentreIds: (...args: any[]) => mockGetUserAccessibleCentreIds(...args),
+    };
+});
 
 vi.mock('@/db', () => ({
     db: {
@@ -27,6 +37,7 @@ vi.mock('@/db', () => ({
     },
 }));
 
+import { GET } from '../route';
 import { auth } from '@/lib/auth';
 const mockAuth = auth as MockedFunction<typeof auth>;
 
@@ -49,6 +60,7 @@ function makeSession(role: string) {
 describe('S-2 – Role restriction on /api/search', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        mockGetUserAccessibleCentreIds.mockResolvedValue(['centre-1']);
     });
 
     it('returns 403 Forbidden for TUTOR role', async () => {
@@ -75,6 +87,13 @@ describe('S-2 – Role restriction on /api/search', () => {
         mockAuth.mockResolvedValueOnce(makeSession('FRONT_DESK') as any);
         const res = await GET(makeRequest('al'));
         expect(res.status).toBe(200);
+    });
+
+    it('fails closed with 500 when centre permission resolution throws for non-owner role', async () => {
+        mockAuth.mockResolvedValueOnce(makeSession('MANAGER') as any);
+        mockGetUserAccessibleCentreIds.mockRejectedValueOnce(new Error('DB connection lost'));
+        const res = await GET(makeRequest('alice'));
+        expect(res.status).toBe(500);
     });
 
     it('returns 401 for unauthenticated requests', async () => {
