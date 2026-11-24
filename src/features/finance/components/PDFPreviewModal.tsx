@@ -3,16 +3,30 @@ import ReactDom from 'react-dom';
 import { X, Eye, Download } from 'lucide-react';
 import { PDFViewer, PDFDownloadLink } from '@react-pdf/renderer';
 import { useEffect, useState } from 'react';
+import { InvoiceTemplate } from './InvoiceTemplate';
+import { ReceiptTemplate } from './ReceiptTemplate';
 
 interface PDFPreviewModalProps {
     isOpen: boolean;
     onClose: () => void;
-    pdfContent: any;
+    pdfContent?: any;
+    previewType?: 'invoice' | 'receipt';
+    invoice?: any;
+    organisationName?: string;
     title: string;
     fileName: string;
 }
 
-export default function PDFPreviewModal({ isOpen, onClose, pdfContent, title, fileName }: PDFPreviewModalProps) {
+export default function PDFPreviewModal({
+    isOpen,
+    onClose,
+    pdfContent,
+    previewType,
+    invoice,
+    organisationName = '',
+    title,
+    fileName,
+}: PDFPreviewModalProps) {
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
@@ -32,17 +46,25 @@ export default function PDFPreviewModal({ isOpen, onClose, pdfContent, title, fi
         if (typeof window !== 'undefined') {
             window.addEventListener('keydown', handleKeyDown);
         }
-        return () => { 
+        return () => {
             if (typeof window !== 'undefined') {
                 window.removeEventListener('keydown', handleKeyDown);
                 if (window.document.body) {
-                    window.document.body.style.overflow = 'unset'; 
+                    window.document.body.style.overflow = 'unset';
                 }
             }
         };
     }, [isOpen, onClose]);
 
     if (!isOpen || !mounted || typeof window === 'undefined' || !window.document.body) return null;
+
+    const resolvedDocument =
+        pdfContent ??
+        (previewType === 'receipt' ? (
+            <ReceiptTemplate invoice={invoice} organisationName={organisationName} />
+        ) : (
+            <InvoiceTemplate invoice={invoice} organisationName={organisationName} />
+        ));
 
     return ReactDom.createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
@@ -58,10 +80,10 @@ export default function PDFPreviewModal({ isOpen, onClose, pdfContent, title, fi
                             <p className="text-xs text-muted-foreground font-mono">{fileName}</p>
                         </div>
                     </div>
-                    
+
                     <div className="flex items-center gap-2">
                         <PDFDownloadLink
-                            document={pdfContent}
+                            document={resolvedDocument}
                             fileName={fileName}
                             className="flex items-center gap-2 px-3 py-1.5 bg-primary rounded-lg text-xs font-bold text-primary-foreground hover:bg-primary/90 transition-all"
                         >
@@ -72,8 +94,8 @@ export default function PDFPreviewModal({ isOpen, onClose, pdfContent, title, fi
                                 </>
                             )}
                         </PDFDownloadLink>
-                        
-                        <button 
+
+                        <button
                             onClick={onClose}
                             aria-label="Close preview"
                             className="p-2 hover:bg-secondary/80 rounded-lg transition-colors text-muted-foreground"
@@ -86,7 +108,7 @@ export default function PDFPreviewModal({ isOpen, onClose, pdfContent, title, fi
                 {/* PDF Content */}
                 <div className="flex-1 bg-slate-800 p-2 sm:p-4">
                     <PDFViewer width="100%" height="100%" showToolbar={false} style={{ borderRadius: '8px', border: 'none' }}>
-                        {pdfContent}
+                        {resolvedDocument}
                     </PDFViewer>
                 </div>
             </div>

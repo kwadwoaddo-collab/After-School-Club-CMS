@@ -6,9 +6,7 @@ import { logger } from '@/lib/logger';
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { PDFDownloadLink } from '@react-pdf/renderer';
-import { RegistrationTemplate } from '@/features/registration/components/RegistrationTemplate';
-import dynamic from 'next/dynamic';
+
 
 
 // ── Types ──────────────────────────────────────────────────────────
@@ -131,6 +129,7 @@ export default function RegisterPage() {
     const [signature, setSignature] = useState<string | null>(null);
     const [submitting, setSubmitting] = useState(false);
     const [submitted, setSubmitted] = useState(false);
+    const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
     const [error, setError] = useState('');
     const [stepError, setStepError] = useState('');
     const [invalidFields, setInvalidFields] = useState<Set<string>>(new Set());
@@ -613,48 +612,68 @@ export default function RegisterPage() {
                     <p className="text-muted-foreground text-sm mb-6">A confirmation copy has been sent to your email. The team will be in touch to confirm your place.</p>
                     {isClient && (
                         <div className="flex flex-col gap-3">
-                            <PDFDownloadLink
-                                document={
-                                    <RegistrationTemplate
-                                        orgName={primaryClubName}
-                                        centreName={selectedCentre?.name || null}
-                                        startDate={startDate}
-                                        parents={parentList.map(p => ({
-                                            firstName: p.firstName,
-                                            lastName: p.lastName,
-                                            relationship: p.relationship || 'Parent',
-                                            phone: p.phone,
-                                            email: p.email,
-                                            addressLine1: p.addressLine1,
-                                            addressLine2: p.addressLine2,
-                                            city: p.city,
-                                            postcode: p.postcode,
-                                        }))}
-                                        registeredChildren={childList.map(c => ({
-                                            firstName: c.firstName,
-                                            lastName: c.lastName,
-                                            dateOfBirth: c.dateOfBirth,
-                                            schoolYear: c.schoolYear,
-                                            sessions: c.sessions,
-                                        }))}
-                                        emergencyContact={emergency}
-                                        funding={funding}
-                                        specialNeeds={specialNeeds}
-                                        parentSignature={signature}
-                                    />
-                                }
-                                fileName={`registration-${parentList[0]?.lastName.toLowerCase()}-${parentList[0]?.firstName.toLowerCase()}.pdf`.replace(/\s+/g, '-')}
-                                className="w-full py-4 bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/80 font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-blue-600/25"
+                            <button
+                                type="button"
+                                disabled={isDownloadingPdf}
+                                onClick={async () => {
+                                    if (isDownloadingPdf) return;
+                                    setIsDownloadingPdf(true);
+                                    try {
+                                        const [{ pdf }, { RegistrationTemplate }] = await Promise.all([
+                                            import('@react-pdf/renderer'),
+                                            import('@/features/registration/components/RegistrationTemplate'),
+                                        ]);
+                                        const blob = await pdf(
+                                            <RegistrationTemplate
+                                                orgName={primaryClubName}
+                                                centreName={selectedCentre?.name || null}
+                                                startDate={startDate}
+                                                parents={parentList.map(p => ({
+                                                    firstName: p.firstName,
+                                                    lastName: p.lastName,
+                                                    relationship: p.relationship || 'Parent',
+                                                    phone: p.phone,
+                                                    email: p.email,
+                                                    addressLine1: p.addressLine1,
+                                                    addressLine2: p.addressLine2,
+                                                    city: p.city,
+                                                    postcode: p.postcode,
+                                                }))}
+                                                registeredChildren={childList.map(c => ({
+                                                    firstName: c.firstName,
+                                                    lastName: c.lastName,
+                                                    dateOfBirth: c.dateOfBirth,
+                                                    schoolYear: c.schoolYear,
+                                                    sessions: c.sessions,
+                                                }))}
+                                                emergencyContact={emergency}
+                                                funding={funding}
+                                                specialNeeds={specialNeeds}
+                                                parentSignature={signature}
+                                            />
+                                        ).toBlob();
+                                        const fileName = `registration-${(parentList[0]?.lastName || 'parent').toLowerCase()}-${(parentList[0]?.firstName || 'contact').toLowerCase()}.pdf`.replace(/\s+/g, '-');
+                                        const url = URL.createObjectURL(blob);
+                                        const anchor = document.createElement('a');
+                                        anchor.href = url;
+                                        anchor.download = fileName;
+                                        document.body.appendChild(anchor);
+                                        anchor.click();
+                                        anchor.remove();
+                                        URL.revokeObjectURL(url);
+                                    } catch (err) {
+                                        logger.error('Failed to generate registration PDF copy:', err);
+                                    } finally {
+                                        setIsDownloadingPdf(false);
+                                    }
+                                }}
+                                className="w-full py-4 bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/80 font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-blue-600/25 disabled:opacity-60 disabled:cursor-not-allowed"
                             >
-                                {({ loading }) => (
-                                    <>
-                                        <svg className="w-5 h-5 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                                        </svg>
-                                        {loading ? 'Preparing PDF...' : 'Download PDF Copy'}
-                                    </>
-                                )}
-                            </PDFDownloadLink>
+                                <svg className="w-5 h-5 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                </svg>
+                                {isDownloadingPdf ? 'Preparing PDF...' : 'Download PDF Copy'}
+                            </button>
                             <button
                                 onClick={resetToStart}
                                 className="w-full py-3 bg-card hover:bg-secondary text-muted-foreground hover:text-foreground rounded-xl transition-all border border-border text-sm font-medium"

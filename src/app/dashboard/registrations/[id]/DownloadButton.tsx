@@ -1,9 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { PDFDownloadLink } from '@react-pdf/renderer';
-import { RegistrationTemplate } from '@/features/registration/components/RegistrationTemplate';
+import { useState } from 'react';
 import { Download, Loader2 } from 'lucide-react';
+import { logger } from '@/lib/logger';
 
 interface DownloadButtonProps {
     orgName: string;
@@ -49,32 +48,22 @@ interface DownloadButtonProps {
 }
 
 export default function DownloadButton(props: DownloadButtonProps) {
-    const [isClient, setIsClient] = useState(false);
-
-    useEffect(() => {
-        setIsClient(true);
-    }, []);
-
-    if (!isClient) {
-        return (
-            <button
-                disabled
-                className="flex items-center gap-2 px-4 py-2.5 bg-card/5 text-muted-foreground opacity-60 border border-white/10 rounded-xl text-sm font-semibold cursor-not-allowed"
-            >
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Loading PDF...
-            </button>
-        );
-    }
+    const [isGenerating, setIsGenerating] = useState(false);
 
     const primaryParent = props.parents[0];
     const lastName = primaryParent?.lastName.toLowerCase() || 'parent';
     const firstName = primaryParent?.firstName.toLowerCase() || 'contact';
     const fileName = `registration-${lastName}-${firstName}.pdf`.replace(/\s+/g, '-');
 
-    return (
-        <PDFDownloadLink
-            document={
+    const handleDownload = async () => {
+        if (isGenerating) return;
+        setIsGenerating(true);
+        try {
+            const [{ pdf }, { RegistrationTemplate }] = await Promise.all([
+                import('@react-pdf/renderer'),
+                import('@/features/registration/components/RegistrationTemplate'),
+            ]);
+            const blob = await pdf(
                 <RegistrationTemplate
                     orgName={props.centreName || props.orgName}
                     centreName={props.centreName}
@@ -91,20 +80,36 @@ export default function DownloadButton(props: DownloadButtonProps) {
                     specialNeeds={props.specialNeeds}
                     parentSignature={props.parentSignature}
                 />
-            }
-            fileName={fileName}
-            className="flex items-center gap-2 px-4 py-2.5 bg-primary hover:opacity-90 text-white font-semibold rounded-xl text-sm transition-all shadow-md shadow-primary/20 cursor-pointer"
+            ).toBlob();
+
+            const url = URL.createObjectURL(blob);
+            const anchor = document.createElement('a');
+            anchor.href = url;
+            anchor.download = fileName;
+            document.body.appendChild(anchor);
+            anchor.click();
+            anchor.remove();
+            URL.revokeObjectURL(url);
+        } catch (err) {
+            logger.error('Failed to generate registration PDF:', err);
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+
+    return (
+        <button
+            type="button"
+            onClick={handleDownload}
+            disabled={isGenerating}
+            className="flex items-center gap-2 px-4 py-2.5 bg-primary hover:opacity-90 text-white font-semibold rounded-xl text-sm transition-all shadow-md shadow-primary/20 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
         >
-            {({ loading }) => (
-                <>
-                    {loading ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                        <Download className="w-4 h-4" />
-                    )}
-                    {loading ? 'Preparing...' : 'Download PDF'}
-                </>
+            {isGenerating ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+                <Download className="w-4 h-4" />
             )}
-        </PDFDownloadLink>
+            {isGenerating ? 'Preparing...' : 'Download PDF'}
+        </button>
     );
 }
