@@ -24,16 +24,9 @@ export function AttendanceRadial({ percentage, size = 'md', children, className,
         lg: 'w-32 h-32',
     }[size];
 
-    // SprintScale Color logic
-    const getColorClass = (p: number) => {
-        if (p >= 80) return 'text-tertiary shadow-[0_0_12px_rgba(184,255,187,0.4)]';
-        if (p >= 50) return 'text-amber-400 shadow-[0_0_12px_rgba(251,191,36,0.3)]';
-        return 'text-rose-500 shadow-[0_0_12px_rgba(255,113,108,0.4)]';
-    };
-
     const getStrokeColor = (p: number) => {
         if (p >= 80) return 'stroke-tertiary';
-        if (p >= 50) return 'stroke-amber-400';
+        if (p >= 50) return 'stroke-warning';
         return 'stroke-error';
     };
 
@@ -52,7 +45,7 @@ export function AttendanceRadial({ percentage, size = 'md', children, className,
                     stroke="currentColor"
                     strokeWidth={strokeWidth}
                     fill="transparent"
-                    className="text-outline-variant/10"
+                    className="text-border"
                 />
                 {/* Progress Ring */}
                 <circle
@@ -89,8 +82,8 @@ export function AttendanceRadial({ percentage, size = 'md', children, className,
                 <div className={cn(
                     "absolute -bottom-2 right-0 px-2 py-1 rounded-lg text-[10px] font-black italic border shadow-lg z-20",
                     percentage >= 80 ? "bg-tertiary/10 text-tertiary border-tertiary/20" :
-                    percentage >= 50 ? "bg-amber-400/10 text-amber-400 border-amber-400/20" :
-                    "bg-rose-500/10 text-rose-500 border-rose-500/20"
+                    percentage >= 50 ? "bg-warning/10 text-warning border-warning/20" :
+                    "bg-error/10 text-error border-error/20"
                 )}>
                     {Math.round(percentage)}%
                 </div>
