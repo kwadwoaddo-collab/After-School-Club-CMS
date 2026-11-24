@@ -49,7 +49,7 @@ export function AddMedicalNoteForm({ childId }: { childId: string }) {
                 <button
                     type="submit"
                     disabled={isSubmitting || !content.trim()}
-                    className="flex items-center gap-2 px-4 py-2 bg-primary rounded-lg text-sm font-bold text-white hover:bg-primary-dim transition-colors disabled:opacity-50"
+                    className="flex items-center gap-2 px-4 py-2 bg-primary rounded-lg text-sm font-bold text-primary-foreground hover:bg-primary-dim transition-colors disabled:opacity-50"
                 >
                     <Plus className="w-4 h-4" />
                     {isSubmitting ? 'Saving...' : 'Add Note'}

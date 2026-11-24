@@ -81,14 +81,10 @@ describe('UX-F1 — Form control readability regression tests', () => {
     }
   });
 
-  it('AddMedicalNoteForm textarea does not use text-white', () => {
+  it('AddMedicalNoteForm textarea and submit button do not use hardcoded text-white', () => {
     const src = readSrc('src/features/portal/components/AddMedicalNoteForm.tsx');
-    const textareaLines = src.split('\n').filter(line =>
-      line.includes('<textarea') && line.includes('className')
-    );
-    for (const line of textareaLines) {
-      expect(line, `Textarea line should not have text-white: ${line.trim()}`).not.toContain('text-white');
-    }
+    expect(src).not.toContain('text-white');
+    expect(src).toContain('text-primary-foreground');
   });
 
   it('AlertModal does not use text-white on its title h3 or bg-secondary/80 button', () => {
@@ -142,6 +138,31 @@ describe('UX-F1 — Form control readability regression tests', () => {
   it('globals.css registers --color-on-surface-variant in the @theme inline block', () => {
     const src = readSrc('src/app/globals.css');
     expect(src).toContain('--color-on-surface-variant');
+  });
+
+  it('globals.css defines --destructive, --if-danger, --if-on-accent, and --if-on-danger across all 4 theme scopes', () => {
+    const src = readSrc('src/app/globals.css');
+    for (const token of ['--destructive:', '--destructive-foreground:', '--if-danger:', '--if-on-accent:', '--if-on-danger:', '--status-warning:']) {
+      const occurrences = (src.match(new RegExp(token, 'g')) ?? []).length;
+      expect(occurrences, `${token} must appear in :root, dark media, .dark, and .light`).toBeGreaterThanOrEqual(4);
+    }
+  });
+
+  it('Button default and destructive variants use theme-aware foreground tokens instead of hardcoded text-white', () => {
+    const src = readSrc('src/components/ui/Button.tsx');
+    expect(src).not.toContain('text-white');
+    expect(src).toContain('bg-accent text-on-accent');
+    expect(src).toContain('bg-danger text-on-danger');
+  });
+
+  it('AttendanceRadial uses theme-adaptive status tokens and border track instead of amber-400/rose-500 or invisible /10 track', () => {
+    const src = readSrc('src/components/ui/AttendanceRadial.tsx');
+    expect(src).not.toContain('amber-400');
+    expect(src).not.toContain('rose-500');
+    expect(src).not.toContain('text-outline-variant/10');
+    expect(src).toContain('text-border');
+    expect(src).toContain('stroke-warning');
+    expect(src).toContain('stroke-error');
   });
 
   it('globals.css has webkit-autofill override', () => {
@@ -296,6 +317,35 @@ describe('UX-F1 — Form control readability regression tests', () => {
     expect(textContrast).toBeGreaterThanOrEqual(4.5); // Required: >= 4.5:1
     expect(textContrast).toBeGreaterThan(15.0);       // Actual: ~16.8:1
     expect(placeholderContrast).toBeGreaterThanOrEqual(4.5); // Required: >= 4.5:1 (Actual: ~5.99:1)
+  });
+
+  it('Accent, danger, and semantic status tokens satisfy WCAG 2.1 AA (>= 4.5:1) in both light and dark modes', () => {
+    function hexToLum(hex: string) {
+      const clean = hex.replace('#', '');
+      const r = parseInt(clean.slice(0, 2), 16) / 255;
+      const g = parseInt(clean.slice(2, 4), 16) / 255;
+      const b = parseInt(clean.slice(4, 6), 16) / 255;
+      const lin = (c: number) => (c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+      return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+    }
+    function contrastHex(a: string, b: string) {
+      const l1 = hexToLum(a);
+      const l2 = hexToLum(b);
+      const [bright, dark] = l1 > l2 ? [l1, l2] : [l2, l1];
+      return (bright + 0.05) / (dark + 0.05);
+    }
+
+    // Button default & destructive pairs in light and dark modes
+    expect(contrastHex('#0F5F5C', '#FFFFFF')).toBeGreaterThanOrEqual(4.5); // light accent + on-accent
+    expect(contrastHex('#2FA39D', '#0E1716')).toBeGreaterThanOrEqual(4.5); // dark accent + on-accent
+    expect(contrastHex('#B3261E', '#FFFFFF')).toBeGreaterThanOrEqual(4.5); // light danger + on-danger
+    expect(contrastHex('#F87171', '#141413')).toBeGreaterThanOrEqual(4.5); // dark danger + on-danger
+
+    // Light semantic status tokens against both card (#ffffff) and grouped canvas (#f5f5f7)
+    for (const statusHex of ['#166534', '#147a38', '#b45309', '#b91c1c', '#0066cc']) {
+      expect(contrastHex(statusHex, '#ffffff')).toBeGreaterThanOrEqual(4.5);
+      expect(contrastHex(statusHex, '#f5f5f7')).toBeGreaterThanOrEqual(4.5);
+    }
   });
 
   // ─── Post-Release Interaction UX Fix 1: Surface Geometric Stability ───────
