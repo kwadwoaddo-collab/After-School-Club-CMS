@@ -9,10 +9,9 @@ import { format } from 'date-fns';
 import RecordPaymentModal from './RecordPaymentModal';
 import PaymentHistoryList from './PaymentHistoryList';
 import { useRouter } from 'next/navigation';
-import { PDFDownloadLink } from '@react-pdf/renderer';
-import { InvoiceTemplate } from './InvoiceTemplate';
-import { ReceiptTemplate } from './ReceiptTemplate';
-import PDFPreviewModal from './PDFPreviewModal';
+import dynamic from 'next/dynamic';
+
+const PDFPreviewModal = dynamic(() => import('./PDFPreviewModal'), { ssr: false });
 import ConfirmActionModal from './ConfirmActionModal';
 import { voidInvoice, updateInvoiceDate, updateInvoiceNotes, resendInvoiceEmail, issueDraftInvoice, updateDraftInvoice, discardDraftInvoice } from '../actions';
 import { canOfferRecordPayment, parseStoredDecimalToPence } from '../domain/payment-eligibility';
@@ -36,6 +35,7 @@ interface InvoiceDetailsClientProps {
 export default function InvoiceDetailsClient({ invoice, organisationName, userRole }: InvoiceDetailsClientProps) {
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
     const [previewType, setPreviewType] = useState<'invoice' | 'receipt' | null>(null);
+    const [downloadingDoc, setDownloadingDoc] = useState<'invoice' | 'receipt' | null>(null);
     const [isClient, setIsClient] = useState(false);
     const [confirmAction, setConfirmAction] = useState<'void' | null>(null);
     const [isPending, startTransition] = useTransition();
@@ -174,6 +174,38 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
         setIsClient(true);
     }, []);
 
+    const handleDownloadPdf = async (docType: 'invoice' | 'receipt') => {
+        if (downloadingDoc) return;
+        setDownloadingDoc(docType);
+        try {
+            const [{ pdf }, templateMod] = await Promise.all([
+                import('@react-pdf/renderer'),
+                docType === 'invoice' ? import('./InvoiceTemplate') : import('./ReceiptTemplate'),
+            ]);
+            const docElement =
+                docType === 'invoice' && 'InvoiceTemplate' in templateMod ? (
+                    <templateMod.InvoiceTemplate invoice={invoice} organisationName={organisationName} />
+                ) : 'ReceiptTemplate' in templateMod ? (
+                    <templateMod.ReceiptTemplate invoice={invoice} organisationName={organisationName} />
+                ) : null;
+            if (!docElement) throw new Error('PDF template unavailable');
+            const blob = await pdf(docElement).toBlob();
+            const url = URL.createObjectURL(blob);
+            const anchor = document.createElement('a');
+            anchor.href = url;
+            anchor.download = docType === 'invoice' ? `Invoice-${invoice.invoiceNumber}.pdf` : `Receipt-${invoice.invoiceNumber}.pdf`;
+            document.body.appendChild(anchor);
+            anchor.click();
+            anchor.remove();
+            URL.revokeObjectURL(url);
+        } catch (err) {
+            const message = err instanceof Error ? err.message : String(err);
+            toast({ title: 'PDF download failed', message: message || 'Unable to prepare PDF', variant: 'error' });
+        } finally {
+            setDownloadingDoc(null);
+        }
+    };
+
     const totalPaid = invoice.payments.reduce((sum: number, p: any) => (p.status === 'verified' && !p.reversedAt) ? sum + Number(p.amount) : sum, 0);
     const remainingBalance = Number(invoice.amount) - totalPaid;
     const collectionState = evaluateInvoiceCollectionState(invoice, toLondonBusinessDate(), { strictPayments: false });
@@ -230,18 +262,15 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                                     >
                                         <Eye className="w-3.5 h-3.5" /> Preview
                                     </button>
-                                    <PDFDownloadLink
-                                        document={<InvoiceTemplate invoice={invoice} organisationName={organisationName} />}
-                                        fileName={`Invoice-${invoice.invoiceNumber}.pdf`}
-                                        className="flex items-center gap-2 px-3 py-2 bg-card text-xs font-bold text-foreground hover:bg-secondary/80 transition-all"
+                                    <button
+                                        type="button"
+                                        onClick={() => handleDownloadPdf('invoice')}
+                                        disabled={downloadingDoc === 'invoice'}
+                                        className="flex items-center gap-2 px-3 py-2 bg-card text-xs font-bold text-foreground hover:bg-secondary/80 transition-all disabled:opacity-50"
                                     >
-                                        {({ loading }) => (
-                                            <>
-                                                <Download className="w-3.5 h-3.5 text-primary" />
-                                                {loading ? '...' : 'PDF'}
-                                            </>
-                                        )}
-                                    </PDFDownloadLink>
+                                        <Download className="w-3.5 h-3.5 text-primary" />
+                                        {downloadingDoc === 'invoice' ? '...' : 'PDF'}
+                                    </button>
                                 </div>
                             </div>
 
@@ -256,18 +285,15 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                                         >
                                             <Eye className="w-3.5 h-3.5" /> Receipt
                                         </button>
-                                        <PDFDownloadLink
-                                            document={<ReceiptTemplate invoice={invoice} organisationName={organisationName} />}
-                                            fileName={`Receipt-${invoice.invoiceNumber}.pdf`}
-                                            className="flex items-center gap-2 px-3 py-2 bg-card text-xs font-bold text-emerald-600 hover:bg-emerald-500/10 transition-all"
+                                        <button
+                                            type="button"
+                                            onClick={() => handleDownloadPdf('receipt')}
+                                            disabled={downloadingDoc === 'receipt'}
+                                            className="flex items-center gap-2 px-3 py-2 bg-card text-xs font-bold text-emerald-600 hover:bg-emerald-500/10 transition-all disabled:opacity-50"
                                         >
-                                            {({ loading }) => (
-                                                <>
-                                                    <Download className="w-3.5 h-3.5" />
-                                                    {loading ? '...' : 'PDF'}
-                                                </>
-                                            )}
-                                        </PDFDownloadLink>
+                                            <Download className="w-3.5 h-3.5" />
+                                            {downloadingDoc === 'receipt' ? '...' : 'PDF'}
+                                        </button>
                                     </div>
                                 </div>
                             )}
@@ -807,19 +833,17 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                 }}
             />
 
-            <PDFPreviewModal
-                isOpen={previewType !== null}
-                onClose={() => setPreviewType(null)}
-                title={previewType === 'invoice' ? 'Invoice Preview' : 'Receipt Preview'}
-                fileName={previewType === 'invoice' ? `Invoice-${invoice.invoiceNumber}.pdf` : `Receipt-${invoice.invoiceNumber}.pdf`}
-                pdfContent={
-                    previewType === 'invoice' ? (
-                        <InvoiceTemplate invoice={invoice} organisationName={organisationName} />
-                    ) : (
-                        <ReceiptTemplate invoice={invoice} organisationName={organisationName} />
-                    )
-                }
-            />
+            {previewType !== null && (
+                <PDFPreviewModal
+                    isOpen={true}
+                    onClose={() => setPreviewType(null)}
+                    title={previewType === 'invoice' ? 'Invoice Preview' : 'Receipt Preview'}
+                    fileName={previewType === 'invoice' ? `Invoice-${invoice.invoiceNumber}.pdf` : `Receipt-${invoice.invoiceNumber}.pdf`}
+                    previewType={previewType}
+                    invoice={invoice}
+                    organisationName={organisationName}
+                />
+            )}
 
             {/* Transition Blocker Overlay */}
             {isPending && (
