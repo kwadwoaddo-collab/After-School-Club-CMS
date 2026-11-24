@@ -107,7 +107,7 @@ describe('FIN-M1: UI Code Invariants & Category C Alignment', () => {
 
         const revenueWidgetContent = fs.readFileSync(path.join(rootDir, 'src/components/dashboard/RevenueWidget.tsx'), 'utf8');
         expect(revenueWidgetContent).not.toContain("'sent', 'partially_paid', 'draft'");
-        expect(revenueWidgetContent).toContain("where ${invoices.status} in ('sent', 'partially_paid')");
+        expect(revenueWidgetContent).toContain("inArray(invoices.status, ['sent', 'partially_paid'])");
     });
 });
 
