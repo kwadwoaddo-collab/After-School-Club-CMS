@@ -14,7 +14,7 @@ import { CMS_STAFF_ROLES, HelpStaffRole, STAFF_ROLE_LABELS } from '@/lib/help/ty
 import HelpHubView from './_components/HelpHubView';
 
 export const metadata: Metadata = {
-  title: 'Help & Training | SprintScale CMS',
+  title: 'Help & Training',
   description:
     'Guides, walkthroughs and operational training resources for SprintScale after-school club management.',
 };

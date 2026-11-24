@@ -42,10 +42,10 @@ async function resolveBookBySubdomain(subdomain: string) {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const { subdomain } = await params;
     const data = await resolveBookBySubdomain(subdomain);
-    if (!data) return { title: 'Centre Not Found' };
+    if (!data) return { title: { absolute: 'Centre Not Found' } };
     const displayName = data.kind === 'centre' ? data.centre.name : data.org.name;
     return {
-        title: `Book a Session — ${displayName}`,
+        title: { absolute: `Book a Session — ${displayName}` },
         description: `Book your child's session at ${displayName}.`,
     };
 }

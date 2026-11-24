@@ -53,13 +53,13 @@ export async function generateMetadata({
   });
 
   if (!org || org.approvalStatus !== 'ACTIVE' || org.centres.length === 0) {
-    return { title: 'Centre Not Found' };
+    return { title: { absolute: 'Centre Not Found' } };
   }
 
   const centre = org.centres[0];
 
   return {
-    title: `Book a Session — ${centre.name}`,
+    title: { absolute: `Book a Session — ${centre.name}` },
     description: `Book an assessment or club session at ${centre.name}${centre.address ? ` (${centre.address})` : ''}.`,
   };
 }

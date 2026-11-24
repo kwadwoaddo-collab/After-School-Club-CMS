@@ -6,7 +6,7 @@ import { CMS_STAFF_ROLES, HelpStaffRole } from '@/lib/help/types';
 import VideoLibraryView from './_components/VideoLibraryView';
 
 export const metadata: Metadata = {
-  title: 'Training Videos | Help & Training | SprintScale CMS',
+  title: 'Training Videos | Help & Training',
   description:
     'Click-by-click walkthrough videos demonstrating daily operations, session bookings, roll call, invoicing, and administration.',
 };

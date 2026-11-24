@@ -20,3 +20,23 @@ describe('Distinct page titles (X-03a)', () => {
         expect(new Set(titles).size).toBe(4);
     });
 });
+
+import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { join } from 'node:path';
+
+function walk(dir: string): string[] {
+    return readdirSync(dir).flatMap((n) => {
+        const p = join(dir, n);
+        if (statSync(p).isDirectory()) return n === '__tests__' ? [] : walk(p);
+        return /(page|layout)\.tsx$/.test(n) ? [p] : [];
+    });
+}
+
+describe('No hard-coded brand suffix in titles (X-03a)', () => {
+    it('no title string contains "| SprintScale"', () => {
+        const offenders = walk(join(__dirname, '..')).filter((f) =>
+            /title:[^\n]*\| SprintScale/.test(readFileSync(f, 'utf8')),
+        );
+        expect(offenders).toEqual([]);
+    });
+});
