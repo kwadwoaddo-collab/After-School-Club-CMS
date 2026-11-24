@@ -49,6 +49,7 @@ function PortalLoginForm() {
                 <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center text-3xl mx-auto mb-4">
                     👋
                 </div>
+                <p className="text-sm font-bold text-[var(--if-accent)] mb-4" data-testid="portal-brand">SprintScale</p>
                 <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-1">For Parents &amp; Carers</p>
                 <h1 className="text-2xl font-bold text-foreground mb-2">Parent Portal</h1>
                 <p className="text-sm text-muted-foreground mb-8">
@@ -71,7 +72,7 @@ function PortalLoginForm() {
                         <div>
                             {/* A11Y-2: label is programmatically associated with input via htmlFor/id */}
                             <label htmlFor="portal-login-email" className="block text-sm font-medium text-foreground mb-1">Email Address</label>
-                            <input id="portal-login-email" type="email" className="w-full px-4 py-3 bg-card text-foreground placeholder:text-muted-foreground border border-border rounded-lg outline-none focus:border-primary transition-all"
+                            <input id="portal-login-email" type="email" className="w-full px-4 py-3 bg-[var(--if-surface)] text-foreground placeholder:text-muted-foreground border border-[var(--if-text-muted)] rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-[var(--if-accent)] focus:border-[var(--if-accent)] transition-all"
                                 required
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
