@@ -2,25 +2,30 @@
 import { logger } from '@/lib/logger';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-
 import { requireTenantSession } from '@/lib/session';
 import { db } from '@/db';
 import {
+    auditEvents,
     children,
     parents,
     registrations,
-    registrationParents,
-    registrationChildren,
     bookings,
-    bookingAttendees,
     organisations,
 } from '@/db/schema';
-import { eq, and, inArray } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import { getUserAccessibleCentres } from '@/lib/permissions';
 
+export const WHOLE_ORG_EXPORT_SAR_NOTICE =
+    'CONTROLLER WHOLE-ORGANISATION ARCHIVE: Contains personal data across multiple families. Do NOT send raw output in response to an individual family Subject Access Request without redacting third-party data (UK GDPR Art. 15(4)).';
+
 /**
- * Export all student, parent, and registration data for the organisation as a JSON blob.
- * Intended for GDPR subject-access requests.
+ * Export all student, parent, registration, and booking data for the organisation as a JSON archive.
+ *
+ * IMPORTANT (UK GDPR Art. 15(4) & Art. 5(2)):
+ * - Intended exclusively as an `ORG_OWNER` controller data-portability / off-boarding backup.
+ * - Must NEVER be disclosed unredacted to an individual parent/carer Subject Access Request (SAR),
+ *   as it contains personal data belonging to other families and children.
+ * - Every execution records an immutable `gdpr_org_export` entry in `audit_events`.
  */
 export async function exportOrganisationData(): Promise<{
     ok: boolean;
@@ -32,12 +37,13 @@ export async function exportOrganisationData(): Promise<{
     if ((session.user as any).role !== 'ORG_OWNER') return { ok: false, error: 'Forbidden' };
 
     const orgId = session.user.organisationId;
- 
+    const actorUserId = session.user.id;
+
     try {
-        const userCentres = await getUserAccessibleCentres(session.user.id);
+        const userCentres = await getUserAccessibleCentres(actorUserId);
         const userCentreIds = userCentres.map(c => c.id);
 
-        // Fetch everything
+        // Fetch controller archive records scoped to this organisation
         const [org, orgParents, orgChildren, orgRegistrations, orgBookings] = await Promise.all([
             db.query.organisations.findFirst({
                 where: eq(organisations.id, orgId),
@@ -86,15 +92,30 @@ export async function exportOrganisationData(): Promise<{
                 : Promise.resolve([]),
         ]);
 
+        const exportedAt = new Date().toISOString();
+        const summary = {
+            totalParents: orgParents.length,
+            totalStudents: orgChildren.length,
+            totalRegistrations: orgRegistrations.length,
+            totalBookings: orgBookings.length,
+        };
+
+        await db.insert(auditEvents).values({
+            organisationId: orgId,
+            userId: actorUserId,
+            eventType: 'gdpr_org_export',
+            eventData: JSON.stringify({
+                actorUserId,
+                exportedAt,
+                ...summary,
+            }),
+        });
+
         const payload = {
-            exportedAt: new Date().toISOString(),
+            exportedAt,
+            dataProtectionNotice: WHOLE_ORG_EXPORT_SAR_NOTICE,
             organisation: org,
-            summary: {
-                totalParents: orgParents.length,
-                totalStudents: orgChildren.length,
-                totalRegistrations: orgRegistrations.length,
-                totalBookings: orgBookings.length,
-            },
+            summary,
             parents: orgParents,
             students: orgChildren,
             registrations: orgRegistrations,

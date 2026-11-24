@@ -9,6 +9,7 @@ const DEFAULT_PRICING = { selfFinanceRate: 20, taxCreditRate: 30 };
 /**
  * GET /api/organisations/[slug]/registration-info
  * Public endpoint — returns org name, logo, T&Cs, session slots, and pricing for the registration form.
+ * Restricted strictly to ACTIVE organisations (`403` when PENDING, SUSPENDED, or REJECTED).
  */
 export async function GET(
     _req: NextRequest,
@@ -35,6 +36,7 @@ export async function GET(
         columns: {
             id: true,
             name: true,
+            approvalStatus: true,
             logoUrl: true,
             brandColor: true,
             registrationTerms: true,
@@ -46,6 +48,10 @@ export async function GET(
 
     if (!org) {
         return NextResponse.json({ error: 'Organisation not found' }, { status: 404 });
+    }
+
+    if (org.approvalStatus !== 'ACTIVE') {
+        return NextResponse.json({ error: 'Organisation is not active' }, { status: 403 });
     }
 
     // Parse sessionSlots JSON → string[] | null
@@ -63,5 +69,8 @@ export async function GET(
         } catch { /* use defaults */ }
     }
 
-    return NextResponse.json({ ...org, sessionSlots, pricing });
+    const { approvalStatus: _approvalStatus, ...publicOrg } = org;
+    void _approvalStatus;
+
+    return NextResponse.json({ ...publicOrg, sessionSlots, pricing });
 }

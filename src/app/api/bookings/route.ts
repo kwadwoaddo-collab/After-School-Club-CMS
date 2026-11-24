@@ -48,16 +48,16 @@ export async function POST(request: NextRequest) {
 
     const centreId = validated.appointment.centreId;
 
-    // ── Centre & Organisation validation ────────────────────────────────────
+    // ── Centre & Active-Organisation validation ─────────────────────────────
     // This is a public (unauthenticated) endpoint. We fetch the centre and
     // its associated organisation in a single relational query to ensure
-    // validity and prevent cross-org injection.
+    // validity, prevent cross-org injection, and block non-ACTIVE tenants.
     const centre = await db.query.centres.findFirst({
       where: eq(centres.id, centreId),
       columns: { id: true, organisationId: true, timezone: true },
       with: {
         organisation: {
-          columns: { id: true }
+          columns: { id: true, approvalStatus: true }
         }
       }
     });
@@ -66,6 +66,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Invalid centre ID' },
         { status: 400 }
+      );
+    }
+
+    if (centre.organisation.approvalStatus !== 'ACTIVE') {
+      return NextResponse.json(
+        { error: 'Organisation is not active' },
+        { status: 403 }
       );
     }
 

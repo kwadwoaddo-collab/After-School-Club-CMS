@@ -19,8 +19,9 @@ import { nanoid } from 'nanoid';
  * primitive (no auth, no size/type check at all), this is now a tightly
  * constrained public mechanism, mirroring the existing pattern already used by
  * the other public write endpoints in this app (/api/register, /api/bookings):
- * no session required, but every request must resolve to a real centre, and
- * the request itself is rate-limited, size-limited, and content-validated.
+ * no session required, but every request must resolve to a real centre in an
+ * ACTIVE organisation, and the request itself is rate-limited, size-limited,
+ * and magic-byte content-validated.
  *
  * See architecture-decisions.md ("Upload security model") for the full reasoning.
  */
@@ -60,15 +61,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Centre ID is required' }, { status: 400 });
     }
 
-    // Resolve + validate the centre the same way /api/bookings and /api/register do —
-    // this is the scoping mechanism for an endpoint with no session to scope from.
+    // Resolve + validate the centre AND its parent organisation's approval status
     const centre = await db.query.centres.findFirst({
       where: eq(centres.id, centreId),
       columns: { id: true, organisationId: true },
+      with: {
+        organisation: {
+          columns: { id: true, approvalStatus: true },
+        },
+      },
     });
 
-    if (!centre) {
+    if (!centre || !centre.organisation) {
       return NextResponse.json({ error: 'Invalid centre ID' }, { status: 400 });
+    }
+
+    if (centre.organisation.approvalStatus !== 'ACTIVE') {
+      return NextResponse.json({ error: 'Organisation is not active' }, { status: 403 });
     }
 
     if (file.size > MAX_FILE_SIZE) {

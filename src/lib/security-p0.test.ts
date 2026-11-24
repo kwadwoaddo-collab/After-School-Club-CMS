@@ -387,4 +387,28 @@ describe('POST /api/bookings — centreId validation', () => {
         const res = await POST(req as any);
         expect(res.status).toBe(400);
     });
+
+    it.each(["PENDING", "SUSPENDED", "REJECTED"] as const)(
+        "returns 403 when centre organisation approvalStatus is %s",
+        async (approvalStatus) => {
+            const { db } = await import("@/db");
+            (db.query.centres.findFirst as any).mockResolvedValueOnce({
+                id: "550e8400-e29b-41d4-a716-446655440000",
+                organisationId: "org-inactive",
+                timezone: "Europe/London",
+                organisation: { id: "org-inactive", approvalStatus },
+            });
+
+            const POST = await getBookingsRoute();
+            const req = new Request("http://localhost/api/bookings", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(validBookingBody),
+            });
+            const res = await POST(req as any);
+            expect(res.status).toBe(403);
+            const json = await res.json();
+            expect(json.error).toBe("Organisation is not active");
+        },
+    );
 });

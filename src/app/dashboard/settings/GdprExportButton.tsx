@@ -22,10 +22,14 @@ export default function GdprExportButton() {
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `data-export-${new Date().toISOString().split('T')[0]}.json`;
+            a.download = `org-controller-archive-${new Date().toISOString().split('T')[0]}.json`;
             a.click();
             URL.revokeObjectURL(url);
-            toast({ title: 'Export ready', message: 'GDPR data export downloaded successfully.', variant: 'success' });
+            toast({
+                title: 'Export ready',
+                message: 'Full organisation archive downloaded. Never send unredacted to a single family SAR.',
+                variant: 'success',
+            });
         } catch {
             toast({ title: 'Export failed', message: 'Something went wrong. Please try again.', variant: 'error' });
         } finally {
@@ -40,10 +44,11 @@ export default function GdprExportButton() {
                     <ShieldCheck className="w-5 h-5 text-primary" />
                 </div>
                 <div className="flex-1 min-w-0">
-                    <h3 className="text-foreground font-bold text-sm">GDPR Data Export</h3>
+                    <h3 className="text-foreground font-bold text-sm">GDPR Data Export (Full Organisation Backup)</h3>
                     <p className="text-muted-foreground text-xs mt-1 leading-relaxed">
-                        Download all personal data stored by your organisation (parents, students, registrations, bookings)
-                        as a JSON file. Use this to fulfil Subject Access Requests.
+                        Download your full organisation controller archive (all parents, students, registrations, and bookings)
+                        for off-boarding or backup. Do not send this whole-organisation file unredacted for an individual family
+                        Subject Access Request (UK GDPR Art. 15(4)).
                     </p>
                 </div>
                 <button
@@ -52,7 +57,7 @@ export default function GdprExportButton() {
                     className="flex items-center gap-2 px-4 py-2.5 bg-secondary border border-border text-foreground hover:bg-secondary/80 rounded-xl text-sm font-bold transition-all disabled:opacity-50 flex-shrink-0"
                 >
                     {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-                    {loading ? 'Exporting…' : 'Export Data'}
+                    {loading ? 'Exporting…' : 'Export Archive'}
                 </button>
             </div>
         </div>
