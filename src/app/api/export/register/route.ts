@@ -7,6 +7,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getUserAccessibleCentres } from '@/lib/permissions';
 import { neutralizeCsvFormula } from '@/lib/csv-safety';
 
+const REGISTER_EXPORT_ROLES = ['ORG_OWNER', 'MANAGER', 'FRONT_DESK'] as const;
+
 /**
  * GET /api/export/register?date=YYYY-MM-DD&centre=centreId
  *
@@ -14,13 +16,18 @@ import { neutralizeCsvFormula } from '@/lib/csv-safety';
  * including booking time, student name, year group, parent name,
  * parent phone, and attendance status.
  *
- * Auth: session required (any authenticated staff role).
+ * Auth: session required; restricted to ORG_OWNER, MANAGER, and FRONT_DESK
+ * (excludes TUTOR from bulk-exporting parent phone PII).
  */
 export async function GET(req: NextRequest) {
     try {
         const session = await getApiSession();
         if (!session?.user?.organisationId) {
             return new NextResponse('Unauthorized', { status: 401 });
+        }
+
+        if (!REGISTER_EXPORT_ROLES.includes(session.user.role as (typeof REGISTER_EXPORT_ROLES)[number])) {
+            return new NextResponse('Forbidden', { status: 403 });
         }
 
         const { searchParams } = new URL(req.url);
