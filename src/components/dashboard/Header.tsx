@@ -37,7 +37,15 @@ const ROLE_LABELS: Record<string, string> = {
 
 export default function Header({ userName, userInitial, userRole, hideSearch }: HeaderProps) {
     const { collapsed, setCollapsed } = useSidebar();
-    const shouldHideSearch = Boolean(hideSearch || userRole === 'TUTOR');
+    const router = useRouter();
+    const pathname = usePathname() || '';
+    const pathnameHidesSearch =
+        pathname.startsWith('/dashboard/registrations') ||
+        pathname.startsWith('/dashboard/bookings') ||
+        pathname.startsWith('/dashboard/students');
+    const shouldHideSearch = Boolean(
+        userRole === 'TUTOR' || (hideSearch ?? pathnameHidesSearch)
+    );
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<any[]>([]);
     const [activeSearchIdx, setActiveSearchIdx] = useState(-1);
@@ -103,8 +111,6 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
     const [showUserMenu, setShowUserMenu] = useState(false);
     const notificationRef = useRef<HTMLDivElement>(null);
     const userMenuRef = useRef<HTMLDivElement>(null);
-    const router = useRouter();
-    const pathname = usePathname();
 
     // Check if the current page is a dashboard list view to merge page elements to global header
     const isListPage = pathname.startsWith('/dashboard/registrations') ||
@@ -270,6 +276,7 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
     };
 
     return (
+        <>
         <header className={`h-14 fixed top-0 right-0 z-40 px-4 lg:px-6 flex items-center gap-3 border-b border-border bg-surface/95 backdrop-blur supports-[backdrop-filter]:bg-surface/80 ${
             collapsed ? 'left-0 lg:left-[72px]' : 'left-0 lg:left-60'
         }`}>
@@ -288,7 +295,7 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                 other pages carry no header-left content (greeting now lives only
                 in DashboardHero, not duplicated in the top bar). */}
             {isListPage && (
-                <div id="header-left" className="flex items-center gap-2 flex-shrink-0" />
+                <div id="header-left" className="flex items-center gap-2 min-w-0 truncate" />
             )}
 
             {/* Middle Section: Tabs Portal and Global Search */}
@@ -376,7 +383,7 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
 
             <div className="ml-auto flex items-center gap-2">
                 {isListPage && (
-                    <div id="header-right-actions" className="flex items-center gap-1.5 sm:gap-2" />
+                    <div id="header-right-actions" className="hidden sm:flex items-center gap-2" />
                 )}
                 {/* Theme Toggle */}
                 <button
@@ -550,5 +557,12 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                 </div>
             </div>
         </header>
+        {isListPage && (
+            <div
+                id="header-mobile-actions"
+                className="sm:hidden empty:hidden px-4 py-2 border-b border-border bg-surface flex flex-wrap items-center justify-end gap-2"
+            />
+        )}
+        </>
     );
 }

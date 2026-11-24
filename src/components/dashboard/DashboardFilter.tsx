@@ -16,17 +16,6 @@ interface DashboardFilterProps {
 
 type QuickFilter = 'this-week' | 'last-week' | 'this-month' | 'last-month';
 
-/**
- * Milestone 2 Correction Pass: previously a tall, three-row stack of
- * `rounded-full`/`shadow-inner` pills on legacy shadcn tokens (bg-secondary,
- * text-muted-foreground, text-primary/80) — a heavy "feature card" treatment
- * InvoiceFlow would never use for a date filter. Rebuilt as a single compact
- * application toolbar: flat segmented control + icon-button date nav, using
- * the CMS's actual design tokens and InvoiceFlow's control geometry
- * (rounded-md, h-8/h-9 controls, accent-only interactive colour — no
- * standalone rounded container, no blue/teal mix). All filter functionality
- * (view toggle, prev/next navigation, quick filters, today) is unchanged.
- */
 export function DashboardFilter({ currentView, currentDateIso, dateLabel }: DashboardFilterProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -112,15 +101,15 @@ export function DashboardFilter({ currentView, currentDateIso, dateLabel }: Dash
   ];
 
   return (
-    <div className={`flex flex-col items-end gap-2 transition-opacity ${isPending ? 'opacity-70' : ''}`}>
+    <div className={`flex flex-col items-end gap-2 max-w-full transition-opacity ${isPending ? 'opacity-70' : ''}`}>
       {isPending && (
         <div
           className="fixed top-0 left-0 right-0 z-[250] h-0.5 bg-accent animate-pulse pointer-events-none"
           aria-hidden="true"
         />
       )}
-      {/* View toggle + date nav */}
-      <div className="flex items-center gap-2">
+      {/* View toggle + date nav — wraps cleanly at 360px */}
+      <div className="flex flex-wrap items-center justify-end gap-2 max-w-full">
         {/* View Toggle — flat segmented control */}
         <div className="flex items-center rounded-md border border-border bg-page p-0.5">
           <button
@@ -185,7 +174,7 @@ export function DashboardFilter({ currentView, currentDateIso, dateLabel }: Dash
       </div>
 
       {/* Quick filter pills */}
-      <div className="flex flex-wrap items-center gap-1.5">
+      <div className="flex flex-wrap items-center justify-end gap-1.5 max-w-full">
         {quickFilters.map(qf => (
           <button
             key={qf.id}
