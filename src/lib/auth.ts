@@ -13,9 +13,10 @@ import GoogleProvider from 'next-auth/providers/google';
 import { DrizzleAdapter } from '@auth/drizzle-adapter';
 import { db } from '@/db';
 import { users, accounts, sessions, verificationTokens, orgMemberships, organisations } from '@/db/schema';
-import { eq, and, gt } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import { hashToken } from '@/lib/magic-link';
+import { authRateLimit, checkRateLimit } from '@/lib/rate-limit';
 // Precomputed cost-10 bcrypt hash for computational symmetry and timing-attack elimination (PM-2E2.B4)
 export const DUMMY_PASSWORD_HASH = '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy';
 
@@ -127,6 +128,16 @@ export const authConfig: any = {
           return null;
         }
 
+        // Per-email rate limit before DB lookup / bcrypt hashing to block distributed brute-force
+        const emailRl = await checkRateLimit(
+          authRateLimit,
+          `nextauth:email:${normalizedEmail}`,
+          { localLimit: 10, localWindowMs: 60_000 }
+        );
+        if (!emailRl.success) {
+          return null;
+        }
+
         // PM-2E2.B4: If password exceeds bcrypt 72-byte limit, fail safely with computational symmetry
         if (Buffer.byteLength(credentials.password, 'utf8') > 72) {
           await bcrypt.compare('dummy-pass', DUMMY_PASSWORD_HASH);
@@ -179,10 +190,19 @@ export const authConfig: any = {
         token: { label: 'Invite Token', type: 'text' },
       },
       async authorize(credentials) {
-        if (!credentials?.token) return null;
+        if (!credentials?.token || typeof credentials.token !== 'string') return null;
+
+        const tokenHash = hashToken(credentials.token);
+        const tokenRl = await checkRateLimit(
+          authRateLimit,
+          `nextauth:invite:${tokenHash.slice(0, 16)}`,
+          { localLimit: 5, localWindowMs: 60_000 }
+        );
+        if (!tokenRl.success) {
+          return null;
+        }
 
         const { staffInvites, orgMemberships, centreMemberships, verificationTokens } = await import('@/db/schema');
-        const tokenHash = hashToken(credentials.token as string);
 
         const [invite] = await db
           .select()
@@ -285,7 +305,7 @@ export const authConfig: any = {
   ],
 
   callbacks: {
-    async signIn({ user, account }: any) {
+    async signIn() {
       // Always allow sign-in — the jwt callback will handle org/onboarding state.
       // Previously we did a DB lookup here which caused a race on first Google login.
       return true;

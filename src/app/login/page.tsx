@@ -18,6 +18,8 @@ const errorBoxClass =
 const noticeClass =
   'mb-6 p-4 bg-[var(--if-accent-soft)] border border-[var(--if-accent)] rounded-2xl text-[var(--if-text)] text-center text-sm font-medium';
 
+const RATE_LIMITED_MESSAGE = 'Too many sign-in attempts. Please wait a minute and try again.';
+
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -31,13 +33,19 @@ function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(urlError ? `Authentication error: ${urlError}` : null);
+  const [error, setError] = useState<string | null>(
+    urlError === 'RateLimited'
+      ? RATE_LIMITED_MESSAGE
+      : urlError
+        ? `Authentication error: ${urlError}`
+        : null
+  );
   const [resendingVerification, setResendingVerification] = useState(false);
   const [resendMessage, setResendMessage] = useState<string | null>(null);
   const [resendError, setResendError] = useState<string | null>(null);
 
   // Google Sign-In state — mounted gates the button until hydration
-  const [mounted, setMounted] = useState(false);
+  const [, setMounted] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [googleError, setGoogleError] = useState<string | null>(null);
 
@@ -90,7 +98,15 @@ function LoginForm() {
         callbackUrl: '/dashboard'
       });
       if (result?.error) {
-        setError('Invalid email or password');
+        if (
+          result.error === 'RateLimited' ||
+          result.code === 'rate_limited' ||
+          result.status === 429
+        ) {
+          setError(RATE_LIMITED_MESSAGE);
+        } else {
+          setError('Invalid email or password');
+        }
         setLoading(false);
       } else {
         router.push('/dashboard');
@@ -275,7 +291,7 @@ function LoginForm() {
               {error && (
                 <div className={errorBoxClass} role="alert">
                   <p>{error}</p>
-                  {email.trim() && (
+                  {email.trim() && error !== RATE_LIMITED_MESSAGE && (
                     <div className="mt-2 pt-2 border-t border-[var(--if-danger)]/30">
                       <button
                         type="button"
