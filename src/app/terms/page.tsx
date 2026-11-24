@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { CURRENT_TERMS_VERSION, CURRENT_TERMS_EFFECTIVE_DATE } from '@/lib/constants/legal';
 
 export const metadata = {
-  title: 'Terms of Service | SprintScale',
+  title: 'Terms of Service',
   description: 'SprintScale terms of service for tuition centres and childcare organisations.',
 };
 

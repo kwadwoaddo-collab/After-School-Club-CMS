@@ -53,10 +53,10 @@ async function resolvePortalBySubdomain(subdomain: string) {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const { subdomain } = await params;
     const data = await resolvePortalBySubdomain(subdomain);
-    if (!data) return { title: 'Centre Not Found' };
+    if (!data) return { title: { absolute: 'Centre Not Found' } };
     const displayName = data.kind === 'centre' ? data.centre.name : data.org.name;
     return {
-        title: `${displayName} — Book or Register`,
+        title: { absolute: `${displayName} — Book or Register` },
         description: `Book a session or register your child at ${displayName}, powered by SprintScale.`,
     };
 }

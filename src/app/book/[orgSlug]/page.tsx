@@ -21,12 +21,12 @@ export async function generateMetadata({
 
     if (!org || org.approvalStatus !== 'ACTIVE') {
         return {
-            title: 'Organisation Not Found',
+            title: { absolute: 'Organisation Not Found' },
         };
     }
 
     return {
-        title: `Book with ${org.name}`,
+        title: { absolute: `Book with ${org.name}` },
         description: `Select a centre to book a session with ${org.name}.`,
     };
 }

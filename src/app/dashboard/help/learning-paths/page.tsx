@@ -9,7 +9,7 @@ import { CMS_STAFF_ROLES, HelpStaffRole, STAFF_ROLE_LABELS } from '@/lib/help/ty
 import LearningPathsListView from './_components/LearningPathsListView';
 
 export const metadata: Metadata = {
-  title: 'Role Learning Paths | Help & Training | SprintScale CMS',
+  title: 'Role Learning Paths | Help & Training',
   description:
     'Curated role-based onboarding and operational training paths combining written guides and video walkthroughs.',
 };

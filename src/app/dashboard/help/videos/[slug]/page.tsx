@@ -28,12 +28,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   if (!video) {
     return {
-      title: 'Video Not Found | Help & Training | SprintScale CMS',
+      title: 'Video Not Found | Help & Training',
     };
   }
 
   return {
-    title: `${video.title} | Training Videos | SprintScale CMS`,
+    title: `${video.title} | Training Videos`,
     description: video.description,
   };
 }

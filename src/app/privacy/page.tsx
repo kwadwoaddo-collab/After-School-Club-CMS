@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { CURRENT_TERMS_VERSION, CURRENT_TERMS_EFFECTIVE_DATE } from '@/lib/constants/legal';
 
 export const metadata = {
-  title: 'Privacy Policy | SprintScale',
+  title: 'Privacy Policy',
   description: 'SprintScale privacy policy and data protection information.',
 };
 

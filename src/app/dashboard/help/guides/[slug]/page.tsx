@@ -32,11 +32,11 @@ export async function generateMetadata({ params }: GuidePageProps): Promise<Meta
   const data = getGuideBySlug(slug);
   if (!data) {
     return {
-      title: 'Guide Not Found | SprintScale CMS',
+      title: 'Guide Not Found',
     };
   }
   return {
-    title: `${data.meta.title} | Help & Training | SprintScale CMS`,
+    title: `${data.meta.title} | Help & Training`,
     description: data.meta.description,
   };
 }

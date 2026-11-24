@@ -20,7 +20,10 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "After School Club CMS",
+  title: {
+    default: "After School Club CMS",
+    template: "%s · After-School Club CMS",
+  },
   description: "Management system for after school clubs and tuition centres",
   appleWebApp: {
     capable: true,

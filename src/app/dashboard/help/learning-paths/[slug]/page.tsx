@@ -26,12 +26,12 @@ export async function generateMetadata({ params }: LearningPathPageProps): Promi
 
   if (!path) {
     return {
-      title: 'Learning Path Not Found | SprintScale CMS',
+      title: 'Learning Path Not Found',
     };
   }
 
   return {
-    title: `${path.title} | Learning Paths | SprintScale CMS`,
+    title: `${path.title} | Learning Paths`,
     description: path.description,
   };
 }

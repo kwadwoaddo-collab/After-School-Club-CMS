@@ -9,7 +9,7 @@ import { requirePlatformAdmin } from '@/lib/org-approval-guard';
 import Link from 'next/link';
 
 export const metadata = {
-  title: 'Platform Administration | SprintScale',
+  title: 'Platform Administration',
   robots: { index: false, follow: false },
 };
 
