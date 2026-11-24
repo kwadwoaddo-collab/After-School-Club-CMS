@@ -4,6 +4,7 @@ import { db } from '@/db';
 import { users, orgMemberships } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { z } from 'zod';
+import { assertOrgActive, OrgNotActiveError } from '@/lib/org-approval-guard';
 
 const switchSchema = z.object({
     orgId: z.string().uuid(),
@@ -40,6 +41,19 @@ export async function POST(request: NextRequest) {
             { error: 'You are not a member of this organisation' },
             { status: 403 }
         );
+    }
+
+    // Enforce ACTIVE approval status on target organisation before mutating active pointer
+    try {
+        await assertOrgActive(orgId);
+    } catch (err) {
+        if (err instanceof OrgNotActiveError) {
+            return NextResponse.json(
+                { error: 'This organisation is not currently active' },
+                { status: 403 }
+            );
+        }
+        throw err;
     }
 
     // Update users.organisationId (the "active org" pointer) and role

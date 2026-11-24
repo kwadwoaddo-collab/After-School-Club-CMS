@@ -15,16 +15,6 @@ import { getUserAccessibleCentres } from '@/lib/permissions';
 import { CentreFilterProvider } from '@/components/dashboard/CentreFilterContext';
 import { resolveActiveCentreId } from '@/lib/centre-filter';
 
-// NOTE: role gating used to live here as a ROUTE_PERMISSIONS map, matched
-// against `currentPath` derived from headers this app's own middleware never
-// actually sets (x-invoke-path / x-pathname / next-url all resolve empty in
-// production) — so the match never fired and access was silently ungated.
-// Milestone 1 replaced this with per-page requireAuth({ roles }) calls, which
-// each page can always answer correctly for itself. See
-// architecture-decisions.md ("Dashboard authorisation enforcement pattern").
-// `currentPath` below is kept ONLY for the cosmetic hideSearch prop — it is
-// not a security boundary and must never become one again.
-
 export default async function DashboardLayout({
     children,
 }: {
@@ -53,50 +43,41 @@ export default async function DashboardLayout({
     const userRole = (session.user as any).role || 'TUTOR';
     const organisationId = (session.user as any).organisationId as string;
 
-    // Cosmetic only (see note above) — not used for any access-control decision.
     const headersList = await headers();
-    const currentPath = headersList.get('x-invoke-path')
-        || headersList.get('x-pathname')
-        || headersList.get('next-url')
-        || '';
 
-    // ── Subdomain-based routing ─────────────────────────────────────
-    // Middleware sets x-subdomain for org/centre-specific subdomains.
-    // We resolve it here (DB access not possible in middleware Edge runtime).
+    // ── Subdomain-based routing (read-only — never mutate users during GET renders) ──
     const subdomainHeader = headersList.get('x-subdomain');
     let subdomainCentreId: string | null = null;
 
     if (subdomainHeader) {
-        // 1. Check if it matches a CENTRE subdomain (e.g. 'dagenham' or 'sydenham')
+        // 1. Check if it matches a CENTRE subdomain within the user's active organisation
         const matchedCentre = await db.query.centres.findFirst({
             where: eq(centres.subdomain, subdomainHeader),
             columns: { id: true, organisationId: true },
         });
 
-        if (matchedCentre) {
-            // Centre found — will auto-select it if user has access
+        if (matchedCentre && matchedCentre.organisationId === organisationId) {
             subdomainCentreId = matchedCentre.id;
-        } else {
-            // 2. Check if it matches an ORG subdomain (e.g. 'lewisham')
+        } else if (!matchedCentre) {
+            // 2. Check if it matches an ORG subdomain; never mutate users.organisationId on GET,
+            // and redirect to /pending-approval if the subdomain belongs to an inactive org
+            // that the user is a member of.
             const matchedOrg = await db.query.organisations.findFirst({
                 where: eq(organisations.subdomain, subdomainHeader),
-                columns: { id: true },
+                columns: { id: true, approvalStatus: true },
             });
 
-            if (matchedOrg && matchedOrg.id !== organisationId) {
-                // Switch the user's active org in the DB
-                // (session will refresh on next login; this covers the current request)
-                const { users, orgMemberships } = await import('@/db/schema');
+            if (matchedOrg && matchedOrg.approvalStatus !== 'ACTIVE') {
+                if (matchedOrg.id === organisationId) {
+                    return redirect('/pending-approval');
+                }
+                const { orgMemberships } = await import('@/db/schema');
                 const membership = await db.query.orgMemberships.findFirst({
-                    where: (m, { and, eq: eqFn }) =>
-                        and(eqFn(m.userId, session.user!.id), eqFn(m.organisationId, matchedOrg.id)),
+                    where: (m, { and: a, eq: eqFn }) =>
+                        a(eqFn(m.userId, session.user!.id), eqFn(m.organisationId, matchedOrg.id)),
                 });
                 if (membership) {
-                    await db.update(users)
-                        .set({ organisationId: matchedOrg.id, role: membership.role })
-                        .where(eq(users.id, session.user!.id));
-                    // Redirect to dashboard so session re-evaluates with new org
-                    return redirect('/dashboard');
+                    return redirect('/pending-approval');
                 }
             }
         }
@@ -148,7 +129,6 @@ export default async function DashboardLayout({
                             centres={orgCentres}
                         />
 
-
                         {/* Main Content Area - Responsive margin */}
                         <DashboardContent>
                             {/* Header with Search and Notifications */}
@@ -156,21 +136,9 @@ export default async function DashboardLayout({
                                 userName={session.user?.name || undefined}
                                 userInitial={session.user?.name?.[0]?.toUpperCase() || 'A'}
                                 userRole={userRole}
-                                hideSearch={
-                                    userRole === 'TUTOR' ||
-                                    currentPath.startsWith('/dashboard/registrations') ||
-                                    currentPath.startsWith('/dashboard/bookings') ||
-                                    currentPath.startsWith('/dashboard/students')
-                                }
                             />
 
                             {/* Dynamic Page Content */}
-                            {/*
-                              Bottom-nav clearance is handled entirely by the
-                              `.dashboard-main-content` rule in globals.css,
-                              not by a `pb-*` utility here — see that rule's
-                              comment for why (Milestone 3A).
-                            */}
                             <main
                                 id="main-content"
                                 className="p-4 sm:p-8 flex-1 min-w-0 dashboard-main-content"

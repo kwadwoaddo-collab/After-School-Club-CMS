@@ -385,7 +385,7 @@ describe('MILESTONE PM-2E2.B3.F — Organisation Membership Authority & Session 
     });
 
     // DB throws network error on orgMemberships lookup
-    mockFindOrgMembership.mockRejectedValue(new Error('PostgreSQL connection failure'));
+    mockFindOrgMembership.mockRejectedValueOnce(new Error('PostgreSQL connection failure'));
 
     const session = await auth();
     expect(session).toBeNull(); // Must fail closed!
@@ -401,6 +401,7 @@ describe('MILESTONE PM-2E2.B3.F — Organisation Membership Authority & Session 
       organisationId: 'org-1',
     });
 
+    mockFindOrgMembership.mockResolvedValueOnce({ id: 'mem-11', userId: 'user-centre-test', organisationId: 'org-1', role: 'TUTOR' });
     mockFindCentreMembership.mockResolvedValue(null);
 
     const canAccess = await canUserAccessCentre('user-centre-test', 'centre-x');

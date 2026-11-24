@@ -116,11 +116,6 @@ export async function getUserRoleForCentre(userId: string, centreId: string): Pr
  *
  * Returns `null` for ORG_OWNER — callers interpret this as "no restriction".
  * Returns a (possibly empty) string[] for all other roles.
- *
- * After the Phase 1-4 migration, children.centreId is populated directly,
- * so this is now a simple WHERE children.centre_id IN (...) query with no joins.
- *
- * This is the single source of truth for centre-scoped student visibility.
  */
 export async function getVisibleChildIds(
     userId: string,
@@ -132,10 +127,6 @@ export async function getVisibleChildIds(
 
     const accessibleCentreIds = await getUserAccessibleCentreIds(userId);
     if (accessibleCentreIds.length === 0) return [];
-
-    // Direct column query — no join required after the migration backfill.
-    // children.centreId is populated by all write paths from Phase 5 onward,
-    // and backfilled for historical records by the Phase 2-4 SQL scripts.
 
     const rows = await db
         .select({ id: children.id })
@@ -153,12 +144,6 @@ export async function getVisibleChildIds(
     return rows.map((r) => r.id);
 }
 
-/**
- * Role hierarchy, lowest to highest privilege. `requirePermission(role)` allows
- * `role` and anything above it — e.g. requirePermission('MANAGER') allows
- * MANAGER and ORG_OWNER, matching the ORG_OWNER/MANAGER safeguarding pairing
- * used throughout the app (see canUserAccessSafeguardingRecords above).
- */
 const ROLE_HIERARCHY: Array<'TUTOR' | 'FRONT_DESK' | 'MANAGER' | 'ORG_OWNER'> = [
     'TUTOR',
     'FRONT_DESK',
@@ -167,25 +152,21 @@ const ROLE_HIERARCHY: Array<'TUTOR' | 'FRONT_DESK' | 'MANAGER' | 'ORG_OWNER'> = 
 ];
 
 /**
- * Require a specific role (or higher) globally. Used in server actions.
- *
- * Fails closed: any requiredRole this function doesn't recognise throws,
- * rather than silently allowing the request through. Previously this checked
- * only 'ORG_OWNER' and 'MANAGER' explicitly and returned successfully for any
- * other value (including two real call sites that passed the non-existent
- * literal 'MANAGE_ORG') — see architecture-decisions.md for the incident this
- * caused (safeguarding-record read/write access effectively unrestricted).
+ * Require a specific role (or higher) globally and verify ACTIVE organisation status.
+ * Used in server actions.
  */
 export async function requirePermission(requiredRole: 'ORG_OWNER' | 'MANAGER' | 'FRONT_DESK' | 'TUTOR') {
     const session = await import('@/lib/auth').then(m => m.auth());
     if (!session?.user?.id || !session.user.organisationId) throw new Error('Unauthorized');
+
+    const { assertOrgActive } = await import('@/lib/org-approval-guard');
+    await assertOrgActive(session.user.organisationId);
 
     const role = (session.user.role || 'TUTOR') as (typeof ROLE_HIERARCHY)[number];
     const requiredIndex = ROLE_HIERARCHY.indexOf(requiredRole);
     const userIndex = ROLE_HIERARCHY.indexOf(role);
 
     if (requiredIndex === -1) {
-        // Defensive: an unrecognised requiredRole must never silently pass.
         throw new Error(`Forbidden: unknown required role "${requiredRole}"`);
     }
 
@@ -195,5 +176,3 @@ export async function requirePermission(requiredRole: 'ORG_OWNER' | 'MANAGER' | 
 
     return session.user;
 }
-
-
