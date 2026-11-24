@@ -48,6 +48,7 @@ export default async function StudentsPage(props: {
     // Student data — TUTOR cannot access (see architecture-decisions.md,
     // "Dashboard authorisation enforcement pattern", and security-p6.test.ts)
     const { session } = await requireAuth({ roles: ['ORG_OWNER', 'MANAGER', 'FRONT_DESK'] });
+    const canManageSafeguarding = ['ORG_OWNER', 'MANAGER'].includes(session.user.role ?? '');
 
     const today = enrolmentBusinessDate();
     const showFollowUps = searchParams.status === 'follow-ups';
@@ -201,12 +202,14 @@ export default async function StudentsPage(props: {
                 WHERE sn.child_id = ${children.id} AND sn.category = 'Medical'
             )
         )`;
-        const hasSafeguardingNotesQuery = sql<boolean>`(
-            EXISTS (
-                SELECT 1 FROM ${studentNotes} sn 
-                WHERE sn.child_id = ${children.id} AND sn.category = 'Safeguarding'
-            )
-        )`;
+        const hasSafeguardingNotesQuery = canManageSafeguarding
+            ? sql<boolean>`(
+                EXISTS (
+                    SELECT 1 FROM ${studentNotes} sn 
+                    WHERE sn.child_id = ${children.id} AND lower(btrim(sn.category)) = 'safeguarding'
+                )
+            )`
+            : sql<boolean>`false`;
 
         // Aggregate stats query
         const statsQuery = db
@@ -311,7 +314,7 @@ export default async function StudentsPage(props: {
                 lowAttendance: pastCount >= MIN_SESSIONS_FOR_ALERT && attendanceRate < LOW_ATTENDANCE_THRESHOLD,
                 nextAssessment: student.nextAssessment ?? null,
                 medicalNotes: student.hasMedicalNotes ? ['Medical Note'] : [],
-                safeguardingNotes: student.hasSafeguardingNotes ? ['Safeguarding Note'] : [],
+                safeguardingNotes: canManageSafeguarding && student.hasSafeguardingNotes ? ['Safeguarding Note'] : [],
             };
         });
 

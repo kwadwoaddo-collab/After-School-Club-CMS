@@ -1,13 +1,20 @@
 'use server';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-
 import { db } from '@/db';
 import { studentNotes, children, parents } from '@/db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { and, eq, desc, ne } from 'drizzle-orm';
 import { requireTenantSession } from '@/lib/session';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { revalidatePath } from 'next/cache';
+
+function canManageSafeguardingNotes(role: unknown): boolean {
+    return role === 'ORG_OWNER' || role === 'MANAGER';
+}
+
+function isSafeguardingCategory(category: string | null | undefined): boolean {
+    return (category ?? '').trim().toLowerCase() === 'safeguarding';
+}
 
 async function assertChildAccess(childId: string, session: any) {
     const [student] = await db
@@ -59,12 +66,18 @@ export async function getStudentNotes(childId: string) {
         return [];
     }
 
+    const canViewSafeguarding = canManageSafeguardingNotes((session.user as any).role);
+
     const notes = await db.query.studentNotes.findMany({
-        where: eq(studentNotes.childId, childId),
+        where: canViewSafeguarding
+            ? eq(studentNotes.childId, childId)
+            : and(eq(studentNotes.childId, childId), ne(studentNotes.category, 'Safeguarding')),
         orderBy: [desc(studentNotes.createdAt)],
     });
 
-    return notes;
+    return canViewSafeguarding
+        ? notes
+        : notes.filter((note) => !isSafeguardingCategory(note.category));
 }
 
 export async function addStudentNote(
@@ -81,6 +94,12 @@ export async function addStudentNote(
     if (!session?.user?.id) {
         throw new Error('Unauthorized');
     }
+
+    const normalizedCategory = isSafeguardingCategory(category) ? 'Safeguarding' : (category?.trim() || 'General');
+    if (normalizedCategory === 'Safeguarding' && !canManageSafeguardingNotes((session.user as any).role)) {
+        throw new Error('Forbidden: Only Managers and Organisation Owners can create safeguarding notes');
+    }
+
     await assertChildAccess(childId, session);
 
     // Try to get name from session user Object
@@ -96,7 +115,7 @@ export async function addStudentNote(
         userId: session.user.id,
         content,
         authorName,
-        category,
+        category: normalizedCategory,
         noteType: options?.noteType ?? 'general',
         subject: options?.subject ?? null,
         rating: options?.rating ?? null,
@@ -105,10 +124,9 @@ export async function addStudentNote(
     // Revalidate paths where this might be used
     revalidatePath(`/dashboard/students/${childId}`);
     revalidatePath('/dashboard/students');
-    
+
     return { success: true };
 }
-
 
 async function authorizeNoteMutation(noteId: string, actionLabel: string = 'modify this note') {
     const session = await requireTenantSession();
@@ -126,28 +144,32 @@ async function authorizeNoteMutation(noteId: string, actionLabel: string = 'modi
     await assertChildAccess(note.childId, session);
 
     const userRole = (session.user as any).role;
+    if (isSafeguardingCategory(note.category) && !canManageSafeguardingNotes(userRole)) {
+        throw new Error('Forbidden: Only Managers and Organisation Owners can access safeguarding notes');
+    }
+
     const isAuthor = note.userId === session.user.id;
-    const isAdmin = userRole === 'ORG_OWNER' || userRole === 'MANAGER';
+    const isAdmin = canManageSafeguardingNotes(userRole);
     if (!isAuthor && !isAdmin) {
         throw new Error(`Unauthorized: Only the author or an Admin can ${actionLabel}`);
     }
 
-    return note;
+    return { note, userRole };
 }
 
 export async function deleteStudentNote(noteId: string) {
-    const note = await authorizeNoteMutation(noteId, 'delete this note');
+    const { note } = await authorizeNoteMutation(noteId, 'delete this note');
 
     await db.delete(studentNotes).where(eq(studentNotes.id, noteId));
 
     revalidatePath(`/dashboard/students/${note.childId}`);
     revalidatePath('/dashboard/students');
-    
+
     return { success: true };
 }
 
 export async function toggleStudentNotePin(noteId: string, pinned: boolean) {
-    const note = await authorizeNoteMutation(noteId, 'pin/unpin notes');
+    const { note } = await authorizeNoteMutation(noteId, 'pin/unpin notes');
 
     await db.update(studentNotes)
         .set({ pinnedAt: pinned ? new Date() : null })
@@ -177,13 +199,18 @@ export async function editStudentNote(
         throw new Error('Note content cannot be empty');
     }
 
-    const note = await authorizeNoteMutation(noteId, 'edit this note');
+    const { note, userRole } = await authorizeNoteMutation(noteId, 'edit this note');
+
+    const normalizedCategory = isSafeguardingCategory(category) ? 'Safeguarding' : (category?.trim() || note.category || 'General');
+    if (normalizedCategory === 'Safeguarding' && !canManageSafeguardingNotes(userRole)) {
+        throw new Error('Forbidden: Only Managers and Organisation Owners can set safeguarding category');
+    }
 
     // Perform the database update safely preserving non-updated optional fields
     await db.update(studentNotes)
         .set({
             content: content.trim(),
-            category,
+            category: normalizedCategory,
             noteType: options?.noteType ?? note.noteType,
             subject: options?.subject !== undefined ? options.subject : note.subject,
             rating: options?.rating !== undefined ? options.rating : note.rating,

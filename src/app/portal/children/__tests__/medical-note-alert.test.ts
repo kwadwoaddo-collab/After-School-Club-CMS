@@ -67,6 +67,7 @@ describe('addMedicalNote — club owner notification (PR #4b)', () => {
         expect(insertValuesMock).toHaveBeenCalledTimes(1);
         expect(insertValuesMock).toHaveBeenCalledWith({
             childId: 'child-1',
+            userId: null,
             content: 'Developed penicillin allergy — carry emergency card',
             authorName: 'Nadia Patel (Parent)',
             category: 'Medical',

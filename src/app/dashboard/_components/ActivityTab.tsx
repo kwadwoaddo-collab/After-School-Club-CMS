@@ -20,11 +20,13 @@ interface ActivityTabProps {
     activeCentreId: string;
     accessibleCentreIds: string[];
     hasCentres: boolean;
+    userRole?: string;
     isFeedOnly?: boolean;
     isFunnelOnly?: boolean;
 }
 
-export default async function ActivityTab({ searchParams, org, activeCentreId, accessibleCentreIds, hasCentres, isFeedOnly, isFunnelOnly }: ActivityTabProps) {
+export default async function ActivityTab({ searchParams, org, activeCentreId, accessibleCentreIds, hasCentres, userRole, isFeedOnly, isFunnelOnly }: ActivityTabProps) {
+    const canViewSafeguarding = userRole === 'ORG_OWNER' || userRole === 'MANAGER';
     const childrenCentreCondition = activeCentreId !== 'all'
         ? eq(children.centreId, activeCentreId)
         : (hasCentres
@@ -173,11 +175,12 @@ export default async function ActivityTab({ searchParams, org, activeCentreId, a
     });
 
     const recentBookingsChildIds = uniqueRecentBookings.map(b => b.childId);
+    const allowedSafetyCategories = canViewSafeguarding ? ['Medical', 'Safeguarding'] : ['Medical'];
     const safetyNotes = recentBookingsChildIds.length > 0
         ? await db.query.studentNotes.findMany({
             where: (notes, { and, inArray }) => and(
                 inArray(notes.childId, recentBookingsChildIds),
-                inArray(notes.category, ['Medical', 'Safeguarding'])
+                inArray(notes.category, allowedSafetyCategories)
             )
         })
         : [];
@@ -185,7 +188,9 @@ export default async function ActivityTab({ searchParams, org, activeCentreId, a
     const recentBookingsWithNotes = uniqueRecentBookings.map((b: any) => {
         const studentSafetyNotes = safetyNotes.filter(n => n.childId === b.childId);
         const medNotes = studentSafetyNotes.filter(n => n.category === 'Medical');
-        const safeguardNotes = studentSafetyNotes.filter(n => n.category === 'Safeguarding');
+        const safeguardNotes = canViewSafeguarding
+            ? studentSafetyNotes.filter(n => n.category === 'Safeguarding')
+            : [];
 
         let stats = { total: 0, completed: 0 };
         try {
@@ -430,7 +435,7 @@ export default async function ActivityTab({ searchParams, org, activeCentreId, a
                         <div className="text-right">
                             {bookingsTrend.type !== 'neutral' && (
                                 <div className={cn("flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold border", bookingsTrend.type === 'positive' ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20" : "bg-error/10 text-error border-error/20")}>
-                                    {bookingsTrend.type === 'positive' ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+                                    {bookingsTrend.type === 'positive' ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" /> }
                                     {bookingsTrend.text} vs last {currentView === 'weekly' ? 'week' : 'month'}
                                 </div>
                             )}

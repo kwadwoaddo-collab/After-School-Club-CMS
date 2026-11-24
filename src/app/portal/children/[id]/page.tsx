@@ -12,6 +12,8 @@ import {
 } from 'lucide-react';
 import { AddMedicalNoteForm } from '@/features/portal/components/AddMedicalNoteForm';
 
+export const PARENT_VISIBLE_NOTE_CATEGORIES = ['Medical', 'Dietary', 'Allergy', 'Health', 'Medication'] as const;
+
 const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
     confirmed: { label: 'Upcoming', className: 'bg-primary/10 text-primary border-primary/20' },
     completed: { label: 'Attended', className: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' },
@@ -35,6 +37,14 @@ export default async function ChildDetailsPage(props: { params: Promise<{ id: st
         with: {
             centre: true,
             notes: {
+                // P0 Safeguarding & internal-notes boundary:
+                // Never expose staff-authored notes (including deleted staff where userId is set NULL via FK)
+                // or Safeguarding/General/System notes to the Parent Portal.
+                where: (notes, { and, isNull, inArray, like }) => and(
+                    isNull(notes.userId),
+                    like(notes.authorName, '% (Parent)'),
+                    inArray(notes.category, [...PARENT_VISIBLE_NOTE_CATEGORIES])
+                ),
                 orderBy: (notes, { desc }) => [desc(notes.createdAt)]
             }
         }
@@ -204,7 +214,7 @@ export default async function ChildDetailsPage(props: { params: Promise<{ id: st
                 <section className="bg-card p-6 rounded-2xl border border-border">
                     <div className="flex items-center gap-2 mb-6 border-b border-border pb-4">
                         <ShieldAlert className="w-5 h-5 text-destructive" />
-                        <h2 className="text-lg font-bold text-foreground">Medical & Dietary Needs</h2>
+                        <h2 className="text-lg font-bold text-foreground">Medical &amp; Dietary Needs</h2>
                     </div>
 
                     <div className="space-y-4">
@@ -216,7 +226,7 @@ export default async function ChildDetailsPage(props: { params: Promise<{ id: st
                             child.notes.map(note => (
                                 <div key={note.id} className="bg-secondary/40 p-4 rounded-xl border border-border">
                                     <div className="flex items-center justify-between mb-2">
-                                        <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full border ${note.category === 'Medical' || note.category === 'Safeguarding' ? 'bg-destructive/10 text-destructive border-destructive/20' : 'bg-primary/10 text-primary border-primary/20'}`}>
+                                        <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full border ${note.category === 'Medical' || note.category === 'Allergy' ? 'bg-destructive/10 text-destructive border-destructive/20' : 'bg-primary/10 text-primary border-primary/20'}`}>
                                             {note.category}
                                         </span>
                                         <span className="text-xs text-muted-foreground">

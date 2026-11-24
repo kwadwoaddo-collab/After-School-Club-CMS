@@ -20,6 +20,7 @@ interface Note {
 interface InternalNotesTimelineProps {
   childId: string;
   initialNotes: Note[];
+  canManageSafeguarding?: boolean;
 }
 
 function NoteAuthorBadgeHeader({ note }: { note: Note }) {
@@ -65,20 +66,24 @@ function NoteAuthorBadgeHeader({ note }: { note: Note }) {
   );
 }
 
-export default function InternalNotesTimeline({ childId, initialNotes }: InternalNotesTimelineProps) {
+export default function InternalNotesTimeline({ childId, initialNotes, canManageSafeguarding = false }: InternalNotesTimelineProps) {
   const [content, setContent] = useState('');
   const [category, setCategory] = useState<'General' | 'Medical' | 'Safeguarding'>('General');
   const [isPending, startTransition] = useTransition();
   const [noteToDelete, setNoteToDelete] = useState<string | null>(null);
 
-  const pinnedNotes = initialNotes.filter(n => n.pinnedAt);
-  const standardNotes = initialNotes.filter(n => !n.pinnedAt);
+  const visibleNotes = canManageSafeguarding
+    ? initialNotes
+    : initialNotes.filter((n) => (n.category ?? '').trim().toLowerCase() !== 'safeguarding');
+  const pinnedNotes = visibleNotes.filter(n => n.pinnedAt);
+  const standardNotes = visibleNotes.filter(n => !n.pinnedAt);
 
   const handleAddNote = () => {
     if (!content.trim()) return;
+    const safeCategory = !canManageSafeguarding && category === 'Safeguarding' ? 'General' : category;
 
     startTransition(async () => {
-      await addStudentNote(childId, content, category);
+      await addStudentNote(childId, content, safeCategory);
       setContent('');
       setCategory('General');
     });
@@ -111,7 +116,7 @@ export default function InternalNotesTimeline({ childId, initialNotes }: Interna
           Add New Note
         </label>
         
-        <div className="flex items-center gap-4 mb-3">
+        <div className="flex flex-wrap items-center gap-4 mb-3">
           <label className="flex items-center gap-2 text-sm font-medium text-muted-foreground cursor-pointer">
             <input 
               type="radio" 
@@ -133,17 +138,19 @@ export default function InternalNotesTimeline({ childId, initialNotes }: Interna
             <AlertTriangle className="w-4 h-4" />
             Medical / Allergy
           </label>
-          <label className="flex items-center gap-2 text-sm font-medium text-primary cursor-pointer">
-            <input 
-              type="radio" 
-              name="noteCategory" 
-              className="text-primary focus:ring-primary/50"
-              checked={category === 'Safeguarding'} 
-              onChange={() => setCategory('Safeguarding')} 
-            />
-            <Shield className="w-4 h-4" />
-            Safeguarding
-          </label>
+          {canManageSafeguarding && (
+            <label className="flex items-center gap-2 text-sm font-medium text-primary cursor-pointer">
+              <input 
+                type="radio" 
+                name="noteCategory" 
+                className="text-primary focus:ring-primary/50"
+                checked={category === 'Safeguarding'} 
+                onChange={() => setCategory('Safeguarding')} 
+              />
+              <Shield className="w-4 h-4" />
+              Safeguarding
+            </label>
+          )}
         </div>
 
         <textarea
