@@ -42,3 +42,17 @@ describe('Landing page login doors & legal label (N-04 + N-09a)', () => {
         expect(container.querySelector('#early-access')).not.toBeNull();
     });
 });
+
+describe('Landing navbar login chooser (X-11)', () => {
+    afterEach(() => cleanup());
+
+    it('offers the three role doors inside the navbar chooser', () => {
+        render(<Home />);
+        const nav = screen.getByRole('navigation', { name: 'Main' });
+        const choosers = nav.querySelectorAll('details[data-testid="login-chooser"]');
+        expect(choosers.length).toBeGreaterThan(0);
+        const hrefs = Array.from(choosers[0].querySelectorAll('a')).map((a) => a.getAttribute('href'));
+        expect(hrefs).toEqual(['/login', '/staff-login', '/portal/login']);
+        expect(within(nav).getAllByText('Log in ▾').length).toBeGreaterThan(0);
+    });
+});

@@ -107,6 +107,22 @@ const FAQS: { question: string; answer: ReactNode }[] = [
     },
 ];
 
+function LoginChooser() {
+    return (
+        <details className="relative" data-testid="login-chooser">
+            <summary className="landing-navbar-link cursor-pointer list-none">Log in ▾</summary>
+            <ul
+                className="absolute right-0 mt-2 min-w-[11rem] rounded-xl border p-2 z-50 space-y-1"
+                style={{ background: 'var(--if-surface)', borderColor: 'var(--if-border-subtle)' }}
+            >
+                <li><Link href="/login" className="landing-navbar-link block px-3 py-2">Admin / owner</Link></li>
+                <li><Link href="/staff-login" className="landing-navbar-link block px-3 py-2">Staff</Link></li>
+                <li><Link href="/portal/login" className="landing-navbar-link block px-3 py-2">Parents</Link></li>
+            </ul>
+        </details>
+    );
+}
+
 function BrandLockup({ href, external = false }: { href: string; external?: boolean }) {
     const inner = (
         <>
@@ -155,11 +171,11 @@ export default function Home() {
                         <a href="#how-it-works" className="landing-navbar-link">How It Works</a>
                         <a href="#pricing" className="landing-navbar-link">Early Access</a>
                         <a href="#faq" className="landing-navbar-link">FAQ</a>
-                        <Link href="/login" className="landing-navbar-link">Log in</Link>
+                        <LoginChooser />
                         <Link href="/signup" className="btn-login">Get Started</Link>
                     </div>
                     <div className="md:hidden flex items-center gap-1">
-                        <Link href="/login" className="landing-navbar-link">Log in</Link>
+                        <LoginChooser />
                         <Link href="/signup" className="btn-login">Get Started</Link>
                     </div>
                 </div>
