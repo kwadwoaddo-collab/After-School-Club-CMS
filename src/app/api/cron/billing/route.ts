@@ -3,10 +3,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { verifyCronAuthorization } from '@/lib/cron-auth';
 import {
-    billingConfigs, billingConfigChildren, billingRuns, billingCycleSkips, invoices,
-    children, parents, centres, organisations,
+    billingConfigs, billingRuns, billingCycleSkips, invoices,
 } from '@/db/schema';
-import { eq, and, isNull, or, ne, sql, desc, inArray } from 'drizzle-orm';
+import { eq, and, or, ne, sql, desc, inArray } from 'drizzle-orm';
 import {
     getBillingPeriodForDate,
     computeAutomatedBillingScheduleForIndex,
@@ -18,6 +17,10 @@ import { nanoid } from 'nanoid';
 import { getFinanceEligibleChildIds, assertEligibleBillingCoverage, lockEnrolmentForBilling, lockBillingConfiguration } from '@/lib/enrolment/finance-eligibility';
 import { isQuarantinedParentId } from '@/lib/data-quality/quarantine';
 import { recurringInvoiceOverlapSql } from '@/lib/billing/invoice-overlap';
+
+export const maxDuration = 60;
+
+const CRON_BUDGET_MS = 50_000;
 
 /**
  * POST /api/cron/billing
@@ -33,8 +36,8 @@ import { recurringInvoiceOverlapSql } from '@/lib/billing/invoice-overlap';
  *   regenerated automatically unless explicitly reopened by a Manager/Owner.
  *
  * Secured by CRON_SECRET header.
- * Note: Scheduled execution has been selectively removed from vercel.json for containment;
- * direct CRON_SECRET-authorized calls remain possible and are enforced by the eligibility rules below.
+ * Scheduled daily at 06:00 UTC (`0 6 * * *` in `vercel.json`); direct CRON_SECRET-authorized
+ * calls are also supported and enforced by the eligibility rules below.
  */
 export async function POST(request: NextRequest) {
     // ── Auth: CRON_SECRET check (timing-safe) ─────────────────────────────────
@@ -43,7 +46,9 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: authCheck.error }, { status: authCheck.status ?? 401 });
     }
 
+    const startedAt = Date.now();
     const today = toUtcDate(new Date());
+    let partial = false;
 
     const results = {
         processed: 0,
@@ -80,9 +85,13 @@ export async function POST(request: NextRequest) {
             },
         });
 
-        results.processed = configs.length;
-
         for (const config of configs) {
+            if (Date.now() - startedAt >= CRON_BUDGET_MS) {
+                partial = true;
+                break;
+            }
+            results.processed++;
+
             try {
                 // DATA-REMEDIATION-1A: Quarantine safety guard
                 if (config.parentId && isQuarantinedParentId(config.parentId)) {
@@ -106,6 +115,11 @@ export async function POST(request: NextRequest) {
                 let cyclesProcessed = 0;
 
                 while (cyclesProcessed < MAX_CYCLES_PER_CONFIG) {
+                    if (cyclesProcessed > 0 && Date.now() - startedAt >= CRON_BUDGET_MS) {
+                        partial = true;
+                        break;
+                    }
+
                     const targetIndex = periodIndex;
                     periodIndex++;
                     cyclesProcessed++;
@@ -341,6 +355,10 @@ export async function POST(request: NextRequest) {
                         results.generated++;
                     }
                 } // end while (current & upcoming eligible cycles)
+
+                if (partial) {
+                    break;
+                }
             } catch (err) {
                 results.errors++;
                 const msg = err instanceof Error ? err.message : String(err);
@@ -349,10 +367,18 @@ export async function POST(request: NextRequest) {
             }
         }
 
-        logger.info('[cron/billing] Run complete:', results);
+        if (partial) {
+            logger.warn('[cron/billing] Cooperative time budget reached; exiting cleanly with partial progress', {
+                processed: results.processed,
+                totalConfigs: configs.length,
+            });
+        } else {
+            logger.info('[cron/billing] Run complete:', results);
+        }
 
         return NextResponse.json({
             ok: true,
+            partial,
             runAt: new Date().toISOString(),
             ...results,
         });

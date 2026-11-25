@@ -4,11 +4,14 @@ import { db } from '@/db';
 import { bookings } from '@/db/schema';
 import { and, gte, lte } from 'drizzle-orm';
 import { startOfDay, endOfDay, addDays } from 'date-fns';
-import { getBaseUrl } from '@/lib/base-url';
 import { Resend } from 'resend';
 import { InferSelectModel } from 'drizzle-orm';
 import { parents, centres, organisations, bookingAttendees, children } from '@/db/schema';
 import { verifyCronAuthorization } from '@/app/api/cron/broadcasts/route';
+
+export const maxDuration = 60;
+
+const CRON_BUDGET_MS = 50_000;
 
 // Shape returned by the db.query.bookings.findMany call below —
 // `with: { parent, centre: { with: { organisation } }, attendees: { with: { child } } }`.
@@ -35,7 +38,7 @@ const FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@sprintscaleit.co.uk';
  * Financial emails are manual-only; no invoice reminders are sent.
  *
  * Secured by a CRON_SECRET header. Configure your cron provider (e.g. Vercel Cron, GitHub Actions)
- * to call this at 5pm daily.
+ * to call this at 5pm daily (`0 17 * * *`).
  *
  * Environment variable required: CRON_SECRET=<random-secret>
  */
@@ -46,9 +49,11 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: authCheck.error }, { status: authCheck.status ?? 401 });
     }
 
+    const startedAt = Date.now();
     const tomorrow = addDays(new Date(), 1);
     const tomorrowStart = startOfDay(tomorrow);
     const tomorrowEnd = endOfDay(tomorrow);
+    const reminderDateKey = tomorrowStart.toISOString().slice(0, 10);
 
     // ── 2. Fetch tomorrow's confirmed bookings ───────────────────────────────
     let upcomingBookings: ReminderBooking[];
@@ -75,8 +80,19 @@ export async function POST(req: NextRequest) {
 
     let sent = 0;
     let errors = 0;
+    let partial = false;
 
     for (const booking of upcomingBookings) {
+        if (Date.now() - startedAt >= CRON_BUDGET_MS) {
+            partial = true;
+            logger.warn('[Reminder] Cooperative time budget reached; exiting cleanly with partial progress', {
+                sent,
+                errors,
+                total: upcomingBookings.length,
+            });
+            break;
+        }
+
         if (!booking.parent?.email) continue;
         if (booking.status === 'cancelled') continue;
 
@@ -132,12 +148,17 @@ export async function POST(req: NextRequest) {
 
         try {
             if (!resend) { errors++; continue; }
-            await resend.emails.send({
-                from: `${orgName} via SprintScale <${FROM_EMAIL}>`,
-                to: booking.parent.email,
-                subject: `Reminder: ${childNames ? `${childNames}'s` : 'Your'} session is tomorrow — ${orgName}`,
-                html,
-            });
+            await resend.emails.send(
+                {
+                    from: `${orgName} via SprintScale <${FROM_EMAIL}>`,
+                    to: booking.parent.email,
+                    subject: `Reminder: ${childNames ? `${childNames}'s` : 'Your'} session is tomorrow — ${orgName}`,
+                    html,
+                },
+                {
+                    idempotencyKey: `session-reminder:${booking.id}:${reminderDateKey}`,
+                },
+            );
             sent++;
         } catch (err) {
             // Previously called as logger.error(msg, booking.id, err) — a
@@ -156,6 +177,7 @@ export async function POST(req: NextRequest) {
         sent,
         errors,
         total: upcomingBookings.length,
+        partial,
         invoiceRemindersSent: invoiceSent,
         message: `Sent ${sent} session reminder${sent !== 1 ? 's' : ''}. Invoice emails require a deliberate staff action.`,
     });

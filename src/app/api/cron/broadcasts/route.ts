@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
 import { processBroadcastDeliveries } from '@/features/communications/delivery';
-import crypto from 'crypto';
+import { verifyCronAuthorization } from '@/lib/cron-auth';
+
+export const maxDuration = 60;
+
+const CRON_BUDGET_MS = 50_000;
+const SUB_BATCH_LIMIT = 25;
 
 /**
  * Validates the Authorization header against CRON_SECRET using timing-safe comparison.
@@ -13,7 +18,6 @@ import crypto from 'crypto';
  * 4. Unequal buffer lengths -> 401 Unauthorised (avoids timingSafeEqual range error)
  * 5. Secret mismatch -> 401 Unauthorised
  */
-import { verifyCronAuthorization } from '@/lib/cron-auth';
 export { verifyCronAuthorization };
 
 /**
@@ -22,6 +26,7 @@ export { verifyCronAuthorization };
  * Background recovery processor for durable broadcast deliveries:
  * - Recovers any stalled/pending delivery records across all tenants
  * - Safely executes bounded batches with atomic work leasing
+ * - Exits cleanly with `partial: true` if the 50s cooperative time budget is reached
  * - Idempotent and concurrency-safe
  */
 export async function GET(req: NextRequest) {
@@ -30,18 +35,66 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: authCheck.error }, { status: authCheck.status || 401 });
   }
 
+  const startedAt = Date.now();
+
   try {
     const urlLimitParam = req.nextUrl?.searchParams?.get('limit');
     const limit = urlLimitParam ? parseInt(urlLimitParam, 10) : 100;
     const boundedLimit = isNaN(limit) ? 100 : Math.min(Math.max(limit, 1), 100);
 
-    const result = await processBroadcastDeliveries({ limit: boundedLimit });
+    let remaining = boundedLimit;
+    let processedCount = 0;
+    let sentCount = 0;
+    let failedCount = 0;
+    let retriedCount = 0;
+    let partial = false;
 
-    logger.info(`[Cron Broadcasts] Recovery cycle completed: processed=${result.processedCount}, sent=${result.sentCount}, failed=${result.failedCount}, retried=${result.retriedCount}`);
+    while (remaining > 0) {
+      if (Date.now() - startedAt >= CRON_BUDGET_MS) {
+        partial = true;
+        break;
+      }
+
+      const chunkLimit = Math.min(remaining, SUB_BATCH_LIMIT);
+      const batchResult = await processBroadcastDeliveries({
+        limit: chunkLimit,
+        startedAt,
+        budgetMs: CRON_BUDGET_MS,
+      });
+
+      processedCount += batchResult.processedCount;
+      sentCount += batchResult.sentCount;
+      failedCount += batchResult.failedCount;
+      retriedCount += batchResult.retriedCount;
+      remaining -= batchResult.processedCount;
+
+      if (batchResult.partial) {
+        partial = true;
+        break;
+      }
+
+      if (batchResult.processedCount < chunkLimit) {
+        break;
+      }
+    }
+
+    if (partial) {
+      logger.warn(
+        `[Cron Broadcasts] Cooperative time budget reached; exiting cleanly with partial progress: processed=${processedCount}, sent=${sentCount}, failed=${failedCount}, retried=${retriedCount}`,
+      );
+    } else {
+      logger.info(
+        `[Cron Broadcasts] Recovery cycle completed: processed=${processedCount}, sent=${sentCount}, failed=${failedCount}, retried=${retriedCount}`,
+      );
+    }
 
     return NextResponse.json({
       success: true,
-      ...result,
+      processedCount,
+      sentCount,
+      failedCount,
+      retriedCount,
+      partial,
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
