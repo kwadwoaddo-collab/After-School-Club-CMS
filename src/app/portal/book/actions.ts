@@ -1,11 +1,12 @@
 'use server';
-import { logger } from '@/lib/logger';
 
+import crypto from 'crypto';
+import { logger } from '@/lib/logger';
 import { getCurrentParent } from '@/lib/parent-auth';
 import { getTrustedApplicationUrl } from '@/lib/base-url';
 import { db } from '@/db';
 import { bookings, bookingAttendees, centres, children } from '@/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, ne, isNull, desc } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { after } from 'next/server';
 import {
@@ -17,6 +18,62 @@ import {
     type BookingConfirmationPayload,
     type BookingReschedulePayload,
 } from '@/lib/services/email-outbox';
+
+const ALLOWED_PORTAL_BOOKING_DURATIONS = new Set([30, 60, 90]);
+
+const SAFE_PORTAL_BOOKING_ERRORS = new Set([
+    'A booking for this child at this time already exists.',
+    'You already have a booking at this time.',
+    'Selected slot is full',
+    'Booking slot is no longer available',
+    'One or more children could not be verified',
+    'Please select at least one child',
+    'Booking is already cancelled',
+    'Booking not found',
+    'Failed to complete booking.',
+    'Failed to reschedule booking.',
+]);
+
+function generateConfirmationCode(): string {
+    return `BK-${Date.now().toString(36).toUpperCase()}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
+}
+
+function generatePortalMagicLinkToken(confirmationCode: string): string {
+    return `${confirmationCode}-${crypto.randomBytes(8).toString('hex')}`;
+}
+
+async function resolveParentCommunicationsConsent(
+    parent: { id: string; bookings?: Array<{ communicationsConsent?: boolean; createdAt?: Date | string | null }> },
+    fallbackConsent: boolean = false
+): Promise<boolean> {
+    if (Array.isArray(parent.bookings) && parent.bookings.length > 0) {
+        const sorted = [...parent.bookings].sort((a, b) => {
+            const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+            const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+            return bTime - aTime;
+        });
+        if (typeof sorted[0]?.communicationsConsent === 'boolean') {
+            return sorted[0].communicationsConsent;
+        }
+    }
+
+    if (typeof db.query?.bookings?.findFirst === 'function') {
+        try {
+            const latestBooking = await db.query.bookings.findFirst({
+                where: eq(bookings.parentId, parent.id),
+                orderBy: [desc(bookings.createdAt), desc(bookings.id)],
+                columns: { communicationsConsent: true },
+            });
+            if (latestBooking && typeof latestBooking.communicationsConsent === 'boolean') {
+                return latestBooking.communicationsConsent;
+            }
+        } catch {
+            // Fall through safely to fallbackConsent if optional relation query is unmocked
+        }
+    }
+
+    return fallbackConsent;
+}
 
 export async function createPortalBooking({
     childId,
@@ -33,13 +90,27 @@ export async function createPortalBooking({
     try {
         const parent = await getCurrentParent();
         if (!parent) return { success: false, error: 'Unauthorized' };
- 
-        // Verify child belongs to this parent
+
+        if (!Number.isInteger(duration) || !ALLOWED_PORTAL_BOOKING_DURATIONS.has(duration)) {
+            return { success: false, error: 'Invalid booking duration' };
+        }
+
+        const startDate = new Date(startAt);
+        if (Number.isNaN(startDate.getTime())) return { success: false, error: 'Invalid date' };
+        if (startDate <= new Date()) {
+            return { success: false, error: 'Booking date must be in the future' };
+        }
+
+        // Verify active (non-soft-deleted) child belongs to this parent
         const child = await db.query.children.findFirst({
-            where: and(eq(children.id, childId), eq(children.parentId, parent.id)),
+            where: and(
+                eq(children.id, childId),
+                eq(children.parentId, parent.id),
+                isNull(children.deletedAt)
+            ),
         });
         if (!child) return { success: false, error: 'Child not found' };
- 
+
         // Verify centre exists and belongs to the same org as the parent
         const centre = await db.query.centres.findFirst({
             where: and(
@@ -48,15 +119,14 @@ export async function createPortalBooking({
             ),
         });
         if (!centre) return { success: false, error: 'Centre not found' };
- 
-        const startDate = new Date(startAt);
-        if (isNaN(startDate.getTime())) return { success: false, error: 'Invalid date' };
- 
+
+        const preservedConsent = await resolveParentCommunicationsConsent(parent, false);
+
         let confirmationCode: string;
         let outboxId: string | null = null;
         try {
             const txResult = await db.transaction(async (tx) => {
-                // Check for duplicate booking (same child, same startAt)
+                // Check for active (non-cancelled) duplicate booking (same child, same startAt)
                 const existingAttendee = await tx
                     .select({ id: bookingAttendees.id })
                     .from(bookingAttendees)
@@ -65,50 +135,52 @@ export async function createPortalBooking({
                         and(
                             eq(bookingAttendees.childId, childId),
                             eq(bookings.centreId, centreId),
-                            eq(bookings.startAt, startDate)
+                            eq(bookings.startAt, startDate),
+                            ne(bookings.status, 'cancelled')
                         )
                     )
                     .limit(1);
- 
+
                 if (existingAttendee.length > 0) {
                     throw new Error('A booking for this child at this time already exists.');
                 }
- 
-                // Also check via bookings table directly
+
+                // Also check via bookings table directly (excluding cancelled bookings)
                 const duplicateCheck = await tx.query.bookings.findFirst({
                     where: and(
                         eq(bookings.parentId, parent.id),
                         eq(bookings.centreId, centreId),
-                        eq(bookings.startAt, startDate)
+                        eq(bookings.startAt, startDate),
+                        ne(bookings.status, 'cancelled')
                     ),
                 });
                 if (duplicateCheck) {
                     throw new Error('You already have a booking at this time.');
                 }
- 
-                const code = Date.now().toString(36).toUpperCase();
-                const magicLinkToken = `${code}-${Math.random().toString(36).slice(2)}`;
- 
-                // Create booking
-                const [newBooking] = await tx.insert(bookings).values({
-                    parentId: parent.id,
-                    centreId,
-                    startAt: startDate,
-                    duration,
-                    modality: 'in_person',
-                    status: 'confirmed',
-                    confirmationCode: code,
-                    magicLinkToken,
-                    communicationsConsent: false,
-                }).returning();
- 
-                // Create bookingAttendee record
+
+                const code = generateConfirmationCode();
+                const magicLinkToken = generatePortalMagicLinkToken(code);
+
+                const [newBooking] = await tx
+                    .insert(bookings)
+                    .values({
+                        parentId: parent.id,
+                        centreId,
+                        startAt: startDate,
+                        duration,
+                        modality: 'in_person',
+                        status: 'confirmed',
+                        confirmationCode: code,
+                        magicLinkToken,
+                        communicationsConsent: preservedConsent,
+                    })
+                    .returning();
+
                 await tx.insert(bookingAttendees).values({
                     bookingId: newBooking.id,
                     childId,
                 });
 
-                // Enqueue outbox row inside the same transaction
                 let enqueuedId: string | null = null;
                 if (parent.email) {
                     try {
@@ -143,17 +215,20 @@ export async function createPortalBooking({
                         throw new Error('Failed to complete booking.');
                     }
                 }
- 
+
                 return { code, outboxId: enqueuedId };
             });
             confirmationCode = txResult.code;
             outboxId = txResult.outboxId;
         } catch (e) {
-            const message = e instanceof Error ? e.message : undefined;
-            return { success: false, error: message || 'Failed to complete booking.' };
+            const rawMessage = e instanceof Error ? e.message : undefined;
+            if (rawMessage && SAFE_PORTAL_BOOKING_ERRORS.has(rawMessage)) {
+                return { success: false, error: rawMessage };
+            }
+            logger.error('[createPortalBooking] Unexpected transaction error:', e);
+            return { success: false, error: 'Failed to create booking. Please try again.' };
         }
 
-        // Post-commit: register after() fast path
         if (outboxId) {
             registerFastPathAfterCommit(after, {
                 origin: 'action',
@@ -161,7 +236,7 @@ export async function createPortalBooking({
                 budget,
             });
         }
- 
+
         try {
             revalidatePath('/portal');
         } catch (revErr) {
@@ -169,7 +244,7 @@ export async function createPortalBooking({
                 errorName: revErr instanceof Error ? revErr.name : 'UnknownError',
             });
         }
- 
+
         return { success: true, confirmationCode };
     } catch (e) {
         logger.error('Failed to create portal booking:', e);
@@ -195,6 +270,14 @@ export async function reschedulePortalBooking({
         const parent = await getCurrentParent();
         if (!parent) return { success: false, error: 'Unauthorized' };
 
+        if (!Number.isInteger(duration) || !ALLOWED_PORTAL_BOOKING_DURATIONS.has(duration)) {
+            return { success: false, error: 'Invalid booking duration' };
+        }
+
+        const newStartDate = new Date(startAt);
+        if (Number.isNaN(newStartDate.getTime())) return { success: false, error: 'Invalid date' };
+        if (newStartDate <= new Date()) return { success: false, error: 'New date must be in the future' };
+
         // Verify the booking being rescheduled belongs to this parent
         const oldBooking = await db.query.bookings.findFirst({
             where: and(eq(bookings.id, oldBookingId), eq(bookings.parentId, parent.id)),
@@ -202,9 +285,20 @@ export async function reschedulePortalBooking({
         if (!oldBooking) return { success: false, error: 'Booking not found' };
         if (oldBooking.status === 'cancelled') return { success: false, error: 'Booking is already cancelled' };
 
-        // Verify child belongs to this parent
+        // Enforce 24-hour advance reschedule window (matching cancelBookingByParent & portal UI)
+        const oldBookingDate = new Date(oldBooking.startAt);
+        const hoursUntilBooking = (oldBookingDate.getTime() - Date.now()) / (1000 * 60 * 60);
+        if (hoursUntilBooking < 24) {
+            return { success: false, error: 'Bookings must be rescheduled at least 24 hours in advance.' };
+        }
+
+        // Verify active (non-soft-deleted) child belongs to this parent
         const child = await db.query.children.findFirst({
-            where: and(eq(children.id, childId), eq(children.parentId, parent.id)),
+            where: and(
+                eq(children.id, childId),
+                eq(children.parentId, parent.id),
+                isNull(children.deletedAt)
+            ),
         });
         if (!child) return { success: false, error: 'Child not found' };
 
@@ -214,11 +308,10 @@ export async function reschedulePortalBooking({
         });
         if (!centre) return { success: false, error: 'Centre not found' };
 
-        const newStartDate = new Date(startAt);
-        if (isNaN(newStartDate.getTime())) return { success: false, error: 'Invalid date' };
-
-        // Must be in the future
-        if (newStartDate <= new Date()) return { success: false, error: 'New date must be in the future' };
+        const preservedConsent = await resolveParentCommunicationsConsent(
+            parent,
+            Boolean(oldBooking.communicationsConsent)
+        );
 
         let confirmationCode: string;
         let outboxId: string | null = null;
@@ -233,24 +326,31 @@ export async function reschedulePortalBooking({
                 });
 
                 if (!outcome.replaced) {
-                    throw new Error(outcome.rejectedReason === 'ALREADY_CANCELLED' ? 'Booking is already cancelled' : 'Booking not found');
+                    throw new Error(
+                        outcome.rejectedReason === 'ALREADY_CANCELLED'
+                            ? 'Booking is already cancelled'
+                            : 'Booking not found'
+                    );
                 }
 
-                // 2. Create new booking
-                const code = Date.now().toString(36).toUpperCase();
-                const magicLinkToken = `${code}-${Math.random().toString(36).slice(2)}`;
+                // 2. Create new booking with collision-resistant confirmation code and preserved consent
+                const code = generateConfirmationCode();
+                const magicLinkToken = generatePortalMagicLinkToken(code);
 
-                const [newBooking] = await tx.insert(bookings).values({
-                    parentId: parent.id,
-                    centreId,
-                    startAt: newStartDate,
-                    duration,
-                    modality: 'in_person',
-                    status: 'confirmed',
-                    confirmationCode: code,
-                    magicLinkToken,
-                    communicationsConsent: false,
-                }).returning();
+                const [newBooking] = await tx
+                    .insert(bookings)
+                    .values({
+                        parentId: parent.id,
+                        centreId,
+                        startAt: newStartDate,
+                        duration,
+                        modality: 'in_person',
+                        status: 'confirmed',
+                        confirmationCode: code,
+                        magicLinkToken,
+                        communicationsConsent: preservedConsent,
+                    })
+                    .returning();
 
                 // 3. Create attendee record
                 await tx.insert(bookingAttendees).values({
@@ -297,11 +397,14 @@ export async function reschedulePortalBooking({
             confirmationCode = txResult.code;
             outboxId = txResult.outboxId;
         } catch (e) {
-            const message = e instanceof Error ? e.message : undefined;
-            return { success: false, error: message || 'Failed to reschedule booking.' };
+            const rawMessage = e instanceof Error ? e.message : undefined;
+            if (rawMessage && SAFE_PORTAL_BOOKING_ERRORS.has(rawMessage)) {
+                return { success: false, error: rawMessage };
+            }
+            logger.error('[reschedulePortalBooking] Unexpected transaction error:', e);
+            return { success: false, error: 'Failed to reschedule booking. Please try again.' };
         }
 
-        // Post-commit: register after() fast path
         if (outboxId) {
             registerFastPathAfterCommit(after, {
                 origin: 'action',
