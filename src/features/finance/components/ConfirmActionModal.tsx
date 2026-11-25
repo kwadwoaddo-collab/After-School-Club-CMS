@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { X, Trash2, Ban, AlertTriangle, Loader2 } from 'lucide-react';
+import { useState } from 'react';
+import { Ban, Trash2 } from 'lucide-react';
+import { ConfirmModal } from '@/components/ui/ConfirmModal';
 
 interface ConfirmActionModalProps {
     isOpen: boolean;
@@ -21,40 +22,29 @@ export default function ConfirmActionModal({
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        if (!isOpen) return;
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Escape' && !isLoading) {
-                onClose();
-            }
-        };
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [isOpen, isLoading, onClose]);
-
-    if (!isOpen) return null;
-
     const isDelete = variant === 'delete';
 
     const config = isDelete
         ? {
-              icon: <Trash2 className="w-6 h-6" />,
-              iconBg: 'bg-rose-500/10 text-rose-500 border-rose-500/20',
+              icon: <Trash2 className="w-7 h-7 text-rose-500" />,
               title: 'Delete Draft Invoice',
               confirmLabel: 'Discard Permanently',
-              confirmClass:
-                  'bg-error hover:bg-red-700 text-white shadow-lg shadow-error/20',
+              modalVariant: 'danger' as const,
               description: `Draft invoice ${invoiceNumber} will be permanently removed from the database. This action cannot be undone.`,
           }
         : {
-              icon: <Ban className="w-6 h-6" />,
-              iconBg: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+              icon: <Ban className="w-7 h-7 text-amber-500" />,
               title: 'Void Invoice',
               confirmLabel: 'Void Invoice',
-              confirmClass:
-                  'bg-amber-500 hover:bg-amber-600 text-white shadow-lg shadow-amber-500/20',
+              modalVariant: 'warning' as const,
               description: `Invoice ${invoiceNumber} will be marked as VOID. All payment records will be preserved for audit purposes, but this invoice will be excluded from revenue reports.`,
           };
+
+    const handleClose = () => {
+        if (isLoading) return;
+        setError(null);
+        onClose();
+    };
 
     const handleConfirm = async () => {
         setError(null);
@@ -71,65 +61,18 @@ export default function ConfirmActionModal({
     };
 
     return (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl animate-in fade-in duration-200">
-            <div role="dialog" aria-modal="true" aria-label={config.title} className="bg-card border border-border rounded-[40px] shadow-2xl w-full max-w-md p-10 relative animate-in zoom-in-95 duration-200">
-                {/* Close */}
-                <button
-                    onClick={onClose}
-                    disabled={isLoading}
-                    aria-label="Close modal"
-                    className="absolute top-6 right-6 w-9 h-9 rounded-full bg-secondary/60 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-all"
-                >
-                    <X className="w-4 h-4" />
-                </button>
-
-                {/* Icon */}
-                <div
-                    className={`w-14 h-14 rounded-2xl flex items-center justify-center border mb-6 ${config.iconBg}`}
-                >
-                    {config.icon}
-                </div>
-
-                {/* Title */}
-                <h2 className="text-2xl font-black text-foreground tracking-tight mb-3">
-                    {config.title}
-                </h2>
-
-                {/* Description */}
-                <p className="text-sm text-muted-foreground leading-relaxed mb-8">
-                    {config.description}
-                </p>
-
-                {/* Error */}
-                {error && (
-                    <div className="flex items-start gap-3 bg-rose-500/5 border border-rose-500/20 rounded-2xl p-4 mb-6">
-                        <AlertTriangle className="w-4 h-4 text-rose-500 mt-0.5 shrink-0" />
-                        <p className="text-sm font-bold text-rose-500">{error}</p>
-                    </div>
-                )}
-
-                {/* Actions */}
-                <div className="flex gap-3">
-                    <button
-                        onClick={onClose}
-                        disabled={isLoading}
-                        className="flex-1 py-3.5 bg-secondary/60 border border-border rounded-2xl text-sm font-bold text-muted-foreground hover:bg-secondary hover:text-foreground transition-all"
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        onClick={handleConfirm}
-                        disabled={isLoading}
-                        className={`flex-1 py-3.5 rounded-2xl text-sm font-black flex items-center justify-center gap-2 transition-all disabled:opacity-60 ${config.confirmClass}`}
-                    >
-                        {isLoading ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                            config.confirmLabel
-                        )}
-                    </button>
-                </div>
-            </div>
-        </div>
+        <ConfirmModal
+            isOpen={isOpen}
+            onClose={handleClose}
+            onConfirm={handleConfirm}
+            title={config.title}
+            description={config.description}
+            confirmText={config.confirmLabel}
+            variant={config.modalVariant}
+            icon={config.icon}
+            isLoading={isLoading}
+            error={error}
+            closeOnConfirm={false}
+        />
     );
 }

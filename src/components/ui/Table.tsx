@@ -2,13 +2,10 @@ import * as React from 'react';
 import { cn } from './utils';
 
 /**
- * Flat, InvoiceFlow-aligned table primitive — additive alongside the
- * existing `DataTable` component (glassmorphic-card styling, still used by
- * modules outside this milestone's scope). New list screens under Milestone
- * 3 (Students/Parents/Staff/Centres) compose directly from these instead of
- * wrapping `DataTable`, so that upgrading a table's chrome never touches an
- * unrelated module's rendering. See project-notes/milestone-3-people-audit.md
- * for the rationale (§7, "Table primitive").
+ * Flat, InvoiceFlow-aligned table primitive used across dashboard list views
+ * (replacing the retired glassmorphic table wrapper). List screens compose
+ * directly from these semantic table elements. See
+ * project-notes/milestone-3-people-audit.md for the rationale (§7, "Table primitive").
  *
  * Consistent px-5 cell padding, `text-label` headers, `text-table-value`
  * cells, restrained row hover — mirrors InvoiceFlow's own

@@ -1,5 +1,3 @@
-'use client';
-
 import Link from 'next/link';
 import type { summaryLinks } from '@/features/dashboard/summary-links';
 import { GrowthSparkline } from '@/components/dashboard/GrowthSparkline';
