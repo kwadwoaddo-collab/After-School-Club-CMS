@@ -68,5 +68,5 @@ If you have any questions about your bookings, session fees, or registration det
 ---
 
 ## Comprehensive Documentation & Support
-- [Parent & Carer Role Guide](../role-guides/parent-guide.md) — Comprehensive guide to parent portal features, magic links, and billing.
-- [Family & Parent Account Manual](../functional-manuals/parents.md) — Profile management, emergency contacts, and privacy controls.
+- [Parent & Carer Role Guide](/dashboard/help/guides/parent-portal-guide) — Comprehensive guide to parent portal features, magic links, and billing.
+- [Family & Parent Account Manual](/dashboard/help/guides/parents-family-records) — Profile management, emergency contacts, and privacy controls.

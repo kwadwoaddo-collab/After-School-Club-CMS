@@ -61,6 +61,10 @@
 
 ---
 
+### 4. Wrong Billing Period Dates {#4-wrong-billing-period-dates}
+- **Symptom:** Generated invoice dates cover the wrong calendar month or term window.
+- **Resolution:** Verify the billing cycle start/end dates before running batch generation. If an uncollected invoice has the wrong dates, an `ORG_OWNER` or `MANAGER` can update the invoice date or an `ORG_OWNER` can void and re-issue it.
+
 ### 5. Payment Not Reflected in Balance
 - **What You May See:** Staff recorded a payment, but the invoice balance did not update.
 - **Root Cause:** Page cache in browser.
@@ -82,6 +86,10 @@
 
 ---
 
+### 8. Duplicate Payment Reference {#8-duplicate-payment-reference}
+- **Symptom:** Recording or submitting a voucher/bank payment is rejected as a duplicate reference.
+- **Resolution:** Check the invoice payment history to see whether the payment was already logged or verified. Only distinct, unreversed payment references should be recorded.
+
 ### 9. TFC Reference Mismatch
 - **What You May See:** Parent submitted an HMRC TFC reference (e.g. `SMITH-12345-TFC`), but no matching transaction appears on your club bank statement.
 - **Root Cause:** HMRC TFC bank transfers typically take 2 to 4 business days to clear into commercial bank accounts.
@@ -91,6 +99,10 @@
   3. If after 5 days no funds arrive, click **Mark as Failed** to notify the parent.
 
 ---
+
+### 10. Voucher Amount Mismatch {#10-voucher-amount-mismatch}
+- **Symptom:** A parent's childcare voucher transfer differs from the invoice balance.
+- **Resolution:** Open `/dashboard/finance/reconciliation` (via the **Reconcile** button in Finance), verify the exact cleared bank amount, or reject the mismatched claim and record the verified amount received.
 
 ### 11. Parent Cannot See Invoice
 - **What You May See:** Parent logs into `/portal/billing` but sees "You have no outstanding invoices."
@@ -103,12 +115,20 @@
 
 ---
 
+### 12. PDF Generation Issue {#12-pdf-generation-issue}
+- **Symptom:** Invoice or Parent Payment Receipt print/PDF view does not open.
+- **Resolution:** Ensure browser pop-ups/print dialogs are permitted for `app.sprintscaleit.co.uk` and re-open the invoice or `Parent receipts` view from `/dashboard/finance`.
+
 ### 13. Stripe Button Not Visible
 - **What You May See:** Parent portal does not display the "Pay with Card" button.
 - **Root Cause:** Online card payments via Stripe are currently deferred by business decision in production.
 - **How to Resolve:** Parents settle via Bank Transfer, Tax-Free Childcare, or Childcare Vouchers.
 
 ---
+
+### 14. GoCardless Unconfigured Error {#14-gocardless-unconfigured-error}
+- **Symptom:** Direct Debit setup displays *"GoCardless is not configured"* in your environment.
+- **Resolution:** Direct Debit mandates require active GoCardless merchant credentials. Use bank transfer, Tax-Free Childcare, childcare vouchers, card checkout, or offline payment logging instead.
 
 ### 15. Invoice Under Wrong Family
 - **What You May See:** An ad-hoc invoice was accidentally assigned to the wrong parent.
@@ -117,6 +137,10 @@
   2. Re-create the invoice selecting the correct parent account.
 
 ---
+
+### 16. Archived Family with Balance {#16-archived-family-with-balance}
+- **Symptom:** A soft-deleted family in the Recovery Bin still has an unpaid invoice balance.
+- **Resolution:** Restore the family from the Recovery Bin if follow-up collection is required, or have an `ORG_OWNER` void uncollectible draft/sent invoices for clean accounting closure.
 
 ### 17. Incorrect Payment Entry Correction
 - **What You May See:** Staff recorded £150 cash when the parent only paid £15.

@@ -53,18 +53,18 @@ As a **Tutor** (classroom club leader), you are the primary face of the club dur
 ## 3. What Tutors Can and Cannot Access
 
 ### What You CAN Access:
-- **Dashboard:** View today's club schedule, session times, and expected attendee counts.
-- **Attendance Register (`/dashboard/attendance`):** Perform live check-ins, check-outs, mark present/late/absent, and set homework/behaviour flags.
-- **Kiosk Mode (`/dashboard/kiosk`):** Fullscreen tablet interface for rapid one-touch student check-in/out.
-- **Booking Scorecards:** View attendee list for your sessions and record assessment scores and feedback.
+- **Dashboard (`/dashboard`):** View today's club schedule, session times, and expected attendee counts for your assigned centre(s).
+- **Attendance Register (`/dashboard/attendance`):** Perform live check-ins, check-outs, mark present/late/absent, view medical/allergy badges, and set homework/behaviour flags.
+- **Session Credit Ledger (`/dashboard/attendance/ledger`):** View read-only attendance and catch-up session ledger balances for your assigned centre(s).
+- **Kiosk Mode (`/dashboard/kiosk`):** Fullscreen tablet interface for rapid PIN-verified check-in/out.
 
 ### What You CANNOT Access (Restricted for Data Protection):
-- [x] **First Aid Logging:** Tutors can log minor accidents, injuries, and body-map markers in the Incidents module.
+- [ ] **Incidents & First Aid Module (`/dashboard/incidents`):** Tutors escalate first-aid accidents immediately to Front Desk or a Centre Manager to log on the body map.
 - [ ] **Restricted Safeguarding:** Tutors cannot view or create confidential child protection safeguarding records (Designated Safeguarding Lead only).
-- [ ] **Full Student & Parent Profiles:** Tutors see operational details on the roll-call card, but full historical profiles and contact databases are restricted to Front Desk/Managers.
-- [ ] **Registrations & Bookings Queue:** Managed by Front Desk and Managers.
-- [ ] **Finance & Invoicing:** Zero access to billing or payment records.
-- [ ] **Staff & Settings:** Managed by Centre Managers and Organisation Owners.
+- [ ] **Full Student & Parent Profiles (`/dashboard/students`, `/dashboard/parents`):** Tutors see essential medical/allergy badges on the live roll-call card, while full family profiles and CSV exports are restricted to Front Desk, Managers, and Owners.
+- [ ] **Registrations & Bookings Management (`/dashboard/registrations`, `/dashboard/bookings`):** Managed by Front Desk, Managers, and Owners.
+- [ ] **Finance & Invoicing (`/dashboard/finance`):** Restricted to Centre Managers and Organisation Owners.
+- [ ] **Team & Settings (`/dashboard/staff`, `/dashboard/settings`):** Managed by Centre Managers and Organisation Owners.
 
 ---
 
@@ -112,13 +112,9 @@ As a **Tutor** (classroom club leader), you are the primary face of the club dur
 
 📹 **Video Walkthrough:** [Watch: Logging a First Aid Accident on Body Map](/training/assets/videos/SS-D6-V011.mp4)
 
-### Procedure 3: Recording Assessment Scorecard Feedback
-1. Navigate to: `Sidebar → Bookings → [Select Session Booking]`.
-2. Locate the student in the attendees list.
-3. Enter the assessment score or rating.
-4. Type factual, encouraging feedback notes in the feedback text area.
-5. If an assessment sheet was completed, attach a photo or PDF scan.
-6. Click **Save Feedback Draft** (or **Send Feedback to Parent** if authorized by Manager).
+### Procedure 3: Escalating First-Aid Events & Assessment Sheets
+1. **First-Aid Accidents:** Administer immediate care according to club first-aid protocol, then hand over details to **Front Desk** or your **Centre Manager** so they can record the body-map incident in `Sidebar → Incidents`.
+2. **Assessment Sheets:** Record classroom notes or homework flags directly on `Sidebar → Attendance`, and pass completed paper/PDF assessment sheets to **Front Desk** or your **Centre Manager** to attach and send from `Sidebar → Bookings`.
 
 ---
 

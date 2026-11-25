@@ -17,30 +17,46 @@ export default function RootError({
     }, [error]);
 
     return (
-        <div className="min-h-screen bg-[#111216] text-[#e5e2e1] flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-500">
-            <div className="w-16 h-16 rounded-3xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mb-6">
-                <AlertTriangle className="w-8 h-8 text-amber-400" />
-            </div>
-            <h1 className="text-3xl font-black text-white tracking-tight mb-2">Unexpected Application Error</h1>
-            <p className="text-sm text-[#8c909f] max-w-md mb-8 leading-relaxed">
-                An unexpected system error occurred. We have logged the error details. Please try reloading the page or returning home.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-3">
-                <button
-                    onClick={reset}
-                    className="flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-primary text-primary-foreground text-xs font-bold uppercase tracking-wider hover:opacity-90 transition-all"
-                >
-                    <RefreshCw className="w-4 h-4" />
-                    Reload Page
-                </button>
+        <main id="main-content" tabIndex={-1} className="min-h-screen bg-page text-text flex flex-col items-center justify-center p-6 text-center">
+            <div className="mb-6">
                 <Link
                     href="/"
-                    className="flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-white/5 border border-white/10 text-white text-xs font-bold uppercase tracking-wider hover:bg-white/10 transition-all"
+                    className="inline-flex items-center gap-2.5 min-h-[44px] text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-lg px-2"
+                    aria-label="After-School Club CMS · by SprintScale IT"
                 >
-                    <Home className="w-4 h-4" />
-                    Back to Home
+                    <span className="w-9 h-9 rounded-lg bg-accent text-on-accent inline-flex items-center justify-center font-bold text-lg" aria-hidden="true">S</span>
+                    <span className="flex flex-col leading-tight text-left">
+                        <span className="font-bold text-sm text-text">After-School Club CMS</span>
+                        <span className="text-xs text-text-muted">by SprintScale IT</span>
+                    </span>
                 </Link>
             </div>
-        </div>
+            <div role="alert" className="max-w-md w-full bg-surface border border-border rounded-2xl p-8 shadow-sm flex flex-col items-center">
+                <div className="w-14 h-14 rounded-2xl bg-warning-soft flex items-center justify-center mb-5">
+                    <AlertTriangle className="w-7 h-7 text-warning" aria-hidden="true" />
+                </div>
+                <h1 className="text-2xl font-bold text-text tracking-tight mb-2">Unexpected Application Error</h1>
+                <p className="text-sm text-text-secondary mb-6 leading-relaxed">
+                    An unexpected system error occurred. We have logged the error details. Please try reloading the page or returning home.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3 w-full justify-center">
+                    <button
+                        type="button"
+                        onClick={reset}
+                        className="min-h-[44px] flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-accent text-on-accent text-sm font-semibold hover:bg-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent transition-colors"
+                    >
+                        <RefreshCw className="w-4 h-4" aria-hidden="true" />
+                        Reload Page
+                    </button>
+                    <Link
+                        href="/"
+                        className="min-h-[44px] flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-surface-elevated border border-border text-text text-sm font-semibold hover:bg-page focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent transition-colors"
+                    >
+                        <Home className="w-4 h-4" aria-hidden="true" />
+                        Back to Home
+                    </Link>
+                </div>
+            </div>
+        </main>
     );
 }

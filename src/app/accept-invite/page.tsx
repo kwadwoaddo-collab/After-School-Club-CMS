@@ -6,10 +6,33 @@ import { signIn } from 'next-auth/react';
 import { CheckCircle, XCircle, Loader2, ArrowRight, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 
+const focusRing =
+    'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--if-accent)]';
+
+const skipLinkClass =
+    'sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[100] focus:px-4 focus:py-2.5 focus:rounded-md focus:bg-accent focus:text-on-accent focus:text-sm focus:font-semibold focus:shadow-lg';
+
+function BrandLockup() {
+    return (
+        <Link
+            href="/"
+            className={`inline-flex items-center gap-2.5 min-h-[44px] text-text ${focusRing}`}
+            aria-label="After-School Club CMS · by SprintScale IT"
+        >
+            <span className="w-9 h-9 rounded-lg bg-accent text-on-accent inline-flex items-center justify-center font-bold text-lg" aria-hidden="true">S</span>
+            <span className="flex flex-col leading-tight text-left">
+                <span className="font-bold text-sm text-text">After-School Club CMS</span>
+                <span className="text-xs text-text-muted">by SprintScale IT</span>
+            </span>
+        </Link>
+    );
+}
+
 function AcceptInviteContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const token = searchParams.get('token');
+    const isLoginMode = searchParams.get('mode') === 'login';
 
     const [step, setStep] = useState<'validating' | 'ready' | 'logging-in' | 'success' | 'error'>('validating');
     const [inviteData, setInviteData] = useState<{
@@ -25,11 +48,11 @@ function AcceptInviteContent() {
     useEffect(() => {
         const validateToken = async () => {
             try {
-                const response = await fetch(`/api/staff/validate-invite?token=${token}`);
+                const response = await fetch(`/api/staff/validate-invite?token=${encodeURIComponent(token || '')}`);
                 const data = await response.json();
 
                 if (!response.ok) {
-                    throw new Error(data.error || 'Invalid or expired invitation');
+                    throw new Error(data.error || (isLoginMode ? 'Invalid or expired sign-in link' : 'Invalid or expired invitation'));
                 }
 
                 setInviteData(data);
@@ -41,12 +64,12 @@ function AcceptInviteContent() {
         };
 
         if (!token) {
-            setError('Invalid invitation link');
+            setError(isLoginMode ? 'Invalid sign-in link' : 'Invalid invitation link');
             setStep('error');
             return;
         }
         validateToken();
-    }, [token]);
+    }, [token, isLoginMode]);
 
     const handleEnter = async () => {
         if (!token) return;
@@ -83,15 +106,15 @@ function AcceptInviteContent() {
                 });
 
                 if (result?.error) {
-                    throw new Error('Failed to log in. The link may have already been used.');
+                    throw new Error('Failed to log in. The link may have already been used or expired.');
                 }
             }
 
             setStep('success');
-            // Use full page reload to ensure the new session is properly initialized
             setTimeout(() => {
-                window.location.href = '/dashboard';
-            }, 1500);
+                router.push('/dashboard');
+                router.refresh();
+            }, 800);
         } catch (err) {
             setError(err instanceof Error ? err.message : String(err));
             setStep('error');
@@ -103,130 +126,180 @@ function AcceptInviteContent() {
 
     if (step === 'validating') {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-4">
-                <div className="text-center">
-                    <Loader2 className="w-12 h-12 text-blue-500 animate-spin mx-auto mb-4" />
-                    <p className="text-white/60 text-lg">Validating your invitation...</p>
-                </div>
-            </div>
+            <>
+                <a href="#main-content" className={skipLinkClass}>Skip to main content</a>
+                <main id="main-content" tabIndex={-1} className="min-h-screen bg-page text-text flex items-center justify-center p-4">
+                    <div className="max-w-md w-full bg-surface border border-border rounded-2xl p-8 text-center shadow-sm">
+                        <div className="flex justify-center mb-6"><BrandLockup /></div>
+                        <Loader2 className="w-10 h-10 text-accent motion-safe:animate-spin mx-auto mb-4" aria-hidden="true" />
+                        <p className="text-text-secondary text-base" role="status">
+                            {isLoginMode ? 'Verifying your sign-in link...' : 'Validating your invitation...'}
+                        </p>
+                    </div>
+                </main>
+            </>
         );
     }
 
     if (step === 'error') {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-4">
-                <div className="max-w-md w-full bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 text-center">
-                    <XCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
-                    <h1 className="text-2xl font-bold text-white mb-2">Invitation Invalid</h1>
-                    <p className="text-white/60 mb-6">{error}</p>
-                    <p className="text-white/40 text-sm mb-6">
-                        Contact your administrator to send a new invitation.
-                    </p>
-                    <Link
-                        href="/"
-                        className="inline-block px-6 py-3 bg-white/10 text-white font-semibold rounded-lg hover:bg-white/20 transition-colors"
-                    >
-                        Go to Homepage
-                    </Link>
-                </div>
-            </div>
+            <>
+                <a href="#main-content" className={skipLinkClass}>Skip to main content</a>
+                <main id="main-content" tabIndex={-1} className="min-h-screen bg-page text-text flex items-center justify-center p-4">
+                    <div role="alert" className="max-w-md w-full bg-surface rounded-2xl p-8 border border-border text-center shadow-sm">
+                        <div className="flex justify-center mb-6"><BrandLockup /></div>
+                        <div className="w-14 h-14 rounded-2xl bg-danger/10 flex items-center justify-center mx-auto mb-4">
+                            <XCircle className="w-8 h-8 text-danger" aria-hidden="true" />
+                        </div>
+                        <h1 className="text-2xl font-bold text-text mb-2">
+                            {isLoginMode ? 'Sign-In Link Expired or Invalid' : 'Invitation Invalid'}
+                        </h1>
+                        <p className="text-text-secondary mb-3">{error}</p>
+                        <p className="text-text-muted text-sm mb-6">
+                            {isLoginMode
+                                ? 'Staff sign-in links are single-use and expire after 15 minutes. Request a fresh link below.'
+                                : 'Returning staff can request a new 15-minute sign-in link below, or ask your administrator for a fresh invitation.'}
+                        </p>
+                        <div className="flex flex-col gap-3">
+                            <Link
+                                href="/staff-login"
+                                className={`inline-flex items-center justify-center min-h-[44px] px-6 py-3 bg-accent text-on-accent font-semibold rounded-xl hover:bg-accent-hover transition-colors ${focusRing}`}
+                            >
+                                Request a new staff sign-in link
+                            </Link>
+                            <Link
+                                href="/"
+                                className={`inline-flex items-center justify-center min-h-[44px] px-6 py-2.5 bg-surface-elevated border border-border text-text-secondary hover:text-text font-medium rounded-xl transition-colors text-sm ${focusRing}`}
+                            >
+                                Go to Homepage
+                            </Link>
+                        </div>
+                    </div>
+                </main>
+            </>
         );
     }
 
     if (step === 'success') {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-4">
-                <div className="max-w-md w-full bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 text-center">
-                    <CheckCircle className="w-16 h-16 text-green-400 mx-auto mb-4" />
-                    <h1 className="text-2xl font-bold text-white mb-2">Welcome aboard!</h1>
-                    <p className="text-white/60 mb-4">Taking you to your dashboard...</p>
-                    <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto" />
-                </div>
-            </div>
+            <>
+                <a href="#main-content" className={skipLinkClass}>Skip to main content</a>
+                <main id="main-content" tabIndex={-1} className="min-h-screen bg-page text-text flex items-center justify-center p-4">
+                    <div className="max-w-md w-full bg-surface rounded-2xl p-8 border border-border text-center shadow-sm" role="status">
+                        <div className="flex justify-center mb-6"><BrandLockup /></div>
+                        <div className="w-14 h-14 rounded-2xl bg-accent-soft flex items-center justify-center mx-auto mb-4">
+                            <CheckCircle className="w-8 h-8 text-accent" aria-hidden="true" />
+                        </div>
+                        <h1 className="text-2xl font-bold text-text mb-2">
+                            {isLoginMode ? 'Signed in!' : 'Welcome aboard!'}
+                        </h1>
+                        <p className="text-text-secondary mb-4">Taking you to your dashboard...</p>
+                        <Loader2 className="w-7 h-7 text-accent motion-safe:animate-spin mx-auto" aria-hidden="true" />
+                    </div>
+                </main>
+            </>
         );
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-4">
-            <div className="max-w-md w-full">
-                {/* Card */}
-                <div className="bg-white/10 backdrop-blur-lg rounded-3xl p-8 border border-white/20 text-center shadow-2xl">
-                    {/* Icon */}
-                    <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
-                        <Sparkles className="w-10 h-10 text-white" />
-                    </div>
+        <>
+            <a href="#main-content" className={skipLinkClass}>Skip to main content</a>
+            <main id="main-content" tabIndex={-1} className="min-h-screen bg-page text-text flex items-center justify-center p-4">
+                <div className="max-w-md w-full">
+                    <div className="bg-surface rounded-2xl p-6 sm:p-8 border border-border text-center shadow-sm">
+                        <div className="flex justify-center mb-6"><BrandLockup /></div>
 
-                    {/* Heading */}
-                    <h1 className="text-3xl font-bold text-white mb-2">You're invited!</h1>
-                    <p className="text-white/60 mb-6">
-                        You've been added to the team as a{' '}
-                        <span className="font-semibold text-white">{roleLabel(inviteData?.role || '')}</span>.
-                    </p>
-
-                    {/* Email badge */}
-                    <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 rounded-full text-white/80 text-sm mb-8 border border-white/20">
-                        <div className="w-2 h-2 bg-green-400 rounded-full" />
-                        {inviteData?.email}
-                    </div>
-
-                    {inviteData?.requiresAuth && (
-                        <div className="mb-6 text-left">
-                            <p className="text-white/70 text-xs mb-2">
-                                This email already has an existing account. Confirm your current password (or ensure you are signed in) to accept this organisation invitation.
-                            </p>
-                            {inviteData.requiresPassword && (
-                                <input
-                                    type="password"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    placeholder="Current account password"
-                                    aria-label="Current account password"
-                                    className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                                />
-                            )}
+                        <div className="w-16 h-16 bg-accent-soft text-accent rounded-2xl flex items-center justify-center mx-auto mb-5">
+                            <Sparkles className="w-8 h-8" aria-hidden="true" />
                         </div>
-                    )}
 
-                    {/* CTA */}
-                    <button
-                        onClick={handleEnter}
-                        disabled={step === 'logging-in'}
-                        className="w-full py-4 px-6 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-bold text-lg rounded-2xl hover:from-blue-600 hover:to-purple-700 transition-all shadow-lg hover:shadow-blue-500/25 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
-                    >
-                        {step === 'logging-in' ? (
-                            <>
-                                <Loader2 className="w-5 h-5 animate-spin" />
-                                Signing you in...
-                            </>
-                        ) : (
-                            <>
-                                Enter Dashboard
-                                <ArrowRight className="w-5 h-5" />
-                            </>
+                        <h1 className="text-2xl sm:text-3xl font-bold text-text mb-2">
+                            {isLoginMode ? 'Confirm Staff Sign-In' : "You're invited!"}
+                        </h1>
+                        <p className="text-text-secondary mb-6 text-sm sm:text-base">
+                            {isLoginMode ? (
+                                <>
+                                    Continue to your workspace as{' '}
+                                    <span className="font-semibold text-text">{roleLabel(inviteData?.role || '')}</span>{' '}
+                                    <span className="text-text-muted">(expires in 15 minutes)</span>.
+                                </>
+                            ) : (
+                                <>
+                                    You&apos;ve been added to the team as a{' '}
+                                    <span className="font-semibold text-text">{roleLabel(inviteData?.role || '')}</span>.
+                                </>
+                            )}
+                        </p>
+
+                        <div className="inline-flex items-center gap-2 px-4 py-2 bg-surface-elevated rounded-full text-text text-sm mb-6 border border-border">
+                            <span className="w-2 h-2 bg-accent rounded-full" aria-hidden="true" />
+                            <span>{inviteData?.email}</span>
+                        </div>
+
+                        {inviteData?.requiresAuth && (
+                            <div className="mb-6 text-left">
+                                <p className="text-text-secondary text-xs mb-2">
+                                    This email already has an existing account. Confirm your current password (or ensure you are signed in) to accept this organisation invitation.
+                                </p>
+                                {inviteData.requiresPassword && (
+                                    <input
+                                        type="password"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        placeholder="Current account password"
+                                        aria-label="Current account password"
+                                        className="w-full min-h-[44px] px-4 py-3 rounded-xl bg-page border border-border text-text placeholder:text-text-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-accent text-sm"
+                                    />
+                                )}
+                            </div>
                         )}
-                    </button>
 
-                    <p className="text-white/30 text-xs mt-6">
-                        This link is single-use and expires in 7 days.
-                        For future logins, use the staff login page.
+                        <button
+                            type="button"
+                            onClick={handleEnter}
+                            disabled={step === 'logging-in'}
+                            className={`w-full min-h-[44px] py-3.5 px-6 bg-accent text-on-accent font-bold text-base rounded-xl hover:bg-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2.5 ${focusRing}`}
+                        >
+                            {step === 'logging-in' ? (
+                                <>
+                                    <Loader2 className="w-5 h-5 motion-safe:animate-spin" aria-hidden="true" />
+                                    Signing you in...
+                                </>
+                            ) : (
+                                <>
+                                    {isLoginMode ? 'Confirm & Enter Dashboard' : 'Enter Dashboard'}
+                                    <ArrowRight className="w-5 h-5" aria-hidden="true" />
+                                </>
+                            )}
+                        </button>
+
+                        <p className="text-text-muted text-xs mt-6 leading-relaxed">
+                            {isLoginMode
+                                ? 'This sign-in link is single-use and expires in 15 minutes. Need another link? Visit the '
+                                : 'This link is single-use and expires in 7 days. For future logins, use the '}
+                            <Link href="/staff-login" className={`text-accent font-medium underline underline-offset-2 hover:text-accent-hover ${focusRing}`}>
+                                staff login page
+                            </Link>
+                            .
+                        </p>
+                    </div>
+
+                    <p className="text-center text-text-muted text-xs mt-6">
+                        After-School Club CMS · by SprintScale IT
                     </p>
                 </div>
-
-                {/* Footer */}
-                <p className="text-center text-white/30 text-sm mt-6">
-                    Powered by SprintScale
-                </p>
-            </div>
-        </div>
+            </main>
+        </>
     );
 }
 
 export default function AcceptInvitePage() {
     return (
         <Suspense fallback={
-            <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
-                <Loader2 className="w-12 h-12 text-blue-500 animate-spin" />
-            </div>
+            <main id="main-content" tabIndex={-1} className="min-h-screen bg-page text-text flex items-center justify-center">
+                <Loader2 className="w-10 h-10 text-accent motion-safe:animate-spin" aria-hidden="true" />
+                <span className="sr-only">Loading invitation</span>
+            </main>
         }>
             <AcceptInviteContent />
         </Suspense>

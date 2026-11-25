@@ -10,7 +10,7 @@
 ## First Day Operational Checklist
 
 ```
-  [08:00 / Arrival]    Step 1: Sign in at `/login` and select your centre
+  [08:00 / Arrival]    Step 1: Sign in via magic link at `/staff-login` and select your centre
   [Before Session]     Step 2: Check today's schedule and note allergy flags
   [Session Start]      Step 3: Open Attendance Roll Call / Kiosk Mode
   [During Session]     Step 4: Mark arrivals, latecomers, and absences
@@ -26,9 +26,9 @@
 *Figure QS-T.1 — Staff Invitation Acceptance Screen*
 
 📹 **Video Walkthrough:** [Watch: Accepting a Staff Email Invitation](/training/assets/videos/SS-D6-V023.mp4)
-1. On your tablet or phone browser, go to: `https://app.sprintscaleit.co.uk/login`.
-2. Enter your staff email address and password (or use Google Sign-In).
-3. If this is your first time, check your email for the invitation link sent by your Owner/Manager.
+1. On your tablet or phone browser, go to: `https://app.sprintscaleit.co.uk/staff-login`.
+2. Enter your invited work email address and tap **Send Sign-In Link** to receive a single-use 15-minute magic sign-in link.
+3. If this is your very first day, open the initial 7-day staff invitation link sent by your Owner or Centre Manager.
 
 ---
 
@@ -87,6 +87,6 @@
 ---
 
 ## Next Steps & Comprehensive Documentation
-- [Club Tutor Role Guide](../role-guides/tutor-guide.md) — Classroom delivery, roll call, progress notes, and student welfare manual.
-- [Attendance & Kiosk Register Manual](../functional-manuals/attendance.md) — Daily registers, late arrival tracking, and kiosk check-ins.
-- [First Aid & Incidents Manual](../functional-manuals/incidents-safeguarding.md) — Body map injury logging and safeguarding escalation rules.
+- [Club Tutor Role Guide](/dashboard/help/guides/tutor-guide) — Classroom delivery, roll call, progress notes, and student welfare manual.
+- [Attendance & Kiosk Register Manual](/dashboard/help/guides/attendance-roll-call) — Daily registers, late arrival tracking, and kiosk check-ins.
+- [First Aid & Incidents Manual](/dashboard/help/guides/incidents-safeguarding) — Body map injury logging and safeguarding escalation rules.

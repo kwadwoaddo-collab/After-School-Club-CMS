@@ -65,11 +65,11 @@ SprintScale enforces granular server-side permission gates for all financial act
 | Financial Capability / Action | Owner (`ORG_OWNER`) | Manager (`MANAGER`) | Front Desk (`FRONT_DESK`) | Tutor (`TUTOR`) | Parent (`PARENT`) | Evidence Source |
 |---|---|---|---|---|---|---|
 | **Finance Dashboard (`/dashboard/finance`)** | ✅ All Centres | ✅ Assigned Centres | ❌ Blocked (Redirect) | ❌ Blocked | ❌ No Access | `src/app/dashboard/finance/page.tsx` |
-| **View Invoices / Details** | ✅ All Centres | ✅ Assigned Centres | ✅ Assigned Centres | ❌ No Access | ❌ No Access | `getInvoiceDetails` |
-| **Create / Update Agreed Fee Config** | ✅ All Centres | ✅ Assigned Centres | ✅ Assigned Centres | ❌ No Access | ❌ No Access | `assertCentreAccess` |
-| **Generate Monthly Invoices (Run)** | ✅ All Centres | ✅ Assigned Centres | ✅ Assigned Centres | ❌ No Access | ❌ No Access | `generateInvoiceFromConfig` |
-| **Record Offline Payment (Cash/Bank)** | ✅ Full Access | ✅ Assigned Centres | ✅ Assigned Centres | ❌ No Access | ❌ No Access | `recordPayment` |
-| **Reconcile Voucher Submissions** | ✅ Full Access | ✅ Assigned Centres | ✅ Assigned Centres | ❌ No Access | ❌ No Access | `verifyPayment` / `failPayment` |
+| **View Invoices / Details (`/dashboard/finance`)** | ✅ All Centres | ✅ Assigned Centres | ❌ Blocked on Finance UI (Profile View Only) | ❌ No Access | ❌ No Access | `getInvoiceDetails` |
+| **Create / Update Agreed Fee Config** | ✅ All Centres | ✅ Assigned Centres | ❌ Blocked (Read-Only on Family Profile) | ❌ No Access | ❌ No Access | `updateBillingConfig` |
+| **Generate Monthly Invoices (Run)** | ✅ All Centres | ✅ Assigned Centres | ❌ Blocked | ❌ No Access | ❌ No Access | `generateInvoiceFromConfig` |
+| **Record Offline Payment (Cash/Bank)** | ✅ Full Access | ✅ Assigned Centres | ❌ Blocked on Finance UI | ❌ No Access | ❌ No Access | `recordPayment` |
+| **Reconcile Voucher Submissions** | ✅ Full Access | ✅ Assigned Centres | ❌ Blocked on Finance UI | ❌ No Access | ❌ No Access | `verifyPayment` / `failPayment` |
 | **Void an Issued Invoice (`voidInvoice`)** | ✅ **Owner Only** | ❌ Blocked | ❌ Blocked | ❌ No Access | ❌ No Access | `voidInvoice` |
 | **Delete an Invoice (`deleteInvoice`, Zero Payments)** | ✅ **Owner Only** | ❌ Blocked | ❌ Blocked | ❌ No Access | ❌ No Access | `deleteInvoice` |
 | **Resend Invoice Notification Email** | ✅ All Centres | ✅ Assigned Centres | ❌ Blocked | ❌ No Access | ❌ No Access | `resendInvoiceEmail` |
@@ -110,7 +110,7 @@ SprintScale enforces granular server-side permission gates for all financial act
 
 - **No Monetary Family Credit Balance:** SprintScale does NOT have a customer credit ledger or surplus balance account. If staff record a payment larger than the invoice amount (e.g. recording £300 on a £250 invoice), the invoice status marks `paid`, but the £50 excess is stored solely as a payment row on that invoice; it does not automatically carry over to other invoices. Staff should record only the amount attributable to the invoice.
 - **Parent Portal Overpayment Guard:** When parents submit voucher claims in the portal, the application strictly blocks amounts greater than the remaining balance (`amount > outstandingBalance`).
-- **Payment Immutability:** Existing payment rows cannot be edited or deleted in the UI. If a payment was recorded in error, an Owner must void the invoice (which cancels the invoice liability to £0.00 in the parent portal while preserving all records for audit) and re-issue the correct billing record. Hard deletion of an invoice via `deleteInvoice` is blocked whenever payments exist.
+- **Payment Reversal & Audit Trail:** Recorded payment rows are never silently overwritten or hard-deleted. If a payment was logged in error, authorised finance staff (`ORG_OWNER` or `MANAGER`) can reverse the payment (`reversePayment`, which stamps `reversedAt` and a reversal reason while recalculating the invoice balance), or an Owner can void the entire invoice (`voidInvoice`). Hard deletion of an invoice via `deleteInvoice` remains blocked whenever payment rows exist.
 
 ---
 

@@ -33,13 +33,23 @@ function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(
-    urlError === 'RateLimited'
-      ? RATE_LIMITED_MESSAGE
-      : urlError
-        ? `Authentication error: ${urlError}`
-        : null
-  );
+  const formatAuthUrlError = (code: string | null): string | null => {
+    if (!code) return null;
+    if (code === 'RateLimited') return RATE_LIMITED_MESSAGE;
+    const friendlyMessages: Record<string, string> = {
+      OAuthAccountNotLinked: 'This email is already linked to a password login. Please sign in with your email and password instead.',
+      CredentialsSignin: 'Invalid email or password. Please check your details and try again.',
+      AccessDenied: 'Access was denied for this account. Please contact your organisation administrator.',
+      Configuration: 'Sign-in is temporarily unavailable due to a configuration issue. Please try again shortly.',
+      Verification: 'That sign-in link has expired or has already been used. Please request a new link.',
+      OAuthSignin: 'Could not start Google Sign-In. Please try again or use your email and password.',
+      OAuthCallback: 'Google Sign-In could not be completed. Please try again.',
+      SessionRequired: 'Please sign in to continue.',
+    };
+    return friendlyMessages[code] ?? 'Unable to complete sign-in. Please try again or choose another sign-in method.';
+  };
+
+  const [error, setError] = useState<string | null>(() => formatAuthUrlError(urlError));
   const [resendingVerification, setResendingVerification] = useState(false);
   const [resendMessage, setResendMessage] = useState<string | null>(null);
   const [resendError, setResendError] = useState<string | null>(null);
@@ -497,7 +507,7 @@ export default function LoginPage() {
       </div>
 
       {/* Right Side - Login Form */}
-      <main id="main-content" className="flex flex-col items-center justify-between p-5 sm:p-8 relative min-w-0">
+      <main id="main-content" tabIndex={-1} className="flex flex-col items-center justify-between p-5 sm:p-8 relative min-w-0">
         <div className="md:hidden w-full flex justify-between items-center">
           <BrandLockup />
           <Link href="/" className="min-h-[44px] inline-flex items-center text-sm text-[var(--if-text-secondary)] hover:text-[var(--if-text)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--if-accent)]">

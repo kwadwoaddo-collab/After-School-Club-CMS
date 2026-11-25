@@ -90,8 +90,8 @@
 ---
 
 ## Next Steps & Comprehensive Documentation
-- [Centre Manager Role Guide](../role-guides/manager-guide.md) — Day-to-day operations, attendance, safeguarding, finance, and staffing workflows.
-- [Registrations & Intake Manual](../functional-manuals/registrations.md) — Reviewing, approving, and triaging inbound student applications.
-- [Daily Attendance Register Manual](../functional-manuals/attendance.md) — Live roll calls, time-tracking, and absence credit reconciliation.
-- [Finance & Invoices Manual](../functional-manuals/invoices-billing.md) — Reviewing invoices, recording payments, and downloading receipts.
-- [Staff Directory & Access Permissions](../functional-manuals/staff-access-permissions.md) — Inviting staff, scoping venue access, and role assignment.
+- [Centre Manager Role Guide](/dashboard/help/guides/manager-guide) — Day-to-day operations, attendance, safeguarding, finance, and staffing workflows.
+- [Registrations & Intake Manual](/dashboard/help/guides/registrations-intake) — Reviewing, approving, and triaging inbound student applications.
+- [Daily Attendance Register Manual](/dashboard/help/guides/attendance-roll-call) — Live roll calls, time-tracking, and absence credit reconciliation.
+- [Finance & Invoices Manual](/dashboard/help/guides/invoices-billing) — Reviewing invoices, recording payments, and downloading receipts.
+- [Staff Directory & Access Permissions](/dashboard/help/guides/staff-access-permissions) — Inviting staff, scoping venue access, and role assignment.

@@ -149,7 +149,7 @@ export default function VideoLibraryView({ videos, userRole }: VideoLibraryViewP
               onClick={() => setSelectedCategory('all')}
               className={`px-3.5 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
                 selectedCategory === 'all'
-                  ? 'bg-accent text-white shadow-xs'
+                  ? 'bg-accent text-on-accent shadow-xs'
                   : 'bg-surface border border-border text-text-secondary hover:text-text hover:border-accent/40'
               }`}
             >
@@ -167,7 +167,7 @@ export default function VideoLibraryView({ videos, userRole }: VideoLibraryViewP
                   onClick={() => setSelectedCategory(cat)}
                   className={`px-3.5 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
                     isSelected
-                      ? 'bg-accent text-white shadow-xs'
+                      ? 'bg-accent text-on-accent shadow-xs'
                       : 'bg-surface border border-border text-text-secondary hover:text-text hover:border-accent/40'
                   }`}
                 >
@@ -227,7 +227,7 @@ export default function VideoLibraryView({ videos, userRole }: VideoLibraryViewP
                   </div>
 
                   {/* Play Button Icon Graphic */}
-                  <div className="size-12 rounded-full bg-accent/90 text-white flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:bg-accent transition-all duration-200 z-10">
+                  <div className="size-12 rounded-full bg-accent/90 text-on-accent flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:bg-accent transition-all duration-200 z-10">
                     <Play className="size-5 ml-0.5 fill-current" aria-hidden="true" />
                   </div>
                 </div>
@@ -253,7 +253,7 @@ export default function VideoLibraryView({ videos, userRole }: VideoLibraryViewP
                     {/* Action CTA */}
                     <Link
                       href={`/dashboard/help/videos/${video.slug}`}
-                      className="w-full inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-semibold text-accent bg-accent-soft hover:bg-accent hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                      className="w-full inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-semibold text-accent bg-accent-soft hover:bg-accent hover:text-on-accent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                     >
                       <Play className="size-3.5 fill-current" aria-hidden="true" />
                       <span>Watch video</span>
