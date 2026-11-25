@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { getIncidents } from '@/features/incidents/actions';
 import { Plus, ShieldAlert, Activity, FileWarning, Search, FileText, AlertTriangle, X, Printer } from 'lucide-react';
 import { logger } from '@/lib/logger';
+import { useDialogFocusTrap } from '@/components/ui/useDialogFocusTrap';
 
 const NewIncidentModal = dynamic(() => import('./NewIncidentModal'));
 
@@ -30,39 +31,54 @@ export default function IncidentsClient({
     const [search, setSearch] = useState('');
     const skipFirstLoadRef = useRef(initialIncidents !== undefined);
     const prevCentreIdRef = useRef(centreId);
+    const loadReqRef = useRef(0);
+    const abortControllerRef = useRef<AbortController | null>(null);
+    const incidentDrawerRef = useRef<HTMLDivElement>(null);
+
+    useDialogFocusTrap(Boolean(selectedIncident), incidentDrawerRef, () => setSelectedIncident(null));
 
     useEffect(() => {
-        if (!selectedIncident) return;
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') {
-                setSelectedIncident(null);
-            }
-        };
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [selectedIncident]);
+        if (initialIncidents !== undefined && prevCentreIdRef.current === centreId) {
+            setIncidents(initialIncidents);
+        }
+    }, [initialIncidents, centreId]);
 
     const loadIncidents = useCallback(async () => {
+        abortControllerRef.current?.abort();
+        const controller = new AbortController();
+        abortControllerRef.current = controller;
+        const reqId = ++loadReqRef.current;
         setIsLoading(true);
         setLoadError(false);
         try {
             const data = await getIncidents(centreId);
+            if (controller.signal.aborted || reqId !== loadReqRef.current) return;
             setIncidents(data);
         } catch (error) {
+            if (controller.signal.aborted || reqId !== loadReqRef.current) return;
             setLoadError(true);
             logger.error('Failed to load incidents', error);
         } finally {
-            setIsLoading(false);
+            if (!controller.signal.aborted && reqId === loadReqRef.current) {
+                setIsLoading(false);
+            }
         }
     }, [centreId]);
 
     useEffect(() => {
+        if (prevCentreIdRef.current !== centreId) {
+            setSelectedIncident(null);
+            setIsModalOpen(false);
+        }
         if (skipFirstLoadRef.current && prevCentreIdRef.current === centreId) {
             skipFirstLoadRef.current = false;
             return;
         }
         prevCentreIdRef.current = centreId;
         void loadIncidents();
+        return () => {
+            abortControllerRef.current?.abort();
+        };
     }, [centreId, loadIncidents]);
 
     const getTypeIcon = (type: string) => {
@@ -98,6 +114,7 @@ export default function IncidentsClient({
                     <input
                         id="incidents-search"
                         type="text"
+                        aria-label="Search incidents"
                         placeholder="Search child or description…"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
@@ -192,12 +209,16 @@ export default function IncidentsClient({
                                     >
                                         <td className="px-5 py-4">
                                             <div className="flex flex-col gap-1.5">
-                                                <span className="font-medium text-text text-xs">
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => { e.stopPropagation(); setSelectedIncident(incident); }}
+                                                    className="text-left font-medium text-text text-xs hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent rounded-sm"
+                                                >
                                                     {new Date(incident.date).toLocaleString('en-GB', {
                                                         dateStyle: 'medium',
                                                         timeStyle: 'short',
                                                     })}
-                                                </span>
+                                                </button>
                                                 <span className={`inline-flex items-center gap-1.5 w-max px-2 py-0.5 rounded-full text-xs font-semibold border ${getTypeBadge(incident.type)}`}>
                                                     {getTypeIcon(incident.type)}
                                                     <span className="capitalize">{incident.type}</span>
@@ -241,7 +262,7 @@ export default function IncidentsClient({
                         className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity"
                         onClick={() => setSelectedIncident(null)}
                     />
-                    <div className="relative w-full max-w-lg bg-surface shadow-[var(--shadow-popover)] h-full flex flex-col border-l border-border">
+                    <div ref={incidentDrawerRef} tabIndex={-1} className="relative w-full max-w-lg bg-surface shadow-[var(--shadow-popover)] h-full flex flex-col border-l border-border">
                         <div className="flex items-center justify-between px-6 py-4 border-b border-border flex-shrink-0">
                             <div>
                                 <h2 id="incident-detail-title" className="text-base font-bold text-text">
@@ -345,7 +366,7 @@ export default function IncidentsClient({
                             </div>
                         </div>
 
-                        <div className="px-6 py-4 border-t border-border flex items-center justify-between gap-3 flex-shrink-0">
+                        <div className="px-6 py-4 border-t border-border flex flex-wrap items-center justify-between gap-3 flex-shrink-0">
                             <button
                                 type="button"
                                 onClick={() => window.print()}

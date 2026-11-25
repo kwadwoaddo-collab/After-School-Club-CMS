@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useEffect, useId, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import {
     TrendingUp, TrendingDown, Minus, ChevronDown, ChevronUp,
@@ -10,7 +10,7 @@ import Link from 'next/link';
 import type { StudentLedgerEntry } from '@/features/attendance/actions';
 import { forgiveSessionsAction } from '@/features/attendance/actions';
 import { useToast } from '@/components/ui/ToastProvider';
-import { useCentreFilter } from '@/components/dashboard/CentreFilterContext';
+import { useDialogFocusTrap } from '@/components/ui/useDialogFocusTrap';
 import { getAvatarGradient } from '@/components/ui/utils';
 import HeaderPortal from '@/components/dashboard/HeaderPortal';
 import { Button } from '@/components/ui/Button';
@@ -63,12 +63,22 @@ function ForgivModal({
     const [amount, setAmount] = useState(1);
     const [note, setNote] = useState('');
     const [isPending, startTransition] = useTransition();
+    const forgivingRef = useRef(false);
+    const dialogRef = useRef<HTMLDivElement | null>(null);
+    const dialogTitleId = useId();
+    const reasonInputId = useId();
+
+    useDialogFocusTrap(true, dialogRef, () => {
+        if (!forgivingRef.current) onClose();
+    });
 
     const submit = () => {
+        if (forgivingRef.current || isPending) return;
         if (!note.trim()) {
             toast({ title: 'Note required', message: 'Please add a reason for this forgiveness.', variant: 'warning' });
             return;
         }
+        forgivingRef.current = true;
         startTransition(async () => {
             try {
                 await forgiveSessionsAction({ childId: entry.childId, sessionsAmount: amount, note });
@@ -77,16 +87,28 @@ function ForgivModal({
             } catch (e) {
                 const message = e instanceof Error ? e.message : String(e);
                 toast({ title: 'Could not forgive sessions', message, variant: 'error' });
+            } finally {
+                forgivingRef.current = false;
             }
         });
     };
 
     return (
-        <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/50 p-4">
-            <div className="bg-surface border border-border rounded-lg shadow-[var(--shadow-popover)] w-full max-w-md">
+        <div
+            onClick={(e) => { if (e.target === e.currentTarget && !isPending) onClose(); }}
+            className="fixed inset-0 z-[300] flex items-center justify-center bg-black/50 p-4"
+        >
+            <div
+                ref={dialogRef}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby={dialogTitleId}
+                tabIndex={-1}
+                className="bg-surface border border-border rounded-lg shadow-[var(--shadow-popover)] w-full max-w-md"
+            >
                 <div className="flex items-center justify-between px-6 py-5 border-b border-border-subtle">
                     <div>
-                        <h3 className="text-section-title text-text">Forgive Sessions</h3>
+                        <h3 id={dialogTitleId} className="text-section-title text-text">Forgive Sessions</h3>
                         <p className="text-xs text-text-muted mt-0.5">
                             {canViewProfiles && entry.childId ? (
                                 <Link
@@ -103,8 +125,8 @@ function ForgivModal({
                             · Currently {entry.netBalance < 0 ? `${Math.abs(entry.netBalance)} owed` : 'even/ahead'}
                         </p>
                     </div>
-                    <Button variant="ghost" size="icon" onClick={onClose}>
-                        <X className="w-4 h-4" />
+                    <Button type="button" variant="ghost" size="icon" aria-label="Close forgive sessions dialog" className="min-w-[44px] min-h-[44px]" onClick={onClose}>
+                        <X className="w-4 h-4" aria-hidden="true" />
                     </Button>
                 </div>
                 <div className="p-6 space-y-4">
@@ -112,19 +134,24 @@ function ForgivModal({
                         <label className="block text-label text-text-muted mb-2">Sessions to forgive</label>
                         <div className="flex items-center gap-3">
                             <button
+                                type="button"
+                                aria-label="Decrease sessions to forgive"
                                 onClick={() => setAmount(Math.max(1, amount - 1))}
-                                className="w-10 h-10 rounded-sm border border-border bg-page hover:bg-border-subtle text-text font-bold text-lg flex items-center justify-center transition-colors"
+                                className="w-11 h-11 rounded-sm border border-border bg-page hover:bg-border-subtle text-text font-bold text-lg flex items-center justify-center transition-colors"
                             >−</button>
-                            <span className="text-2xl font-bold text-text w-8 text-center">{amount}</span>
+                            <span className="text-2xl font-bold text-text w-8 text-center tabular-nums">{amount}</span>
                             <button
+                                type="button"
+                                aria-label="Increase sessions to forgive"
                                 onClick={() => setAmount(amount + 1)}
-                                className="w-10 h-10 rounded-sm border border-border bg-page hover:bg-border-subtle text-text font-bold text-lg flex items-center justify-center transition-colors"
+                                className="w-11 h-11 rounded-sm border border-border bg-page hover:bg-border-subtle text-text font-bold text-lg flex items-center justify-center transition-colors"
                             >+</button>
                         </div>
                     </div>
                     <div>
-                        <label className="block text-label text-text-muted mb-2">Reason (required) *</label>
+                        <label htmlFor={reasonInputId} className="block text-label text-text-muted mb-2">Reason (required) *</label>
                         <textarea
+                            id={reasonInputId}
                             value={note}
                             onChange={e => setNote(e.target.value)}
                             rows={3}
@@ -163,8 +190,18 @@ function LedgerRow({ entry, onRefresh, canForgive, canViewProfiles = true }: { e
         <>
             <Card className={`overflow-hidden ${statusColor}`}>
                 <div
-                    className="flex items-center gap-4 px-5 py-4 cursor-pointer hover:bg-page/40 transition-colors"
+                    role="button"
+                    tabIndex={0}
+                    aria-expanded={expanded}
+                    className="flex items-center gap-4 px-5 py-4 cursor-pointer hover:bg-page/40 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent"
                     onClick={() => setExpanded(!expanded)}
+                    onKeyDown={(e) => {
+                        if (e.target !== e.currentTarget) return;
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            setExpanded((prev) => !prev);
+                        }
+                    }}
                 >
                     {/* Avatar */}
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0 bg-gradient-to-br ${getAvatarGradient(entry.firstName || 'U')}`}>
@@ -260,10 +297,10 @@ function LedgerRow({ entry, onRefresh, canForgive, canViewProfiles = true }: { e
                                 <div className="space-y-2">
                                     {entry.forgivenEntries.map((f, i) => (
                                         <div key={i} className="px-3 py-2 rounded-sm bg-info-soft border border-transparent text-xs">
-                                            <span className="font-bold text-blue-700 dark:text-blue-400">+{f.amount} session{f.amount > 1 ? 's' : ''} forgiven</span>
-                                            <span className="text-blue-700/80 dark:text-blue-400/80"> on {f.date}</span>
-                                            {f.adminName && <span className="text-blue-700/70 dark:text-blue-400/70"> by {f.adminName}</span>}
-                                            {f.note && <p className="text-blue-700/80 dark:text-blue-400/80 mt-0.5 italic">"{f.note}"</p>}
+                                            <span className="font-bold text-accent">+{f.amount} session{f.amount > 1 ? 's' : ''} forgiven</span>
+                                            <span className="text-text-secondary"> on {f.date}</span>
+                                            {f.adminName && <span className="text-text-muted"> by {f.adminName}</span>}
+                                            {f.note && <p className="text-text-secondary mt-0.5 italic">"{f.note}"</p>}
                                         </div>
                                     ))}
                                 </div>
@@ -303,9 +340,17 @@ export default function LedgerClient({ ledger, centres, selectedCentreId, select
     const canViewProfiles = userRole !== 'TUTOR';
     const canExportCsv = userRole !== 'TUTOR';
     const router = useRouter();
-    const { setSelectedCentreId } = useCentreFilter();
+    const [activeCentre, setActiveCentre] = useState(selectedCentreId);
+    const [activeYear, setActiveYear] = useState(selectedYear);
     const [tab, setTab] = useState<'all' | 'arrears' | 'ahead' | 'even'>('all');
     const [search, setSearch] = useState('');
+
+    useEffect(() => {
+        setActiveCentre(selectedCentreId);
+    }, [selectedCentreId]);
+    useEffect(() => {
+        setActiveYear(selectedYear);
+    }, [selectedYear]);
 
     type DatePreset = 'this_week' | 'this_month' | 'this_term';
     const [datePreset, setDatePreset] = useState<DatePreset>('this_month');
@@ -365,16 +410,23 @@ export default function LedgerClient({ ledger, centres, selectedCentreId, select
     const evenCount = ledger.filter(e => e.netBalance === 0).length;
 
     const handleCentreChange = (centreId: string) => {
-        // Use the global context setter — it writes the cookie AND calls router.refresh()
-        // so the server re-render picks up the new value correctly
-        setSelectedCentreId(centreId);
-        const params = new URLSearchParams({ year: selectedYear });
+        setActiveCentre(centreId);
+        if (typeof document !== 'undefined') {
+            document.cookie = `selected_centre_id=${centreId}; path=/; max-age=31536000; SameSite=Lax`;
+        }
+        try {
+            localStorage.setItem('dashboard_centre_filter', centreId);
+        } catch {
+            // ignore
+        }
+        const params = new URLSearchParams({ year: activeYear });
         if (centreId && centreId !== 'all') params.set('centre', centreId);
         router.push(`/dashboard/attendance/ledger?${params.toString()}`);
     };
     const handleYearChange = (year: string) => {
+        setActiveYear(year);
         const params = new URLSearchParams({ year });
-        if (selectedCentreId && selectedCentreId !== 'all') params.set('centre', selectedCentreId);
+        if (activeCentre && activeCentre !== 'all') params.set('centre', activeCentre);
         router.push(`/dashboard/attendance/ledger?${params.toString()}`);
     };
 
@@ -427,22 +479,25 @@ export default function LedgerClient({ ledger, centres, selectedCentreId, select
             {/* Filters */}
             <div className="flex flex-col sm:flex-row items-center gap-3">
                 <select
-                    value={selectedCentreId}
+                    aria-label="Select centre"
+                    value={activeCentre}
                     onChange={e => handleCentreChange(e.target.value)}
-                    className="w-full sm:w-auto h-9 px-3 rounded-sm border border-border bg-surface text-text text-sm focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent"
+                    className="w-full sm:w-auto min-h-[44px] px-3 rounded-sm border border-border bg-surface text-text text-sm focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent"
                 >
                     {centres.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
                 <select
-                    value={selectedYear}
+                    aria-label="Select academic year"
+                    value={activeYear}
                     onChange={e => handleYearChange(e.target.value)}
-                    className="w-full sm:w-auto h-9 px-3 rounded-sm border border-border bg-surface text-text text-sm focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent"
+                    className="w-full sm:w-auto min-h-[44px] px-3 rounded-sm border border-border bg-surface text-text text-sm focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent"
                 >
                     {academicYears.map(y => <option key={y} value={y}>{y} Academic Year</option>)}
                 </select>
                 <div className="relative flex-1 w-full">
                     <input
                         type="text"
+                        aria-label="Search students"
                         placeholder="Search students..."
                         value={search}
                         onChange={e => setSearch(e.target.value)}

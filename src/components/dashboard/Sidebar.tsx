@@ -20,7 +20,6 @@ import {
     ClipboardCheck,
     CalendarDays,
     Clock,
-    ExternalLink,
     BarChart,
     X,
     Wallet,
@@ -86,6 +85,24 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
     useEffect(() => {
         setDropdownOpen(false);
     }, [collapsed]);
+
+    // Escape key closes open centre dropdown or mobile navigation drawer
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key !== 'Escape') return;
+            if (dropdownOpen) {
+                setDropdownOpen(false);
+                setDropdownAnchor(null);
+                centreBtnRef.current?.focus();
+                return;
+            }
+            if (!collapsed && typeof window !== 'undefined' && window.innerWidth < 1024) {
+                setCollapsed(true);
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [collapsed, dropdownOpen, setCollapsed]);
 
     useEffect(() => {
         const handleResize = () => {
@@ -175,8 +192,11 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
             )}
             {/* Mobile Overlay */}
             {!collapsed && (
-                <div
-                    className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+                <button
+                    type="button"
+                    tabIndex={-1}
+                    aria-label="Close navigation backdrop"
+                    className="fixed inset-0 bg-black/50 z-40 lg:hidden cursor-default"
                     onClick={() => setCollapsed(true)}
                 />
             )}
@@ -188,7 +208,7 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                     bg-surface text-text flex flex-col
                     transition-all duration-300 ease-in-out
                     w-60
-                    ${collapsed ? '-translate-x-full lg:translate-x-0 lg:w-[72px]' : 'translate-x-0'}
+                    ${collapsed ? '-translate-x-full max-lg:invisible lg:translate-x-0 lg:w-[72px]' : 'translate-x-0'}
                     border-r border-border
                 `}
             >
@@ -196,6 +216,7 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                 <div className={`relative transition-all duration-300 flex flex-col flex-1 ${collapsed ? 'p-4' : 'p-5'}`}>
                     {!collapsed && (
                         <button
+                            type="button"
                             suppressHydrationWarning
                             className="absolute top-5 right-5 lg:hidden p-1.5 rounded-sm text-text-muted hover:text-text hover:bg-page transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
                             onClick={() => setCollapsed(true)}
@@ -223,6 +244,7 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                                 <div className="h-px bg-border my-1" />
                                 <div className="max-h-48 overflow-y-auto">
                                     <button
+                                        type="button"
                                         role="option"
                                         aria-selected={selectedCentreId === 'all'}
                                         onClick={() => { selectCentre('all'); closeCentreDropdown(); }}
@@ -236,6 +258,7 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                                     {centres.map(centre => (
                                         <button
                                             key={centre.id}
+                                            type="button"
                                             role="option"
                                             aria-selected={selectedCentreId === centre.id}
                                             onClick={() => { selectCentre(centre.id); closeCentreDropdown(); }}
@@ -270,6 +293,7 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                             <div className="mb-1">
                                 {!collapsed ? (
                                     <button
+                                        type="button"
                                         ref={centreBtnRef}
                                         onClick={openCentreDropdown}
                                         aria-haspopup="listbox"
@@ -303,11 +327,13 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                                     </button>
                                 ) : (
                                     <button
+                                        type="button"
                                         ref={centreBtnRef}
                                         onClick={openCentreDropdown}
                                         aria-haspopup="listbox"
                                         aria-expanded={dropdownOpen}
                                         aria-controls="centre-dropdown-menu"
+                                        aria-label={`Active Centre: ${selectedCentreId === 'all' ? 'Combined View' : centres.find(c => c.id === selectedCentreId)?.name || 'Centre'}`}
                                         className={`keep-shape flex items-center justify-center w-full px-4 py-2 rounded-md border border-border transition-colors group ${
                                             isCentresPageActive ? 'text-accent bg-accent-soft' : 'text-text-secondary hover:text-text hover:bg-page'
                                         }`}
@@ -482,6 +508,7 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                 </div>
                 {/* Collapse Toggle Button */}
                 <button
+                    type="button"
                     suppressHydrationWarning
                     onClick={() => setCollapsed(!collapsed)}
                     className={`

@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { format } from 'date-fns';
 import { formatDisplayTimeInTimezone, formatShortDateInTimezone, formatDateInTimezone } from '@/lib/datetime';
 import { MoreVertical, Eye, Calendar as CalendarIcon, X, Clock, MapPin, Trash2, CheckCircle, Loader2, AlertTriangle, Shield, BookOpen, GraduationCap, ChevronUp, ChevronDown, SearchX, Mail, Phone } from 'lucide-react';
@@ -13,6 +13,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { useDialogFocusTrap } from '@/components/ui/useDialogFocusTrap';
 
 import { requiresAssessmentOutcome } from '../assessment-outcome';
 import ReassignCentreModal from './ReassignCentreModal';
@@ -125,6 +126,15 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
     const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: SortDirection }>({ key: null, direction: 'asc' });
     const [isProcessingBulk, setIsProcessingBulk] = useState(false);
     const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
+    const cancelDialogRef = useRef<HTMLDivElement | null>(null);
+    const deleteDialogRef = useRef<HTMLDivElement | null>(null);
+    const bulkDeleteDialogRef = useRef<HTMLDivElement | null>(null);
+    const flagsDrawerRef = useRef<HTMLDivElement | null>(null);
+
+    useDialogFocusTrap(Boolean(confirmCancel), cancelDialogRef, () => { if (!isCancelling) setConfirmCancel(null); });
+    useDialogFocusTrap(Boolean(confirmDelete), deleteDialogRef, () => { if (!isDeleting) setConfirmDelete(null); });
+    useDialogFocusTrap(confirmBulkDelete, bulkDeleteDialogRef, () => { if (!isProcessingBulk) setConfirmBulkDelete(false); });
+    useDialogFocusTrap(Boolean(selectedFlagsBooking), flagsDrawerRef, () => setSelectedFlagsBooking(null));
 
     const router = useRouter();
     const { toast } = useToast();
@@ -500,11 +510,16 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
             {confirmCancel && (
                 <div
                     className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-                    role="dialog"
-                    aria-modal="true"
-                    aria-labelledby="cancel-dialog-title"
+                    onClick={(e) => { if (e.target === e.currentTarget && !isCancelling) setConfirmCancel(null); }}
                 >
-                    <div className="bg-surface border border-border rounded-lg shadow-[var(--shadow-popover)] p-6 max-w-sm w-full animate-in zoom-in-95 duration-200">
+                    <div
+                        ref={cancelDialogRef}
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="cancel-dialog-title"
+                        tabIndex={-1}
+                        className="bg-surface border border-border rounded-lg shadow-[var(--shadow-popover)] p-6 max-w-sm w-full animate-in zoom-in-95 duration-200"
+                    >
                         <div className="w-12 h-12 rounded-md bg-warning-soft flex items-center justify-center mx-auto mb-4">
                             <X className="w-6 h-6 text-amber-700 dark:text-amber-400" />
                         </div>
@@ -528,11 +543,16 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
             {confirmDelete && (
                 <div
                     className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-                    role="dialog"
-                    aria-modal="true"
-                    aria-labelledby="delete-dialog-title"
+                    onClick={(e) => { if (e.target === e.currentTarget && !isDeleting) setConfirmDelete(null); }}
                 >
-                    <div className="bg-surface border border-border rounded-lg shadow-[var(--shadow-popover)] p-6 max-w-sm w-full animate-in zoom-in-95 duration-200">
+                    <div
+                        ref={deleteDialogRef}
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="delete-dialog-title"
+                        tabIndex={-1}
+                        className="bg-surface border border-border rounded-lg shadow-[var(--shadow-popover)] p-6 max-w-sm w-full animate-in zoom-in-95 duration-200"
+                    >
                         <div className="w-12 h-12 rounded-md bg-danger-soft flex items-center justify-center mx-auto mb-4">
                             <Trash2 className="w-6 h-6 text-danger" />
                         </div>
@@ -705,20 +725,24 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                         <div className="flex items-center gap-1.5">
                                             {hasMedicalNote(booking) && (
                                                 <button
+                                                    type="button"
+                                                    aria-label="View medical or allergy alert"
                                                     onClick={(e) => { e.stopPropagation(); setSelectedFlagsBooking(booking); }}
-                                                    className="flex items-center justify-center w-6 h-6 rounded-full bg-danger-soft hover:opacity-80 transition-opacity"
+                                                    className="flex items-center justify-center w-8 h-8 rounded-full bg-danger-soft hover:opacity-80 transition-opacity"
                                                     title="Medical / allergy alert"
                                                 >
-                                                    <AlertTriangle className="w-3.5 h-3.5 text-danger" />
+                                                    <AlertTriangle className="w-3.5 h-3.5 text-danger" aria-hidden="true" />
                                                 </button>
                                             )}
                                             {hasSafeguardingNote(booking) && (
                                                 <button
+                                                    type="button"
+                                                    aria-label="View safeguarding alert"
                                                     onClick={(e) => { e.stopPropagation(); setSelectedFlagsBooking(booking); }}
-                                                    className="flex items-center justify-center w-6 h-6 rounded-full bg-accent-soft hover:opacity-80 transition-opacity"
+                                                    className="flex items-center justify-center w-8 h-8 rounded-full bg-accent-soft hover:opacity-80 transition-opacity"
                                                     title="Safeguarding alert"
                                                 >
-                                                    <Shield className="w-3.5 h-3.5 text-accent" />
+                                                    <Shield className="w-3.5 h-3.5 text-accent" aria-hidden="true" />
                                                 </button>
                                             )}
                                             {!hasMedicalNote(booking) && !hasSafeguardingNote(booking) && (
@@ -788,21 +812,23 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                                     {booking.parent.email && (
                                                         <a
                                                             href={`mailto:${booking.parent.email}`}
+                                                            aria-label={`Email ${booking.parent.firstName || 'parent'}`}
                                                             onClick={(e) => e.stopPropagation()}
-                                                            className="p-1.5 hover:bg-page rounded-sm text-text-muted hover:text-text transition-colors"
+                                                            className="p-2 hover:bg-page rounded-sm text-text-muted hover:text-text transition-colors"
                                                             title={`Email ${booking.parent.firstName}`}
                                                         >
-                                                            <Mail className="w-4 h-4" />
+                                                            <Mail className="w-4 h-4" aria-hidden="true" />
                                                         </a>
                                                     )}
                                                     {booking.parent.phone && (
                                                         <a
                                                             href={`tel:${booking.parent.phone}`}
+                                                            aria-label={`Call ${booking.parent.firstName || 'parent'}`}
                                                             onClick={(e) => e.stopPropagation()}
-                                                            className="p-1.5 hover:bg-page rounded-sm text-text-muted hover:text-text transition-colors"
+                                                            className="p-2 hover:bg-page rounded-sm text-text-muted hover:text-text transition-colors"
                                                             title={`Call ${booking.parent.firstName}`}
                                                         >
-                                                            <Phone className="w-4 h-4" />
+                                                            <Phone className="w-4 h-4" aria-hidden="true" />
                                                         </a>
                                                     )}
                                                 </div>
@@ -928,7 +954,13 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
 
                             <div className="grid grid-cols-2 gap-3 mb-3 pl-8">
                                 <div className="flex flex-col gap-1.5 text-metadata">
-                                    <span className="font-medium text-text-secondary">{booking.assessmentType === 'initial_assessment' ? 'Initial Assessment' : booking.assessmentType === 'progress_review' ? 'Progress Check' : 'Activity'}</span>
+                                    <Link
+                                        href={`/dashboard/bookings/${booking.id}`}
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="font-medium text-text-secondary hover:text-accent hover:underline w-fit"
+                                    >
+                                        {booking.assessmentType === 'initial_assessment' ? 'Initial Assessment' : booking.assessmentType === 'progress_review' ? 'Progress Check' : 'Activity'}
+                                    </Link>
                                     <div className="flex items-center gap-1.5">
                                         <CalendarIcon className="w-3.5 h-3.5 text-text-muted" />
                                         {booking.startAt ? formatDateInTimezone(new Date(booking.startAt)) : 'Date TBD'}
@@ -944,18 +976,22 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                 <div className="flex items-center gap-2 mb-3 pl-8">
                                     {hasMedicalNote(booking) && (
                                         <button
+                                            type="button"
+                                            aria-label="View medical or allergy alert"
                                             onClick={(e) => { e.stopPropagation(); setSelectedFlagsBooking(booking); }}
-                                            className="flex items-center justify-center w-6 h-6 rounded-full bg-danger-soft"
+                                            className="flex items-center justify-center w-9 h-9 rounded-full bg-danger-soft"
                                         >
-                                            <AlertTriangle className="w-3.5 h-3.5 text-danger" />
+                                            <AlertTriangle className="w-3.5 h-3.5 text-danger" aria-hidden="true" />
                                         </button>
                                     )}
                                     {hasSafeguardingNote(booking) && (
                                         <button
+                                            type="button"
+                                            aria-label="View safeguarding alert"
                                             onClick={(e) => { e.stopPropagation(); setSelectedFlagsBooking(booking); }}
-                                            className="flex items-center justify-center w-6 h-6 rounded-full bg-accent-soft"
+                                            className="flex items-center justify-center w-9 h-9 rounded-full bg-accent-soft"
                                         >
-                                            <Shield className="w-3.5 h-3.5 text-accent" />
+                                            <Shield className="w-3.5 h-3.5 text-accent" aria-hidden="true" />
                                         </button>
                                     )}
                                 </div>
@@ -1015,7 +1051,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
 
             {/* Floating Action Bar */}
             <div
-                className={`fixed bottom-0 left-0 right-0 z-[100] flex justify-center pb-6 transition-all duration-300 ${
+                className={`fixed bottom-0 left-0 right-0 z-[100] flex justify-center pb-20 lg:pb-6 transition-all duration-300 ${
                     selectedBookings.size > 0 ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'
                 }`}
             >
@@ -1065,11 +1101,16 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
             {confirmBulkDelete && (
                 <div
                     className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-4"
-                    role="dialog"
-                    aria-modal="true"
-                    aria-labelledby="bulk-delete-dialog-title"
+                    onClick={(e) => { if (e.target === e.currentTarget && !isProcessingBulk) setConfirmBulkDelete(false); }}
                 >
-                    <div className="bg-surface border border-border rounded-lg shadow-[var(--shadow-popover)] p-6 max-w-sm w-full animate-in zoom-in-95 duration-200">
+                    <div
+                        ref={bulkDeleteDialogRef}
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="bulk-delete-dialog-title"
+                        tabIndex={-1}
+                        className="bg-surface border border-border rounded-lg shadow-[var(--shadow-popover)] p-6 max-w-sm w-full animate-in zoom-in-95 duration-200"
+                    >
                         <div className="w-12 h-12 rounded-md bg-danger-soft flex items-center justify-center mx-auto mb-4">
                             <Trash2 className="w-6 h-6 text-danger" />
                         </div>
@@ -1095,13 +1136,23 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
             {selectedFlagsBooking && (
                 <div className="fixed inset-0 z-[300] flex justify-end bg-black/40" onClick={() => setSelectedFlagsBooking(null)}>
                     <div
+                        ref={flagsDrawerRef}
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="booking-flags-drawer-title"
+                        tabIndex={-1}
                         className="w-full max-w-sm h-full bg-surface border-l border-border shadow-[var(--shadow-popover)] p-6 flex flex-col animate-in slide-in-from-right duration-300"
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div className="flex items-center justify-between mb-6 pb-4 border-b border-border">
-                            <h2 className="text-section-title text-text">Important Notes</h2>
-                            <button onClick={() => setSelectedFlagsBooking(null)} className="p-2 hover:bg-page rounded-full transition-colors">
-                                <X className="w-5 h-5 text-text-muted" />
+                            <h2 id="booking-flags-drawer-title" className="text-section-title text-text">Important Notes</h2>
+                            <button
+                                type="button"
+                                aria-label="Close important notes"
+                                onClick={() => setSelectedFlagsBooking(null)}
+                                className="min-w-[44px] min-h-[44px] p-2 inline-flex items-center justify-center hover:bg-page rounded-full transition-colors"
+                            >
+                                <X className="w-5 h-5 text-text-muted" aria-hidden="true" />
                             </button>
                         </div>
                         <div className="flex-1 overflow-y-auto space-y-6 pr-2">

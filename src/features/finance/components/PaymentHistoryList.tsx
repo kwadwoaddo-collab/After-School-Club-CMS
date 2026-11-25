@@ -6,7 +6,8 @@ import {correctableMethods} from '../domain/payment-correction';
 import { format } from 'date-fns';
 import { useToast } from '@/components/ui/ToastProvider';
 import { CreditCard, Landmark, Ticket, HelpCircle, Check, X, Clock, AlertCircle, RotateCcw, Eye, FileText } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useRef, useState } from 'react';
+import { useDialogFocusTrap } from '@/components/ui/useDialogFocusTrap';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { verifyPayment, failPayment, reversePayment } from '../actions';
@@ -40,19 +41,15 @@ export default function PaymentHistoryList({ payments, canReverse, canCorrect=ca
     const [reversalModalPayment, setReversalModalPayment] = useState<Payment | null>(null);
     const [reversalReason, setReversalReason] = useState('');
     const [isReversingId, setIsReversingId] = useState<string | null>(null);
+    const actionLockRef = useRef(false);
+    const reversingLockRef = useRef(false);
+    const reversalDialogRef = useRef<HTMLDivElement | null>(null);
     const { toast } = useToast();
     const router = useRouter();
 
-    useEffect(() => {
-        if (!reversalModalPayment) return;
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Escape' && isReversingId !== reversalModalPayment.id) {
-                setReversalModalPayment(null);
-            }
-        };
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [reversalModalPayment, isReversingId]);
+    useDialogFocusTrap(Boolean(reversalModalPayment), reversalDialogRef, () => {
+        if (!reversingLockRef.current) setReversalModalPayment(null);
+    });
 
     if (payments.length === 0) {
         return (
@@ -66,7 +63,7 @@ export default function PaymentHistoryList({ payments, canReverse, canCorrect=ca
 
     const getMethodIcon = (method: string) => {
         switch (method) {
-            case 'bank_transfer': return <Landmark className="w-4 h-4 text-blue-400" />;
+            case 'bank_transfer': return <Landmark className="w-4 h-4 text-accent" aria-hidden="true" />;
             case 'voucher': return <Ticket className="w-4 h-4 text-amber-600" />;
             case 'cash': return <CreditCard className="w-4 h-4 text-emerald-600" />;
             default: return <HelpCircle className="w-4 h-4 text-muted-foreground" />;
@@ -78,6 +75,8 @@ export default function PaymentHistoryList({ payments, canReverse, canCorrect=ca
     };
 
     const handleVerify = async (paymentId: string) => {
+        if (actionLockRef.current || processingId !== null) return;
+        actionLockRef.current = true;
         setProcessingId(paymentId);
         try {
             const res = await verifyPayment(paymentId);
@@ -89,12 +88,14 @@ export default function PaymentHistoryList({ payments, canReverse, canCorrect=ca
             const message = e instanceof Error ? e.message : String(e);
             toast({ title: 'Error', message: message || 'Failed to verify payment', variant: 'error' });
         } finally {
+            actionLockRef.current = false;
             setProcessingId(null);
         }
     };
 
     const handleReverse = async () => {
-        if (!reversalModalPayment || !reversalReason.trim()) return;
+        if (reversingLockRef.current || !reversalModalPayment || !reversalReason.trim()) return;
+        reversingLockRef.current = true;
         setIsReversingId(reversalModalPayment.id);
         try {
             const res = await reversePayment(reversalModalPayment.id, reversalReason.trim());
@@ -111,11 +112,14 @@ export default function PaymentHistoryList({ payments, canReverse, canCorrect=ca
             const message = e instanceof Error ? e.message : String(e);
             toast({ title: 'Error', message: message || 'Failed to reverse payment', variant: 'error' });
         } finally {
+            reversingLockRef.current = false;
             setIsReversingId(null);
         }
     };
 
     const handleFail = async (paymentId: string) => {
+        if (actionLockRef.current || processingId !== null) return;
+        actionLockRef.current = true;
         setProcessingId(paymentId);
         try {
             const res = await failPayment(paymentId);
@@ -127,6 +131,7 @@ export default function PaymentHistoryList({ payments, canReverse, canCorrect=ca
             const message = e instanceof Error ? e.message : String(e);
             toast({ title: 'Error', message: message || 'Failed to update payment', variant: 'error' });
         } finally {
+            actionLockRef.current = false;
             setProcessingId(null);
         }
     };
@@ -167,7 +172,7 @@ export default function PaymentHistoryList({ payments, canReverse, canCorrect=ca
                                         <AlertCircle className="w-3.5 h-3.5" /> Failed
                                     </span>
                                 ) : payment.status === 'reversed' ? (
-                                    <span className="flex items-center gap-1.5 px-3 py-1 bg-slate-500/10 text-slate-400 rounded-full text-xs font-bold ring-1 ring-slate-500/20 w-fit">
+                                    <span className="flex items-center gap-1.5 px-3 py-1 bg-slate-500/10 text-slate-700 dark:text-slate-300 rounded-full text-xs font-bold ring-1 ring-slate-500/20 w-fit">
                                         <RotateCcw className="w-3.5 h-3.5" /> Reversed
                                     </span>
                                 ) : (
@@ -186,20 +191,24 @@ export default function PaymentHistoryList({ payments, canReverse, canCorrect=ca
                                 {payment.status === 'pending' && (
                                     <div className="flex flex-wrap items-center gap-2">
                                         <button
+                                            type="button"
+                                            aria-label="Verify payment"
                                             onClick={() => handleVerify(payment.id)}
                                             disabled={processingId === payment.id}
-                                            className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 transition-colors disabled:opacity-50"
+                                            className="min-w-[44px] min-h-[44px] p-2 inline-flex items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20 transition-colors disabled:opacity-50"
                                             title="Verify Payment"
                                         >
-                                            <Check className="w-4 h-4" />
+                                            <Check className="w-4 h-4" aria-hidden="true" />
                                         </button>
                                         <button
+                                            type="button"
+                                            aria-label="Reject payment"
                                             onClick={() => handleFail(payment.id)}
                                             disabled={processingId === payment.id}
-                                            className="p-2 rounded-lg bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 transition-colors disabled:opacity-50"
+                                            className="min-w-[44px] min-h-[44px] p-2 inline-flex items-center justify-center rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 transition-colors disabled:opacity-50"
                                             title="Reject Payment"
                                         >
-                                            <X className="w-4 h-4" />
+                                            <X className="w-4 h-4" aria-hidden="true" />
                                         </button>
                                     </div>
                                 )}
@@ -223,15 +232,16 @@ export default function PaymentHistoryList({ payments, canReverse, canCorrect=ca
                                             <span>Printable Cash Receipt</span>
                                         </Link>
                                         {canSendReceipt && <SendReceiptButton paymentId={payment.id} recipient={receiptRecipient} recordedStatus={payment.receiptEmailStatus?.status} />}
-                                        {canCorrect&&correctableMethods.includes(payment.method)&&<button onClick={()=>setCorrecting(payment)} className="min-h-11 rounded-lg border border-border px-3 py-2 text-sm font-semibold text-primary">Correct payment details</button>}
+                                        {canCorrect&&correctableMethods.includes(payment.method)&&<button type="button" onClick={()=>setCorrecting(payment)} className="min-h-11 rounded-lg border border-border px-3 py-2 text-sm font-semibold text-primary">Correct payment details</button>}
                                         {canReverse && (
                                             <button
+                                                type="button"
                                                 onClick={() => {
                                                     setReversalModalPayment(payment);
                                                     setReversalReason('');
                                                 }}
                                                 disabled={processingId === payment.id || isReversingId === payment.id}
-                                                className="inline-flex min-h-11 items-center gap-2 px-3 py-2 rounded-lg bg-slate-500/10 text-slate-500 hover:bg-slate-500/20 transition-colors disabled:opacity-50"
+                                                className="inline-flex min-h-11 items-center gap-2 px-3 py-2 rounded-lg bg-slate-500/10 text-slate-700 dark:text-slate-300 hover:bg-slate-500/20 transition-colors disabled:opacity-50"
                                                 title="Reverse Payment"
                                             >
                                                 <RotateCcw className="w-4 h-4" /><span className="text-sm">Reverse payment entry</span>
@@ -245,11 +255,16 @@ export default function PaymentHistoryList({ payments, canReverse, canCorrect=ca
             </div>
             {correcting&&<CorrectPaymentDialog payment={correcting} onClose={()=>setCorrecting(null)} onSaved={()=>{setCorrecting(null);router.refresh();onPaymentReversed?.();toast({title:'Payment corrected',message:'The date/reference is saved. Your paid balance is unchanged. Open Receipt to download the corrected receipt.',variant:'success'});}}/>}
             {reversalModalPayment && (
-                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                <div
+                    onClick={(e) => { if (e.target === e.currentTarget && isReversingId !== reversalModalPayment.id) setReversalModalPayment(null); }}
+                    className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                >
                     <div
+                        ref={reversalDialogRef}
                         role="dialog"
                         aria-modal="true"
                         aria-labelledby="reverse-payment-title"
+                        tabIndex={-1}
                         className="bg-card border border-border rounded-[32px] p-8 max-w-md w-full shadow-2xl relative"
                     >
                         <div className="absolute top-0 right-0 w-32 h-32 bg-slate-500/10 rounded-full blur-[40px]" />
@@ -294,16 +309,18 @@ export default function PaymentHistoryList({ payments, canReverse, canCorrect=ca
 
                             <div className="flex gap-3">
                                 <button
+                                    type="button"
                                     onClick={() => setReversalModalPayment(null)}
                                     disabled={isReversingId === reversalModalPayment.id}
-                                    className="flex-1 py-3 bg-secondary text-foreground rounded-xl text-sm font-bold hover:bg-secondary/80 transition-colors disabled:opacity-50"
+                                    className="flex-1 min-h-[44px] py-3 bg-secondary text-foreground rounded-xl text-sm font-bold hover:bg-secondary/80 transition-colors disabled:opacity-50"
                                 >
                                     Cancel
                                 </button>
                                 <button
+                                    type="button"
                                     onClick={handleReverse}
                                     disabled={!reversalReason.trim() || isReversingId === reversalModalPayment.id}
-                                    className="flex-1 py-3 bg-slate-600 text-white rounded-xl text-sm font-bold hover:bg-slate-700 transition-colors disabled:opacity-50"
+                                    className="flex-1 min-h-[44px] py-3 bg-slate-700 text-white rounded-xl text-sm font-bold hover:bg-slate-800 transition-colors disabled:opacity-50"
                                 >
                                     {isReversingId === reversalModalPayment.id ? 'Reversing...' : 'Reverse Payment'}
                                 </button>

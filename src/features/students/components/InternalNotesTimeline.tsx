@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useId, useRef, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { addStudentNote, deleteStudentNote, toggleStudentNotePin } from '@/features/students/notes.actions';
 import { formatDistanceToNow, format } from 'date-fns';
 import { Clock, User, Pin, PinOff, AlertTriangle, Shield } from 'lucide-react';
 import ConfirmModal from '@/components/ui/ConfirmModal';
+import { useToast } from '@/components/ui/ToastProvider';
 
 interface Note {
   id: string;
@@ -71,6 +72,10 @@ export default function InternalNotesTimeline({ childId, initialNotes, canManage
   const [category, setCategory] = useState<'General' | 'Medical' | 'Safeguarding'>('General');
   const [isPending, startTransition] = useTransition();
   const [noteToDelete, setNoteToDelete] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const noteActionLockRef = useRef(false);
+  const noteInputId = useId();
+  const { toast } = useToast();
 
   const visibleNotes = canManageSafeguarding
     ? initialNotes
@@ -79,13 +84,23 @@ export default function InternalNotesTimeline({ childId, initialNotes, canManage
   const standardNotes = visibleNotes.filter(n => !n.pinnedAt);
 
   const handleAddNote = () => {
-    if (!content.trim()) return;
+    if (noteActionLockRef.current || isPending || !content.trim()) return;
+    noteActionLockRef.current = true;
+    setActionError(null);
     const safeCategory = !canManageSafeguarding && category === 'Safeguarding' ? 'General' : category;
 
     startTransition(async () => {
-      await addStudentNote(childId, content, safeCategory);
-      setContent('');
-      setCategory('General');
+      try {
+        await addStudentNote(childId, content, safeCategory);
+        setContent('');
+        setCategory('General');
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Failed to save note. Please try again.';
+        setActionError(msg);
+        toast(msg, 'error');
+      } finally {
+        noteActionLockRef.current = false;
+      }
     });
   };
 
@@ -94,25 +109,52 @@ export default function InternalNotesTimeline({ childId, initialNotes, canManage
   };
 
   const confirmDelete = () => {
-    if (!noteToDelete) return;
+    if (!noteToDelete || noteActionLockRef.current || isPending) return;
+    noteActionLockRef.current = true;
+    setActionError(null);
     startTransition(async () => {
-      await deleteStudentNote(noteToDelete);
-      setNoteToDelete(null);
+      try {
+        await deleteStudentNote(noteToDelete);
+        setNoteToDelete(null);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Failed to delete note. Please try again.';
+        setActionError(msg);
+        toast(msg, 'error');
+      } finally {
+        noteActionLockRef.current = false;
+      }
     });
   };
 
   const handleTogglePin = (noteId: string, pinned: boolean) => {
+    if (noteActionLockRef.current || isPending) return;
+    noteActionLockRef.current = true;
+    setActionError(null);
     startTransition(async () => {
-      await toggleStudentNotePin(noteId, pinned);
+      try {
+        await toggleStudentNotePin(noteId, pinned);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Failed to update pin status. Please try again.';
+        setActionError(msg);
+        toast(msg, 'error');
+      } finally {
+        noteActionLockRef.current = false;
+      }
     });
   };
 
   return (
     <>
     <div className="space-y-6 animate-fadeIn">
+      {actionError && (
+        <div role="alert" className="p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm font-medium">
+          {actionError}
+        </div>
+      )}
+
       {/* Form Area */}
       <div className="bg-secondary rounded-2xl p-4 border border-border">
-        <label className="block text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2">
+        <label htmlFor={noteInputId} className="block text-xs font-black text-muted-foreground uppercase tracking-widest mb-2">
           Add New Note
         </label>
         
@@ -154,6 +196,7 @@ export default function InternalNotesTimeline({ childId, initialNotes, canManage
         </div>
 
         <textarea
+          id={noteInputId}
           value={content}
           onChange={(e) => setContent(e.target.value)}
           placeholder="Type observation or note..."
@@ -162,9 +205,10 @@ export default function InternalNotesTimeline({ childId, initialNotes, canManage
         />
         <div className="flex justify-end mt-2">
           <button
+            type="button"
             onClick={handleAddNote}
             disabled={!content.trim() || isPending}
-            className="px-4 py-2 bg-foreground text-background font-bold rounded-xl shadow-sm hover:bg-foreground/90 disabled:opacity-50 transition-all ml-auto"
+            className="min-h-[44px] px-4 py-2 bg-foreground text-background font-bold rounded-xl shadow-sm hover:bg-foreground/90 disabled:opacity-50 transition-all ml-auto"
           >
             {isPending ? 'Saving...' : 'Add Note'}
           </button>
@@ -195,15 +239,18 @@ export default function InternalNotesTimeline({ childId, initialNotes, canManage
                   </span>
                   
                   <button
+                    type="button"
+                    aria-label="Unpin note"
                     onClick={() => handleTogglePin(note.id, false)}
                     disabled={isPending}
-                    className="ml-2 p-1 hover:bg-warning/20 text-warning font-medium rounded-md transition-colors disabled:opacity-50 flex items-center justify-center"
+                    className="ml-2 min-w-9 min-h-9 p-1.5 hover:bg-warning/20 text-warning font-medium rounded-md transition-colors disabled:opacity-50 flex items-center justify-center"
                     title="Unpin Note"
                   >
-                    <PinOff className="w-3.5 h-3.5" />
+                    <PinOff className="w-3.5 h-3.5" aria-hidden="true" />
                   </button>
 
                   <button
+                    type="button"
                     onClick={() => handleDelete(note.id)}
                     disabled={isPending}
                     className="ml-2 text-destructive hover:text-destructive/80 font-medium disabled:opacity-50 transition-colors"
@@ -247,15 +294,18 @@ export default function InternalNotesTimeline({ childId, initialNotes, canManage
                     </span>
 
                     <button
+                      type="button"
+                      aria-label={note.pinnedAt ? "Unpin note" : "Pin note"}
                       onClick={() => handleTogglePin(note.id, !note.pinnedAt)}
                       disabled={isPending}
-                      className="ml-2 p-1.5 hover:bg-secondary text-muted-foreground hover:text-primary rounded-md transition-colors disabled:opacity-50 flex items-center justify-center"
+                      className="ml-2 min-w-9 min-h-9 p-1.5 hover:bg-secondary text-muted-foreground hover:text-primary rounded-md transition-colors disabled:opacity-50 flex items-center justify-center"
                       title={note.pinnedAt ? "Unpin Note" : "Pin Note"}
                     >
-                      <Pin className="w-3.5 h-3.5" />
+                      <Pin className="w-3.5 h-3.5" aria-hidden="true" />
                     </button>
 
                     <button
+                      type="button"
                       onClick={() => handleDelete(note.id)}
                       disabled={isPending}
                       className="ml-1 text-destructive hover:text-destructive/80 font-medium disabled:opacity-50 transition-colors"

@@ -1,11 +1,12 @@
 'use client';
 
-import { useRef, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FileText, Folder, Download, Upload, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useCentreFilter } from '@/components/dashboard/CentreFilterContext';
+import { useDialogFocusTrap } from '@/components/ui/useDialogFocusTrap';
 import { uploadCentreDocument, replaceCentreDocument, renameCentreDocument, removeCentreDocument, restoreCentreDocument, createCentreFolder, renameCentreFolder, removeCentreFolder, restoreCentreFolder, moveCentreDocument } from '@/features/documents/actions';
 
 type Document = { id: string; name: string; originalFilename: string; sizeBytes: number; updatedAt: string; version: number; folderId?: string | null };
@@ -27,6 +28,27 @@ export default function DocumentsClient({ centres, centre, documents = [], remov
     const [error, setError] = useState('');
     const [message, setMessage] = useState('');
     const running = useRef(false);
+    const prevCentreIdRef = useRef(centre?.id);
+    const folderDialogRef = useRef<HTMLDivElement>(null);
+    const docDialogRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (prevCentreIdRef.current !== centre?.id) {
+            prevCentreIdRef.current = centre?.id;
+            setAdding(false);
+            setFolderEdit(null);
+            setEdit(null);
+            setError('');
+            setMessage('');
+        }
+    }, [centre?.id]);
+
+    useDialogFocusTrap(Boolean(folderEdit), folderDialogRef, () => {
+        if (!busy) { setFolderEdit(null); setError(''); }
+    });
+    useDialogFocusTrap(Boolean(adding || edit), docDialogRef, () => {
+        if (!busy) { setAdding(false); setEdit(null); setError(''); }
+    });
 
     const currentFolder = folders.find(folder => folder.id === currentFolderId);
     const invalidFolder = !!currentFolderId && !currentFolder;
@@ -35,7 +57,14 @@ export default function DocumentsClient({ centres, centre, documents = [], remov
     const trail: DocumentFolder[] = [];
     let ancestor = currentFolder;
     while (ancestor && trail.length < folders.length) { trail.unshift(ancestor); ancestor = folders.find(folder => folder.id === ancestor?.parentId); }
-    const folderHref = (id: string | null) => id ? `/dashboard/documents?folder=${encodeURIComponent(id)}` : '/dashboard/documents';
+    const folderHref = (id: string | null) => {
+        const urlCentre = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('centre') : null;
+        const params = new URLSearchParams();
+        if (urlCentre && centre?.id) params.set('centre', centre.id);
+        if (id) params.set('folder', id);
+        const qs = params.toString();
+        return qs ? `/dashboard/documents?${qs}` : '/dashboard/documents';
+    };
     const folderPath = (folder: DocumentFolder) => {
         const names = [folder.name]; let parentId = folder.parentId; const visited = new Set([folder.id]);
         while (parentId && !visited.has(parentId)) { visited.add(parentId); const parent = folders.find(item => item.id === parentId); if (!parent) break; names.unshift(parent.name); parentId = parent.parentId; }
@@ -123,12 +152,12 @@ export default function DocumentsClient({ centres, centre, documents = [], remov
         </div> : <>
             <nav aria-label="Document folders" className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm"><Link href={folderHref(null)} className="text-accent underline-offset-4 hover:underline">{centre.name}</Link>{trail.map(folder => <span key={folder.id} className="contents"><span aria-hidden="true" className="text-text-muted">/</span>{folder.id === currentFolderId ? <span aria-current="page" className="break-words font-medium text-text">{folder.name}</span> : <Link href={folderHref(folder.id)} className="break-words text-accent underline-offset-4 hover:underline">{folder.name}</Link>}</span>)}</nav>
             {invalidFolder && <p role="alert" className="text-sm text-danger">This folder is no longer available. <Link href={folderHref(null)} className="underline">Return to this centre’s documents</Link>.</p>}
-            {folderEdit && <form key={folderEdit.kind === 'create' ? 'create-folder' : `${folderEdit.kind}-${folderEdit.folder.id}`} onSubmit={submitFolder} className="space-y-4 rounded-lg border border-border bg-surface p-5" aria-label="Manage folder"><h2 className="text-lg font-semibold text-text">{folderEdit.kind === 'create' ? 'New folder' : folderEdit.kind === 'rename' ? 'Rename folder' : 'Remove folder?'}</h2>{folderEdit.kind === 'remove' ? <p className="text-sm text-text-secondary">Remove “{folderEdit.folder.name}”? Only an empty folder can be removed. You can restore it from Removed folders.</p> : <label className="block max-w-xl space-y-2 text-sm font-medium text-text">Folder name<input autoFocus required name="name" maxLength={120} defaultValue={folderEdit.kind === 'rename' ? folderEdit.folder.name : ''} className={inputClass} /></label>}{error && <p role="alert" className="text-sm text-danger">{error}</p>}<div className="flex flex-wrap gap-2"><Button disabled={busy} variant={folderEdit.kind === 'remove' ? 'destructive' : 'default'}>{busy ? 'Saving…' : folderEdit.kind === 'create' ? 'Create folder' : folderEdit.kind === 'remove' ? 'Remove folder' : 'Save folder name'}</Button><Button type="button" variant="outline" disabled={busy} onClick={() => { setFolderEdit(null); setError(''); }}>Cancel</Button></div></form>}
+            {folderEdit && <div ref={folderDialogRef} role="dialog" aria-modal="true" aria-labelledby="documents-folder-dialog-title" tabIndex={-1}><form key={folderEdit.kind === 'create' ? 'create-folder' : `${folderEdit.kind}-${folderEdit.folder.id}`} onSubmit={submitFolder} className="space-y-4 rounded-lg border border-border bg-surface p-5" aria-label="Manage folder"><h2 id="documents-folder-dialog-title" className="text-lg font-semibold text-text">{folderEdit.kind === 'create' ? 'New folder' : folderEdit.kind === 'rename' ? 'Rename folder' : 'Remove folder?'}</h2>{folderEdit.kind === 'remove' ? <p className="text-sm text-text-secondary">Remove “{folderEdit.folder.name}”? Only an empty folder can be removed. You can restore it from Removed folders.</p> : <label className="block max-w-xl space-y-2 text-sm font-medium text-text">Folder name<input autoFocus required name="name" maxLength={120} defaultValue={folderEdit.kind === 'rename' ? folderEdit.folder.name : ''} className={inputClass} /></label>}{error && <p role="alert" className="text-sm text-danger">{error}</p>}<div className="flex flex-wrap gap-2"><Button disabled={busy} variant={folderEdit.kind === 'remove' ? 'destructive' : 'default'}>{busy ? 'Saving…' : folderEdit.kind === 'create' ? 'Create folder' : folderEdit.kind === 'remove' ? 'Remove folder' : 'Save folder name'}</Button><Button type="button" variant="outline" disabled={busy} onClick={() => { setFolderEdit(null); setError(''); }}>Cancel</Button></div></form></div>}
             {loadError && <p role="alert" className="rounded-md border border-danger/30 bg-danger-soft p-4 text-sm text-danger">{loadError}</p>}
             {error && !adding && !edit && !folderEdit && <p role="alert" className="text-sm text-danger">{error}</p>}
             {message && <p role="status" className="text-sm text-success">{message}</p>}
-            {(adding || edit) && <form key={edit ? `${edit.kind}-${edit.document.id}` : 'upload'} onSubmit={submit} className="space-y-4 rounded-lg border border-border bg-surface p-5" aria-label={edit ? `${edit.kind} document` : 'Upload PDF'}>
-                <h2 className="text-lg font-semibold text-text">{edit ? ({ rename: 'Rename document', replace: 'Replace PDF', remove: 'Remove document?', move: 'Move PDF' }[edit.kind]) : 'Upload a PDF'}</h2>
+            {(adding || edit) && <div ref={docDialogRef} role="dialog" aria-modal="true" aria-labelledby="documents-edit-dialog-title" tabIndex={-1}><form key={edit ? `${edit.kind}-${edit.document.id}` : 'upload'} onSubmit={submit} className="space-y-4 rounded-lg border border-border bg-surface p-5" aria-label={edit ? `${edit.kind} document` : 'Upload PDF'}>
+                <h2 id="documents-edit-dialog-title" className="text-lg font-semibold text-text">{edit ? ({ rename: 'Rename document', replace: 'Replace PDF', remove: 'Remove document?', move: 'Move PDF' }[edit.kind]) : 'Upload a PDF'}</h2>
                 {edit && <p className="break-words text-sm text-text-secondary">{edit.document.name}</p>}
                 {edit?.kind === 'move' ? <label className="block max-w-xl space-y-2 text-sm font-medium text-text">Destination folder<select name="folderId" defaultValue={edit.document.folderId ?? ''} className={inputClass}><option value="">{centre.name} (main folder)</option>{folders.map(folder => <option key={folder.id} value={folder.id}>{folderPath(folder)}</option>)}</select></label> : edit?.kind === 'remove' ? <p className="text-sm text-text-secondary">This removes the document from this centre’s folder. Staff will no longer be able to download it. Owners and managers can restore it from Removed files.</p> : <>
                     {(!edit || edit.kind === 'rename') && <label className="block max-w-xl space-y-2 text-sm font-medium text-text">Document name<input autoFocus name="name" required maxLength={120} defaultValue={edit?.document.name} placeholder="e.g. Parent information pack" className={inputClass} /></label>}
@@ -136,7 +165,7 @@ export default function DocumentsClient({ centres, centre, documents = [], remov
                 </>}
                 {error && <p role="alert" className="text-sm text-danger">{error}</p>}
                 <div className="flex flex-wrap gap-2"><Button type="submit" disabled={busy} variant={edit?.kind === 'remove' ? 'destructive' : 'default'}>{busy ? 'Saving…' : edit?.kind === 'remove' ? 'Remove document' : edit ? 'Save changes' : 'Upload PDF'}</Button><Button type="button" variant="outline" disabled={busy} onClick={() => { setAdding(false); setEdit(null); setError(''); }}>Cancel</Button></div>
-            </form>}
+            </form></div>}
             {!loadError && !invalidFolder && visibleFolders.length > 0 && <ul className="divide-y divide-border rounded-lg border border-border bg-surface">{visibleFolders.map(folder => <li key={folder.id} className="flex flex-wrap items-center justify-between gap-3 p-5"><Link href={folderHref(folder.id)} className="flex min-w-0 items-center gap-3 font-medium text-text hover:text-accent"><Folder className="h-5 w-5 shrink-0 text-accent" /><span className="break-words">{folder.name}</span></Link>{canManage && <div className="flex gap-4"><button disabled={busy} onClick={() => { setFolderEdit({ kind: 'rename', folder }); setEdit(null); setAdding(false); setError(''); }} className="min-h-9 text-sm text-accent hover:underline" aria-label={`Rename folder ${folder.name}`}>Rename</button><button disabled={busy} onClick={() => { setFolderEdit({ kind: 'remove', folder }); setEdit(null); setAdding(false); setError(''); }} className="min-h-9 text-sm text-danger hover:underline" aria-label={`Remove folder ${folder.name}`}>Remove</button></div>}</li>)}</ul>}
             {!loadError && !invalidFolder && <div className="overflow-hidden rounded-lg border border-border bg-surface">
                 {visibleDocuments.length === 0 ? <div className="px-6 py-12 text-center"><FileText className="mx-auto mb-3 h-7 w-7 text-text-muted" /><h2 className="font-semibold text-text">No PDFs in this folder</h2><p className="mt-2 text-sm text-text-secondary">{canManage ? 'Upload a PDF here, or move an existing PDF into this folder.' : 'Your owner or manager can upload PDFs for this centre.'}</p></div> : <ul className="divide-y divide-border">{visibleDocuments.map(document => <li key={document.id} className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center">

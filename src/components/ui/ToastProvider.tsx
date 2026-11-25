@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useCallback, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useCallback, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import { CheckCircle2, XCircle, AlertTriangle, Info, X } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -45,6 +45,24 @@ const VALID_VARIANTS = new Set<string>(['success', 'error', 'warning', 'info']);
 
 export function ToastProvider({ children }: { children: ReactNode }) {
     const [toasts, setToasts] = useState<Toast[]>([]);
+    const timersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+
+    useEffect(() => {
+        const timers = timersRef.current;
+        return () => {
+            timers.forEach(timer => clearTimeout(timer));
+            timers.clear();
+        };
+    }, []);
+
+    const dismiss = useCallback((id: string) => {
+        const timer = timersRef.current.get(id);
+        if (timer) {
+            clearTimeout(timer);
+            timersRef.current.delete(id);
+        }
+        setToasts(prev => prev.filter(t => t.id !== id));
+    }, []);
 
     const toast = useCallback((options: ToastOptions | string, messageOrVariant?: string, variantArg?: ToastVariant) => {
         let normalized: Omit<Toast, 'id'>;
@@ -62,13 +80,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
         const id = Math.random().toString(36).slice(2);
         setToasts(prev => [...prev, { ...normalized, id }]);
-        setTimeout(() => {
+        const timer = setTimeout(() => {
+            timersRef.current.delete(id);
             setToasts(prev => prev.filter(t => t.id !== id));
         }, 4000);
-    }, []);
-
-    const dismiss = useCallback((id: string) => {
-        setToasts(prev => prev.filter(t => t.id !== id));
+        timersRef.current.set(id, timer);
     }, []);
 
     return (
@@ -77,7 +93,6 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             {/* Toast Container — top-right */}
             <div
                 className="fixed top-4 right-4 z-[9999] flex flex-col gap-2 pointer-events-none items-end"
-                role="status"
                 aria-live="polite"
                 aria-atomic="false"
             >
@@ -89,7 +104,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     );
 }
 
-// ─── Variant config ───────────────────────────────────────────────────────────
+// ─── Variant config (WCAG 2.2 AA >= 4.5:1 in light & dark modes) ─────────────
 
 const VARIANT_CONFIG: Record<ToastVariant, {
     icon: React.ComponentType<{ className?: string }>;
@@ -99,27 +114,27 @@ const VARIANT_CONFIG: Record<ToastVariant, {
 }> = {
     success: {
         icon: CheckCircle2,
-        iconClass: 'text-emerald-400',
-        border: 'border-emerald-500/25',
-        titleClass: 'text-emerald-400',
+        iconClass: 'text-emerald-800 dark:text-emerald-300',
+        border: 'border-emerald-700/25',
+        titleClass: 'text-emerald-900 dark:text-emerald-300',
     },
     error: {
         icon: XCircle,
-        iconClass: 'text-red-400',
-        border: 'border-red-500/25',
-        titleClass: 'text-red-400',
+        iconClass: 'text-danger',
+        border: 'border-danger/25',
+        titleClass: 'text-danger',
     },
     warning: {
         icon: AlertTriangle,
-        iconClass: 'text-amber-400',
-        border: 'border-amber-500/25',
-        titleClass: 'text-amber-400',
+        iconClass: 'text-amber-800 dark:text-amber-300',
+        border: 'border-amber-700/25',
+        titleClass: 'text-amber-900 dark:text-amber-300',
     },
     info: {
         icon: Info,
-        iconClass: 'text-primary',
-        border: 'border-primary/25',
-        titleClass: 'text-primary',
+        iconClass: 'text-accent',
+        border: 'border-accent/25',
+        titleClass: 'text-accent',
     },
 };
 
@@ -135,21 +150,23 @@ function ToastItem({ toast: t, onDismiss }: { toast: Toast; onDismiss: () => voi
 
     const cfg = VARIANT_CONFIG[t.variant];
     const Icon = cfg.icon;
+    const isAssertive = t.variant === 'error';
 
     return (
         <div
             className={`
                 pointer-events-auto w-[340px] max-w-[calc(100vw-2rem)]
                 bg-surface text-foreground border-border border ${cfg.border}
-                rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.45)]
+                rounded-2xl shadow-[var(--shadow-popover)]
                 transition-all duration-300
                 ${visible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-8'}
                 overflow-hidden
             `}
-            role="alert"
+            role={isAssertive ? 'alert' : 'status'}
+            aria-live={isAssertive ? 'assertive' : 'polite'}
         >
             <div className="flex items-start gap-3 p-4">
-                <div className={`flex-shrink-0 mt-0.5 ${cfg.iconClass}`}>
+                <div className={`flex-shrink-0 mt-0.5 ${cfg.iconClass}`} aria-hidden="true">
                     <Icon className="w-5 h-5" />
                 </div>
 
@@ -165,11 +182,12 @@ function ToastItem({ toast: t, onDismiss }: { toast: Toast; onDismiss: () => voi
                 </div>
 
                 <button
+                    type="button"
                     onClick={onDismiss}
-                    className="flex-shrink-0 p-2 min-w-8 min-h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-foreground/10 transition-all"
+                    className="flex-shrink-0 p-2 min-w-9 min-h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-foreground/10 transition-all"
                     aria-label="Dismiss notification"
                 >
-                    <X className="w-4 h-4" />
+                    <X className="w-4 h-4" aria-hidden="true" />
                 </button>
             </div>
 
@@ -200,7 +218,7 @@ function ProgressBar({ duration }: { duration: number }) {
     }, [duration]);
 
     return (
-        <div className="h-0.5 bg-foreground/10 w-full">
+        <div className="h-0.5 bg-foreground/10 w-full" aria-hidden="true">
             <div
                 className="h-full bg-foreground/20"
                 style={{ width: `${width}%`, transition: 'none' }}
