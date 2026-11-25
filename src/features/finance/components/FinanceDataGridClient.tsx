@@ -114,6 +114,10 @@ export default function FinanceDataGridClient({ invoices = [], totalCount = 0, p
     const [, startTransition] = useTransition();
 
     const todayLondonIso = todayIso ?? toLondonBusinessDate();
+    const activeCentreParam = searchParams?.get('centre');
+    const reconciliationHref = activeCentreParam && activeCentreParam !== 'all'
+        ? `/dashboard/finance/reconciliation?${new URLSearchParams({ centre: activeCentreParam })}`
+        : '/dashboard/finance/reconciliation';
 
     const [selectedInvoices, setSelectedInvoices] = useState<Set<string>>(new Set());
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -391,7 +395,7 @@ export default function FinanceDataGridClient({ invoices = [], totalCount = 0, p
                     )}
 
                     <Link
-                        href="/dashboard/finance/reconciliation"
+                        href={reconciliationHref}
                         className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-secondary/80 text-foreground border border-border/60 text-xs font-bold hover:bg-secondary transition-all"
                     >
                         Reconcile TFC / Bank

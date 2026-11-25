@@ -1,20 +1,35 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { getIncidents } from '@/features/incidents/actions';
 import { Plus, ShieldAlert, Activity, FileWarning, Search, FileText, AlertTriangle, X, Printer } from 'lucide-react';
-import NewIncidentModal from './NewIncidentModal';
 import { logger } from '@/lib/logger';
+
+const NewIncidentModal = dynamic(() => import('./NewIncidentModal'));
 
 type Incident = Awaited<ReturnType<typeof getIncidents>>[number];
 
-export default function IncidentsClient({ centreId, centreName, userRole }: { centreId: string; centreName?: string; userRole?: string }) {
-    const [incidents, setIncidents] = useState<Incident[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+export default function IncidentsClient({
+    centreId,
+    centreName,
+    userRole,
+    initialIncidents,
+}: {
+    centreId: string;
+    centreName?: string;
+    userRole?: string;
+    initialIncidents?: Incident[];
+}) {
+    const [incidents, setIncidents] = useState<Incident[]>(initialIncidents ?? []);
+    const [isLoading, setIsLoading] = useState(initialIncidents === undefined);
+    const [loadError, setLoadError] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
     const [search, setSearch] = useState('');
+    const skipFirstLoadRef = useRef(initialIncidents !== undefined);
+    const prevCentreIdRef = useRef(centreId);
 
     useEffect(() => {
         if (!selectedIncident) return;
@@ -29,10 +44,12 @@ export default function IncidentsClient({ centreId, centreName, userRole }: { ce
 
     const loadIncidents = useCallback(async () => {
         setIsLoading(true);
+        setLoadError(false);
         try {
             const data = await getIncidents(centreId);
             setIncidents(data);
         } catch (error) {
+            setLoadError(true);
             logger.error('Failed to load incidents', error);
         } finally {
             setIsLoading(false);
@@ -40,8 +57,13 @@ export default function IncidentsClient({ centreId, centreName, userRole }: { ce
     }, [centreId]);
 
     useEffect(() => {
-        loadIncidents();
-    }, [loadIncidents]);
+        if (skipFirstLoadRef.current && prevCentreIdRef.current === centreId) {
+            skipFirstLoadRef.current = false;
+            return;
+        }
+        prevCentreIdRef.current = centreId;
+        void loadIncidents();
+    }, [centreId, loadIncidents]);
 
     const getTypeIcon = (type: string) => {
         switch (type) {
@@ -85,12 +107,25 @@ export default function IncidentsClient({ centreId, centreName, userRole }: { ce
                 <button
                     id="log-incident-btn"
                     onClick={() => setIsModalOpen(true)}
-                    className="flex items-center justify-center gap-2 px-5 py-2.5 bg-accent text-white font-semibold rounded-lg hover:bg-accent/90 transition-colors shadow-sm text-sm shrink-0"
+                    className="flex items-center justify-center gap-2 px-5 py-2.5 bg-accent text-on-accent font-semibold rounded-lg hover:bg-accent-hover transition-colors shadow-sm text-sm shrink-0"
                 >
                     <Plus className="w-4 h-4" aria-hidden="true" />
                     Log Incident
                 </button>
             </div>
+
+            {loadError && (
+                <div role="alert" className="rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive flex flex-wrap items-center justify-between gap-3">
+                    <p>Unable to load incident records. Please try again.</p>
+                    <button
+                        type="button"
+                        onClick={() => void loadIncidents()}
+                        className="font-semibold underline min-h-10 px-2"
+                    >
+                        Retry
+                    </button>
+                </div>
+            )}
 
             {/* Incidents table */}
             <div className="bg-surface border border-border rounded-xl overflow-hidden shadow-sm">
@@ -140,7 +175,7 @@ export default function IncidentsClient({ centreId, centreName, userRole }: { ce
                                             {!search && (
                                                 <button
                                                     onClick={() => setIsModalOpen(true)}
-                                                    className="mt-1 px-5 py-2 bg-accent text-white text-sm font-semibold rounded-lg hover:bg-accent/90 transition-colors"
+                                                    className="mt-1 px-5 py-2 bg-accent text-on-accent text-sm font-semibold rounded-lg hover:bg-accent-hover transition-colors"
                                                 >
                                                     Log Incident
                                                 </button>
@@ -298,7 +333,6 @@ export default function IncidentsClient({ centreId, centreName, userRole }: { ce
                                 </span>
                                 {(selectedIncident as { staffSignature?: string | null }).staffSignature ? (
                                     <div className="p-3 rounded-lg bg-white border border-border inline-block">
-                                        {/* eslint-disable-next-line @next/next/no-img-element */}
                                         <img
                                             src={(selectedIncident as { staffSignature?: string | null }).staffSignature!}
                                             alt="Staff signature"
@@ -323,7 +357,7 @@ export default function IncidentsClient({ centreId, centreName, userRole }: { ce
                             <button
                                 type="button"
                                 onClick={() => setSelectedIncident(null)}
-                                className="px-4 py-2.5 rounded-lg bg-accent text-white text-sm font-semibold hover:bg-accent/90 transition-colors"
+                                className="px-4 py-2.5 rounded-lg bg-accent text-on-accent text-sm font-semibold hover:bg-accent-hover transition-colors"
                             >
                                 Done
                             </button>

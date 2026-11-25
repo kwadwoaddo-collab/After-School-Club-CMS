@@ -6,13 +6,15 @@ import { organisations, centres } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { AlertTriangle, Building2 } from 'lucide-react';
 import IncidentsClient from './IncidentsClient';
+import { getIncidents } from '@/features/incidents/actions';
 import { resolveActiveCentreId } from '@/lib/centre-filter';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { isValidUuid } from '@/lib/uuid';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { logger } from '@/lib/logger';
 
-export default async function IncidentsPage() {
+export default async function IncidentsPage(props: { searchParams?: Promise<{ centre?: string }> } = {}) {
+    const resolvedSearchParams = (await props.searchParams) ?? {};
     // Milestone 3K (Option C — orchestrator decision 2026-08-24):
     // Incident records are accessible to ORG_OWNER, MANAGER, and FRONT_DESK.
     // FRONT_DESK may view and log operational incidents (accident/incident/medication).
@@ -41,7 +43,7 @@ export default async function IncidentsPage() {
         centreIds = (rawCentreIds ?? []).filter(isValidUuid);
 
         if (centreIds.length > 0) {
-            const resolved = await resolveActiveCentreId(undefined, centreIds);
+            const resolved = await resolveActiveCentreId(resolvedSearchParams.centre, centreIds);
             activeCentreId = isValidUuid(resolved) && centreIds.includes(resolved)
                 ? resolved
                 : centreIds[0];
@@ -63,6 +65,15 @@ export default async function IncidentsPage() {
 
     const centreName = activeCentre?.name || undefined;
     const hasValidCentre = isValidUuid(activeCentreId);
+
+    let initialIncidents: Awaited<ReturnType<typeof getIncidents>> | undefined = undefined;
+    if (hasValidCentre) {
+        try {
+            initialIncidents = await getIncidents(activeCentreId);
+        } catch {
+            initialIncidents = undefined;
+        }
+    }
 
     return (
         <div className="space-y-8 animate-in fade-in duration-700">
@@ -107,7 +118,7 @@ export default async function IncidentsPage() {
                         action={
                             <Link
                                 href="/dashboard/centres/add"
-                                className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-white text-xs font-bold rounded-xl hover:bg-primary/90 transition-all"
+                                className="inline-flex items-center gap-2 px-5 py-2.5 bg-accent text-on-accent text-xs font-bold rounded-xl hover:bg-accent-hover transition-all"
                             >
                                 Add Centre
                             </Link>
@@ -125,6 +136,7 @@ export default async function IncidentsPage() {
                     centreId={activeCentreId}
                     centreName={centreName}
                     userRole={userRole}
+                    initialIncidents={initialIncidents}
                 />
             )}
         </div>

@@ -23,6 +23,8 @@ interface Notification {
     message: string;
     time: string;
     read: boolean;
+    type?: string | null;
+    bookingId?: string | null;
 }
 
 const ROLE_LABELS: Record<string, string> = {
@@ -59,9 +61,15 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
 
     useEffect(() => {
         setThemeMounted(true);
-        const savedTheme = localStorage.getItem('theme') as 'system' | 'light' | 'dark' | null;
-        if (savedTheme) {
-            setTheme(savedTheme);
+        try {
+            if (typeof localStorage !== 'undefined' && typeof localStorage.getItem === 'function') {
+                const savedTheme = localStorage.getItem('theme') as 'system' | 'light' | 'dark' | null;
+                if (savedTheme) {
+                    setTheme(savedTheme);
+                }
+            }
+        } catch {
+            // Ignore storage access errors in restricted browsing modes
         }
     }, []);
 
@@ -71,7 +79,10 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
         const applyTheme = () => {
             const root = document.documentElement;
             if (theme === 'system') {
-                const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                const systemPrefersDark =
+                    typeof window.matchMedia === 'function'
+                        ? window.matchMedia('(prefers-color-scheme: dark)').matches
+                        : true;
                 if (systemPrefersDark) {
                     root.classList.add('dark');
                     root.classList.remove('light');
@@ -89,9 +100,15 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
         };
 
         applyTheme();
-        localStorage.setItem('theme', theme);
+        try {
+            if (typeof localStorage !== 'undefined' && typeof localStorage.setItem === 'function') {
+                localStorage.setItem('theme', theme);
+            }
+        } catch {
+            // Ignore storage write errors
+        }
 
-        if (theme === 'system') {
+        if (theme === 'system' && typeof window.matchMedia === 'function') {
             const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
             const handleChange = () => applyTheme();
             mediaQuery.addEventListener('change', handleChange);
@@ -121,45 +138,59 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                        pathname.startsWith('/dashboard/centres') ||
                        pathname.startsWith('/dashboard/staff');
 
-    // Fetch real notifications from API
+    // Fetch real notifications from API (including initial unread badge count on mount)
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [isLoadingNotifications, setIsLoadingNotifications] = useState(false);
+    const hasLoadedInitialNotifications = useRef(false);
 
-    const fetchNotifications = async () => {
-        setIsLoadingNotifications(true);
+    const fetchNotifications = async (silent = false) => {
+        if (typeof fetch !== 'function') return;
+        if (!silent) setIsLoadingNotifications(true);
         try {
             const res = await fetch('/api/notifications');
-            if (res.ok) {
+            if (res && res.ok) {
                 const data = await res.json();
-                setNotifications(data.notifications || []);
+                if (Array.isArray(data?.notifications)) {
+                    setNotifications(data.notifications);
+                }
             }
         } catch (error) {
             logger.error('Failed to fetch notifications:', error);
         } finally {
-            setIsLoadingNotifications(false);
+            if (!silent) setIsLoadingNotifications(false);
         }
     };
 
     useEffect(() => {
-        if (showNotifications && notifications.length === 0) {
-            fetchNotifications();
+        if (hasLoadedInitialNotifications.current) return;
+        hasLoadedInitialNotifications.current = true;
+        void fetchNotifications(true);
+    }, []);
+
+    useEffect(() => {
+        if (showNotifications) {
+            void fetchNotifications(notifications.length > 0);
         }
     }, [showNotifications, notifications.length]);
 
     const handleNotificationClick = async (notification: Notification) => {
-        if (!notification.read) {
+        if (!notification.read && typeof fetch === 'function') {
             try {
                 await fetch('/api/notifications', {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ notificationId: notification.id }),
                 });
-                setNotifications(notifications.map(n =>
+                setNotifications(prev => prev.map(n =>
                     n.id === notification.id ? { ...n, read: true } : n
                 ));
             } catch (error) {
                 logger.error('Failed to mark notification as read:', error);
             }
+        }
+        if (notification.bookingId && userRole !== 'TUTOR') {
+            setShowNotifications(false);
+            router.push(`/dashboard/bookings/${encodeURIComponent(notification.bookingId)}`);
         }
     };
 
@@ -222,7 +253,7 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
         return () => clearTimeout(timer);
     }, [searchQuery, shouldHideSearch]);
 
-    // Close panels on outside click
+    // Close panels on outside click or Escape key
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
             if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
@@ -235,8 +266,19 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                 setShowSearchResults(false);
             }
         }
+        function handleEscapeKey(event: KeyboardEvent) {
+            if (event.key === 'Escape') {
+                setShowNotifications(false);
+                setShowUserMenu(false);
+                setShowSearchResults(false);
+            }
+        }
         document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
+        document.addEventListener('keydown', handleEscapeKey);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+            document.removeEventListener('keydown', handleEscapeKey);
+        };
     }, []);
 
     const handleSearch = (e: React.FormEvent) => {
@@ -403,7 +445,6 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                         suppressHydrationWarning
                         onClick={() => setShowNotifications(!showNotifications)}
                         aria-expanded={showNotifications}
-                        aria-haspopup="menu"
                         aria-controls="notifications-menu"
                         className="keep-shape size-9 rounded-md hover:bg-page text-text-muted hover:text-text relative transition-colors flex items-center justify-center flex-shrink-0"
                         aria-label="Notifications"
@@ -420,7 +461,8 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                     {showNotifications && (
                         <div
                             id="notifications-menu"
-                            role="menu"
+                            role="region"
+                            aria-label="Notifications"
                             className="absolute right-0 mt-2 w-80 bg-surface-elevated rounded-md shadow-[var(--shadow-popover)] border border-border overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200"
                         >
                             <div className="p-4 border-b border-border flex items-center justify-between">

@@ -1,7 +1,8 @@
 'use client';
 
-import { ReactNode, useEffect } from 'react';
+import { ReactNode, useRef } from 'react';
 import { AlertTriangle, CheckCircle2, Info } from 'lucide-react';
+import { useDialogFocusTrap } from './useDialogFocusTrap';
 
 interface AlertModalProps {
     isOpen: boolean;
@@ -20,16 +21,8 @@ export function AlertModal({
     buttonText = 'Okay',
     variant = 'error'
 }: AlertModalProps) {
-    useEffect(() => {
-        if (!isOpen) return;
-        const onKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') {
-                onClose();
-            }
-        };
-        window.addEventListener('keydown', onKeyDown);
-        return () => window.removeEventListener('keydown', onKeyDown);
-    }, [isOpen, onClose]);
+    const dialogRef = useRef<HTMLDivElement>(null);
+    useDialogFocusTrap(isOpen, dialogRef, onClose);
 
     if (!isOpen) return null;
 
@@ -39,6 +32,7 @@ export function AlertModal({
 
     return (
         <div
+            ref={dialogRef}
             role="dialog"
             aria-modal="true"
             aria-labelledby="alert-modal-title"
