@@ -3,6 +3,7 @@ import { requireAuth } from '@/lib/require-auth';
 import { notFound } from 'next/navigation';
 import { db } from '@/db';
 import { parents, children, invoices, billingConfigs } from '@/db/schema';
+import { fetchContractStatuses, fetchCentreContractDetails } from '@/features/contracts/queries';
 import { eq, desc, and, inArray, isNull, sql } from 'drizzle-orm';
 import { getUserAccessibleCentres } from '@/lib/permissions';
 import { isValidUuid } from '@/lib/uuid';
@@ -152,6 +153,13 @@ export default async function ParentProfilePage({ params, searchParams }: Parent
         }),
     ]);
 
+    const [contractStatuses, contractCentreDetails] = canManageBilling
+        ? await Promise.all([
+              fetchContractStatuses(organisationId, plans.map(p => ({ id: p.id, agreedMonthlyPence: p.agreedMonthlyPence }))),
+              fetchCentreContractDetails(organisationId, accessibleCentres.map(c => c.id)),
+          ])
+        : [{}, {}];
+
     const billingGroups: ParentBillingGroup[] = canManageBilling ? accessibleCentres.map(centre => {
         const siblings = visibleChildren
             .filter(c => c.centreId === centre.id)
@@ -161,6 +169,7 @@ export default async function ParentProfilePage({ params, searchParams }: Parent
             centreId: centre.id,
             centreName: centre.name,
             siblings,
+            contract: config && contractStatuses[config.id] ? { status: contractStatuses[config.id], details: contractCentreDetails[centre.id] ?? null } : null,
             config: config ? {
                 id: config.id,
                 parentId: config.parentId,
