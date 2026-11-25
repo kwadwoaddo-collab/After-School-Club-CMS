@@ -9,6 +9,7 @@ import { z } from 'zod';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { revalidatePath } from 'next/cache';
 import { recordBookingEnrolmentOutcome } from '@/lib/services/booking-outcome-sync';
+import { isValidUuid } from '@/lib/uuid';
 
 const outcomeSchema = z.object({
     enrolmentOutcome: z.enum(['signed_up', 'did_not_sign_up', 'awaiting_outcome']),
@@ -33,8 +34,7 @@ async function handleOutcomeUpdate(request: Request, { params }: RouteContext) {
 
         const { bookingId } = await params;
 
-        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-        if (!uuidRegex.test(bookingId)) {
+        if (!isValidUuid(bookingId)) {
             return NextResponse.json({ error: 'Invalid booking ID' }, { status: 400 });
         }
 

@@ -9,6 +9,7 @@ import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { notificationService } from '@/lib/services/notifications';
 import { notifyOwners } from '@/lib/db-notifications';
 import { revalidatePath } from 'next/cache';
+import { isValidUuid } from '@/lib/uuid';
 import {
     captureEntryBudget,
     registerFastPathAfterCommit,
@@ -23,6 +24,7 @@ export async function POST(
     request: Request,
     { params }: { params: Promise<{ bookingId: string }> }
 ) {
+    void request;
     const budget = captureEntryBudget('route');
     try {
         const session = await getApiSession();
@@ -30,7 +32,15 @@ export async function POST(
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
+        const userRole = (session.user as any).role as string | undefined;
+        if (!userRole || !['ORG_OWNER', 'MANAGER', 'FRONT_DESK'].includes(userRole)) {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        }
+
         const { bookingId } = await params;
+        if (!isValidUuid(bookingId)) {
+            return NextResponse.json({ error: 'Invalid booking ID' }, { status: 400 });
+        }
 
         // ── Ownership check — fetch booking with centre, parent & attendees ─────
         const booking = await db.query.bookings.findFirst({
@@ -54,7 +64,6 @@ export async function POST(
         }
 
         // Centre membership check for non-ORG_OWNER users
-        const userRole = (session.user as any).role as string | undefined;
         if (userRole !== 'ORG_OWNER' && booking.centreId) {
             const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
             if (!accessibleCentreIds.includes(booking.centreId)) {

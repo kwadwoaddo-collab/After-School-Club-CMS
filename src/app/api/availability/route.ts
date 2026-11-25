@@ -11,15 +11,34 @@ import { logger } from '@/lib/logger';
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { eq } from 'drizzle-orm';
+import { db } from '@/db';
+import { centres } from '@/db/schema';
 import { AvailabilityService } from '@/lib/services/availability';
+import { apiRateLimit, checkRateLimit, getClientIP } from '@/lib/rate-limit';
+import { isValidUuid } from '@/lib/uuid';
+
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 export async function GET(request: NextRequest) {
   try {
+    const ip = getClientIP(request);
+    const rl = await checkRateLimit(apiRateLimit, `avail:${ip}`, {
+      localLimit: 60,
+      localWindowMs: 60_000,
+    });
+    if (!rl.success) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please try again shortly.' },
+        { status: 429 }
+      );
+    }
+
     const searchParams = request.nextUrl.searchParams;
     const centreId = searchParams.get('centreId');
     const dateStr = searchParams.get('date'); // Expected: YYYY-MM-DD
-    const duration = parseInt(searchParams.get('duration') || '60', 10);
-    const modality = (searchParams.get('modality') as 'in_person' | 'online') || 'in_person';
+    const rawDuration = searchParams.get('duration');
+    const rawModality = searchParams.get('modality');
 
     if (!centreId || !dateStr) {
       return NextResponse.json(
@@ -28,18 +47,99 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // FIX (Task 2 / Timezone bug):
-    // new Date('2026-03-22') parses as UTC midnight, but .getDay() uses LOCAL time.
-    // On a BST (UTC+1) server, Sunday 00:00 UTC = Saturday 23:00 local → wrong day fetched.
-    // Constructing Date from explicit year/month/day avoids UTC interpretation entirely.
-    const parts = dateStr.split('-');
-    if (parts.length !== 3) {
-      return NextResponse.json({ error: 'date must be in YYYY-MM-DD format' }, { status: 400 });
+    if (!isValidUuid(centreId)) {
+      return NextResponse.json(
+        { error: 'Invalid centreId' },
+        { status: 400 }
+      );
     }
-    const [year, month, day] = parts.map(Number);
-    const localDate = new Date(year, month - 1, day);
+
+    if (!DATE_RE.test(dateStr)) {
+      return NextResponse.json(
+        { error: 'date must be in YYYY-MM-DD format' },
+        { status: 400 }
+      );
+    }
+
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const utcCheck = new Date(0);
+    utcCheck.setUTCFullYear(year, month - 1, day);
+    utcCheck.setUTCHours(0, 0, 0, 0);
+    const roundTrip = `${String(utcCheck.getUTCFullYear()).padStart(4, '0')}-${String(utcCheck.getUTCMonth() + 1).padStart(2, '0')}-${String(utcCheck.getUTCDate()).padStart(2, '0')}`;
+    if (isNaN(utcCheck.getTime()) || roundTrip !== dateStr) {
+      return NextResponse.json(
+        { error: 'Invalid date parameter' },
+        { status: 400 }
+      );
+    }
+
+    const duration =
+      rawDuration === null || rawDuration === '' ? 60 : Number(rawDuration);
+    if (!Number.isInteger(duration) || duration < 15 || duration > 240) {
+      return NextResponse.json(
+        { error: 'duration must be an integer between 15 and 240 minutes' },
+        { status: 400 }
+      );
+    }
+
+    if (
+      rawModality !== null &&
+      rawModality !== '' &&
+      rawModality !== 'in_person' &&
+      rawModality !== 'online'
+    ) {
+      return NextResponse.json(
+        { error: 'Invalid modality parameter' },
+        { status: 400 }
+      );
+    }
+    const modality: 'in_person' | 'online' =
+      rawModality === 'online' ? 'online' : 'in_person';
+
+    // Construct local Date using setFullYear so years 0001..0099 do not map to 1901..1999
+    const localDate = new Date(0);
+    localDate.setFullYear(year, month - 1, day);
+    localDate.setHours(0, 0, 0, 0);
     if (isNaN(localDate.getTime())) {
-      return NextResponse.json({ error: 'Invalid date parameter' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Invalid date parameter' },
+        { status: 400 }
+      );
+    }
+
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yesterdayStart = new Date(todayStart);
+    yesterdayStart.setDate(yesterdayStart.getDate() - 1);
+    const maxDateStart = new Date(todayStart);
+    maxDateStart.setDate(maxDateStart.getDate() + 365);
+
+    if (localDate < yesterdayStart) {
+      return NextResponse.json({ slots: [] });
+    }
+    if (localDate > maxDateStart) {
+      return NextResponse.json(
+        { error: 'Date cannot be more than 365 days in the future' },
+        { status: 400 }
+      );
+    }
+
+    if (db.query?.centres?.findFirst) {
+      const centre = await db.query.centres.findFirst({
+        where: eq(centres.id, centreId),
+        columns: { id: true, organisationId: true },
+        with: {
+          organisation: {
+            columns: { approvalStatus: true },
+          },
+        },
+      });
+      if (!centre || (centre.organisation && centre.organisation.approvalStatus !== 'ACTIVE')) {
+        return NextResponse.json(
+          { error: 'Centre not found' },
+          { status: 404 }
+        );
+      }
     }
 
     const availabilityService = new AvailabilityService();
@@ -66,4 +166,3 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-

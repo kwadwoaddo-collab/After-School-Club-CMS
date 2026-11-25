@@ -5,6 +5,27 @@ import { getApiSession } from '@/lib/session';
 import { db } from '@/db';
 import type { DiscountRule } from '@/db/schema';
 import { sql } from 'drizzle-orm';
+import { z } from 'zod';
+
+const discountRuleSchema = z
+    .object({
+        id: z.string().trim().min(1).max(100),
+        type: z.enum(['sibling', 'pupil_premium', 'percentage', 'fixed']),
+        label: z.string().trim().min(1).max(120),
+        value: z.number().finite().min(0).max(100_000),
+        valueType: z.enum(['percent', 'fixed']),
+        active: z.boolean(),
+    })
+    .strict()
+    .refine((r) => r.valueType !== 'percent' || r.value <= 100, {
+        message: 'Percentage discount cannot exceed 100',
+    });
+
+const patchDiscountsSchema = z
+    .object({
+        discountRules: z.array(discountRuleSchema).max(50),
+    })
+    .strict();
 
 // GET /api/settings/discounts
 export async function GET() {
@@ -37,18 +58,19 @@ export async function PATCH(request: NextRequest) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
-        const body = await request.json();
-        const { discountRules } = body as { discountRules: DiscountRule[] };
-
-        if (!Array.isArray(discountRules)) {
-            return NextResponse.json({ error: 'discountRules must be an array' }, { status: 400 });
+        const body = await request.json().catch(() => null);
+        const parsed = patchDiscountsSchema.safeParse(body);
+        if (!parsed.success) {
+            return NextResponse.json(
+                {
+                    error: 'Invalid discount rules payload',
+                    details: parsed.error.flatten(),
+                },
+                { status: 400 }
+            );
         }
 
-        for (const rule of discountRules) {
-            if (!rule.id || !rule.type || !rule.label || typeof rule.value !== 'number' || !rule.valueType) {
-                return NextResponse.json({ error: 'Invalid rule structure' }, { status: 400 });
-            }
-        }
+        const discountRules: DiscountRule[] = parsed.data.discountRules;
 
         await db.execute(
             sql`UPDATE organisations SET discount_rules = ${JSON.stringify(discountRules)}::jsonb, updated_at = NOW() WHERE id = ${session.user.organisationId}`

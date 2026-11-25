@@ -1,14 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { staffInvites, users, orgMemberships } from '@/db/schema';
+import { staffInvites, users, organisations, orgMemberships } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { hashToken } from '@/lib/magic-link';
+import * as rateLimitModule from '@/lib/rate-limit';
+
+function resolveMagicLoginLimiter() {
+    try {
+        return rateLimitModule.authRateLimit;
+    } catch {
+        return rateLimitModule.strictRateLimit;
+    }
+}
 
 /**
  * GET /api/staff/magic-login?token=xxx
  * Validates an invite token for passwordless staff magic-login.
  * Security: Rejects existing password-protected accounts, ORG_OWNER accounts,
- * and cross-tenant accounts that do not already belong to the invitation's organisation.
+ * non-ACTIVE organisations, and cross-tenant accounts that do not already belong
+ * to the invitation's organisation.
  */
 export async function GET(request: NextRequest) {
     const token = request.nextUrl.searchParams.get('token');
@@ -17,15 +27,39 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Missing token' }, { status: 400 });
     }
 
+    const tokenHash = hashToken(token);
+    const ip = typeof rateLimitModule.getClientIP === 'function' ? rateLimitModule.getClientIP(request) : 'unknown';
+    const rl = await rateLimitModule.checkRateLimit(
+        resolveMagicLoginLimiter(),
+        `magic-login:${ip}:${tokenHash.slice(0, 16)}`,
+        { localLimit: 5, localWindowMs: 60_000 }
+    );
+    if (rl && !rl.success) {
+        return NextResponse.json(
+            { error: 'Too many attempts. Please try again later.' },
+            { status: 429 }
+        );
+    }
+
     // TOKEN-1 fix: tokens are stored as SHA-256 hashes.
     const [invite] = await db
         .select()
         .from(staffInvites)
-        .where(eq(staffInvites.token, hashToken(token)))
+        .where(eq(staffInvites.token, tokenHash))
         .limit(1);
 
     if (!invite || invite.usedAt || new Date() > invite.expiresAt) {
         return NextResponse.json({ error: 'Invalid or expired token' }, { status: 401 });
+    }
+
+    if (db.query?.organisations?.findFirst) {
+        const inviteOrg = await db.query.organisations.findFirst({
+            where: eq(organisations.id, invite.organisationId),
+            columns: { id: true, approvalStatus: true },
+        });
+        if (inviteOrg === null || (inviteOrg?.approvalStatus && inviteOrg.approvalStatus !== 'ACTIVE')) {
+            return NextResponse.json({ error: 'Organisation is not active' }, { status: 403 });
+        }
     }
 
     const user = await db.query.users.findFirst({
