@@ -1,10 +1,22 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+vi.mock('@/db', () => ({
+  db: {
+    execute: vi.fn(),
+    select: vi.fn(),
+    insert: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn(),
+    transaction: vi.fn(),
+    query: {},
+  },
+}));
+
 import {
   escapeHtml,
   sanitizeErrorMessage,
   classifyError,
   processBroadcastDeliveries,
-  reconcileBroadcastStatus,
   MAX_DELIVERY_ATTEMPTS,
 } from './delivery';
 import { db } from '@/db';

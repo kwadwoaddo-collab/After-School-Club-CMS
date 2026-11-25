@@ -1,6 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { revalidatePath } from 'next/cache';
 
+vi.mock('@/db', () => ({ db: {} }));
+vi.mock('@/lib/auth', () => ({ auth: vi.fn() }));
+
 // Mock next/cache
 vi.mock('next/cache', () => ({
     revalidatePath: vi.fn(),

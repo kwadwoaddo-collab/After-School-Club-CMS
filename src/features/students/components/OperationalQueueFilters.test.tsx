@@ -19,9 +19,9 @@ describe('operational queue controls', () => {
     it('opens outcome queue with centre/search retained and conflicting date/status cleared', () => {
         mocks.params = 'status=completed&from=2026-10-25&today=true&search=Dummy&centre=centre-1';
         render(<BookingsFilters centres={[{ id: 'centre-1', name: 'Dummy centre' }]} />);
-        fireEvent.click(screen.getByRole('button', { name: 'Outcomes to record' }));
+        fireEvent.click(screen.getByRole('button', { name: /^Needs Attendance/i }));
         const url = mocks.push.mock.calls[0][0] as string;
-        expect(url).toContain('outcome=required'); expect(url).toContain('centre=centre-1'); expect(url).toContain('search=Dummy'); expect(url).not.toContain('status='); expect(url).not.toContain('today='); expect(url).not.toContain('from=');
+        expect(url).toContain('outcome=needs_attendance'); expect(url).toContain('centre=centre-1'); expect(url).toContain('search=Dummy'); expect(url).not.toContain('status='); expect(url).not.toContain('today='); expect(url).not.toContain('from=');
     });
     it('shows the call queue when a daily-work link updates an existing Students screen', () => {
         mocks.params = 'status=all&centre=centre-1';

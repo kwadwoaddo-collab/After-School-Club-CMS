@@ -201,12 +201,12 @@ describe('Public subdomain routing, org fallback & ACTIVE gating (PR #10a: DC-01
             const meta = await generateLandingMetadata({
                 params: Promise.resolve({ subdomain: 'lewisham' }),
             });
-            expect(meta.title).toBe('Lewisham After-School Club — Book or Register');
+            expect(meta.title).toEqual({ absolute: 'Lewisham After-School Club — Book or Register' });
 
             const bookMeta = await generateBookMetadata({
                 params: Promise.resolve({ subdomain: 'lewisham' }),
             });
-            expect(bookMeta.title).toBe('Book a Session — Lewisham After-School Club');
+            expect(bookMeta.title).toEqual({ absolute: 'Book a Session — Lewisham After-School Club' });
 
             const element = await CentrePortalLanding({
                 params: Promise.resolve({ subdomain: 'lewisham' }),
@@ -333,7 +333,7 @@ describe('Public subdomain routing, org fallback & ACTIVE gating (PR #10a: DC-01
                 const orgMeta = await generateOrgBookMetadata({
                     params: Promise.resolve({ orgSlug: 'non-active-club' }),
                 });
-                expect(orgMeta.title).toBe('Organisation Not Found');
+                expect(orgMeta.title).toEqual({ absolute: 'Organisation Not Found' });
 
                 await expect(
                     BookingPage({
@@ -345,7 +345,7 @@ describe('Public subdomain routing, org fallback & ACTIVE gating (PR #10a: DC-01
                 const centreMeta = await generateCentreBookMetadata({
                     params: Promise.resolve({ orgSlug: 'non-active-club', centreSlug: 'main' }),
                 });
-                expect(centreMeta.title).toBe('Centre Not Found');
+                expect(centreMeta.title).toEqual({ absolute: 'Centre Not Found' });
             }
         );
 

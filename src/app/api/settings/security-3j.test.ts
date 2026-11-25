@@ -35,8 +35,29 @@ vi.mock('@/db', () => ({
         findFirst: vi.fn().mockResolvedValue({
           id: 'u1',
           role: 'MANAGER',
-          memberships: [{ centre: { id: 'centre-1' }, centreId: 'centre-1' }],
+          organisationId: 'org-1',
         }),
+      },
+      orgMemberships: {
+        findFirst: vi.fn().mockResolvedValue({
+          userId: 'u1',
+          role: 'MANAGER',
+          organisationId: 'org-1',
+        }),
+      },
+      centreMemberships: {
+        findFirst: vi.fn().mockResolvedValue({
+          role: 'MANAGER',
+          centreId: 'centre-1',
+          centre: { id: 'centre-1', organisationId: 'org-1' },
+        }),
+        findMany: vi.fn().mockResolvedValue([
+          {
+            role: 'MANAGER',
+            centreId: 'centre-1',
+            centre: { id: 'centre-1', organisationId: 'org-1' },
+          },
+        ]),
       },
     },
     select: vi.fn(() => ({
@@ -373,4 +394,3 @@ describe('PATCH /api/centres/[id] — Milestone 3J closure: operatingHours persi
     expect(capturedUpdateData.operatingHours).toBeDefined();
   });
 });
-

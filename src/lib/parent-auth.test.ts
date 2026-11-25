@@ -7,7 +7,10 @@
  * that does not verify as a properly signed JWT. The test has been updated
  * to reflect (and enforce) the new secure behaviour.
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+
+vi.mock('@/db', () => ({ db: {} }));
+
 import { signParentToken, verifyParentToken } from './parent-auth';
 
 describe('Parent Auth Helpers', () => {

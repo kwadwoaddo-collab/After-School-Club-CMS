@@ -1,9 +1,21 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NextRequest } from 'next/server';
+
+vi.mock('@/db', () => ({
+  db: {
+    execute: vi.fn(),
+    select: vi.fn(),
+    insert: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn(),
+    transaction: vi.fn(),
+    query: {},
+  },
+}));
+
 import { verifyCronAuthorization } from '@/app/api/cron/broadcasts/route';
 import {
   processBroadcastDeliveries,
-  reconcileBroadcastStatus,
   MAX_DELIVERY_ATTEMPTS,
 } from '@/features/communications/delivery';
 import { sendBroadcast, getBroadcastDeliveryStats } from '@/features/communications/actions';

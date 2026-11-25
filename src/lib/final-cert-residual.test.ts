@@ -36,6 +36,7 @@ const mockTransaction = vi.fn(async (cb: any) => {
 
 const mockFindUser = vi.fn();
 const mockFindCentre = vi.fn();
+const mockFindOrgMembership = vi.fn();
 const mockFindCentreMembership = vi.fn();
 
 vi.mock("@auth/drizzle-adapter", () => ({
@@ -61,6 +62,9 @@ vi.mock("@/db", () => ({
       },
       centres: {
         findFirst: (...args: any[]) => mockFindCentre(...args),
+      },
+      orgMemberships: {
+        findFirst: (...args: any[]) => mockFindOrgMembership(...args),
       },
       centreMemberships: {
         findFirst: (...args: any[]) => mockFindCentreMembership(...args),
@@ -238,6 +242,10 @@ describe("FINAL-CERT — Residual Security Qualifications Revalidation Suite", (
       role: "ORG_OWNER",
       organisationId: "org-1",
     });
+    mockFindOrgMembership.mockResolvedValueOnce({
+      role: "ORG_OWNER",
+      organisationId: "org-1",
+    });
     mockFindCentre.mockResolvedValueOnce({
       id: "centre-1a",
       organisationId: "org-1",
@@ -248,6 +256,10 @@ describe("FINAL-CERT — Residual Security Qualifications Revalidation Suite", (
     // Case B: ORG_OWNER in org-1 attempts to access centre in org-2 -> REJECTED
     mockFindUser.mockResolvedValueOnce({
       id: "owner-1",
+      role: "ORG_OWNER",
+      organisationId: "org-1",
+    });
+    mockFindOrgMembership.mockResolvedValueOnce({
       role: "ORG_OWNER",
       organisationId: "org-1",
     });

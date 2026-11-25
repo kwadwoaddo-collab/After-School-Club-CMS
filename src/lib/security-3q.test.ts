@@ -9,6 +9,8 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
+vi.mock('@/db', () => ({ db: {} }));
+
 vi.mock('geist/font/sans', () => ({
     GeistSans: { variable: '--font-geist-sans' },
 }));

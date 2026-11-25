@@ -2,6 +2,20 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
 
+vi.mock('@/db', () => ({
+    db: {
+        transaction: vi.fn(),
+        query: {
+            invoices: { findFirst: vi.fn() },
+            payments: { findFirst: vi.fn() },
+        },
+        select: vi.fn(),
+        insert: vi.fn(),
+        update: vi.fn(),
+        delete: vi.fn(),
+    },
+}));
+
 vi.mock('@/lib/auth', () => ({
     auth: vi.fn(),
 }));
