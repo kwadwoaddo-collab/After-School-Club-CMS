@@ -17,6 +17,7 @@ import { eq, and } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import { hashToken } from '@/lib/magic-link';
 import { authRateLimit, checkRateLimit } from '@/lib/rate-limit';
+import { requestCache } from '@/lib/request-cache';
 // Precomputed cost-10 bcrypt hash for computational symmetry and timing-attack elimination (PM-2E2.B4)
 export const DUMMY_PASSWORD_HASH = '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy';
 
@@ -423,9 +424,7 @@ interface SessionWithOrg {
   expires: string;
 }
 
-export function auth(): Promise<SessionWithOrg | null>;
-export function auth(req: any, ctx: any): any;
-export async function auth(...args: unknown[]) {
+async function resolveAuthoritativeSession(...args: unknown[]) {
   const session = await (nextAuthResult.auth as any)(...args);
 
   if (session?.user?.id) {
@@ -478,4 +477,22 @@ export async function auth(...args: unknown[]) {
   }
 
   return session;
+}
+
+const fetchRequestScopedSession = requestCache((): Promise<SessionWithOrg | null> =>
+  resolveAuthoritativeSession()
+);
+
+export function auth(): Promise<SessionWithOrg | null>;
+export function auth(req: any, ctx: any): any;
+export async function auth(...args: unknown[]) {
+  if (args.length === 0) {
+    const cached = await fetchRequestScopedSession();
+    if (!cached) return null;
+    return {
+      ...cached,
+      user: cached.user ? { ...cached.user } : cached.user,
+    };
+  }
+  return resolveAuthoritativeSession(...args);
 }

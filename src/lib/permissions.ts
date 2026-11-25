@@ -1,8 +1,8 @@
 /**
  * Centre-Based Access Control
- * 
+ *
  * This module provides helper functions for managing centre-level permissions.
- * 
+ *
  * Access Model:
  * - ORG_OWNER: Full access to all centres in the organization
  * - MANAGER/FRONT_DESK/TUTOR: Access only to assigned centres via centreMemberships
@@ -11,10 +11,12 @@
 import { db } from '@/db';
 import { users, centres, centreMemberships, children, orgMemberships } from '@/db/schema';
 import { eq, and, inArray, or, sql } from 'drizzle-orm';
+import { requestCache } from '@/lib/request-cache';
 
 /** Match auth(): the active organisation must have a live membership.
- * users.role is a legacy field and cannot preserve owner access after demotion. */
-async function activeOrganisationUser(userId: string) {
+ * users.role is a legacy field and cannot preserve owner access after demotion.
+ * Memoized per RSC request via `React.cache()` — never cached across HTTP requests. */
+const activeOrganisationUser = requestCache(async (userId: string) => {
     const user = await db.query.users.findFirst({ where: eq(users.id, userId) });
     if (!user?.organisationId) return null;
     const membership = await db.query.orgMemberships.findFirst({
@@ -22,15 +24,9 @@ async function activeOrganisationUser(userId: string) {
     });
     if (!membership) return null;
     return { ...user, role: membership.role, organisationId: user.organisationId };
-}
+});
 
-/**
- * Get all centres a user has access to
- * 
- * ORG_OWNER: Returns all centres in the organization
- * Other roles: Returns only assigned centres
- */
-export async function getUserAccessibleCentres(userId: string) {
+const fetchUserAccessibleCentres = requestCache(async (userId: string) => {
     const user = await activeOrganisationUser(userId);
     if (!user) return [];
     if (user.role === 'ORG_OWNER') {
@@ -44,6 +40,17 @@ export async function getUserAccessibleCentres(userId: string) {
     });
     return memberships.map(membership => membership.centre)
         .filter(centre => Boolean(centre) && centre.organisationId === user.organisationId);
+});
+
+/**
+ * Get all centres a user has access to
+ *
+ * ORG_OWNER: Returns all centres in the organization
+ * Other roles: Returns only assigned centres
+ */
+export async function getUserAccessibleCentres(userId: string) {
+    const accessible = await fetchUserAccessibleCentres(userId);
+    return [...accessible];
 }
 
 /**

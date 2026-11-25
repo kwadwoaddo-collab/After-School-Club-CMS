@@ -7,7 +7,6 @@ import { db } from '@/db';
 import {
     organisations, parents, children, centres,
     registrations, registrationChildren, registrationParents,
-    studentNotes,
     authorisedCollectors as authorisedCollectorsTable,
     bookings,
 } from '@/db/schema';
@@ -129,7 +128,7 @@ export async function POST(req: NextRequest) {
             );
         }
 
-                const body = parsed.data;
+        const body = parsed.data;
         const {
             orgSlug,
             prefillToken,
@@ -169,12 +168,15 @@ export async function POST(req: NextRequest) {
             }
         }
 
-        // ── 1. Resolve organisation ──────────────────────────────────────
+        // ── 1. Resolve organisation & enforce ACTIVE approval status ─────
         const org = await db.query.organisations.findFirst({
             where: eq(organisations.slug, orgSlug),
         });
         if (!org) {
             return NextResponse.json({ error: 'Organisation not found' }, { status: 404 });
+        }
+        if (org.approvalStatus !== 'ACTIVE') {
+            return NextResponse.json({ error: 'Organisation is not active' }, { status: 403 });
         }
 
         // ── 2a. Reconcile and verify token claims against resolved org ──────

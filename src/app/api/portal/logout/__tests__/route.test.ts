@@ -24,15 +24,16 @@ describe('POST / GET /api/portal/logout', () => {
         expect(deleteCookieMock).toHaveBeenCalledWith('parent_session');
         expect(res.status).toBe(303);
         expect(res.headers.get('location')).toBe('https://app.sprintscaleit.co.uk/portal/login');
+        expect(res.headers.get('cache-control')).toBe('no-store');
     });
 
-    it('GET clears parent_session cookie and returns 303 See Other to /portal/login', async () => {
+    it('GET returns 405 Method Not Allowed with Allow: POST and does NOT clear parent_session (CSRF/prefetch protection)', async () => {
         const { GET } = await import('../route');
-        const req = new NextRequest('https://app.sprintscaleit.co.uk/api/portal/logout');
 
-        const res = await GET(req);
-        expect(deleteCookieMock).toHaveBeenCalledWith('parent_session');
-        expect(res.status).toBe(303);
-        expect(res.headers.get('location')).toBe('https://app.sprintscaleit.co.uk/portal/login');
+        const res = await GET();
+        expect(deleteCookieMock).not.toHaveBeenCalled();
+        expect(res.status).toBe(405);
+        expect(res.headers.get('allow')).toBe('POST');
+        expect(res.headers.get('cache-control')).toBe('no-store');
     });
 });

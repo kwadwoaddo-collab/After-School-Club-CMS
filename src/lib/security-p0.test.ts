@@ -298,8 +298,8 @@ describe('POST /api/register — centreId validation', () => {
 
     it('returns 400 when centreId does not belong to the resolved org', async () => {
         const { db } = await import('@/db');
-        // org resolves fine
-        (db.query.organisations.findFirst as any).mockResolvedValueOnce({ id: 'org-a-uuid', name: 'Org A', slug: 'org-a' });
+        // org resolves fine (ACTIVE)
+        (db.query.organisations.findFirst as any).mockResolvedValueOnce({ id: 'org-a-uuid', name: 'Org A', slug: 'org-a', approvalStatus: 'ACTIVE' });
         // centre lookup returns null (centreId is from a different org)
         (db.query.centres.findFirst as any).mockResolvedValueOnce(null);
 

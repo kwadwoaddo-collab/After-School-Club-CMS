@@ -8,7 +8,8 @@
  *   requirePlatformAdmin()       — session identity + platform admin check,
  *                                  completely independent of tenant membership/status
  *
- * Authorization source of truth: the database (queried at request time).
+ * Authorization source of truth: the database (queried at request time, deduplicated
+ * within a single RSC render via `requestCache` / `React.cache()`).
  * JWTs and sessions are NEVER used as the authorization source for org status.
  */
 
@@ -18,6 +19,7 @@ import { eq } from 'drizzle-orm';
 import { getTypedSession } from '@/lib/session';
 import { redirect } from 'next/navigation';
 import { logger } from '@/lib/logger';
+import { requestCache } from '@/lib/request-cache';
 
 // ─── Error Types ─────────────────────────────────────────────────────────────
 
@@ -60,27 +62,32 @@ export function isPlatformAdmin(email: string | null | undefined): boolean {
 
 // ─── Org Active Guard ─────────────────────────────────────────────────────────
 
-/**
- * Assert that the organisation with the given ID has approval_status = 'ACTIVE'.
- *
- * Always queries the database — never reads JWT/session for this decision.
- * Throws OrgNotActiveError for PENDING, SUSPENDED, and REJECTED orgs.
- *
- * @param organisationId  The organisation UUID from the authenticated session.
- */
-export async function assertOrgActive(organisationId: string): Promise<void> {
+const getOrgApprovalStatus = requestCache(async (organisationId: string): Promise<string | null> => {
   const org = await db
     .select({ approvalStatus: organisations.approvalStatus })
     .from(organisations)
     .where(eq(organisations.id, organisationId))
     .limit(1);
 
-  if (!org.length) {
+  return org.length ? org[0].approvalStatus : null;
+});
+
+/**
+ * Assert that the organisation with the given ID has approval_status = 'ACTIVE'.
+ *
+ * Queries the database (deduplicated per RSC request via `React.cache()`) —
+ * never reads JWT/session for this decision, and never caches across HTTP requests.
+ * Throws OrgNotActiveError for PENDING, SUSPENDED, and REJECTED orgs.
+ *
+ * @param organisationId  The organisation UUID from the authenticated session.
+ */
+export async function assertOrgActive(organisationId: string): Promise<void> {
+  const approvalStatus = await getOrgApprovalStatus(organisationId);
+
+  if (!approvalStatus) {
     // Org not found — treat as inactive to fail closed
     throw new OrgNotActiveError(organisationId, 'NOT_FOUND');
   }
-
-  const { approvalStatus } = org[0];
 
   if (approvalStatus !== 'ACTIVE') {
     throw new OrgNotActiveError(organisationId, approvalStatus);

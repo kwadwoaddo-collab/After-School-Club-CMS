@@ -310,9 +310,9 @@ describe('POST /api/register — D4 prefillParentId cross-org guard', () => {
         });
 
         const { db } = await import('@/db');
-        // Org resolves fine
+        // Org resolves fine (ACTIVE)
         (db.query.organisations.findFirst as any).mockResolvedValueOnce({
-            id: 'org-a-id', name: 'Org A', slug: 'org-a',
+            id: 'org-a-id', name: 'Org A', slug: 'org-a', approvalStatus: 'ACTIVE',
         });
         // D4 org-check: parent does NOT belong to org-a → null
         (db.query.parents.findFirst as any).mockResolvedValueOnce(null);
@@ -350,9 +350,9 @@ describe('POST /api/register — D4 prefillParentId cross-org guard', () => {
         });
 
         const { db } = await import('@/db');
-        // Org resolves fine
+        // Org resolves fine (ACTIVE)
         (db.query.organisations.findFirst as any).mockResolvedValueOnce({
-            id: 'org-a-id', name: 'Org A', slug: 'org-a',
+            id: 'org-a-id', name: 'Org A', slug: 'org-a', approvalStatus: 'ACTIVE',
         });
         // D4 org-check: parent DOES belong to org-a → record found
         (db.query.parents.findFirst as any).mockResolvedValueOnce({ id: 'parent-from-org-a' });

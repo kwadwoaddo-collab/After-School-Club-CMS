@@ -1,13 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Type-Safe Session Utilities
- * 
+ *
  * Provides a typed wrapper around NextAuth's session to eliminate `as any` casts
  * throughout the codebase. All dashboard/API code should use `getTypedSession()`
  * instead of raw `auth()`.
  */
 
 import { auth } from '@/lib/auth';
+import { requestCache } from '@/lib/request-cache';
 
 export type UserRole = 'ORG_OWNER' | 'MANAGER' | 'FRONT_DESK' | 'TUTOR';
 
@@ -26,19 +27,7 @@ export interface TypedSession {
   expires: string;
 }
 
-/**
- * Get the current session with proper TypeScript types.
- * Returns null if not authenticated.
- * 
- * Usage:
- * ```ts
- * const session = await getTypedSession();
- * if (!session) return redirect('/login');
- * session.user.role       // UserRole — no cast needed
- * session.user.organisationId  // string | null — no cast needed
- * ```
- */
-export async function getTypedSession(): Promise<TypedSession | null> {
+const fetchTypedSession = requestCache(async (): Promise<TypedSession | null> => {
   const session = await auth();
   if (!session?.user?.id) return null;
 
@@ -53,6 +42,31 @@ export async function getTypedSession(): Promise<TypedSession | null> {
       needsOnboarding: !!((session.user as any).needsOnboarding),
     },
     expires: session.expires,
+  };
+});
+
+/**
+ * Get the current session with proper TypeScript types.
+ * Returns null if not authenticated.
+ *
+ * Deduplicated per RSC request via `React.cache()` so layout + page + server
+ * component calls within the same render share one underlying `auth()` lookup,
+ * while every new HTTP request revalidates live DB membership.
+ *
+ * Usage:
+ * ```ts
+ * const session = await getTypedSession();
+ * if (!session) return redirect('/login');
+ * session.user.role       // UserRole — no cast needed
+ * session.user.organisationId  // string | null — no cast needed
+ * ```
+ */
+export async function getTypedSession(): Promise<TypedSession | null> {
+  const cached = await fetchTypedSession();
+  if (!cached) return null;
+  return {
+    ...cached,
+    user: { ...cached.user },
   };
 }
 
