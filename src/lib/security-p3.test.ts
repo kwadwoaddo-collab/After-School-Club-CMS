@@ -25,6 +25,7 @@ vi.mock('@/db', () => ({
         query: {
             users:             { findFirst: vi.fn() },
             centres:           { findMany: vi.fn() },
+            orgMemberships:    { findFirst: vi.fn() },
             centreMemberships: { findFirst: vi.fn(), findMany: vi.fn() },
         },
         selectDistinct: vi.fn(),
@@ -38,6 +39,7 @@ vi.mock('@/db', () => ({
 vi.mock('@/db/schema', () => ({
     users:              {},
     centres:            {},
+    orgMemberships:     {},
     centreMemberships:  {},
     bookings:           {},
     bookingAttendees:   {},
@@ -95,7 +97,8 @@ describe('getVisibleChildIds', () => {
 
     it('returns null for ORG_OWNER (no restriction)', async () => {
         const { db } = await import('@/db');
-        (db.query.users.findFirst as any).mockResolvedValueOnce({ role: 'ORG_OWNER' });
+        (db.query.users.findFirst as any).mockResolvedValue({ id: USER_ID, role: 'ORG_OWNER', organisationId: ORG_ID });
+        (db.query.orgMemberships.findFirst as any).mockResolvedValue({ role: 'ORG_OWNER', organisationId: ORG_ID });
 
         const fn = await getHelper();
         const result = await fn(USER_ID, ORG_ID);
@@ -116,9 +119,9 @@ describe('getVisibleChildIds', () => {
 
     it('returns empty array when non-owner has no centre memberships', async () => {
         const { db } = await import('@/db');
-        (db.query.users.findFirst as any)
-            .mockResolvedValueOnce({ role: 'MANAGER' })
-            .mockResolvedValueOnce({ role: 'MANAGER', organisationId: ORG_ID, memberships: [] });
+        (db.query.users.findFirst as any).mockResolvedValue({ id: USER_ID, role: 'MANAGER', organisationId: ORG_ID });
+        (db.query.orgMemberships.findFirst as any).mockResolvedValue({ role: 'MANAGER', organisationId: ORG_ID });
+        (db.query.centreMemberships.findMany as any).mockResolvedValueOnce([]);
 
         const fn = await getHelper();
         const result = await fn(USER_ID, ORG_ID);
@@ -131,13 +134,11 @@ describe('getVisibleChildIds', () => {
     it('returns child IDs from children.centreId for non-owner with centre access', async () => {
         const { db } = await import('@/db');
 
-        (db.query.users.findFirst as any)
-            .mockResolvedValueOnce({ role: 'MANAGER' })
-            .mockResolvedValueOnce({
-                role: 'MANAGER',
-                organisationId: ORG_ID,
-                memberships: [{ centre: { id: CENTRE_A_ID } }],
-            });
+        (db.query.users.findFirst as any).mockResolvedValue({ id: USER_ID, role: 'MANAGER', organisationId: ORG_ID });
+        (db.query.orgMemberships.findFirst as any).mockResolvedValue({ role: 'MANAGER', organisationId: ORG_ID });
+        (db.query.centreMemberships.findMany as any).mockResolvedValueOnce([
+            { role: 'MANAGER', centre: { id: CENTRE_A_ID, organisationId: ORG_ID } },
+        ]);
 
         // New query shape: db.select({ id }).from(children).where(...)
         mockSelectChain(db, [{ id: CHILD_1_ID }, { id: CHILD_2_ID }]);
@@ -150,13 +151,11 @@ describe('getVisibleChildIds', () => {
     it('returns empty array when non-owner has centre access but no students there', async () => {
         const { db } = await import('@/db');
 
-        (db.query.users.findFirst as any)
-            .mockResolvedValueOnce({ role: 'FRONT_DESK' })
-            .mockResolvedValueOnce({
-                role: 'FRONT_DESK',
-                organisationId: ORG_ID,
-                memberships: [{ centre: { id: CENTRE_A_ID } }],
-            });
+        (db.query.users.findFirst as any).mockResolvedValue({ id: USER_ID, role: 'FRONT_DESK', organisationId: ORG_ID });
+        (db.query.orgMemberships.findFirst as any).mockResolvedValue({ role: 'FRONT_DESK', organisationId: ORG_ID });
+        (db.query.centreMemberships.findMany as any).mockResolvedValueOnce([
+            { role: 'FRONT_DESK', centre: { id: CENTRE_A_ID, organisationId: ORG_ID } },
+        ]);
 
         // No students at this centre
         mockSelectChain(db, []);
@@ -169,13 +168,11 @@ describe('getVisibleChildIds', () => {
     it('returns all matching child IDs including multiple students', async () => {
         const { db } = await import('@/db');
 
-        (db.query.users.findFirst as any)
-            .mockResolvedValueOnce({ role: 'TUTOR' })
-            .mockResolvedValueOnce({
-                role: 'TUTOR',
-                organisationId: ORG_ID,
-                memberships: [{ centre: { id: CENTRE_A_ID } }],
-            });
+        (db.query.users.findFirst as any).mockResolvedValue({ id: USER_ID, role: 'TUTOR', organisationId: ORG_ID });
+        (db.query.orgMemberships.findFirst as any).mockResolvedValue({ role: 'TUTOR', organisationId: ORG_ID });
+        (db.query.centreMemberships.findMany as any).mockResolvedValueOnce([
+            { role: 'TUTOR', centre: { id: CENTRE_A_ID, organisationId: ORG_ID } },
+        ]);
 
         // Two distinct students at this centre
         mockSelectChain(db, [{ id: CHILD_1_ID }, { id: CHILD_2_ID }]);

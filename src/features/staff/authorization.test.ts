@@ -365,8 +365,15 @@ describe('updateStaffRole', () => {
     (db.query.users.findFirst as any).mockResolvedValueOnce({
       id: 'm1',
       role: 'MANAGER',
-      memberships: [{ centre: { id: 'centre-1' } }],
+      organisationId: 'org-1',
     });
+    (db.query.orgMemberships.findFirst as any).mockResolvedValueOnce({
+      role: 'MANAGER',
+      organisationId: 'org-1',
+    });
+    (db.query.centreMemberships.findMany as any).mockResolvedValueOnce([
+      { role: 'MANAGER', centre: { id: 'centre-1', organisationId: 'org-1' } },
+    ]);
 
     const { updateStaffRole } = await import('@/features/staff/staff-actions');
     await expect(updateStaffRole('target-1', 'MANAGER')).resolves.toBeUndefined();
@@ -434,8 +441,15 @@ describe('updateStaffRole', () => {
     (db.query.users.findFirst as any).mockResolvedValueOnce({
       id: 'm1',
       role: 'MANAGER',
-      memberships: [{ centre: { id: 'authorised-centre' } }],
+      organisationId: 'org-1',
     });
+    (db.query.orgMemberships.findFirst as any).mockResolvedValueOnce({
+      role: 'MANAGER',
+      organisationId: 'org-1',
+    });
+    (db.query.centreMemberships.findMany as any).mockResolvedValueOnce([
+      { role: 'MANAGER', centre: { id: 'authorised-centre', organisationId: 'org-1' } },
+    ]);
 
     const { updateStaffRole } = await import('@/features/staff/staff-actions');
     await expect(updateStaffRole('target-1', 'TUTOR')).rejects.toThrow(
@@ -474,8 +488,15 @@ describe('Staff Removal Semantics & Scope Isolation', () => {
     (db.query.users.findFirst as any).mockResolvedValueOnce({
       id: CALLER_MANAGER_ID,
       role: 'MANAGER',
-      memberships: [{ centre: { id: CENTRE_A } }], // Manager only has Centre A
+      organisationId: 'org-1',
     });
+    (db.query.orgMemberships.findFirst as any).mockResolvedValueOnce({
+      role: 'MANAGER',
+      organisationId: 'org-1',
+    });
+    (db.query.centreMemberships.findMany as any).mockResolvedValueOnce([
+      { role: 'MANAGER', centre: { id: CENTRE_A, organisationId: 'org-1' } },
+    ]);
 
     (db.select as any)
       .mockReset()
@@ -517,8 +538,15 @@ describe('Staff Removal Semantics & Scope Isolation', () => {
     (db.query.users.findFirst as any).mockResolvedValueOnce({
       id: CALLER_MANAGER_ID,
       role: 'MANAGER',
-      memberships: [{ centre: { id: CENTRE_A } }],
+      organisationId: 'org-1',
     });
+    (db.query.orgMemberships.findFirst as any).mockResolvedValueOnce({
+      role: 'MANAGER',
+      organisationId: 'org-1',
+    });
+    (db.query.centreMemberships.findMany as any).mockResolvedValueOnce([
+      { role: 'MANAGER', centre: { id: CENTRE_A, organisationId: 'org-1' } },
+    ]);
 
     (db.select as any)
       .mockReset()
@@ -553,8 +581,15 @@ describe('Staff Removal Semantics & Scope Isolation', () => {
     (db.query.users.findFirst as any).mockResolvedValueOnce({
       id: CALLER_MANAGER_ID,
       role: 'MANAGER',
-      memberships: [{ centre: { id: CENTRE_A } }],
+      organisationId: 'org-1',
     });
+    (db.query.orgMemberships.findFirst as any).mockResolvedValueOnce({
+      role: 'MANAGER',
+      organisationId: 'org-1',
+    });
+    (db.query.centreMemberships.findMany as any).mockResolvedValueOnce([
+      { role: 'MANAGER', centre: { id: CENTRE_A, organisationId: 'org-1' } },
+    ]);
 
     (db.select as any)
       .mockReset()
@@ -623,10 +658,17 @@ describe('Manager Inviting Staff & Centre Scoping', () => {
       .mockResolvedValueOnce({
         id: CALLER_MANAGER_ID,
         role: 'MANAGER',
-        memberships: [{ centre: { id: CENTRE_A } }],
+        organisationId: 'org-1',
       })
       // Check existing user by email
       .mockResolvedValueOnce(null);
+    (db.query.orgMemberships.findFirst as any).mockResolvedValueOnce({
+      role: 'MANAGER',
+      organisationId: 'org-1',
+    });
+    (db.query.centreMemberships.findMany as any).mockResolvedValueOnce([
+      { role: 'MANAGER', centre: { id: CENTRE_A, organisationId: 'org-1' } },
+    ]);
 
     // Validate centre in org
     (db.query.centres.findFirst as any).mockResolvedValueOnce({ id: CENTRE_A, name: 'Centre A' });
@@ -662,8 +704,15 @@ describe('Manager Inviting Staff & Centre Scoping', () => {
     (db.query.users.findFirst as any).mockResolvedValueOnce({
       id: CALLER_MANAGER_ID,
       role: 'MANAGER',
-      memberships: [{ centre: { id: CENTRE_A } }], // Caller only manages Centre A
+      organisationId: 'org-1',
     });
+    (db.query.orgMemberships.findFirst as any).mockResolvedValueOnce({
+      role: 'MANAGER',
+      organisationId: 'org-1',
+    });
+    (db.query.centreMemberships.findMany as any).mockResolvedValueOnce([
+      { role: 'MANAGER', centre: { id: CENTRE_A, organisationId: 'org-1' } },
+    ]);
 
     const { POST } = await import('@/app/api/staff/invite/route');
     const res = await POST(inviteReq({
@@ -697,8 +746,15 @@ describe('Manager Inviting Staff & Centre Scoping', () => {
     (db.query.users.findFirst as any).mockResolvedValueOnce({
       id: CALLER_MANAGER_ID,
       role: 'MANAGER',
-      memberships: [{ centre: { id: CENTRE_A } }],
+      organisationId: 'org-1',
     });
+    (db.query.orgMemberships.findFirst as any).mockResolvedValueOnce({
+      role: 'MANAGER',
+      organisationId: 'org-1',
+    });
+    (db.query.centreMemberships.findMany as any).mockResolvedValueOnce([
+      { role: 'MANAGER', centre: { id: CENTRE_A, organisationId: 'org-1' } },
+    ]);
 
     const { POST } = await import('@/app/api/staff/invite/route');
     const res = await POST(inviteReq({
@@ -798,8 +854,15 @@ describe('Staff Centre Assignment Bypass Checks', () => {
     (db.query.users.findFirst as any).mockResolvedValueOnce({
       id: CALLER_MANAGER_ID,
       role: 'MANAGER',
-      memberships: [{ centre: { id: CENTRE_A } }], // Caller only manages Centre A
+      organisationId: 'org-1',
     });
+    (db.query.orgMemberships.findFirst as any).mockResolvedValueOnce({
+      role: 'MANAGER',
+      organisationId: 'org-1',
+    });
+    (db.query.centreMemberships.findMany as any).mockResolvedValueOnce([
+      { role: 'MANAGER', centre: { id: CENTRE_A, organisationId: 'org-1' } },
+    ]);
 
     const { POST } = await import('@/app/api/staff/assign-centres/route');
     const res = await POST(assignReq({
@@ -866,10 +929,14 @@ describe('Role vs Centre Scope Architecture (permissions.ts)', () => {
       organisationId: 'org-1',
       memberships: [],
     });
+    (db.query.orgMemberships.findFirst as any).mockResolvedValueOnce({
+      role: 'ORG_OWNER',
+      organisationId: 'org-1',
+    });
     (db.query.centres.findMany as any).mockResolvedValueOnce([
-      { id: 'centre-a', name: 'Centre A' },
-      { id: 'centre-b', name: 'Centre B' },
-      { id: 'centre-c', name: 'Centre C' },
+      { id: 'centre-a', name: 'Centre A', organisationId: 'org-1' },
+      { id: 'centre-b', name: 'Centre B', organisationId: 'org-1' },
+      { id: 'centre-c', name: 'Centre C', organisationId: 'org-1' },
     ]);
 
     const { getUserAccessibleCentres } = await import('@/lib/permissions');
@@ -885,8 +952,14 @@ describe('Role vs Centre Scope Architecture (permissions.ts)', () => {
       id: 'manager-1',
       role: 'MANAGER',
       organisationId: 'org-1',
-      memberships: [{ centre: { id: 'centre-a', name: 'Centre A' } }],
     });
+    (db.query.orgMemberships.findFirst as any).mockResolvedValueOnce({
+      role: 'MANAGER',
+      organisationId: 'org-1',
+    });
+    (db.query.centreMemberships.findMany as any).mockResolvedValueOnce([
+      { role: 'MANAGER', centre: { id: 'centre-a', name: 'Centre A', organisationId: 'org-1' } },
+    ]);
 
     const { getUserAccessibleCentres } = await import('@/lib/permissions');
     const centres = await getUserAccessibleCentres('manager-1');

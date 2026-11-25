@@ -3,6 +3,18 @@ import fs from 'fs';
 import path from 'path';
 import { NextRequest } from 'next/server';
 
+vi.mock('@/db', () => ({
+  db: {
+    execute: vi.fn().mockResolvedValue({ rows: [{ '?column?': 1 }] }),
+    select: vi.fn(),
+    insert: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn(),
+    transaction: vi.fn(),
+    query: {},
+  },
+}));
+
 describe('SEC-M1: Production Debug / Environment Exposure Security Suite', () => {
   describe('S1: Obsolete /auth-test route removal', () => {
     it('confirms src/app/auth-test does not exist in the codebase', () => {

@@ -10,7 +10,10 @@
  *   6. Role Navigation & Permission Gate consistency
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+
+vi.mock('@/db', () => ({ db: {} }));
+
 import { BookingService } from './services/booking';
 import { hashToken } from './magic-link';
 
