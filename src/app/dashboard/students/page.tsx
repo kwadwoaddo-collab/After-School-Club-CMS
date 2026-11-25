@@ -6,12 +6,12 @@ import { studentLifecycleStatusSql, studentLifecycleEffectiveDateSql, studentLas
 import { redirect } from 'next/navigation';
 import { requireAuth } from '@/lib/require-auth';
 import { db } from '@/db';
-import { organisations, children, parents, bookings, bookingAttendees, studentNotes, centres } from '@/db/schema';
-import { eq, desc, asc, sql, inArray, and, or, ilike, isNull } from 'drizzle-orm';
+import { organisations, children, parents, bookings, bookingAttendees, studentNotes } from '@/db/schema';
+import { eq, asc, sql, inArray, and, or, ilike, isNull } from 'drizzle-orm';
 import type { InferSelectModel } from 'drizzle-orm';
 import Link from 'next/link';
 import { Plus, Users, GraduationCap, Sparkles, AlertTriangle, TrendingDown, Upload } from 'lucide-react';
-import { getUserAccessibleCentreIds, getUserAccessibleCentres } from '@/lib/permissions';
+import { getUserAccessibleCentres } from '@/lib/permissions';
 import StudentsTable from '@/features/students/components/StudentsTable';
 import type { StudentRow } from '@/features/students/components/StudentsTable';
 import { resolveActiveCentreId } from '@/lib/centre-filter';
@@ -75,7 +75,8 @@ export default async function StudentsPage(props: {
         org = fetchedOrg;
         if (!org) throw new Error("NO_ORG");
 
-        accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
+        accessibleCentres = await getUserAccessibleCentres(session.user.id);
+        accessibleCentreIds = accessibleCentres.map((c) => c.id);
 
         if (accessibleCentreIds.length === 0) {
             return (
@@ -96,7 +97,6 @@ export default async function StudentsPage(props: {
         }
 
         const activeCentreId = await resolveActiveCentreId(searchParams.centre, accessibleCentreIds);
-        accessibleCentres = await getUserAccessibleCentres(session.user.id);
 
         hasActiveFilters = !!(
             summaryRange || searchParams.search ||

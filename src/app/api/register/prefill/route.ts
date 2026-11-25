@@ -34,13 +34,22 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ error: 'Malformed token payload' }, { status: 400 });
         }
 
-        // 2. Resolve centre to get organisation context
+        // 2. Resolve centre + parent organisation and enforce ACTIVE approval status
         const centre = await db.query.centres.findFirst({
             where: eq(centres.id, centreId),
             columns: { id: true, organisationId: true },
+            with: {
+                organisation: {
+                    columns: { id: true, approvalStatus: true },
+                },
+            },
         });
-        if (!centre) {
+        if (!centre || !centre.organisation) {
             return NextResponse.json({ error: 'Centre not found' }, { status: 404 });
+        }
+
+        if (centre.organisation.approvalStatus !== 'ACTIVE') {
+            return NextResponse.json({ error: 'Organisation is not active' }, { status: 403 });
         }
 
         // 3. Fetch parent — must belong to this centre's organisation and not be soft-deleted
