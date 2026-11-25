@@ -9,6 +9,7 @@ import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { emailService } from '@/lib/services/email';
 import { getBaseUrl } from '@/lib/base-url';
 import { logger } from '@/lib/logger';
+import { loadSignatureImage } from './signature-image';
 import { resolveCentreDetails } from './centre-details';
 import { buildContractPrefill } from './prefill';
 import { contractExpiry, generateContractToken, hashContractToken } from './tokens';
@@ -32,7 +33,7 @@ async function requireContractManager(centreId: string): Promise<{ session: Sess
 
 function fail(error: unknown): Result {
     const message = error instanceof Error ? error.message : '';
-    const known = /^(Only an Owner|Unauthorized|Contracts are|This family|Set the|Add |This parent|Billing|Contract|Check)/.test(message);
+    const known = /^(Only an Owner|Unauthorized|Contracts are|This family|Set the|Add |This parent|Billing|Contract|Check|Revoke)/.test(message);
     if (!known) logger.error('[contracts] action failed', error);
     return { success: false, error: known ? message : 'Could not complete that. Please try again.' };
 }
@@ -58,7 +59,7 @@ export async function sendContract(raw: { configId: string }): Promise<Result> {
         const childIds = config.children.map(c => c.childId);
         const childRows = childIds.length ? await db.select({ id: children.id, firstName: children.firstName, lastName: children.lastName })
             .from(children).where(and(inArray(children.id, childIds), eq(children.organisationId, orgId), eq(children.parentId, config.parentId), eq(children.centreId, config.centreId), isNull(children.deletedAt))) : [];
-        const [centre] = await db.select({ name: centres.name, address: centres.address, billingPhone: centres.billingPhone, ofstedId: centres.ofstedId })
+        const [centre] = await db.select({ name: centres.name, address: centres.address, billingPhone: centres.billingPhone, ofstedId: centres.ofstedId, signatureUrl: centres.signatureUrl })
             .from(centres).where(and(eq(centres.id, config.centreId), eq(centres.organisationId, orgId)));
         if (!centre) throw new Error('Billing config not found');
         const [setting] = await db.select().from(contractCentreSettings).where(and(eq(contractCentreSettings.centreId, config.centreId), eq(contractCentreSettings.organisationId, orgId)));
@@ -67,6 +68,9 @@ export async function sendContract(raw: { configId: string }): Promise<Result> {
         const prefill = buildContractPrefill({
             config, parent, provider: details.provider, missingCentreDetails: details.missing,
             childNames: childRows.map(c => `${c.firstName} ${c.lastName}`.trim()).sort(),
+            childIds: childRows.map(c => c.id),
+            // Only fetched once the contract is otherwise valid; frozen into the snapshot.
+            signatureImage: details.provider ? await loadSignatureImage(centre.signatureUrl) : null,
         });
         if (!prefill.ok) throw new Error(prefill.error);
 
@@ -83,7 +87,7 @@ export async function sendContract(raw: { configId: string }): Promise<Result> {
             const fields = {
                 status: 'draft' as const, tokenHash: hashContractToken(token), expiresAt, sentAt: null, sentToEmail: null,
                 templateVersion: prefill.templateVersion, templateHash: prefill.templateHash,
-                amountPence: prefill.values.amountPence, snapshot, updatedAt: now,
+                amountPence: prefill.values.amountPence, childIds: prefill.values.childIds ?? [], snapshot, updatedAt: now, archivedAt: null,
             };
             if (open) {
                 await tx.update(contracts).set(fields).where(eq(contracts.id, open.id));
@@ -139,6 +143,32 @@ export async function revokeContract(raw: { contractId: string }): Promise<Resul
     }
 }
 
+export async function archiveContract(raw: { contractId: string }): Promise<Result> {
+    try {
+        const { contractId } = z.object({ contractId: z.string().uuid() }).parse(raw);
+        const session = await requireTenantSession();
+        const orgId = session.user.organisationId;
+        if (!orgId) throw new Error('Unauthorized');
+        const [row] = await db.select({ id: contracts.id, centreId: contracts.centreId, parentId: contracts.parentId, status: contracts.status, expiresAt: contracts.expiresAt, archivedAt: contracts.archivedAt })
+            .from(contracts).where(and(eq(contracts.id, contractId), eq(contracts.organisationId, orgId)));
+        if (!row) throw new Error('Contract not found');
+        const { session: actor } = await requireContractManager(row.centreId);
+        if (row.archivedAt) throw new Error('Contract is already archived.');
+        const stillLive = row.status === 'draft' || (row.status === 'sent' && row.expiresAt > new Date());
+        if (stillLive) throw new Error('Revoke the link before archiving this contract.');
+        await db.transaction(async tx => {
+            const updated = await tx.update(contracts).set({ archivedAt: new Date(), archivedBy: actor.user.id, updatedAt: new Date() })
+                .where(and(eq(contracts.id, contractId), eq(contracts.organisationId, orgId), isNull(contracts.archivedAt))).returning({ id: contracts.id });
+            if (updated.length === 0) throw new Error('Contract is already archived.');
+            await tx.insert(auditEvents).values({ organisationId: orgId, userId: actor.user.id, eventType: 'contract_archived', eventData: JSON.stringify({ contractId, status: row.status }) });
+        });
+        revalidatePath(`/dashboard/parents/${row.parentId}`);
+        return { success: true, message: 'Contract archived. It stays available under Archived contracts.' };
+    } catch (error) {
+        return fail(error);
+    }
+}
+
 const detailsSchema = z.object({
     centreId: z.string().uuid(),
     providerName: z.string().trim().min(1, 'Check the provider name').max(255),
@@ -146,6 +176,8 @@ const detailsSchema = z.object({
     phone: z.string().trim().min(1, 'Check the phone number').max(50),
     website: z.string().trim().max(255),
     ofstedRegNo: z.string().trim().min(1, 'Check the Ofsted registration number').max(50),
+    signatoryName: z.string().trim().min(1, 'Check the authorised signatory name').max(200),
+    signatoryRole: z.string().trim().max(120),
 });
 
 export async function saveContractCentreDetails(raw: z.input<typeof detailsSchema>): Promise<Result> {
@@ -156,7 +188,7 @@ export async function saveContractCentreDetails(raw: z.input<typeof detailsSchem
         const { session, orgId } = await requireContractManager(data.centreId);
         const [centre] = await db.select({ id: centres.id }).from(centres).where(and(eq(centres.id, data.centreId), eq(centres.organisationId, orgId)));
         if (!centre) throw new Error('Unauthorized: No access to this centre');
-        const values = { providerName: data.providerName, address: data.address, phone: data.phone, website: data.website || null, ofstedRegNo: data.ofstedRegNo, updatedBy: session.user.id, updatedAt: new Date() };
+        const values = { providerName: data.providerName, address: data.address, phone: data.phone, website: data.website || null, ofstedRegNo: data.ofstedRegNo, signatoryName: data.signatoryName, signatoryRole: data.signatoryRole || null, updatedBy: session.user.id, updatedAt: new Date() };
         await db.transaction(async tx => {
             await tx.insert(contractCentreSettings).values({ organisationId: orgId, centreId: data.centreId, ...values })
                 .onConflictDoUpdate({ target: contractCentreSettings.centreId, set: values, setWhere: eq(contractCentreSettings.organisationId, orgId) });

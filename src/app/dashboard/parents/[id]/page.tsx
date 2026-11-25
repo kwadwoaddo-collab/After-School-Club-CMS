@@ -155,7 +155,10 @@ export default async function ParentProfilePage({ params, searchParams }: Parent
 
     const [contractStatuses, contractCentreDetails] = canManageBilling
         ? await Promise.all([
-              fetchContractStatuses(organisationId, plans.map(p => ({ id: p.id, agreedMonthlyPence: p.agreedMonthlyPence }))),
+              fetchContractStatuses(organisationId, id, accessibleCentres.map(c => {
+                  const plan = plans.find(p => p.centreId === c.id);
+                  return { centreId: c.id, config: plan ? { agreedMonthlyPence: plan.agreedMonthlyPence, childIds: plan.children.map(link => link.childId) } : null };
+              })),
               fetchCentreContractDetails(organisationId, accessibleCentres.map(c => c.id)),
           ])
         : [{}, {}];
@@ -169,7 +172,7 @@ export default async function ParentProfilePage({ params, searchParams }: Parent
             centreId: centre.id,
             centreName: centre.name,
             siblings,
-            contract: config && contractStatuses[config.id] ? { status: contractStatuses[config.id], details: contractCentreDetails[centre.id] ?? null } : null,
+            contract: contractStatuses[centre.id] ? { status: contractStatuses[centre.id]!, details: contractCentreDetails[centre.id] ?? null } : null,
             config: config ? {
                 id: config.id,
                 parentId: config.parentId,

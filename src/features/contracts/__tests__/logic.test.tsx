@@ -5,11 +5,12 @@ import { contractExpiry, generateContractToken, hashContractToken, isWellFormedT
 import { resolveCentreDetails } from '../centre-details';
 import { buildContractPrefill } from '../prefill';
 import { contractSections, contractTemplateHash, CONTRACT_TEMPLATE_VERSION } from '../template';
-import { deriveContractStatus } from '../status';
+import { deriveContractStatus, type ContractRowLite } from '../status';
 import { ContractPdf } from '../ContractPdf';
 import { ContractDocument } from '../ContractDocument';
+import { loadSignatureImage } from '../signature-image';
 
-const SYDENHAM = { providerName: 'Sydenham After School Club LTD', address: '105 Sydenham Road, London, SE26 5UA', phone: '020 3621 3942', website: 'www.sydenhamasc.co.uk', ofstedRegNo: 'EY2854827' };
+const SYDENHAM = { providerName: 'Sydenham After School Club LTD', address: '105 Sydenham Road, London, SE26 5UA', phone: '020 3621 3942', website: 'www.sydenhamasc.co.uk', ofstedRegNo: 'EY2854827', signatoryName: 'Jane Smith', signatoryRole: 'Centre Manager' };
 const DAGENHAM_CENTRE = { name: 'Dagenham After School Club', address: '1 High Street, Dagenham', billingPhone: '020 0000 0000', ofstedId: 'EY0000001' };
 const parent = { firstName: 'Ada', lastName: 'Okafor', email: 'ada@example.test' };
 const config = { serviceType: 'childcare', status: 'active', agreedMonthlyPence: 24000, billingAnchorDate: '2026-12-01' };
@@ -45,16 +46,22 @@ describe('per-centre details', () => {
     it('uses the contract setting for Sydenham', () => {
         const r = resolveCentreDetails({ setting: SYDENHAM, centre: { name: 'Sydenham' } });
         expect(r.provider).toEqual(SYDENHAM);
+        expect(r.provider).toMatchObject({ signatoryName: 'Jane Smith', signatoryRole: 'Centre Manager' });
         expect(r.missing).toEqual([]);
     });
     it('falls back to the centre record for Dagenham, with website optional', () => {
-        const r = resolveCentreDetails({ setting: null, centre: DAGENHAM_CENTRE });
-        expect(r.provider).toMatchObject({ providerName: 'Dagenham After School Club', ofstedRegNo: 'EY0000001', phone: '020 0000 0000', website: null });
+        const r = resolveCentreDetails({ setting: { signatoryName: 'Jo Bloggs' }, centre: DAGENHAM_CENTRE });
+        expect(r.provider).toMatchObject({ providerName: 'Dagenham After School Club', ofstedRegNo: 'EY0000001', phone: '020 0000 0000', website: null, signatoryName: 'Jo Bloggs', signatoryRole: null });
+    });
+    it('blocks sending when the authorised signatory name is missing', () => {
+        const r = resolveCentreDetails({ setting: { ...SYDENHAM, signatoryName: '  ' }, centre: { name: 'Sydenham' } });
+        expect(r.provider).toBeNull();
+        expect(r.missing).toEqual(['authorised signatory name']);
     });
     it('blocks (no blanks) when Dagenham details are missing', () => {
         const r = resolveCentreDetails({ setting: null, centre: { name: 'Dagenham After School Club' } });
         expect(r.provider).toBeNull();
-        expect(r.missing).toEqual(['address', 'phone number', 'Ofsted registration number']);
+        expect(r.missing).toEqual(['address', 'phone number', 'Ofsted registration number', 'authorised signatory name']);
         const p = buildContractPrefill({ config, parent, childNames: ['Zed'], provider: r.provider, missingCentreDetails: r.missing });
         expect(p).toMatchObject({ ok: false });
         expect((p as { error: string }).error).toContain('Ofsted registration number');
@@ -116,16 +123,77 @@ describe('template wording', () => {
     });
 });
 
+describe('provider signature', () => {
+    const build = (signatureImage?: string | null) => {
+        const p = buildContractPrefill({ config, parent, childNames: ['Zed Okafor'], provider: SYDENHAM, missingCentreDetails: [], signatureImage });
+        if (!p.ok) throw new Error('prefill');
+        return p.values;
+    };
+    it('pre-applies the centre signatory as italic script with name, role and date when there is no image', async () => {
+        const html = renderToStaticMarkup(<ContractDocument values={build()} />);
+        expect(html).toContain('Jane Smith, Centre Manager for Sydenham After School Club LTD');
+        expect(html).toContain('font-serif italic');
+        expect(html).not.toContain('<img');
+        expect(html).toContain('Date: ');
+        expect((await renderToBuffer(<ContractPdf values={build()} templateVersion="v" />)).subarray(0, 5).toString()).toBe('%PDF-');
+    });
+    it('embeds the centre signature image when present', async () => {
+        const png = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNgYGD4DwABBAEAh1vP5QAAAABJRU5ErkJggg==';
+        const html = renderToStaticMarkup(<ContractDocument values={build(png)} />);
+        expect(html).toContain('<img');
+        expect(html).toContain('alt="Signature of Jane Smith"');
+        expect((await renderToBuffer(<ContractPdf values={build(png)} templateVersion="v" />)).subarray(0, 5).toString()).toBe('%PDF-');
+    });
+});
+
+describe('signature image loading', () => {
+    const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3]);
+    const ok = (body: Buffer) => (async () => new Response(new Uint8Array(body), { status: 200 })) as unknown as typeof fetch;
+    it('returns a PNG data URL for a safe https image', async () => {
+        expect(await loadSignatureImage('https://example.com/sig.png', ok(PNG))).toMatch(/^data:image\/png;base64,/);
+    });
+    it.each(['http://example.com/s.png', 'https://localhost/s.png', 'https://127.0.0.1/s.png', 'https://10.0.0.5/s.png', 'https://user:pw@example.com/s.png', 'not a url', ''])('refuses %s', async url => {
+        expect(await loadSignatureImage(url, ok(PNG))).toBeNull();
+    });
+    it('falls back (null) for non-image bytes, oversize files and fetch failures', async () => {
+        expect(await loadSignatureImage('https://example.com/a', ok(Buffer.from('<html>')))).toBeNull();
+        expect(await loadSignatureImage('https://example.com/a', ok(Buffer.concat([PNG, Buffer.alloc(300 * 1024)])))).toBeNull();
+        expect(await loadSignatureImage('https://example.com/a', (async () => { throw new Error('net'); }) as unknown as typeof fetch)).toBeNull();
+        expect(await loadSignatureImage(null)).toBeNull();
+    });
+});
+
 describe('contract status', () => {
-    const base = { id: 'a', status: 'signed' as const, expiresAt: new Date('2026-12-01'), createdAt: new Date('2026-11-01'), amountPence: 24000, signedAt: new Date('2026-11-02'), sentAt: new Date('2026-11-01'), signerName: 'Ada' };
+    const base: ContractRowLite = { id: 'a', status: 'signed', expiresAt: new Date('2026-12-01'), createdAt: new Date('2026-11-01'), amountPence: 24000, childIds: ['c1', 'c2'], signedAt: new Date('2026-11-02'), sentAt: new Date('2026-11-01'), signerName: 'Ada', archivedAt: null };
     const now = new Date('2026-11-25');
-    it('Not sent when there are no rows', () => expect(deriveContractStatus([], 24000, now).label).toBe('Not sent'));
-    it('Sent while a link is live', () => expect(deriveContractStatus([{ ...base, status: 'sent', signedAt: null }], 24000, now).label).toBe('Sent'));
-    it('Expired when the link lapsed', () => expect(deriveContractStatus([{ ...base, status: 'sent', signedAt: null, expiresAt: new Date('2026-11-10') }], 24000, now).label).toBe('Expired'));
-    it('Signed when the amount matches', () => expect(deriveContractStatus([base], 24000, now)).toMatchObject({ label: 'Signed', signed: { id: 'a' } }));
+    const cur = { amountPence: 24000, childIds: ['c2', 'c1'] };
+    it('Not sent when there are no rows', () => expect(deriveContractStatus([], cur, now).label).toBe('Not sent'));
+    it('Sent while a link is live', () => expect(deriveContractStatus([{ ...base, status: 'sent', signedAt: null }], cur, now).label).toBe('Sent'));
+    it('Expired when the link lapsed', () => expect(deriveContractStatus([{ ...base, status: 'sent', signedAt: null, expiresAt: new Date('2026-11-10') }], cur, now).label).toBe('Expired'));
+    it('Signed when amount and children match (order irrelevant)', () => expect(deriveContractStatus([base], cur, now)).toMatchObject({ label: 'Signed', signed: { id: 'a' }, childrenChanged: false }));
     it('flags a changed amount instead of auto-sending', () => {
-        const s = deriveContractStatus([base], 26000, now);
+        const s = deriveContractStatus([base], { ...cur, amountPence: 26000 }, now);
         expect(s.label).toBe('Amount changed — new contract needed');
         expect(s.amountChanged).toBe(true);
+    });
+    it('flags changed children (added, removed or replaced)', () => {
+        for (const childIds of [['c1'], ['c1', 'c2', 'c3'], ['c1', 'c9']]) {
+            const s = deriveContractStatus([base], { ...cur, childIds }, now);
+            expect(s).toMatchObject({ label: 'Children changed — new contract needed', childrenChanged: true, amountChanged: false });
+        }
+    });
+    it('does not flag children for contracts that recorded none', () => {
+        expect(deriveContractStatus([{ ...base, childIds: [] }], { ...cur, childIds: ['x'] }, now).label).toBe('Signed');
+    });
+    it('archived contracts stop driving status, stay listed, and a signed one stays downloadable', () => {
+        const s = deriveContractStatus([{ ...base, archivedAt: new Date('2026-11-20') }], { ...cur, amountPence: 99900 }, now);
+        expect(s).toMatchObject({ label: 'Not sent', signed: null, amountChanged: false });
+        expect(s.archived).toEqual([expect.objectContaining({ id: 'a', downloadable: true, status: 'signed' })]);
+    });
+    it('offers archive only for settled contracts, never for a live link', () => {
+        expect(deriveContractStatus([base], cur, now).archivable).toEqual({ id: 'a', status: 'signed' });
+        expect(deriveContractStatus([{ ...base, status: 'sent', signedAt: null }], cur, now).archivable).toBeNull();
+        expect(deriveContractStatus([{ ...base, status: 'revoked', signedAt: null }], cur, now).archivable).toMatchObject({ status: 'revoked' });
+        expect(deriveContractStatus([{ ...base, status: 'revoked', signedAt: null, archivedAt: new Date() }], cur, now).archivable).toBeNull();
     });
 });

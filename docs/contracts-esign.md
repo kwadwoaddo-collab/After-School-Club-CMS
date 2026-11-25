@@ -8,4 +8,10 @@
 - Per-centre details live in `contract_centre_settings` (falling back to the centre record). Sending is blocked while provider name, address, phone or Ofsted number is missing.
 
 ## Retention (UK GDPR)
-Stored data is the minimum needed as evidence of the agreement: names, the agreed amount, signature, timestamp, IP and user agent. Suggested retention: keep for the life of the enrolment plus 6 years (contract limitation period), then delete the contract row and PDF. No automatic deletion job is included; deletion is a manual/ops decision. IP and user agent are evidential only and are never shown on the public page.
+Stored data is the minimum needed as evidence of the agreement: names, the agreed amount, signature, timestamp, IP and user agent. Suggested retention: keep for the life of the enrolment plus 6 years (contract limitation period), then delete the contract row and PDF. No automatic deletion job is included; deletion is a manual/ops decision made outside the app.
+
+**Contracts are never deleted by the app.** Deleting a billing config detaches its contracts (`billing_config_id` becomes NULL; they stay listed by parent + centre). Permanently deleting a parent, centre or organisation that still has contracts is blocked by the database (`ON DELETE RESTRICT`), and the parent bin shows a clear message. Staff can **Archive** a signed, revoked or expired contract (Owner/Manager, audited as `contract_archived`): it leaves the family's current status, a new contract can then be sent, and it stays visible and downloadable under a collapsed "Archived contracts" list. A live link must be revoked before it can be archived.
+
+**Authorised signatory.** Each centre has a signatory name (required before sending) and role in the centre contract details. The centre's signature image (`centres.signatureUrl`, https PNG/JPEG up to 200 KB) is fetched once at send time and frozen into the snapshot; if absent or unreadable, the signatory name is printed in italic script. Name, role and send date are printed beneath.
+
+**Changed circumstances.** A signed contract is flagged "Amount changed — new contract needed" or "Children changed — new contract needed" (covered children compared with those recorded at send). Nothing is sent automatically. IP and user agent are evidential only and are never shown on the public page.

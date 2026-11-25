@@ -30,7 +30,12 @@ export function ContractDocument({ values }: { values: ContractValues }) {
             ))}
             <section aria-label="Provider signature">
                 <h2 className="text-base font-bold">Agreement</h2>
-                <p><span className="font-semibold">Provider Signature:</span> <span className="font-serif italic text-lg">{provider.providerName}</span> <span className="ml-2">Date: {values.providerSignedDate}</span></p>
+                <p className="font-semibold">Provider Signature:</p>
+                {values.signatureImage
+                    ? <img src={values.signatureImage} alt={`Signature of ${provider.signatoryName}`} className="h-12 object-contain object-left" />
+                    : <p className="font-serif italic text-lg">{provider.signatoryName}</p>}
+                <p>{provider.signatoryName}{provider.signatoryRole ? `, ${provider.signatoryRole}` : ''} for {provider.providerName}</p>
+                <p>Date: {values.providerSignedDate}</p>
             </section>
         </article>
     );

@@ -16,7 +16,7 @@ import { completeSigning, lookupContractForSigning, validateSignatureInput } fro
 import { generateContractToken, hashContractToken } from '../tokens';
 import { buildContractPrefill } from '../prefill';
 
-const provider = { providerName: 'Sydenham After School Club LTD', address: '105 Sydenham Road', phone: '1', website: null, ofstedRegNo: 'EY1' };
+const provider = { providerName: 'Sydenham After School Club LTD', address: '105 Sydenham Road', phone: '1', website: null, ofstedRegNo: 'EY1', signatoryName: 'Jane Smith', signatoryRole: 'Manager' };
 const prefill = buildContractPrefill({ config: { serviceType: 'childcare', status: 'active', agreedMonthlyPence: 24000, billingAnchorDate: '2026-12-01' }, parent: { firstName: 'Ada', lastName: 'Okafor', email: 'a@example.test' }, childNames: ['Zed Okafor'], provider, missingCentreDetails: [] });
 if (!prefill.ok) throw new Error('prefill');
 const snapshot = JSON.stringify(prefill.values);

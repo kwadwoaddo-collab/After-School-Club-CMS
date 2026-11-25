@@ -63,9 +63,13 @@ export function ContractPdf({ values, templateVersion, signature, contractId }: 
                     <Text style={styles.heading}>Agreement</Text>
                     <View style={styles.sigRow}>
                         <Text style={styles.sigLabel}>Provider Signature:</Text>
-                        <Text style={styles.sigValue}>{provider.providerName}</Text>
+                        {values.signatureImage
+                            // eslint-disable-next-line jsx-a11y/alt-text -- react-pdf Image has no alt prop
+                            ? <Image src={values.signatureImage} style={[styles.sigImage, { flex: 1 }]} />
+                            : <Text style={styles.sigValue}>{provider.signatoryName}</Text>}
                         <Text style={styles.sigDate}>Date: {values.providerSignedDate}</Text>
                     </View>
+                    <Text style={{ marginBottom: 8 }}>{provider.signatoryName}{provider.signatoryRole ? `, ${provider.signatoryRole}` : ''} for {provider.providerName}</Text>
                     <View style={styles.sigRow}>
                         <Text style={styles.sigLabel}>Parent/Guardian Signature:</Text>
                         {signature ? (signature.kind === 'drawn'

@@ -9,6 +9,9 @@ export interface ContractProvider {
     phone: string;
     website: string | null;
     ofstedRegNo: string;
+    /** Authorised signatory who signs for the provider (pre-applied on every contract) */
+    signatoryName: string;
+    signatoryRole: string | null;
 }
 
 export interface ContractValues {
@@ -20,6 +23,10 @@ export interface ContractValues {
     amountPence: number;
     /** dd/mm/yyyy, the day the contract was sent (provider signature date) */
     providerSignedDate: string;
+    /** PNG/JPEG data URL of the centre's signature image, frozen at send time; null falls back to the typed signatory name */
+    signatureImage?: string | null;
+    /** Children covered when sent; used only to flag later changes, never shown */
+    childIds?: string[];
 }
 
 export interface ContractSection {

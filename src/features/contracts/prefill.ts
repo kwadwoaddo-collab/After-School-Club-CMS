@@ -4,6 +4,9 @@ export interface PrefillInput {
     config: { serviceType?: string | null; status: string; agreedMonthlyPence: number; billingAnchorDate: string | Date };
     parent: { firstName: string; lastName: string; email: string | null };
     childNames: string[];
+    childIds?: string[];
+    /** Centre signature image as a data URL (already fetched and validated), if any */
+    signatureImage?: string | null;
     provider: ContractProvider | null;
     missingCentreDetails: string[];
     now?: Date;
@@ -35,6 +38,8 @@ export function buildContractPrefill(input: PrefillInput): PrefillResult {
             startDate: formatContractDate(anchor),
             amountPence: config.agreedMonthlyPence,
             providerSignedDate: formatContractDate(input.now ?? new Date()),
+            signatureImage: input.signatureImage ?? null,
+            childIds: [...(input.childIds ?? [])].sort(),
         },
     };
 }
