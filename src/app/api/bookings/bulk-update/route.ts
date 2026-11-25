@@ -9,8 +9,9 @@ import { z } from 'zod';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { revalidatePath } from 'next/cache';
 
+// Note: keep empty array [] valid (idempotent 200 { count: 0 }), cap upper bound at 200
 const bulkUpdateSchema = z.object({
-    bookingIds: z.array(z.string().uuid()),
+    bookingIds: z.array(z.string().uuid()).max(200),
     status: z.enum(['confirmed', 'cancelled', 'rescheduled', 'completed', 'pending', 'signed_up', 'did_not_attend']),
 });
 
@@ -21,7 +22,16 @@ export async function PATCH(request: NextRequest) {
             return NextResponse.json({ error: 'Unauthorised' }, { status: 401 });
         }
 
-        const body = await request.json();
+        const userRole = (session.user as any).role as string | undefined;
+        if (!userRole || !['ORG_OWNER', 'MANAGER', 'FRONT_DESK'].includes(userRole)) {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        }
+
+        const body = await request.json().catch(() => null);
+        if (!body || typeof body !== 'object') {
+            return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+        }
+
         const parsed = bulkUpdateSchema.safeParse(body);
         if (!parsed.success) {
             return NextResponse.json({ error: 'Invalid payload', details: parsed.error.flatten() }, { status: 400 });
@@ -30,7 +40,7 @@ export async function PATCH(request: NextRequest) {
         const { bookingIds, status } = parsed.data;
 
         if (bookingIds.length === 0) {
-           return NextResponse.json({ success: true, count: 0 });
+            return NextResponse.json({ success: true, count: 0 });
         }
 
         // Verify that the requested bookings belong to this organisation
@@ -46,9 +56,8 @@ export async function PATCH(request: NextRequest) {
 
         // ── Step 2: Further restrict to accessible centres for non-ORG_OWNER ──────
         // ORG_OWNER sees all centres in their org — no extra filter needed.
-        // MANAGER / FRONT_DESK / TUTOR must have an explicit centreMembership;
+        // MANAGER / FRONT_DESK must have an explicit centreMembership;
         // submitting booking IDs from another centre is rejected here.
-        const userRole = (session.user as any).role as string | undefined;
         if (userRole !== 'ORG_OWNER') {
             const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
             validBookingIds = validBookingIds.filter(id => {
@@ -69,8 +78,10 @@ export async function PATCH(request: NextRequest) {
 
         revalidatePath('/dashboard/bookings');
         revalidatePath('/dashboard/attendance');
-        for (const id of validBookingIds) {
-            revalidatePath(`/dashboard/bookings/${id}`);
+        if (validBookingIds.length <= 25) {
+            for (const id of validBookingIds) {
+                revalidatePath(`/dashboard/bookings/${id}`);
+            }
         }
 
         return NextResponse.json({ success: true, count: validBookingIds.length });

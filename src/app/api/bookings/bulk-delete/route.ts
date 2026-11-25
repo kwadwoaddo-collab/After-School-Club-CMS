@@ -9,8 +9,9 @@ import { z } from 'zod';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { revalidatePath } from 'next/cache';
 
+// Note: keep empty array [] valid (idempotent 200 { count: 0 }), cap upper bound at 200
 const bulkDeleteSchema = z.object({
-    bookingIds: z.array(z.string().uuid()),
+    bookingIds: z.array(z.string().uuid()).max(200),
 });
 
 export async function DELETE(request: NextRequest) {
@@ -20,7 +21,16 @@ export async function DELETE(request: NextRequest) {
             return NextResponse.json({ error: 'Unauthorised' }, { status: 401 });
         }
 
-        const body = await request.json();
+        const userRole = (session.user as any).role as string | undefined;
+        if (!userRole || !['ORG_OWNER', 'MANAGER', 'FRONT_DESK'].includes(userRole)) {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        }
+
+        const body = await request.json().catch(() => null);
+        if (!body || typeof body !== 'object') {
+            return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+        }
+
         const parsed = bulkDeleteSchema.safeParse(body);
         if (!parsed.success) {
             return NextResponse.json({ error: 'Invalid payload', details: parsed.error.flatten() }, { status: 400 });
@@ -29,7 +39,7 @@ export async function DELETE(request: NextRequest) {
         const { bookingIds } = parsed.data;
 
         if (bookingIds.length === 0) {
-           return NextResponse.json({ success: true, count: 0 });
+            return NextResponse.json({ success: true, count: 0 });
         }
 
         // Verify that the requested bookings belong to this organisation
@@ -45,9 +55,8 @@ export async function DELETE(request: NextRequest) {
 
         // ── Step 2: Further restrict to accessible centres for non-ORG_OWNER ──────
         // ORG_OWNER has implicit access to all centres in their org.
-        // MANAGER / FRONT_DESK / TUTOR must be explicitly assigned to the
+        // MANAGER / FRONT_DESK must be explicitly assigned to the
         // booking's centre; guessing booking IDs is not sufficient to delete.
-        const userRole = (session.user as any).role as string | undefined;
         if (userRole !== 'ORG_OWNER') {
             const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
             validBookingIds = validBookingIds.filter(id => {

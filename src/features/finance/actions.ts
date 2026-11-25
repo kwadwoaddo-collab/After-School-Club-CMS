@@ -536,12 +536,10 @@ export async function getInvoiceDetails(invoiceId: string) {
     if (!session?.user?.organisationId) throw new Error('Unauthorized');
     const orgId = session.user.organisationId;
 
-    // Milestone 3G, L2b: this read previously had no role or centre check —
-    // only org scoping. Applying the same non-owner centre-check pattern
-    // used by recordPayment/verifyPayment/etc for defense in depth, since
-    // this is an independently-callable server action regardless of the
-    // ORG_OWNER-only page that's currently the only UI surface reaching it.
-    const userRole = (session.user as any).role;
+    const userRole = (session.user as any).role as string | undefined;
+    if (!userRole || !['ORG_OWNER', 'MANAGER', 'FRONT_DESK'].includes(userRole)) {
+        throw new Error('Forbidden: Insufficient permissions');
+    }
     if (userRole !== 'ORG_OWNER') {
         const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
         const target = await db.query.invoices.findFirst({
@@ -982,7 +980,10 @@ async function updateInvoiceMetadataField(
     if (!session?.user?.organisationId) throw new Error('Unauthorized');
     const orgId = session.user.organisationId;
 
-    const userRole = (session.user as any).role;
+    const userRole = (session.user as any).role as string | undefined;
+    if (!userRole || !['ORG_OWNER', 'MANAGER'].includes(userRole)) {
+        throw new Error('Forbidden: Only Owner or Manager can update invoice metadata');
+    }
     if (userRole !== 'ORG_OWNER') {
         const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
         const invoice = await db.query.invoices.findFirst({
@@ -1178,6 +1179,11 @@ export async function verifyPayment(paymentId: string) {
     const session = await requireTenantSession();
     if (!session?.user?.organisationId) throw new Error('Unauthorized');
 
+    const callerRole = (session.user as any).role as string | undefined;
+    if (!callerRole || !['ORG_OWNER', 'MANAGER', 'FRONT_DESK'].includes(callerRole)) {
+        throw new Error('Forbidden: Insufficient permissions to verify payments');
+    }
+
     return await db.transaction(async (tx) => {
         // 1. Fetch payment and its invoice
         const payment = await tx.query.payments.findFirst({
@@ -1226,6 +1232,11 @@ export async function failPayment(paymentId: string) {
     const session = await requireTenantSession();
     if (!session?.user?.organisationId) throw new Error('Unauthorized');
 
+    const userRole = (session.user as any).role as string | undefined;
+    if (!userRole || !['ORG_OWNER', 'MANAGER'].includes(userRole)) {
+        throw new Error('Forbidden: Only Owner or Manager can mark payments as failed');
+    }
+
     return await db.transaction(async (tx) => {
         const payment = await tx.query.payments.findFirst({
             where: eq(payments.id, paymentId),
@@ -1235,7 +1246,6 @@ export async function failPayment(paymentId: string) {
         if (!payment || !payment.invoice) throw new Error('Payment not found');
         if (payment.invoice.organisationId !== session.user.organisationId) throw new Error('Unauthorized');
 
-        const userRole = (session.user as any).role;
         if (userRole !== 'ORG_OWNER') {
             const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
             if (!accessibleCentreIds.includes(payment.invoice.centreId)) {
@@ -1243,9 +1253,9 @@ export async function failPayment(paymentId: string) {
             }
         }
 
-        // SAFE approach: We allow failing both 'pending' and 'verified' (existing behavior),
-        // but typically it should be used for pending payments. Reversal is preferred for verified.
-        // We ensure recalculation runs regardless.
+        if (payment.status === 'verified') {
+            throw new Error('Verified payments cannot be marked failed. Use reversePayment instead.');
+        }
         await tx.update(payments)
             .set({ status: 'failed', updatedAt: new Date() })
             .where(eq(payments.id, paymentId));

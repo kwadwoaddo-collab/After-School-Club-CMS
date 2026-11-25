@@ -49,12 +49,16 @@ export async function reconcilePayment(
   const organisationId = session.user.organisationId!;
   const staffId = session.user.id;
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- session.user.role isn't in the base NextAuth type; same cast pattern used throughout src/features/finance/actions.ts
+  const userRole = (session.user as any).role as string | undefined;
+  if (!userRole || !['ORG_OWNER', 'MANAGER', 'FRONT_DESK'].includes(userRole)) {
+    return { success: false, error: 'Forbidden: Insufficient permissions' };
+  }
+
   try {
     const data = ReconcileSchema.parse(input);
     const normalizedReference = data.reference.trim();
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- session.user.role isn't in the base NextAuth type; same cast pattern used throughout src/features/finance/actions.ts
-    const userRole = (session.user as any).role;
     let accessibleCentreIds: string[] | null = null;
     if (userRole !== 'ORG_OWNER') {
       accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);

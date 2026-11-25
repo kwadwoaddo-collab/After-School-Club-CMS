@@ -9,6 +9,7 @@ import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { notificationService } from '@/lib/services/notifications';
 import { notifyOwners } from '@/lib/db-notifications';
 import { revalidatePath } from 'next/cache';
+import { isValidUuid } from '@/lib/uuid';
 import {
     captureEntryBudget,
     registerFastPathAfterCommit,
@@ -30,16 +31,31 @@ export async function POST(
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const { bookingId } = await params;
-        const body = await request.json();
-        const { newStartAt } = body;
+        const userRole = (session.user as any).role as string | undefined;
+        if (!userRole || !['ORG_OWNER', 'MANAGER', 'FRONT_DESK'].includes(userRole)) {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        }
 
-        if (!newStartAt) {
+        const { bookingId } = await params;
+        if (!isValidUuid(bookingId)) {
+            return NextResponse.json({ error: 'Invalid booking ID' }, { status: 400 });
+        }
+
+        const body = await request.json().catch(() => null);
+        if (!body || typeof body !== 'object') {
+            return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+        }
+        const { newStartAt } = body as { newStartAt?: unknown };
+
+        if (!newStartAt || typeof newStartAt !== 'string') {
             return NextResponse.json({ error: 'New start time is required' }, { status: 400 });
         }
 
-        // Validate the new date is in the future
+        // Validate the new date is parseable and in the future
         const newStartDate = new Date(newStartAt);
+        if (Number.isNaN(newStartDate.getTime())) {
+            return NextResponse.json({ error: 'Invalid newStartAt date' }, { status: 400 });
+        }
         if (newStartDate < new Date()) {
             return NextResponse.json({ error: 'Cannot reschedule to a past date' }, { status: 400 });
         }
@@ -66,12 +82,15 @@ export async function POST(
         }
 
         // ── Centre membership check for non-ORG_OWNER users ───────────────────
-        const userRole = (session.user as any).role as string | undefined;
         if (userRole !== 'ORG_OWNER' && booking.centreId) {
             const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
             if (!accessibleCentreIds.includes(booking.centreId)) {
                 return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
             }
+        }
+
+        if (booking.status === 'cancelled') {
+            return NextResponse.json({ error: 'Cannot reschedule a cancelled booking' }, { status: 400 });
         }
 
         // Capture old date before overwriting

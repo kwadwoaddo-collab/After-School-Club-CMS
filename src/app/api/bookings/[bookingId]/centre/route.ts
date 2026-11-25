@@ -7,6 +7,7 @@ import { bookings, centres } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { canUserAccessCentre, getUserAccessibleCentreIds } from '@/lib/permissions';
+import { isValidUuid } from '@/lib/uuid';
 
 const reassignSchema = z.object({
     centreId: z.string().uuid(),
@@ -23,14 +24,22 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
             return NextResponse.json({ error: 'Unauthorised' }, { status: 401 });
         }
 
+        const userRole = (session.user as any).role as string | undefined;
+        if (!userRole || !['ORG_OWNER', 'MANAGER', 'FRONT_DESK'].includes(userRole)) {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        }
+
         const { bookingId } = await params;
-        
-        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-        if (!uuidRegex.test(bookingId)) {
+
+        if (!isValidUuid(bookingId)) {
             return NextResponse.json({ error: 'Invalid booking ID' }, { status: 400 });
         }
 
-        const body = await request.json();
+        const body = await request.json().catch(() => null);
+        if (!body || typeof body !== 'object') {
+            return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+        }
+
         const parsed = reassignSchema.safeParse(body);
         if (!parsed.success) {
             return NextResponse.json({ error: 'Invalid centre ID', details: parsed.error.flatten() }, { status: 400 });
@@ -48,11 +57,11 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
         });
 
         if (!booking || !booking.centre) {
-             return NextResponse.json({ error: 'Booking not found' }, { status: 404 });
+            return NextResponse.json({ error: 'Booking not found' }, { status: 404 });
         }
 
         if (booking.centre.organisationId !== session.user.organisationId) {
-             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
         // Centre membership check on the booking's CURRENT centre for
@@ -61,7 +70,6 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
         // could reassign a booking away from a centre they have no
         // membership in, as long as they had access to the target centre
         // (already checked above via canUserAccessCentre).
-        const userRole = (session.user as any).role as string | undefined;
         if (userRole !== 'ORG_OWNER' && booking.centreId) {
             const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
             if (!accessibleCentreIds.includes(booking.centreId)) {
@@ -70,11 +78,11 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
         }
 
         const newCentre = await db.query.centres.findFirst({
-             where: eq(centres.id, newCentreId)
+            where: eq(centres.id, newCentreId),
         });
 
         if (!newCentre || newCentre.organisationId !== session.user.organisationId) {
-             return NextResponse.json({ error: 'Invalid target centre' }, { status: 400 });
+            return NextResponse.json({ error: 'Invalid target centre' }, { status: 400 });
         }
 
         await db.update(bookings)

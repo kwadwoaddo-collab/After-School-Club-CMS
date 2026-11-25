@@ -413,6 +413,9 @@ export async function updateBillingConfig(
     data: Partial<Omit<BillingConfigData, 'parentId' | 'centreId' | 'childIds'>> & { childIds?: string[] },
 ) {
     const { orgId, session } = await getOrgIdAndSession();
+    if (!['ORG_OWNER', 'MANAGER'].includes(session.user.role)) {
+        throw new Error('Unauthorized: Only an Owner or Manager can update billing configuration');
+    }
 
     const existingConfig = await db.query.billingConfigs.findFirst({
         where: and(eq(billingConfigs.id, configId), eq(billingConfigs.organisationId, orgId)),
@@ -507,6 +510,9 @@ export async function updateBillingConfig(
  */
 export async function addChildToConfig(configId: string, childId: string) {
     const { orgId, session } = await getOrgIdAndSession();
+    if (!['ORG_OWNER', 'MANAGER'].includes(session.user.role)) {
+        throw new Error('Unauthorized: Only an Owner or Manager can update billing configuration');
+    }
 
     // Verify the config belongs to this org
     const config = await db.query.billingConfigs.findFirst({
@@ -541,6 +547,9 @@ export async function addChildToConfig(configId: string, childId: string) {
  */
 export async function removeChildFromConfig(configId: string, childId: string) {
     const { orgId, session } = await getOrgIdAndSession();
+    if (!['ORG_OWNER', 'MANAGER'].includes(session.user.role)) {
+        throw new Error('Unauthorized: Only an Owner or Manager can update billing configuration');
+    }
 
     const config = await db.query.billingConfigs.findFirst({
         where: and(eq(billingConfigs.id, configId), eq(billingConfigs.organisationId, orgId)),
@@ -611,6 +620,9 @@ export async function skipBillingCycle(
     reason: string,
 ) {
     const { orgId, session } = await getOrgIdAndSession();
+    if (!['ORG_OWNER', 'MANAGER'].includes(session.user.role)) {
+        throw new Error('Unauthorized: Only an Owner or Manager can skip billing cycles');
+    }
     if (!reason || !reason.trim()) {
         throw new Error('Skip reason is required');
     }
@@ -711,6 +723,9 @@ export async function skipBillingCycle(
  */
 export async function unskipBillingCycle(configId: string, periodStartStr: string) {
     const { orgId, session } = await getOrgIdAndSession();
+    if (!['ORG_OWNER', 'MANAGER'].includes(session.user.role)) {
+        throw new Error('Unauthorized: Only an Owner or Manager can unskip billing cycles');
+    }
 
     const config = await db.query.billingConfigs.findFirst({
         where: and(eq(billingConfigs.id, configId), eq(billingConfigs.organisationId, orgId)),
