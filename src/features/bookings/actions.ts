@@ -19,6 +19,57 @@ import { canUserAccessCentre, getUserAccessibleCentreIds } from '@/lib/permissio
 import { parseInTimezone, DEFAULT_TIMEZONE } from '@/lib/datetime';
 import { normalizeSchoolYear } from '@/lib/school-year';
 import { initializeBookingEnrolmentOutcomeOnCompletion } from '@/lib/services/booking-outcome-sync';
+import { detectMimeFromBytes } from '@/lib/file-validation';
+
+const ASSESSMENT_ALLOWED_MIMES = new Set([
+    'application/pdf',
+    'image/png',
+    'image/jpeg',
+    'image/webp',
+]);
+const ASSESSMENT_MAX_BYTES = 2 * 1024 * 1024; // 2 MB decoded cap
+const PDF_MAGIC_BYTES = [0x25, 0x50, 0x44, 0x46, 0x2d] as const; // %PDF-
+
+function validateAssessmentAttachment(
+    base64?: string,
+    mime?: string
+): { base64: string | null; mime: string | null } {
+    if (!base64 && !mime) {
+        return { base64: null, mime: null };
+    }
+    if (!base64 || !mime) {
+        throw new Error('Both attachment content and MIME type are required');
+    }
+    if (!ASSESSMENT_ALLOWED_MIMES.has(mime)) {
+        throw new Error('Invalid attachment type. Allowed: PDF, PNG, JPEG, WEBP');
+    }
+    const stripped = base64.replace(/^data:[^;]+;base64,/i, '').replace(/\s+/g, '');
+    if (!stripped) {
+        throw new Error('Attachment content cannot be empty');
+    }
+    if (stripped.length > Math.ceil((ASSESSMENT_MAX_BYTES * 4) / 3) + 64) {
+        throw new Error('Attachment exceeds maximum size of 2 MB');
+    }
+    if (!/^[A-Za-z0-9+/]+={0,2}$/.test(stripped)) {
+        throw new Error('Invalid base64 attachment encoding');
+    }
+    const buf = Buffer.from(stripped, 'base64');
+    if (buf.length === 0 || buf.length > ASSESSMENT_MAX_BYTES) {
+        throw new Error('Attachment exceeds maximum size of 2 MB');
+    }
+    if (mime === 'application/pdf') {
+        const isPdf = buf.length >= PDF_MAGIC_BYTES.length && PDF_MAGIC_BYTES.every((b, idx) => buf[idx] === b);
+        if (!isPdf) {
+            throw new Error('Attachment content does not match declared PDF type');
+        }
+    } else {
+        const detected = detectMimeFromBytes(buf, false);
+        if (detected !== mime) {
+            throw new Error('Attachment content does not match declared image type');
+        }
+    }
+    return { base64: stripped, mime };
+}
 
 export async function updateBookingStatus(
     bookingId: string,
@@ -31,7 +82,7 @@ export async function updateBookingStatus(
     }
 
     const userRole = (session.user as any).role as string | undefined;
-    if (userRole && !['ORG_OWNER', 'MANAGER', 'FRONT_DESK'].includes(userRole)) {
+    if (!userRole || !['ORG_OWNER', 'MANAGER', 'FRONT_DESK'].includes(userRole)) {
         throw new Error('Forbidden: You do not have permission to update booking status');
     }
 
@@ -107,7 +158,7 @@ export async function rescheduleBooking(bookingId: string, newStartAt: string) {
     }
 
     const userRole = (session.user as any).role as string | undefined;
-    if (userRole && !['ORG_OWNER', 'MANAGER', 'FRONT_DESK'].includes(userRole)) {
+    if (!userRole || !['ORG_OWNER', 'MANAGER', 'FRONT_DESK'].includes(userRole)) {
         throw new Error('Forbidden: You do not have permission to reschedule bookings');
     }
 
@@ -182,9 +233,11 @@ export async function saveAssessmentFeedback(attendeeId: string, data: { notes?:
     if (!session?.user?.organisationId) throw new Error('Unauthorized');
 
     const userRole = (session.user as any).role as string | undefined;
-    if (userRole && !['ORG_OWNER', 'MANAGER', 'FRONT_DESK', 'TUTOR'].includes(userRole)) {
+    if (!userRole || !['ORG_OWNER', 'MANAGER', 'FRONT_DESK', 'TUTOR'].includes(userRole)) {
         throw new Error('Unauthorized access');
     }
+
+    const validatedAttachment = validateAssessmentAttachment(data.base64, data.mime);
 
     // Security check: verify attendee belongs to org
     const attendee = await db.query.bookingAttendees.findFirst({
@@ -212,8 +265,8 @@ export async function saveAssessmentFeedback(attendeeId: string, data: { notes?:
         .set({
             feedbackNotes: data.notes || null,
             feedbackScore: data.score || null,
-            feedbackAttachmentBase64: data.base64 || null,
-            feedbackAttachmentMime: data.mime || null,
+            feedbackAttachmentBase64: validatedAttachment.base64,
+            feedbackAttachmentMime: validatedAttachment.mime,
             // If already SENT, keep SENT, otherwise DRAFT
             feedbackStatus: attendee.feedbackStatus === 'SENT' ? 'SENT' : 'DRAFT',
             updatedAt: new Date(),
