@@ -389,17 +389,26 @@ function PendingActionsSection({ rows }: { rows: WeeklyReportData['pendingAction
 // Main component
 // ─────────────────────────────────────────────────────────────────────────────
 
-export default function WeeklyReportTab() {
+export interface WeeklyReportTabProps {
+    initialData?: WeeklyReportData | null;
+    initialError?: string | null;
+}
+
+export default function WeeklyReportTab({
+    initialData = null,
+    initialError = null,
+}: WeeklyReportTabProps = {}) {
     const [centreId, setCentreId] = useState('all');
-    const [centreOptions, setCentreOptions] = useState<{id: string; name: string}[]>([]);
+    const [centreOptions, setCentreOptions] = useState<{id: string; name: string}[]>(() => initialData?.scope?.centres ?? []);
     const requestId = useRef(0);
+    const skipInitialFetchRef = useRef(initialData !== null || initialError !== null);
     const [rangeMode, setRangeMode] = useState<RangeMode>('this_week');
     const [customStart, setCustomStart] = useState('');
     const [customEnd, setCustomEnd] = useState('');
 
-    const [reportData, setReportData] = useState<WeeklyReportData | null>(null);
+    const [reportData, setReportData] = useState<WeeklyReportData | null>(initialData);
     const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+    const [error, setError] = useState<string | null>(initialError);
 
     const [isPdfLoading, setIsPdfLoading] = useState(false);
     const [pdfError, setPdfError] = useState<string | null>(null);
@@ -443,6 +452,10 @@ export default function WeeklyReportTab() {
     }, [rangeMode, customStart, customEnd, centreId]);
 
     useEffect(() => {
+        if (skipInitialFetchRef.current) {
+            skipInitialFetchRef.current = false;
+            return;
+        }
         if (rangeMode === 'custom' && (!customStart || !customEnd)) return;
         handlePreview();
     }, [handlePreview, rangeMode, customStart, customEnd]);

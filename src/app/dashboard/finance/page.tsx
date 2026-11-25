@@ -1,6 +1,7 @@
 import { normalizePage } from '@/lib/search-params';
 import { requireTenantSession } from '@/lib/session';
 import { redirect } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { db } from '@/db';
 import { invoices } from '@/db/schema';
 import { eq, asc, desc, and, count, inArray } from 'drizzle-orm';
@@ -9,22 +10,27 @@ import { resolveActiveCentreId } from '@/lib/centre-filter';
 import { getUserAccessibleCentres, isOrgOwner } from '@/lib/permissions';
 import { Suspense } from 'react';
 import Link from 'next/link';
-import FinanceDataGridClient from '@/features/finance/components/FinanceDataGridClient';
 import type { FinanceInvoice } from '@/features/finance/components/FinanceDataGridClient';
 import FinanceWorkspace from '@/features/finance/components/FinanceWorkspace';
 import { isFinanceWorkspaceView, type WorkspaceInvoice } from '@/features/finance/domain/finance-workspace';
 import { toLondonBusinessDate } from '@/features/finance/domain/invoice-collection-state';
 import { buildInvoiceCollectionStageSql } from '@/features/finance/domain/invoice-collection-sql';
 import FinanceDashboardFilters from '@/features/finance/components/FinanceDashboardFilters';
-import BillingCyclesTab from '@/features/billing/components/BillingCyclesTab';
-import { fetchBillingCycles } from '@/features/billing/queries';
+import { fetchBillingCycles, type BillingCycleRow } from '@/features/billing/queries';
 import { logger } from '@/lib/logger';
 import { formerStudentOutstandingSql, activeStudentInvoiceSql, draftLifecycleReviewSql } from '@/features/finance/domain/former-balances';
-import CashReceiptsOwnerView from '@/features/finance/components/CashReceiptsOwnerView';
 import { fetchOwnerCashReceiptsLedger } from '@/features/finance/cash-receipts-queries';
 import type { CashReceiptsLedgerResult } from '@/features/finance/domain/cash-receipts-ledger';
 
+const CashReceiptsOwnerView = dynamic(() => import('@/features/finance/components/CashReceiptsOwnerView'));
+const BillingCyclesTab = dynamic(() => import('@/features/billing/components/BillingCyclesTab'));
+const FinanceDataGridClient = dynamic(() => import('@/features/finance/components/FinanceDataGridClient'));
+
 type OrgCentre = Awaited<ReturnType<typeof getUserAccessibleCentres>>[number];
+
+function serialize<T>(obj: T): T {
+    return JSON.parse(JSON.stringify(obj, (_key, value) => typeof value === 'bigint' ? Number(value) : value));
+}
 
 export default async function FinancePage(props: {
     searchParams: Promise<{
@@ -50,13 +56,18 @@ export default async function FinancePage(props: {
         return redirect('/dashboard');
     }
 
-    const isOwner = userRole === 'ORG_OWNER' && (await isOrgOwner(session.user.id));
+    const organisationId = session.user.organisationId;
+    const userId = session.user.id;
+
+    const [isOwner, centresResult] = await Promise.all([
+        userRole === 'ORG_OWNER' ? isOrgOwner(userId) : Promise.resolve(false),
+        getUserAccessibleCentres(userId)
+            .then((rows) => ({ rows, error: null as unknown }))
+            .catch((error: unknown) => ({ rows: [] as OrgCentre[], error })),
+    ]);
+
     if (searchParams.view === 'cashflow' && !isOwner) {
         return redirect('/dashboard/finance');
-    }
-
-    function serialize<T>(obj: T): T {
-        return JSON.parse(JSON.stringify(obj, (key, value) => typeof value === 'bigint' ? Number(value) : value));
     }
 
     const page = normalizePage(searchParams.page);
@@ -67,130 +78,188 @@ export default async function FinancePage(props: {
     const familyView = searchParams.view === 'families';
     const cashflowView = isOwner && searchParams.view === 'cashflow';
     const workspaceView = !cashflowView && isFinanceWorkspaceView(searchParams);
-    let workspaceInvoices: WorkspaceInvoice[] = [];
-    let cashReceiptsLedger: CashReceiptsLedgerResult | null = null;
 
     let orgCentres: OrgCentre[] = [];
     let activeCentreId = 'all';
-    let totalInvoices = 0;
-    let paginatedInvoices: FinanceInvoice[] = [];
-    let hasFetchError = false;
+    let initialHasFetchError = false;
 
     const todayStr = toLondonBusinessDate();
     const monthStart = `${todayStr.slice(0, 7)}-01`;
 
-    try {
-        let orgCentresRaw: OrgCentre[] = [];
+    if (centresResult.error) {
+        logger.error('[finance] fetchInvoices failed:', centresResult.error);
+        initialHasFetchError = true;
+    } else {
+        orgCentres = serialize(centresResult.rows);
+        const centreIdsForResolve = orgCentres.map((c: { id: string }) => c.id);
         try {
-            orgCentresRaw = await getUserAccessibleCentres(session.user.id);
-        } catch (error) {
-            throw error;
+            activeCentreId = await resolveActiveCentreId(searchParams.centre, centreIdsForResolve);
+        } catch (err) {
+            logger.error('[finance] fetchInvoices failed:', err);
+            initialHasFetchError = true;
         }
-        orgCentres = serialize(orgCentresRaw);
-
-        const validCentreIds = orgCentres.map((c: { id: string }) => c.id);
-        activeCentreId = await resolveActiveCentreId(searchParams.centre, validCentreIds);
-
-        const centreFilter = activeCentreId !== 'all'
-            ? eq(invoices.centreId, activeCentreId)
-            : validCentreIds.length > 0
-                ? inArray(invoices.centreId, validCentreIds)
-                : inArray(invoices.centreId, []);
-
-        let dbStatusFilter = undefined;
-        if (statusFilter === 'paid') {
-            dbStatusFilter = eq(invoices.status, 'paid');
-        } else if (statusFilter === 'draft') {
-            dbStatusFilter = eq(invoices.status, 'draft');
-        } else if (statusFilter === 'sent') {
-            dbStatusFilter = eq(invoices.status, 'sent');
-        } else if (statusFilter === 'partially_paid') {
-            dbStatusFilter = eq(invoices.status, 'partially_paid');
-        } else if (statusFilter === 'upcoming') {
-            dbStatusFilter = buildInvoiceCollectionStageSql('upcoming', todayStr);
-        } else if (statusFilter === 'in_period') {
-            dbStatusFilter = buildInvoiceCollectionStageSql('in_period', todayStr);
-        } else if (statusFilter === 'overdue') {
-            dbStatusFilter = buildInvoiceCollectionStageSql('overdue', todayStr);
-        }
-
-        const combinedFilter = and(
-            eq(invoices.organisationId, session.user.organisationId),
-            centreFilter,
-            dbStatusFilter,
-            formerBalancesView ? formerStudentOutstandingSql() : invoiceHistoryView ? undefined : activeStudentInvoiceSql(),
-        );
-
-        if (cashflowView) {
-            cashReceiptsLedger = await fetchOwnerCashReceiptsLedger({
-                userId: session.user.id,
-                organisationId: session.user.organisationId,
-                centres: orgCentres.map((c: { id: string; name: string }) => ({ id: c.id, name: c.name })),
-                activeCentreId,
-                selectedMonth: searchParams.month,
-            });
-        } else if (workspaceView) {
-            // Read-only action projection: lifecycle-independent so paused/stopped and legacy debts remain visible.
-            // Fetch a thin full-centre set before deriving counts; pagination never changes queue totals.
-            workspaceInvoices = await db.query.invoices.findMany({
-                where: and(eq(invoices.organisationId, session.user.organisationId), centreFilter),
-                columns: { id:true, invoiceNumber:true, organisationId:true, centreId:true, parentId:true, childId:true, billingConfigId:true, amount:true, status:true, invoiceDate:true, dueDate:true, billingPeriodStart:true, billingPeriodEnd:true, createdAt:true, coveredChildrenJson:true },
-                extras: { needsBillingReview: draftLifecycleReviewSql().as('needs_billing_review') },
-                with: {
-                    centre: { columns: { id:true, name:true } },
-                    child: { columns: { id:true, firstName:true, lastName:true } },
-                    parent: { columns: { id:true, firstName:true, lastName:true } },
-                    payments: { columns: { id:true, amount:true, status:true, reversedAt:true, recordedAt:true } },
-                },
-            });
-        } else if (!familyView) {
-            const invoiceOrderBy =
-                statusFilter === 'overdue' || statusFilter === 'in_period'
-                    ? [asc(invoices.dueDate), desc(invoices.createdAt)]
-                    : [desc(invoices.createdAt)];
-
-            const [[countResult], rows] = await Promise.all([
-                db.select({ count: count() }).from(invoices).where(combinedFilter),
-                db.query.invoices.findMany({
-                    where: combinedFilter,
-                    extras: { needsBillingReview: draftLifecycleReviewSql().as('needs_billing_review') },
-                    limit: pageSize,
-                    offset: (page - 1) * pageSize,
-                    orderBy: invoiceOrderBy,
-                    with: {
-                        centre: true,
-                        child: true,
-                        parent: true,
-                        payments: true,
-                        lineItems: true
-                    }
-                }),
-            ]);
-            totalInvoices = Number(countResult?.count || 0);
-            paginatedInvoices = rows;
-        }
-    } catch (err) {
-        logger.error('[finance] fetchInvoices failed:', err);
-        hasFetchError = true;
     }
+
+    const validCentreIds = orgCentres.map((c: { id: string }) => c.id);
+
+    const [invoicesOutcome, cyclesOutcome] = await Promise.all([
+        (async (): Promise<{
+            workspaceInvoices: WorkspaceInvoice[];
+            cashReceiptsLedger: CashReceiptsLedgerResult | null;
+            totalInvoices: number;
+            paginatedInvoices: FinanceInvoice[];
+            hasError: boolean;
+        }> => {
+            if (initialHasFetchError) {
+                return {
+                    workspaceInvoices: [],
+                    cashReceiptsLedger: null,
+                    totalInvoices: 0,
+                    paginatedInvoices: [],
+                    hasError: true,
+                };
+            }
+
+            const centreFilter = activeCentreId !== 'all'
+                ? eq(invoices.centreId, activeCentreId)
+                : validCentreIds.length > 0
+                    ? inArray(invoices.centreId, validCentreIds)
+                    : inArray(invoices.centreId, []);
+
+            let dbStatusFilter = undefined;
+            if (statusFilter === 'paid') {
+                dbStatusFilter = eq(invoices.status, 'paid');
+            } else if (statusFilter === 'draft') {
+                dbStatusFilter = eq(invoices.status, 'draft');
+            } else if (statusFilter === 'sent') {
+                dbStatusFilter = eq(invoices.status, 'sent');
+            } else if (statusFilter === 'partially_paid') {
+                dbStatusFilter = eq(invoices.status, 'partially_paid');
+            } else if (statusFilter === 'upcoming') {
+                dbStatusFilter = buildInvoiceCollectionStageSql('upcoming', todayStr);
+            } else if (statusFilter === 'in_period') {
+                dbStatusFilter = buildInvoiceCollectionStageSql('in_period', todayStr);
+            } else if (statusFilter === 'overdue') {
+                dbStatusFilter = buildInvoiceCollectionStageSql('overdue', todayStr);
+            }
+
+            const combinedFilter = and(
+                eq(invoices.organisationId, organisationId),
+                centreFilter,
+                dbStatusFilter,
+                formerBalancesView ? formerStudentOutstandingSql() : invoiceHistoryView ? undefined : activeStudentInvoiceSql(),
+            );
+
+            if (cashflowView) {
+                const ledger = await fetchOwnerCashReceiptsLedger({
+                    userId,
+                    organisationId,
+                    centres: orgCentres.map((c: { id: string; name: string }) => ({ id: c.id, name: c.name })),
+                    activeCentreId,
+                    selectedMonth: searchParams.month,
+                });
+                return {
+                    workspaceInvoices: [],
+                    cashReceiptsLedger: ledger,
+                    totalInvoices: 0,
+                    paginatedInvoices: [],
+                    hasError: false,
+                };
+            }
+
+            if (workspaceView) {
+                // Read-only action projection: lifecycle-independent so paused/stopped and legacy debts remain visible.
+                // Fetch a thin full-centre set before deriving counts; pagination never changes queue totals.
+                const wsRows = await db.query.invoices.findMany({
+                    where: and(eq(invoices.organisationId, organisationId), centreFilter),
+                    columns: { id:true, invoiceNumber:true, organisationId:true, centreId:true, parentId:true, childId:true, billingConfigId:true, amount:true, status:true, invoiceDate:true, dueDate:true, billingPeriodStart:true, billingPeriodEnd:true, createdAt:true, coveredChildrenJson:true },
+                    extras: { needsBillingReview: draftLifecycleReviewSql().as('needs_billing_review') },
+                    with: {
+                        centre: { columns: { id:true, name:true } },
+                        child: { columns: { id:true, firstName:true, lastName:true } },
+                        parent: { columns: { id:true, firstName:true, lastName:true } },
+                        payments: { columns: { id:true, amount:true, status:true, reversedAt:true, recordedAt:true } },
+                    },
+                });
+                return {
+                    workspaceInvoices: wsRows,
+                    cashReceiptsLedger: null,
+                    totalInvoices: 0,
+                    paginatedInvoices: [],
+                    hasError: false,
+                };
+            }
+
+            if (!familyView) {
+                const invoiceOrderBy =
+                    statusFilter === 'overdue' || statusFilter === 'in_period'
+                        ? [asc(invoices.dueDate), desc(invoices.createdAt)]
+                        : [desc(invoices.createdAt)];
+
+                const [[countResult], rows] = await Promise.all([
+                    db.select({ count: count() }).from(invoices).where(combinedFilter),
+                    db.query.invoices.findMany({
+                        where: combinedFilter,
+                        extras: { needsBillingReview: draftLifecycleReviewSql().as('needs_billing_review') },
+                        limit: pageSize,
+                        offset: (page - 1) * pageSize,
+                        orderBy: invoiceOrderBy,
+                        with: {
+                            centre: true,
+                            child: true,
+                            parent: true,
+                            payments: true,
+                            lineItems: true
+                        }
+                    }),
+                ]);
+                return {
+                    workspaceInvoices: [],
+                    cashReceiptsLedger: null,
+                    totalInvoices: Number(countResult?.count || 0),
+                    paginatedInvoices: rows,
+                    hasError: false,
+                };
+            }
+
+            return {
+                workspaceInvoices: [],
+                cashReceiptsLedger: null,
+                totalInvoices: 0,
+                paginatedInvoices: [],
+                hasError: false,
+            };
+        })().catch((err) => {
+            logger.error('[finance] fetchInvoices failed:', err);
+            return {
+                workspaceInvoices: [] as WorkspaceInvoice[],
+                cashReceiptsLedger: null as CashReceiptsLedgerResult | null,
+                totalInvoices: 0,
+                paginatedInvoices: [] as FinanceInvoice[],
+                hasError: true,
+            };
+        }),
+        (async (): Promise<{ cycles: BillingCycleRow[]; hasError: boolean }> => {
+            if (!workspaceView && !familyView) {
+                return { cycles: [], hasError: false };
+            }
+            const fetchedCycles = await fetchBillingCycles(organisationId, activeCentreId);
+            return {
+                cycles: fetchedCycles.filter((c) => validCentreIds.includes(c.config.centreId)),
+                hasError: false,
+            };
+        })().catch((err) => {
+            logger.error('[finance] fetchBillingCycles failed:', err);
+            return { cycles: [] as BillingCycleRow[], hasError: true };
+        }),
+    ]);
+
+    const { workspaceInvoices, cashReceiptsLedger, totalInvoices, paginatedInvoices } = invoicesOutcome;
+    const hasFetchError = invoicesOutcome.hasError;
+    const billingCycles = cyclesOutcome.cycles;
+    const cycleFetchError = cyclesOutcome.hasError;
 
     const serializedInvoices = serialize(paginatedInvoices);
-
-    // Fetch billing cycles only when needed for the workspace or Family accounts view
-    let cycleFetchError = false;
-    let billingCycles: import('@/features/billing/queries').BillingCycleRow[] = [];
-    if (workspaceView || familyView) {
-        try {
-            billingCycles = await fetchBillingCycles(session.user.organisationId, activeCentreId);
-            {
-                const accessibleIds = orgCentres.map((c: { id: string }) => c.id);
-                billingCycles = billingCycles.filter(c => accessibleIds.includes(c.config.centreId));
-            }
-        } catch (err) {
-            logger.error('[finance] fetchBillingCycles failed:', err);
-            cycleFetchError = true;
-        }
-    }
     const serializedBillingCycles = serialize(billingCycles);
 
     return (

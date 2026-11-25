@@ -9,12 +9,18 @@ import { cn } from '@/components/ui/utils';
 import { resolveAttendanceStatus } from '@/lib/attendance';
 import { neutralizeCsvFormula } from '@/lib/csv-safety';
 import WeeklyReportTab from './WeeklyReportTab';
+import type { WeeklyReportData } from '@/features/reports/weekly-report.action';
 import type { AttendanceStatus } from '@/lib/attendance';
 
 type ReportsTab = 'exports' | 'ceo';
 type FilterType = 'all' | 'month' | 'week' | 'custom';
 
-export default function ReportsClient() {
+export interface ReportsClientProps {
+    initialData?: WeeklyReportData | null;
+    initialError?: string | null;
+}
+
+export default function ReportsClient({ initialData = null, initialError = null }: ReportsClientProps = {}) {
     const [activeTab, setActiveTab] = useState<ReportsTab>('ceo');
     const [isExportingBookings, setIsExportingBookings] = useState(false);
     const [isExportingStudents, setIsExportingStudents] = useState(false);
@@ -230,7 +236,7 @@ export default function ReportsClient() {
             {/* ── Activity Report Tab ────────────────────────────────────── */}
             {activeTab === 'ceo' && (
                 <div role="tabpanel" id="ceo-panel">
-                    <WeeklyReportTab />
+                    <WeeklyReportTab initialData={initialData} initialError={initialError} />
                 </div>
             )}
 

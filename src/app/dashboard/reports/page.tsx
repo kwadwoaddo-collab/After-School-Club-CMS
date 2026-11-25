@@ -4,8 +4,10 @@ import { redirect } from 'next/navigation';
 import { db } from '@/db';
 import { organisations } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+import { format, startOfWeek } from 'date-fns';
 import { AlertTriangle } from 'lucide-react';
 import ReportsClient from './ReportsClient';
+import { getWeeklyReport } from '@/features/reports/weekly-report.action';
 import { logger } from '@/lib/logger';
 
 export default async function ReportsPage() {
@@ -19,20 +21,34 @@ export default async function ReportsPage() {
         return redirect('/dashboard');
     }
 
-    let org = null;
-    let hasError = false;
+    const today = new Date();
+    const defaultStart = format(startOfWeek(today, { weekStartsOn: 1 }), 'yyyy-MM-dd');
+    const defaultEnd = format(today, 'yyyy-MM-dd');
 
-    try {
-        const [foundOrg] = await db
+    const [orgResult, initialReportResult] = await Promise.all([
+        db
             .select()
             .from(organisations)
             .where(eq(organisations.id, session.user.organisationId))
-            .limit(1);
-        org = foundOrg;
-    } catch (e) {
-        logger.error("Error fetching org for reports page", e);
-        hasError = true;
-    }
+            .limit(1)
+            .then(([foundOrg]) => ({ org: foundOrg ?? null, hasError: false }))
+            .catch((e) => {
+                logger.error('Error fetching org for reports page', e);
+                return { org: null, hasError: true };
+            }),
+        getWeeklyReport(defaultStart, defaultEnd, 'all')
+            .then((data) => ({ data, error: null as string | null }))
+            .catch((e) => {
+                logger.error('Error preloading weekly report for reports page', e);
+                return {
+                    data: null,
+                    error: 'We couldn’t load this report. Check the selected dates and centre, then refresh the report. No records were changed.',
+                };
+            }),
+    ]);
+
+    const org = orgResult.org;
+    const hasError = orgResult.hasError;
 
     if (!org && !hasError) return redirect('/onboarding');
 
@@ -41,7 +57,7 @@ export default async function ReportsPage() {
             {/* Page Header */}
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl sm:text-3xl font-black text-foreground tracking-tight">
+                    <h1 className="text-page-title text-text">
                         Reports &amp; Exports
                     </h1>
                     <p className="text-muted-foreground font-medium mt-1">
@@ -57,7 +73,10 @@ export default async function ReportsPage() {
                     <p>There was a problem loading all report data. Some information may be missing or incomplete.</p>
                 </div>
             )}
-            <ReportsClient />
+            <ReportsClient
+                initialData={initialReportResult.data}
+                initialError={initialReportResult.error}
+            />
         </div>
     );
 }
