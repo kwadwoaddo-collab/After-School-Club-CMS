@@ -233,7 +233,14 @@ export async function hardDeleteParent(parentId: string) {
     }
 
     // Drizzle handles cascade deletion for children via foreign keys
-    await db.delete(parents).where(and(eq(parents.id, parentId), eq(parents.organisationId, actor.organisationId)));
+    try {
+        await db.delete(parents).where(and(eq(parents.id, parentId), eq(parents.organisationId, actor.organisationId)));
+    } catch (error) {
+        // 23503 = foreign key violation: signed contracts are retained and block a permanent delete.
+        const code = (error as { code?: string; cause?: { code?: string } })?.code ?? (error as { cause?: { code?: string } })?.cause?.code;
+        if (code === '23503') throw new Error('This parent has contracts that must be retained, so they cannot be permanently deleted. Keep them in the bin or archive the contracts.');
+        throw error;
+    }
 
     await recordAuditEventSafe(db, {
         organisationId: actor.organisationId,

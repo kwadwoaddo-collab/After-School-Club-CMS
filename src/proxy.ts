@@ -22,6 +22,7 @@ const PASSTHROUGH_PREFIXES = [
     '/staff-login',
     '/onboarding',
     '/api',
+    '/sign', // public one-time contract signing links (token-authorised, no login)
     '/_next',
     '/favicon',
 ];

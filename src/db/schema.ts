@@ -1566,3 +1566,64 @@ export const financeExpensesRelations = relations(financeExpenses, ({ one }) => 
   }),
 }));
 
+
+// ==================== PARENT E-CONTRACTS ====================
+// Migration-owned (drizzle/0039_contracts_esign.sql). CHECK constraints and the partial unique index live in the migration only.
+export const contractCentreSettings = pgTable('contract_centre_settings', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  organisationId: uuid('organisation_id').references(() => organisations.id, { onDelete: 'cascade' }).notNull(),
+  centreId: uuid('centre_id').references(() => centres.id, { onDelete: 'cascade' }).notNull().unique(),
+  providerName: varchar('provider_name', { length: 255 }),
+  address: text('address'),
+  phone: varchar('phone', { length: 50 }),
+  website: varchar('website', { length: 255 }),
+  ofstedRegNo: varchar('ofsted_reg_no', { length: 50 }),
+  signatoryName: varchar('signatory_name', { length: 200 }),
+  signatoryRole: varchar('signatory_role', { length: 120 }),
+  updatedBy: uuid('updated_by').references(() => users.id),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const contracts = pgTable('contracts', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  organisationId: uuid('organisation_id').references(() => organisations.id, { onDelete: 'restrict' }).notNull(),
+  centreId: uuid('centre_id').references(() => centres.id, { onDelete: 'restrict' }).notNull(),
+  parentId: uuid('parent_id').references(() => parents.id, { onDelete: 'restrict' }).notNull(),
+  // Detached (null) when the family's billing config is deleted; the contract is retained and listed by parent + centre.
+  billingConfigId: uuid('billing_config_id').references(() => billingConfigs.id, { onDelete: 'set null' }),
+  status: varchar('status', { length: 20 }).$type<'draft' | 'sent' | 'signed' | 'expired' | 'revoked'>().notNull().default('draft'),
+  tokenHash: varchar('token_hash', { length: 64 }).notNull().unique(),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  sentAt: timestamp('sent_at', { withTimezone: true }),
+  sentToEmail: varchar('sent_to_email', { length: 255 }),
+  templateVersion: varchar('template_version', { length: 40 }).notNull(),
+  templateHash: varchar('template_hash', { length: 64 }).notNull(),
+  amountPence: integer('amount_pence').notNull(),
+  childIds: uuid('child_ids').array().notNull().default(sql`'{}'::uuid[]`),
+  // JSON of the values the parent sees (frozen when the link is sent)
+  snapshot: text('snapshot').notNull(),
+  signerName: varchar('signer_name', { length: 200 }),
+  signatureKind: varchar('signature_kind', { length: 10 }).$type<'drawn' | 'typed'>(),
+  signatureData: text('signature_data'),
+  signedAt: timestamp('signed_at', { withTimezone: true }),
+  signerIp: varchar('signer_ip', { length: 64 }),
+  signerUserAgent: varchar('signer_user_agent', { length: 400 }),
+  copyEmailedAt: timestamp('copy_emailed_at', { withTimezone: true }),
+  revokedAt: timestamp('revoked_at', { withTimezone: true }),
+  // Archiving hides a contract from the current status but keeps it (and its PDF) downloadable.
+  archivedAt: timestamp('archived_at', { withTimezone: true }),
+  archivedBy: uuid('archived_by').references(() => users.id),
+  createdBy: uuid('created_by').references(() => users.id).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+const contractPdfBytes = customType<{ data: Buffer; driverData: Buffer }>({ dataType: () => 'bytea' });
+export const contractPdfs = pgTable('contract_pdfs', {
+  contractId: uuid('contract_id').references(() => contracts.id, { onDelete: 'restrict' }).primaryKey(),
+  content: contractPdfBytes('content').notNull(),
+  sizeBytes: integer('size_bytes').notNull(),
+  sha256: varchar('sha256', { length: 64 }).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+});

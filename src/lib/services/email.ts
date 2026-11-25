@@ -1227,6 +1227,65 @@ export class EmailService {
     }
   }
   /**
+   * Send a one-time contract signing link to a parent
+   */
+  async sendContractLink(data: { parentEmail: string; parentName: string; providerName: string; signUrl: string; expiresOn: string }): Promise<EmailResult> {
+    if (!resend) return { success: false, error: 'Email service not configured' };
+    const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Please sign your agreement</title></head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f9fafb; margin: 0; padding: 32px 16px;">
+  <div style="max-width: 520px; margin: 0 auto; background: #ffffff; border-radius: 12px; padding: 32px;">
+    <h1 style="font-size: 20px; margin: 0 0 16px; color: #111827;">Please review and sign your agreement</h1>
+    <p style="color: #374151; font-size: 15px;">Hi ${esc(data.parentName)},</p>
+    <p style="color: #374151; font-size: 15px;">${esc(data.providerName)} has sent you its Childcare Service Agreement to read and sign online. It takes about two minutes.</p>
+    <p style="text-align: center; margin: 28px 0;"><a href="${esc(data.signUrl)}" style="display: inline-block; background: #1d4ed8; color: #ffffff; font-size: 16px; font-weight: 700; text-decoration: none; padding: 14px 32px; border-radius: 8px;">Review and sign</a></p>
+    <p style="color: #6b7280; font-size: 13px;">This link can be used once and expires on ${esc(data.expiresOn)}. If you were not expecting this, you can ignore this email.</p>
+  </div>
+</body></html>`;
+    try {
+      const { data: result, error } = await resend.emails.send({
+        from: `${data.providerName} via SprintScale <${FROM_EMAIL}>`,
+        to: data.parentEmail,
+        subject: `Please sign your agreement — ${data.providerName}`,
+        html,
+      });
+      if (error) return { success: false, error: error.message };
+      return { success: true, messageId: result?.id };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  }
+
+  /**
+   * Email the signed contract PDF back to the signing parent
+   */
+  async sendSignedContractCopy(data: { parentEmail: string; parentName: string; providerName: string; pdf: Buffer; filename: string }): Promise<EmailResult> {
+    if (!resend) return { success: false, error: 'Email service not configured' };
+    const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Your signed agreement</title></head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f9fafb; margin: 0; padding: 32px 16px;">
+  <div style="max-width: 520px; margin: 0 auto; background: #ffffff; border-radius: 12px; padding: 32px;">
+    <h1 style="font-size: 20px; margin: 0 0 16px; color: #111827;">Thank you — your agreement is signed</h1>
+    <p style="color: #374151; font-size: 15px;">Hi ${esc(data.parentName)},</p>
+    <p style="color: #374151; font-size: 15px;">A copy of your signed Childcare Service Agreement with ${esc(data.providerName)} is attached for your records.</p>
+  </div>
+</body></html>`;
+    try {
+      const { data: result, error } = await resend.emails.send({
+        from: `${data.providerName} via SprintScale <${FROM_EMAIL}>`,
+        to: data.parentEmail,
+        subject: `Your signed agreement — ${data.providerName}`,
+        html,
+        attachments: [{ filename: data.filename, content: data.pdf }],
+      });
+      if (error) return { success: false, error: error.message };
+      return { success: true, messageId: result?.id };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  }
+
+  /**
    * Send invoice created notification to parent
    */
   async sendInvoiceCreated(data: {
