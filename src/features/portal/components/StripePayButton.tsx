@@ -40,19 +40,20 @@ export default function StripePayButton({ invoiceId, amountDue }: StripePayButto
     return (
         <div className="space-y-2">
             <button
+                type="button"
                 onClick={handlePay}
                 disabled={loading || amountDue <= 0}
-                className="w-full flex items-center justify-center gap-2.5 py-3.5 bg-primary text-primary-foreground font-bold rounded-xl hover:bg-primary/90 transition-all shadow-lg shadow-primary/25 disabled:opacity-50 disabled:cursor-not-allowed glow-btn"
+                className="w-full flex items-center justify-center gap-2.5 py-3.5 bg-primary text-primary-foreground font-bold rounded-xl hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-all shadow-lg shadow-primary/25 disabled:opacity-50 disabled:cursor-not-allowed glow-btn"
             >
                 {loading ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <Loader2 className="w-4 h-4 motion-safe:animate-spin" aria-hidden="true" />
                 ) : (
-                    <CreditCard className="w-4 h-4" />
+                    <CreditCard className="w-4 h-4" aria-hidden="true" />
                 )}
                 {loading ? 'Redirecting to payment…' : `Pay £${amountDue.toFixed(2)} Online`}
             </button>
             {error && (
-                <p className="text-xs text-destructive text-center font-medium">{error}</p>
+                <p role="alert" className="text-xs text-destructive text-center font-medium">{error}</p>
             )}
             <p className="text-[10px] text-center text-on-surface-variant">
                 Secured by Stripe · No card details stored here

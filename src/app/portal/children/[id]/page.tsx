@@ -3,7 +3,7 @@ import { getCurrentParent } from '@/lib/parent-auth';
 import { formatSchoolYearLabel } from '@/lib/school-year';
 import { db } from '@/db';
 import { children, bookings, bookingAttendees, centres } from '@/db/schema';
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, and, desc, isNull } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -18,7 +18,7 @@ const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
     confirmed: { label: 'Upcoming', className: 'bg-primary/10 text-primary border-primary/20' },
     completed: { label: 'Attended', className: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' },
     cancelled: { label: 'Cancelled', className: 'bg-destructive/10 text-destructive border-destructive/20' },
-    rescheduled: { label: 'Rescheduled', className: 'bg-amber-500/10 text-amber-600 border-amber-500/20' },
+    rescheduled: { label: 'Rescheduled', className: 'bg-amber-500/10 text-warning border-amber-500/20' },
     pending: { label: 'Pending', className: 'bg-secondary text-muted-foreground border-border' },
     signed_up: { label: 'Signed Up', className: 'bg-primary/10 text-primary border-primary/20' },
 };
@@ -29,47 +29,49 @@ export default async function ChildDetailsPage(props: { params: Promise<{ id: st
 
     const { id } = await props.params;
 
-    const child = await db.query.children.findFirst({
-        where: and(
-            eq(children.id, id),
-            eq(children.parentId, parent.id)
-        ),
-        with: {
-            centre: true,
-            notes: {
-                // P0 Safeguarding & internal-notes boundary:
-                // Never expose staff-authored notes (including deleted staff where userId is set NULL via FK)
-                // or Safeguarding/General/System notes to the Parent Portal.
-                where: (notes, { and, isNull, inArray, like }) => and(
-                    isNull(notes.userId),
-                    like(notes.authorName, '% (Parent)'),
-                    inArray(notes.category, [...PARENT_VISIBLE_NOTE_CATEGORIES])
-                ),
-                orderBy: (notes, { desc }) => [desc(notes.createdAt)]
+    // Run child lookup (filtering soft-deleted records, SEC-W4-10) and booking history concurrently (FE P2-1)
+    const [child, attendeeRows] = await Promise.all([
+        db.query.children.findFirst({
+            where: and(
+                eq(children.id, id),
+                eq(children.parentId, parent.id),
+                isNull(children.deletedAt)
+            ),
+            with: {
+                centre: true,
+                notes: {
+                    // P0 Safeguarding & internal-notes boundary:
+                    // Never expose staff-authored notes (including deleted staff where userId is set NULL via FK)
+                    // or Safeguarding/General/System notes to the Parent Portal.
+                    where: (notes, { and, isNull, inArray, like }) => and(
+                        isNull(notes.userId),
+                        like(notes.authorName, '% (Parent)'),
+                        inArray(notes.category, [...PARENT_VISIBLE_NOTE_CATEGORIES])
+                    ),
+                    orderBy: (notes, { desc }) => [desc(notes.createdAt)]
+                }
             }
-        }
-    });
+        }),
+        db
+            .select({
+                bookingId: bookingAttendees.bookingId,
+                attendanceStatus: bookingAttendees.attendanceStatus,
+                bookingStartAt: bookings.startAt,
+                bookingDuration: bookings.duration,
+                bookingStatus: bookings.status,
+                bookingConfirmationCode: bookings.confirmationCode,
+                bookingModality: bookings.modality,
+                centreName: centres.name,
+                centreAddress: centres.address,
+            })
+            .from(bookingAttendees)
+            .innerJoin(bookings, eq(bookingAttendees.bookingId, bookings.id))
+            .innerJoin(centres, eq(bookings.centreId, centres.id))
+            .where(eq(bookingAttendees.childId, id))
+            .orderBy(desc(bookings.startAt)),
+    ]);
 
     if (!child) redirect('/portal');
-
-    // Fetch booking history for this child via bookingAttendees
-    const attendeeRows = await db
-        .select({
-            bookingId: bookingAttendees.bookingId,
-            attendanceStatus: bookingAttendees.attendanceStatus,
-            bookingStartAt: bookings.startAt,
-            bookingDuration: bookings.duration,
-            bookingStatus: bookings.status,
-            bookingConfirmationCode: bookings.confirmationCode,
-            bookingModality: bookings.modality,
-            centreName: centres.name,
-            centreAddress: centres.address,
-        })
-        .from(bookingAttendees)
-        .innerJoin(bookings, eq(bookingAttendees.bookingId, bookings.id))
-        .innerJoin(centres, eq(bookings.centreId, centres.id))
-        .where(eq(bookingAttendees.childId, id))
-        .orderBy(desc(bookings.startAt));
 
     const now = new Date();
     const upcomingBookings = attendeeRows.filter(b => new Date(b.bookingStartAt) >= now && b.bookingStatus !== 'cancelled');
@@ -85,16 +87,16 @@ export default async function ChildDetailsPage(props: { params: Promise<{ id: st
                     <Link
                         href="/portal"
                         aria-label="Back to Parent Portal"
-                        className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 -ml-2 rounded-lg hover:bg-card transition-colors text-muted-foreground hover:text-foreground"
+                        className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 -ml-2 rounded-lg hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
                     >
                         <ArrowLeft className="w-5 h-5" aria-hidden="true" />
                     </Link>
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                             <h1 className="text-lg font-bold text-foreground">{child.firstName} {child.lastName}</h1>
                             {enrolledCentreName && (
                                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
-                                    <MapPin className="w-3 h-3" /> {enrolledCentreName}
+                                    <MapPin className="w-3 h-3" aria-hidden="true" /> {enrolledCentreName}
                                 </span>
                             )}
                         </div>
@@ -110,7 +112,7 @@ export default async function ChildDetailsPage(props: { params: Promise<{ id: st
                 {/* Upcoming Bookings */}
                 <section className="bg-card rounded-2xl border border-border overflow-hidden">
                     <div className="flex items-center gap-2 px-6 py-5 border-b border-border">
-                        <CalendarClock className="w-5 h-5 text-primary" />
+                        <CalendarClock className="w-5 h-5 text-primary" aria-hidden="true" />
                         <h2 className="text-lg font-bold text-foreground">Upcoming Sessions</h2>
                         <span className="ml-auto text-xs font-bold text-primary bg-primary/10 border border-primary/20 px-2.5 py-1 rounded-lg">
                             {upcomingBookings.length}
@@ -148,7 +150,7 @@ export default async function ChildDetailsPage(props: { params: Promise<{ id: st
                                                 </span>
                                             </div>
                                             <p className="text-xs text-muted-foreground flex items-center gap-1">
-                                                <MapPin className="w-3 h-3" /> {b.centreName}
+                                                <MapPin className="w-3 h-3" aria-hidden="true" /> {b.centreName}
                                                 {b.centreAddress && <span className="truncate"> · {b.centreAddress}</span>}
                                             </p>
                                             <p className="text-xs text-muted-foreground mt-0.5">
@@ -167,7 +169,7 @@ export default async function ChildDetailsPage(props: { params: Promise<{ id: st
                 {pastBookings.length > 0 && (
                     <section className="bg-card rounded-2xl border border-border overflow-hidden">
                         <div className="flex items-center gap-2 px-6 py-5 border-b border-border">
-                            <CalendarDays className="w-5 h-5 text-muted-foreground" />
+                            <CalendarDays className="w-5 h-5 text-muted-foreground" aria-hidden="true" />
                             <h2 className="text-lg font-bold text-foreground">Past Sessions</h2>
                             <span className="ml-auto text-xs font-bold text-muted-foreground bg-secondary border border-border px-2.5 py-1 rounded-lg">
                                 {pastBookings.length}
@@ -201,7 +203,7 @@ export default async function ChildDetailsPage(props: { params: Promise<{ id: st
                                                 {absent && <span title="Absent"><XCircle className="w-3.5 h-3.5 text-destructive" /></span>}
                                             </div>
                                             <p className="text-xs text-muted-foreground flex items-center gap-1">
-                                                <MapPin className="w-3 h-3" /> {b.centreName}
+                                                <MapPin className="w-3 h-3" aria-hidden="true" /> {b.centreName}
                                             </p>
                                             {b.bookingConfirmationCode && (
                                                 <p className="text-xs font-mono font-bold text-primary/40 mt-0.5">#{b.bookingConfirmationCode}</p>
@@ -217,7 +219,7 @@ export default async function ChildDetailsPage(props: { params: Promise<{ id: st
                 {/* Medical & Dietary Notes */}
                 <section className="bg-card p-6 rounded-2xl border border-border">
                     <div className="flex items-center gap-2 mb-6 border-b border-border pb-4">
-                        <ShieldAlert className="w-5 h-5 text-destructive" />
+                        <ShieldAlert className="w-5 h-5 text-destructive" aria-hidden="true" />
                         <h2 className="text-lg font-bold text-foreground">Medical &amp; Dietary Needs</h2>
                     </div>
 
@@ -246,7 +248,7 @@ export default async function ChildDetailsPage(props: { params: Promise<{ id: st
 
                     <div className="mt-8 pt-6 border-t border-border">
                         <h3 className="text-sm font-bold text-foreground mb-1 flex items-center gap-2">
-                            <FileText className="w-4 h-4 text-primary" />
+                            <FileText className="w-4 h-4 text-primary" aria-hidden="true" />
                             Add New Medical Note
                         </h3>
                         <p className="text-xs text-muted-foreground mb-4">

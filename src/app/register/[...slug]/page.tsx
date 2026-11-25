@@ -3,7 +3,7 @@ import { logger } from '@/lib/logger';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useId } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
@@ -87,7 +87,20 @@ function ProgressBar({ current, total }: { current: number; total: number }) {
 }
 
 function Field({ label, children, htmlFor }: { label: string; children: React.ReactNode, htmlFor?: string }) {
-    return <div><label htmlFor={htmlFor} className={labelCls}>{label}</label>{children}</div>;
+    const generatedId = useId();
+    const childArray = React.Children.toArray(children);
+    const firstControlIndex = childArray.findIndex(
+        (child): child is React.ReactElement<{ id?: string }> =>
+            React.isValidElement(child) && (child.type === 'input' || child.type === 'select' || child.type === 'textarea')
+    );
+    const firstControl = firstControlIndex >= 0 ? (childArray[firstControlIndex] as React.ReactElement<{ id?: string }>) : null;
+    const resolvedId = htmlFor ?? firstControl?.props.id ?? generatedId;
+    const mappedChildren = firstControl && !firstControl.props.id
+        ? childArray.map((child, idx) =>
+              idx === firstControlIndex ? React.cloneElement(firstControl, { id: resolvedId }) : child
+          )
+        : children;
+    return <div><label htmlFor={resolvedId} className={labelCls}>{label}</label>{mappedChildren}</div>;
 }
 
 export default function RegisterPage() {
@@ -515,16 +528,16 @@ export default function RegisterPage() {
 
                     {/* Mode of Finance card */}
                     <div className="bg-gradient-to-r from-blue-600 to-violet-600 rounded-2xl p-6 mb-5">
-                        <p className="text-foreground/70 text-xs uppercase tracking-widest mb-3">Mode of Finance</p>
+                        <p className="text-white/80 text-xs uppercase tracking-widest mb-3">Mode of Finance</p>
                         <div className="space-y-3">
                             <div className="flex flex-col md:flex-row md:items-center justify-between gap-1 md:gap-0">
-                                <span className="text-foreground/80 text-sm">Self Finance</span>
-                                <span className="text-foreground font-bold text-xl">£{activeCentre?.feeSelfFinance ?? orgInfo?.pricing?.selfFinanceRate ?? 20} <span className="text-foreground/60 font-normal text-sm">per session</span></span>
+                                <span className="text-white/90 text-sm">Self Finance</span>
+                                <span className="text-white font-bold text-xl">£{activeCentre?.feeSelfFinance ?? orgInfo?.pricing?.selfFinanceRate ?? 20} <span className="text-white/80 font-normal text-sm">per session</span></span>
                             </div>
                             <div className="border-t border-white/20" />
                             <div className="flex flex-col md:flex-row md:items-center justify-between gap-1 md:gap-0">
-                                <span className="text-foreground/80 text-sm">Tax Credit / Universal Credit / Student Finance</span>
-                                <span className="text-foreground font-bold text-xl">£{activeCentre?.feeAssistedFinance ?? orgInfo?.pricing?.taxCreditRate ?? 30} <span className="text-foreground/60 font-normal text-sm">per session</span></span>
+                                <span className="text-white/90 text-sm">Tax Credit / Universal Credit / Student Finance</span>
+                                <span className="text-white font-bold text-xl">£{activeCentre?.feeAssistedFinance ?? orgInfo?.pricing?.taxCreditRate ?? 30} <span className="text-white/80 font-normal text-sm">per session</span></span>
                             </div>
                         </div>
                     </div>
@@ -706,17 +719,17 @@ export default function RegisterPage() {
                 </div>
             </div>
 
-            <div className="max-w-2xl mx-auto px-6 py-10 pb-16">
+            <div className="max-w-2xl mx-auto px-4 sm:px-6 py-10 pb-16">
                 <ProgressBar current={step} total={TOTAL_STEPS} />
 
                 {prefillWarning && !isPrefilled && (
                     <div className="mb-6 p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex items-start gap-3 shadow-sm animate-in fade-in slide-in-from-top-2 duration-300">
-                        <svg className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                         </svg>
                         <div>
-                            <p className="text-sm font-bold text-amber-500">Booking link expired or invalid</p>
-                            <p className="text-xs text-amber-500/80 font-medium mt-0.5">Your booking link has expired or is invalid. Please fill in the form manually.</p>
+                            <p className="text-sm font-bold text-warning">Booking link expired or invalid</p>
+                            <p className="text-xs text-warning font-medium mt-0.5">Your booking link has expired or is invalid. Please fill in the form manually.</p>
                         </div>
                     </div>
                 )}
@@ -910,7 +923,7 @@ export default function RegisterPage() {
                                             <Field label="Medical Conditions">
                                                 <input type="text" value={c.medicalConditions} onChange={e => updateChild(i, 'medicalConditions', e.target.value)} className={inputCls} placeholder="e.g. Asthma, Diabetes, None" />
                                             </Field>
-                                            <Field label="Allergies">
+                                            <Field label="Allergies" htmlFor={`child-allergies-${i}`}>
                                                 <div className="flex flex-col gap-2">
                                                      <div className="flex flex-wrap gap-2 mb-2">
                                                         {(c.allergies || []).map((allergy, aIdx) => (
@@ -921,6 +934,7 @@ export default function RegisterPage() {
                                                         ))}
                                                     </div>
                                                     <input 
+                                                        id={`child-allergies-${i}`}
                                                         type="text" 
                                                         placeholder="Type an allergy and press Enter..." 
                                                         className={inputCls}
@@ -1035,7 +1049,7 @@ export default function RegisterPage() {
                             {childList.map((c, i) => (
                                 <div key={`sess-${i}`} className="bg-card border border-border rounded-2xl p-6 mb-4 shadow-sm">
                                     <h3 className="text-foreground font-semibold mb-4">{c.firstName || `Child ${i+1}`} — Preferred Sessions</h3>
-                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                    <div className="grid grid-cols-1 min-[420px]:grid-cols-2 sm:grid-cols-3 gap-3">
                                         {(() => {
                                             const activeCentre = orgInfo?.centres?.find(c => c.id === selectedCentreId);
                                             let slotsToUse = orgInfo?.sessionSlots ?? SESSION_SLOTS;
@@ -1181,13 +1195,14 @@ export default function RegisterPage() {
                                 onChange={e => { setTermsAgreed(e.target.checked); setInvalidFields(f => { const n = new Set(f); n.delete('terms-agree'); return n; }); }}
                                 className="w-4 h-4 mt-0.5 rounded flex-shrink-0 accent-blue-600"
                             />
-                            <span className="text-muted-foreground text-sm">I agree to the Terms of Service and confirm the information provided is accurate.</span>
+                            <span className="text-muted-foreground text-sm">I agree to the <Link href="/terms" target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="text-primary underline underline-offset-2 hover:text-primary/80 font-medium">Terms of Service</Link> and confirm the information provided is accurate.</span>
                         </label>
 
                         <div className="mb-5 bg-card p-6 rounded-2xl border border-border shadow-sm">
-                            <p className="text-foreground font-semibold text-sm mb-1">Digital Signature <span className="text-destructive">*</span></p>
+                            <label htmlFor="digital-signature-input" className="block text-foreground font-semibold text-sm mb-1">Digital Signature <span className="text-destructive">*</span></label>
                             <p className="text-muted-foreground text-xs mb-4">Type your full legal name to sign</p>
                             <input 
+                                id="digital-signature-input"
                                 type="text"
                                 value={signature || ''}
                                 onChange={e => { setSignature(e.target.value); setInvalidFields(f => { const n = new Set(f); n.delete('signature-pad'); return n; }); }}
@@ -1200,7 +1215,7 @@ export default function RegisterPage() {
                             )}
                         </div>
 
-                        {error && <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-xl text-destructive text-sm mb-4">{error}</div>}
+                        {error && <div role="alert" className="p-4 bg-destructive/10 border border-destructive/20 rounded-xl text-destructive text-sm mb-4">{error}</div>}
 
                         <button
                             id="submit-registration"
@@ -1243,7 +1258,7 @@ export default function RegisterPage() {
 
                 {/* Step-level error message */}
                 {stepError && (
-                    <div className="mt-4 p-4 bg-destructive/10 border border-destructive/20 rounded-xl text-destructive text-sm flex items-start gap-2">
+                    <div role="alert" className="mt-4 p-4 bg-destructive/10 border border-destructive/20 rounded-xl text-destructive text-sm flex items-start gap-2">
                         <svg className="w-4 h-4 mt-0.5 flex-shrink-0 text-destructive" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
                         {stepError}
                     </div>

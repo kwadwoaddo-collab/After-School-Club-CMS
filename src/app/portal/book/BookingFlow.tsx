@@ -330,7 +330,7 @@ export function BookingFlow({ registeredChildren: childList, centres, reschedule
         return (
             <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
                 <div className="w-20 h-20 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center mb-6 transition-transform duration-300">
-                    <CheckCircle2 className="w-10 h-10 text-emerald-600" />
+                    <CheckCircle2 className="w-10 h-10 text-emerald-600" aria-hidden="true" />
                 </div>
                 <h2 className="text-2xl font-bold text-foreground mb-2">
                     {isRescheduling ? 'Booking Rescheduled!' : 'Booking Confirmed!'}
@@ -379,9 +379,9 @@ export function BookingFlow({ registeredChildren: childList, centres, reschedule
             {/* Reschedule context banner */}
             {isRescheduling && rescheduleBooking && (
                 <div className="mb-6 flex items-start gap-3 bg-amber-500/10 border border-amber-500/20 rounded-2xl px-4 py-3">
-                    <span className="text-amber-600 text-lg mt-0.5">📅</span>
+                    <span className="text-warning text-lg mt-0.5" aria-hidden="true">📅</span>
                     <div>
-                        <p className="text-sm font-bold text-amber-600">Rescheduling Booking</p>
+                        <p className="text-sm font-bold text-warning">Rescheduling Booking</p>
                         <p className="text-xs text-muted-foreground mt-0.5">
                             Original date: <strong className="text-foreground">{new Date(rescheduleBooking.startAt).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}</strong>
                         </p>
@@ -394,7 +394,7 @@ export function BookingFlow({ registeredChildren: childList, centres, reschedule
             {step === 1 && (
                 <section className="space-y-4">
                     <div className="flex items-center gap-2 mb-6">
-                        <User className="w-5 h-5 text-primary" />
+                        <User className="w-5 h-5 text-primary" aria-hidden="true" />
                         <h2 className="text-xl font-bold text-foreground">Who is this booking for?</h2>
                     </div>
 
@@ -406,12 +406,15 @@ export function BookingFlow({ registeredChildren: childList, centres, reschedule
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             {childList.map(child => {
                                 const childCentre = child.centreId ? centres.find(c => c.id === child.centreId) : null;
+                                const isChildSelected = selectedChild?.id === child.id;
                                 return (
                                     <button
                                         key={child.id}
+                                        type="button"
+                                        aria-pressed={isChildSelected}
                                         onClick={() => handleSelectChild(child)}
-                                        className={`p-5 rounded-xl border text-left transition-all ${
-                                            selectedChild?.id === child.id
+                                        className={`p-5 rounded-xl border text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                                            isChildSelected
                                                 ? 'bg-primary/10 border-primary/40 text-foreground'
                                                 : 'bg-card border-border text-muted-foreground hover:border-primary/30 hover:text-foreground'
                                         }`}
@@ -422,12 +425,12 @@ export function BookingFlow({ registeredChildren: childList, centres, reschedule
                                                 <p className="text-xs text-muted-foreground mt-0.5">{formatSchoolYearLabel(child.schoolYear)}</p>
                                                 {childCentre && (
                                                     <span className="inline-flex items-center gap-1 mt-2 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-primary/10 text-primary border border-primary/20">
-                                                        <MapPin className="w-3 h-3" /> {childCentre.name}
+                                                        <MapPin className="w-3 h-3" aria-hidden="true" /> {childCentre.name}
                                                     </span>
                                                 )}
                                             </div>
-                                            {selectedChild?.id === child.id && (
-                                                <CheckCircle2 className="w-5 h-5 text-primary shrink-0" />
+                                            {isChildSelected && (
+                                                <CheckCircle2 className="w-5 h-5 text-primary shrink-0" aria-hidden="true" />
                                             )}
                                         </div>
                                     </button>
@@ -440,37 +443,43 @@ export function BookingFlow({ registeredChildren: childList, centres, reschedule
                         <div className="mt-6 space-y-3">
                             <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Select Centre</h3>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                {centres.map(centre => (
-                                    <button
-                                        key={centre.id}
-                                        onClick={() => {
-                                            setSelectedCentre(centre);
-                                            setSelectedTime(null);
-                                            setSelectedSlotId(null);
-                                        }}
-                                        className={`p-4 rounded-xl border text-left transition-all ${
-                                            selectedCentre?.id === centre.id
-                                                ? 'bg-primary/10 border-primary/40 text-foreground'
-                                                : 'bg-card border-border text-muted-foreground hover:border-primary/30 hover:text-foreground'
-                                        }`}
-                                    >
-                                        <p className="font-bold">{centre.name}</p>
-                                        {centre.address && (
-                                            <p className="text-xs text-muted-foreground mt-0.5">{centre.address}</p>
-                                        )}
-                                    </button>
-                                ))}
+                                {centres.map(centre => {
+                                    const isCentreSelected = selectedCentre?.id === centre.id;
+                                    return (
+                                        <button
+                                            key={centre.id}
+                                            type="button"
+                                            aria-pressed={isCentreSelected}
+                                            onClick={() => {
+                                                setSelectedCentre(centre);
+                                                setSelectedTime(null);
+                                                setSelectedSlotId(null);
+                                            }}
+                                            className={`p-4 rounded-xl border text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                                                isCentreSelected
+                                                    ? 'bg-primary/10 border-primary/40 text-foreground'
+                                                    : 'bg-card border-border text-muted-foreground hover:border-primary/30 hover:text-foreground'
+                                            }`}
+                                        >
+                                            <p className="font-bold">{centre.name}</p>
+                                            {centre.address && (
+                                                <p className="text-xs text-muted-foreground mt-0.5">{centre.address}</p>
+                                            )}
+                                        </button>
+                                    );
+                                })}
                             </div>
                         </div>
                     )}
 
                     <div className="flex justify-end mt-6">
                         <button
+                            type="button"
                             onClick={() => handleSetStep(2)}
                             disabled={!selectedChild || !selectedCentre}
-                            className="flex items-center gap-2 bg-primary text-primary-foreground font-bold px-6 py-3 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed hover:bg-primary/90 transition-colors"
+                            className="flex items-center gap-2 bg-primary text-primary-foreground font-bold px-6 py-3 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed hover:bg-primary/90 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                         >
-                            Next <ChevronRight className="w-4 h-4" />
+                            Next <ChevronRight className="w-4 h-4" aria-hidden="true" />
                         </button>
                     </div>
                 </section>
@@ -480,33 +489,38 @@ export function BookingFlow({ registeredChildren: childList, centres, reschedule
             {step === 2 && (
                 <section className="space-y-6">
                     <div className="flex items-center gap-2 mb-2">
-                        <CalendarDays className="w-5 h-5 text-primary" />
-                        <h2 className="text-xl font-bold text-foreground">Pick a Date & Time</h2>
+                        <CalendarDays className="w-5 h-5 text-primary" aria-hidden="true" />
+                        <h2 className="text-xl font-bold text-foreground">Pick a Date &amp; Time</h2>
                     </div>
 
                     {/* Date picker */}
                     <div>
                         <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mb-3">Date</p>
                         <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
-                            {dates.map((d) => (
-                                <button
-                                    key={d.toISOString()}
-                                    onClick={() => {
-                                        setSelectedDate(d);
-                                        setSelectedTime(null);
-                                        setSelectedSlotId(null);
-                                    }}
-                                    className={`min-h-[48px] min-w-[44px] p-3 rounded-xl border text-center transition-all flex flex-col items-center justify-center ${
-                                        selectedDate?.toDateString() === d.toDateString()
-                                            ? 'bg-primary border-primary text-primary-foreground'
-                                            : 'bg-card border-border text-muted-foreground hover:border-primary/30 hover:text-foreground'
-                                    }`}
-                                >
-                                    <p className="text-[10px] uppercase font-bold">{d.toLocaleDateString('en-GB', { weekday: 'short' })}</p>
-                                    <p className="text-lg font-bold leading-none mt-0.5">{d.getDate()}</p>
-                                    <p className="text-[10px]">{d.toLocaleDateString('en-GB', { month: 'short' })}</p>
-                                </button>
-                            ))}
+                            {dates.map((d) => {
+                                const isDateSelected = selectedDate?.toDateString() === d.toDateString();
+                                return (
+                                    <button
+                                        key={d.toISOString()}
+                                        type="button"
+                                        aria-pressed={isDateSelected}
+                                        onClick={() => {
+                                            setSelectedDate(d);
+                                            setSelectedTime(null);
+                                            setSelectedSlotId(null);
+                                        }}
+                                        className={`min-h-[48px] min-w-[44px] p-3 rounded-xl border text-center transition-all flex flex-col items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                                            isDateSelected
+                                                ? 'bg-primary border-primary text-primary-foreground'
+                                                : 'bg-card border-border text-muted-foreground hover:border-primary/30 hover:text-foreground'
+                                        }`}
+                                    >
+                                        <p className="text-[10px] uppercase font-bold">{d.toLocaleDateString('en-GB', { weekday: 'short' })}</p>
+                                        <p className="text-lg font-bold leading-none mt-0.5">{d.getDate()}</p>
+                                        <p className="text-[10px]">{d.toLocaleDateString('en-GB', { month: 'short' })}</p>
+                                    </button>
+                                );
+                            })}
                         </div>
                     </div>
 
@@ -528,17 +542,19 @@ export function BookingFlow({ registeredChildren: childList, centres, reschedule
                                         return (
                                             <button
                                                 key={slot.id}
+                                                type="button"
+                                                aria-pressed={isSelected}
                                                 onClick={() => {
                                                     setSelectedTime(slot.time);
                                                     setSelectedSlotId(slot.id);
                                                 }}
-                                                className={`flex items-center gap-2 p-3 rounded-xl border transition-all text-sm font-medium ${
+                                                className={`flex items-center gap-2 p-3 rounded-xl border transition-all text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
                                                     isSelected
                                                         ? 'bg-primary border-primary text-primary-foreground'
                                                         : 'bg-card border-border text-muted-foreground hover:border-primary/30 hover:text-foreground'
                                                 }`}
                                             >
-                                                <Clock className="w-3.5 h-3.5 shrink-0" />
+                                                <Clock className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
                                                 {displayLabel}
                                             </button>
                                         );
@@ -552,37 +568,44 @@ export function BookingFlow({ registeredChildren: childList, centres, reschedule
                     {selectedTime && (
                         <div>
                             <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mb-3">Duration</p>
-                            <div className="flex gap-2">
-                                {DURATION_OPTIONS.map(d => (
-                                    <button
-                                        key={d}
-                                        onClick={() => setSelectedDuration(d)}
-                                        className={`px-5 py-2 rounded-xl border text-sm font-bold transition-all ${
-                                            selectedDuration === d
-                                                ? 'bg-secondary border-secondary text-secondary-foreground'
-                                                : 'bg-card border-border text-muted-foreground hover:border-secondary/30 hover:text-foreground'
-                                        }`}
-                                    >
-                                        {d} min
-                                    </button>
-                                ))}
+                            <div className="flex gap-2 flex-wrap">
+                                {DURATION_OPTIONS.map(d => {
+                                    const isDurationSelected = selectedDuration === d;
+                                    return (
+                                        <button
+                                            key={d}
+                                            type="button"
+                                            aria-pressed={isDurationSelected}
+                                            onClick={() => setSelectedDuration(d)}
+                                            className={`min-h-[44px] px-5 py-2 rounded-xl border text-sm font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                                                isDurationSelected
+                                                    ? 'bg-accent-soft border-accent text-accent'
+                                                    : 'bg-card border-border text-muted-foreground hover:border-accent/40 hover:text-foreground'
+                                            }`}
+                                        >
+                                            {d} min
+                                        </button>
+                                    );
+                                })}
                             </div>
                         </div>
                     )}
 
                     <div className="flex justify-between mt-6">
                         <button
+                            type="button"
                             onClick={() => handleSetStep(1)}
-                            className="flex items-center gap-2 text-muted-foreground hover:text-foreground font-bold px-4 py-3 rounded-xl hover:bg-card transition-colors"
+                            className="flex items-center gap-2 text-muted-foreground hover:text-foreground font-bold px-4 py-3 rounded-xl hover:bg-card transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                         >
-                            <ChevronLeft className="w-4 h-4" /> Back
+                            <ChevronLeft className="w-4 h-4" aria-hidden="true" /> Back
                         </button>
                         <button
+                            type="button"
                             onClick={() => handleSetStep(3)}
                             disabled={!selectedDate || !selectedTime}
-                            className="flex items-center gap-2 bg-primary text-primary-foreground font-bold px-6 py-3 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed hover:bg-primary/90 transition-colors"
+                            className="flex items-center gap-2 bg-primary text-primary-foreground font-bold px-6 py-3 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed hover:bg-primary/90 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                         >
-                            Review <ChevronRight className="w-4 h-4" />
+                            Review <ChevronRight className="w-4 h-4" aria-hidden="true" />
                         </button>
                     </div>
                 </section>
@@ -625,27 +648,29 @@ export function BookingFlow({ registeredChildren: childList, centres, reschedule
                     </div>
 
                     {error && (
-                        <div className="bg-destructive/10 border border-destructive/30 text-destructive rounded-xl p-4 text-sm font-medium">
+                        <div role="alert" className="bg-destructive/10 border border-destructive/30 text-destructive rounded-xl p-4 text-sm font-medium">
                             {error}
                         </div>
                     )}
 
                     <div className="flex justify-between">
                         <button
+                            type="button"
                             onClick={() => handleSetStep(2)}
-                            className="flex items-center gap-2 text-muted-foreground hover:text-foreground font-bold px-4 py-3 rounded-xl hover:bg-card transition-colors"
+                            className="flex items-center gap-2 text-muted-foreground hover:text-foreground font-bold px-4 py-3 rounded-xl hover:bg-card transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                         >
-                            <ChevronLeft className="w-4 h-4" /> Back
+                            <ChevronLeft className="w-4 h-4" aria-hidden="true" /> Back
                         </button>
                         <button
+                            type="button"
                             onClick={handleConfirm}
                             disabled={loading}
-                            className="flex items-center gap-2 bg-primary text-primary-foreground font-bold px-8 py-3 rounded-xl disabled:opacity-60 hover:bg-primary/90 transition-colors"
+                            className="flex items-center gap-2 bg-primary text-primary-foreground font-bold px-8 py-3 rounded-xl disabled:opacity-60 hover:bg-primary/90 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                         >
                             {loading ? (
-                                <><Loader2 className="w-4 h-4 animate-spin" /> Booking…</>
+                                <><Loader2 className="w-4 h-4 motion-safe:animate-spin" aria-hidden="true" /> Booking…</>
                             ) : (
-                                <>Confirm Booking <CheckCircle2 className="w-4 h-4" /></>
+                                <>Confirm Booking <CheckCircle2 className="w-4 h-4" aria-hidden="true" /></>
                             )}
                         </button>
                     </div>

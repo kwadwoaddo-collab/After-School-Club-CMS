@@ -125,7 +125,7 @@ export default async function BookingPage({
           className="bg-card text-on-surface rounded-3xl shadow-xl border border-outline-variant/20 overflow-hidden"
           style={{ borderTopColor: brandColor, borderTopWidth: '4px' }}
         >
-          <div className="px-8 pt-8 pb-4">
+          <div className="px-4 sm:px-8 pt-8 pb-4">
             <div className="flex items-center gap-4 mb-1">
               {org.logoUrl && (
                 <img src={org.logoUrl} alt="Logo" className="h-10 w-auto object-contain" />
@@ -137,7 +137,7 @@ export default async function BookingPage({
             </div>
           </div>
 
-          <div className="px-8 pb-8">
+          <div className="px-4 sm:px-8 pb-8">
             <BookingForm
               centreId={centre.id}
               centreName={centre.name}
