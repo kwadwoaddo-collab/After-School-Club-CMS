@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
 import { billingStylesBase, safeFormatDate, buildCentreAddressLines, getCoveredChildNames } from './billingPdfStyles';
+import { serviceTypeLabel } from '@/features/finance/service-type';
 import { evaluateInvoiceCollectionState, toLondonBusinessDate } from '@/features/finance/domain/invoice-collection-state';
 
 const styles = StyleSheet.create({
@@ -26,6 +27,7 @@ export const InvoiceTemplate = ({ invoice, organisationName }: InvoiceTemplatePr
     const { parent, child, centre, amount, invoiceNumber, invoiceDate, dueDate, billingPeriodStart, billingPeriodEnd, notes, status, payments } = invoice;
 
     // Parse address into lines for multi-line display
+    const serviceLabel = serviceTypeLabel(invoice.serviceType);
     const addressLines: string[] = buildCentreAddressLines(centre?.address);
     // Fallback to child.parent if parent relation is missing (legacy support)
     const activeParent = parent || (child && (child as any).parent);
@@ -99,7 +101,7 @@ export const InvoiceTemplate = ({ invoice, organisationName }: InvoiceTemplatePr
                 {/* Header */}
                 <View style={styles.header}>
                     <View>
-                        <Text style={styles.subtitle}>Childcare Services</Text>
+                        <Text style={styles.subtitle}>{serviceLabel === 'Tuition' ? 'Tuition Services' : 'Childcare Services'}</Text>
                         <Text style={styles.title}>INVOICE</Text>
                         <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#1e40af', marginTop: 2 }}>
                             {centre?.name || organisationName || 'CENTRE'}
@@ -170,8 +172,8 @@ export const InvoiceTemplate = ({ invoice, organisationName }: InvoiceTemplatePr
                     <View style={styles.tableRow}>
                         <Text style={styles.col1}>
                             {allChildNames.length > 1
-                                ? `Childcare services — ${allChildNames.join(', ')}`
-                                : 'Childcare services'}
+                                ? `${serviceLabel === 'Tuition' ? 'Tuition' : 'Childcare services'} — ${allChildNames.join(', ')}`
+                                : serviceLabel === 'Tuition' ? 'Tuition' : 'Childcare services'}
                         </Text>
                         <Text style={styles.col3}>£{Number(amount).toFixed(2)}</Text>
                     </View>

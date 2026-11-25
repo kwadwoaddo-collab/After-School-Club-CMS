@@ -137,6 +137,10 @@ function CollapsedView({
                 </div>
             )}
 
+            {config.serviceType === 'tuition' && (
+                <p className="text-metadata">Service type: Tuition</p>
+            )}
+
             {config.notes && (
                 <p className="text-metadata italic">{config.notes}</p>
             )}
@@ -174,6 +178,7 @@ function EditForm({
     const [fee, setFee]                 = useState(existingConfig ? String(existingConfig.agreedMonthlyPence / 100) : '');
     const [anchorDate, setAnchorDate]   = useState(existingConfig?.billingAnchorDate ?? '');
     const [notes, setNotes]             = useState(existingConfig?.notes ?? '');
+    const [serviceType, setServiceType] = useState<'childcare' | 'tuition'>(existingConfig?.serviceType ?? 'childcare');
     const [leadMode, setLeadMode]       = useState<'CALENDAR_MONTH' | 'CUSTOM_DAYS'>(() => {
         if (existingConfig?.leadTimeUnit === 'DAYS') return 'CUSTOM_DAYS';
         if (existingConfig?.leadTimeUnit === 'CALENDAR_MONTHS') return 'CALENDAR_MONTH';
@@ -294,6 +299,7 @@ function EditForm({
                         leadTimeUnit,
                         leadTimeValue,
                         notes: notes || undefined,
+                        serviceType,
                         childIds: [...selectedChildIds],
                         ...(shouldConfirmEnrolment && {
                             confirmEnrolment: {
@@ -558,6 +564,27 @@ function EditForm({
                     </div>
                 )}
             </div>
+
+            {/* Service type: wording on this family's invoices and receipts */}
+            <fieldset>
+                <legend className="text-label text-text-muted mb-1.5">Service type</legend>
+                <div className="flex flex-wrap gap-4">
+                    {([['childcare', 'Childcare'], ['tuition', 'Tuition']] as const).map(([value, label]) => (
+                        <label key={value} className="inline-flex min-h-11 items-center gap-2 text-small-body text-text">
+                            <input
+                                type="radio"
+                                name="billing-service-type"
+                                value={value}
+                                checked={serviceType === value}
+                                onChange={() => setServiceType(value)}
+                                disabled={isPending}
+                            />
+                            {label}
+                        </label>
+                    ))}
+                </div>
+                <p className="text-metadata mt-1">Sets the wording on new invoices and receipts for this family. Documents already issued do not change.</p>
+            </fieldset>
 
             {/* Notes */}
             <div>

@@ -446,3 +446,69 @@ describe('billing/actions — centre-scoped authorization (Milestone 3G, L2)', (
         });
     });
 });
+
+describe('billing/actions — per-family service type', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        dbUpdate.mockImplementation(() => makeUpdateChain());
+        dbInsert.mockImplementation(() => makeInsertChain());
+        dbTransaction.mockImplementation(async (cb: any) => cb({
+            insert: () => makeInsertChain(),
+            execute: vi.fn().mockResolvedValue([]),
+            select: () => ({ from: () => ({ where: () => dbSelectWhere() }) }),
+            update: () => makeUpdateChain(),
+            delete: () => makeDeleteChain(),
+        }));
+    });
+
+    it('rejects front desk changing the service type', async () => {
+        const { auth } = await import('@/lib/auth');
+        (auth as ReturnType<typeof vi.fn>).mockResolvedValue(FRONT_DESK_SESSION);
+        getUserAccessibleCentreIds.mockResolvedValue(['centre-target']);
+        billingConfigsFindFirst.mockResolvedValue({ centreId: 'centre-target', parentId: 'parent-1', serviceType: 'childcare', children: [] });
+        const { updateBillingConfig } = await import('./actions');
+        await expect(updateBillingConfig('config-1', { serviceType: 'tuition' })).rejects.toThrow(/Only an Owner or Manager/);
+        expect(dbTransaction).not.toHaveBeenCalled();
+    });
+
+    it('rejects a manager without access to the centre', async () => {
+        const { auth } = await import('@/lib/auth');
+        (auth as ReturnType<typeof vi.fn>).mockResolvedValue(MANAGER_SESSION);
+        getUserAccessibleCentreIds.mockResolvedValue(['centre-other']);
+        billingConfigsFindFirst.mockResolvedValue({ centreId: 'centre-target', parentId: 'parent-1', serviceType: 'childcare', children: [] });
+        const { updateBillingConfig } = await import('./actions');
+        await expect(updateBillingConfig('config-1', { serviceType: 'tuition' })).rejects.toThrow(/Unauthorized/);
+        expect(dbTransaction).not.toHaveBeenCalled();
+    });
+
+    it('rejects an invalid service type', async () => {
+        const { auth } = await import('@/lib/auth');
+        (auth as ReturnType<typeof vi.fn>).mockResolvedValue(OWNER_SESSION);
+        getUserAccessibleCentreIds.mockResolvedValue(['centre-target']);
+        billingConfigsFindFirst.mockResolvedValue({ centreId: 'centre-target', parentId: 'parent-1', serviceType: 'childcare', children: [] });
+        const { updateBillingConfig } = await import('./actions');
+        await expect(updateBillingConfig('config-1', { serviceType: 'split' as any })).rejects.toThrow(/Childcare or Tuition/);
+    });
+
+    it('saves the toggle for a manager with access and audits the from/to change', async () => {
+        const { auth } = await import('@/lib/auth');
+        (auth as ReturnType<typeof vi.fn>).mockResolvedValue(MANAGER_SESSION);
+        getUserAccessibleCentreIds.mockResolvedValue(['centre-target']);
+        billingConfigsFindFirst.mockResolvedValue({ centreId: 'centre-target', parentId: 'parent-1', serviceType: 'childcare', status: 'active', children: [] });
+        const sets: any[] = [];
+        const audits: any[] = [];
+        dbTransaction.mockImplementation(async (cb: any) => cb({
+            insert: () => ({ values: (v: any) => { audits.push(v); return { returning: async () => [v] }; } }),
+            execute: vi.fn().mockResolvedValue([]),
+            select: () => ({ from: () => ({ where: () => dbSelectWhere() }) }),
+            update: () => { const c: any = { set: (v: any) => { sets.push(v); return c; }, where: async () => undefined }; return c; },
+            delete: () => makeDeleteChain(),
+        }));
+        const { updateBillingConfig } = await import('./actions');
+        const result = await updateBillingConfig('config-1', { serviceType: 'tuition' });
+        expect(result.success).toBe(true);
+        expect(sets[0]).toMatchObject({ serviceType: 'tuition' });
+        const audit = audits.find(a => a.eventType === 'billing_config_updated');
+        expect(JSON.parse(audit.eventData).serviceType).toEqual({ from: 'childcare', to: 'tuition' });
+    });
+});

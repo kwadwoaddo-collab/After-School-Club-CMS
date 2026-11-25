@@ -3,6 +3,7 @@ import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
 import { billingStylesBase, safeFormatDate, buildCentreAddressLines, getCoveredChildNames } from './billingPdfStyles';
 import {receiptIdentityPayment} from '../domain/payment-correction';
 import { stableReceiptNumber } from '@/lib/finance/receipt-number';
+import { serviceTypeLabel } from '@/features/finance/service-type';
 
 
 const styles = StyleSheet.create({
@@ -117,7 +118,7 @@ export const ReceiptTemplate = ({ invoice, organisationName }: ReceiptTemplatePr
                                 {allChildNames.length > 1 ? `Child ${i + 1}: ` : 'Child: '}{name}
                             </Text>
                         ))}
-                        <Text>Type of Service: Childcare</Text>
+                        <Text>Type of Service: {serviceTypeLabel(invoice.serviceType)}</Text>
                         {billingPeriodStart && billingPeriodEnd ? (
                             <Text>Service Period: {safeFormatDate(billingPeriodStart, 'dd/MM/yyyy')} – {safeFormatDate(billingPeriodEnd, 'dd/MM/yyyy')}</Text>
                         ) : billingPeriodStart ? (

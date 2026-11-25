@@ -1,4 +1,5 @@
 import { logger } from '@/lib/logger';
+import { normaliseServiceType } from '@/features/finance/service-type';
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { verifyCronAuthorization } from '@/lib/cron-auth';
@@ -355,6 +356,7 @@ export async function POST(request: NextRequest) {
                             billingConfigId: config.id,
                             billingPeriodLabel: schedule.periodLabel,
                             coveredChildrenJson: coveredChildren,
+                            serviceType: normaliseServiceType(config.serviceType),
                         }).returning();
 
                         await tx.insert(billingRuns).values({

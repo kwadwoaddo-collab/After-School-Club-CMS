@@ -674,6 +674,8 @@ export const invoices = pgTable('invoices', {
   billingConfigId: uuid('billing_config_id'),
   billingPeriodLabel: varchar('billing_period_label', { length: 100 }),
   coveredChildrenJson: jsonb('covered_children_json'),
+  // Snapshot of the family's service type at generation time (see drizzle/0038)
+  serviceType: varchar('service_type', { length: 20 }).$type<'childcare' | 'tuition'>().notNull().default('childcare'),
 
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
@@ -1297,6 +1299,9 @@ export const billingConfigs = pgTable('billing_configs', {
 
   status: billingStatusEnum('status').notNull().default('active'),
   notes:  text('notes'),
+
+  // Per-family service type: wording on invoices/receipts (see drizzle/0038)
+  serviceType: varchar('service_type', { length: 20 }).$type<'childcare' | 'tuition'>().notNull().default('childcare'),
 
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),

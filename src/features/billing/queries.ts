@@ -311,6 +311,7 @@ export interface StudentBillingConfig {
     leadTimeValue?:     number | null;
     status:             'active' | 'paused' | 'cancelled';
     notes:              string | null;
+    serviceType?:       'childcare' | 'tuition';
     coveredChildren:    CoveredChild[];
 }
 
@@ -357,6 +358,7 @@ export async function fetchStudentBillingConfig(
         leadTimeValue:      config.leadTimeValue ?? null,
         status:             config.status,
         notes:              config.notes ?? null,
+        serviceType:        config.serviceType === 'tuition' ? 'tuition' : 'childcare',
         coveredChildren:    (config.children ?? []).map(cc => ({
             childId:   cc.child.id,
             childName: `${cc.child.firstName} ${cc.child.lastName}`,
