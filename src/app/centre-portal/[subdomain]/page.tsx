@@ -68,7 +68,7 @@ export default async function CentrePortalLanding({ params }: Props) {
     if (!data) notFound();
 
     const { org } = data;
-    const brandColor = org.brandColor || '#4F46E5';
+    const brandColor = org.brandColor || '#0D9488';
     const appUrl = getTrustedApplicationUrl();
 
     const displayName = data.kind === 'centre' ? data.centre.name : data.org.name;
@@ -104,32 +104,32 @@ export default async function CentrePortalLanding({ params }: Props) {
                 <div>
                     <h1 className="text-3xl font-black text-white tracking-tight">{displayName}</h1>
                     {org.name !== displayName && (
-                        <p className="text-white/40 text-xs mt-1">{org.name}</p>
+                        <p className="text-white/70 text-xs mt-1">{org.name}</p>
                     )}
                 </div>
 
                 {/* Centre / Org info pills */}
                 <div className="flex flex-wrap gap-2 justify-center mt-2">
                     {address && (
-                        <span className="flex items-center gap-1.5 text-xs text-white/60 bg-white/5 border border-white/10 rounded-full px-3 py-1.5">
+                        <span className="flex items-center gap-1.5 text-xs text-white/75 bg-white/5 border border-white/10 rounded-full px-3 py-1.5">
                             <MapPin className="w-3 h-3" />
                             {address}
                         </span>
                     )}
                     {phone && (
-                        <a href={`tel:${phone}`} className="flex items-center gap-1.5 text-xs text-white/60 hover:text-white bg-white/5 border border-white/10 rounded-full px-3 py-1.5 transition-colors">
+                        <a href={`tel:${phone}`} className="min-h-11 inline-flex items-center gap-1.5 text-xs text-white/75 hover:text-white bg-white/5 border border-white/10 rounded-full px-3.5 py-2 transition-colors break-all sm:break-normal">
                             <Phone className="w-3 h-3" />
                             {phone}
                         </a>
                     )}
                     {email && (
-                        <a href={`mailto:${email}`} className="flex items-center gap-1.5 text-xs text-white/60 hover:text-white bg-white/5 border border-white/10 rounded-full px-3 py-1.5 transition-colors">
+                        <a href={`mailto:${email}`} className="min-h-11 inline-flex items-center gap-1.5 text-xs text-white/75 hover:text-white bg-white/5 border border-white/10 rounded-full px-3.5 py-2 transition-colors break-all sm:break-normal">
                             <Mail className="w-3 h-3" />
                             {email}
                         </a>
                     )}
                     {operatingHours && (
-                        <span className="flex items-center gap-1.5 text-xs text-white/60 bg-white/5 border border-white/10 rounded-full px-3 py-1.5">
+                        <span className="flex items-center gap-1.5 text-xs text-white/75 bg-white/5 border border-white/10 rounded-full px-3 py-1.5">
                             <Clock className="w-3 h-3" />
                             Open
                         </span>
@@ -143,7 +143,7 @@ export default async function CentrePortalLanding({ params }: Props) {
                 <Link
                     href={bookHref}
                     id="portal-book-btn"
-                    className="group flex items-center gap-5 w-full p-6 rounded-[24px] bg-white/5 border border-white/10 backdrop-blur-xl hover:bg-white/8 hover:border-white/20 transition-all duration-300 hover:shadow-[0_8px_32px_rgba(0,0,0,0.3)] hover:scale-[1.02] active:scale-[0.99]"
+                    className="group flex items-center gap-4 sm:gap-5 w-full p-4 sm:p-6 rounded-[24px] bg-white/5 border border-white/10 backdrop-blur-xl hover:bg-white/8 hover:border-white/20 transition-all duration-300 hover:shadow-[0_8px_32px_rgba(0,0,0,0.3)] hover:scale-[1.02] active:scale-[0.99]"
                 >
                     <div
                         className="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg transition-transform duration-300 group-hover:scale-110"
@@ -153,25 +153,25 @@ export default async function CentrePortalLanding({ params }: Props) {
                     </div>
                     <div className="flex-1 text-left">
                         <p className="text-white font-bold text-lg leading-tight">Book a Session</p>
-                        <p className="text-white/50 text-sm mt-0.5">Reserve your child&apos;s place in a session</p>
+                        <p className="text-white/75 text-sm mt-0.5">Reserve your child&apos;s place in a session</p>
                     </div>
-                    <ArrowRight className="w-5 h-5 text-white/30 group-hover:text-white/60 group-hover:translate-x-1 transition-all duration-200 flex-shrink-0" />
+                    <ArrowRight className="w-5 h-5 text-white/70 group-hover:text-white/75 group-hover:translate-x-1 transition-all duration-200 flex-shrink-0" />
                 </Link>
 
                 {/* Register My Child */}
                 <Link
                     href={registerHref}
                     id="portal-register-btn"
-                    className="group flex items-center gap-5 w-full p-6 rounded-[24px] bg-white/5 border border-white/10 backdrop-blur-xl hover:bg-white/8 hover:border-white/20 transition-all duration-300 hover:shadow-[0_8px_32px_rgba(0,0,0,0.3)] hover:scale-[1.02] active:scale-[0.99]"
+                    className="group flex items-center gap-4 sm:gap-5 w-full p-4 sm:p-6 rounded-[24px] bg-white/5 border border-white/10 backdrop-blur-xl hover:bg-white/8 hover:border-white/20 transition-all duration-300 hover:shadow-[0_8px_32px_rgba(0,0,0,0.3)] hover:scale-[1.02] active:scale-[0.99]"
                 >
                     <div className="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 bg-white/5 border border-white/10 shadow-lg transition-transform duration-300 group-hover:scale-110">
                         <ClipboardList className="w-7 h-7 text-white/70" />
                     </div>
                     <div className="flex-1 text-left">
                         <p className="text-white font-bold text-lg leading-tight">Register My Child</p>
-                        <p className="text-white/50 text-sm mt-0.5">Complete the registration form for a new student</p>
+                        <p className="text-white/75 text-sm mt-0.5">Complete the registration form for a new student</p>
                     </div>
-                    <ArrowRight className="w-5 h-5 text-white/30 group-hover:text-white/60 group-hover:translate-x-1 transition-all duration-200 flex-shrink-0" />
+                    <ArrowRight className="w-5 h-5 text-white/70 group-hover:text-white/75 group-hover:translate-x-1 transition-all duration-200 flex-shrink-0" />
                 </Link>
             </div>
 
@@ -179,15 +179,15 @@ export default async function CentrePortalLanding({ params }: Props) {
             <div className="mt-12 text-center">
                 <Link
                     href="/staff-login"
-                    className="text-xs text-white/30 hover:text-white/50 transition-colors"
+                    className="min-h-11 inline-flex items-center px-3 text-xs text-white/70 hover:text-white transition-colors"
                 >
                     Staff login →
                 </Link>
             </div>
 
             {/* Footer */}
-            <p className="mt-8 text-xs text-white/20">
-                Powered by <span className="text-white/30 font-semibold">SprintScale</span>
+            <p className="mt-8 text-xs text-white/70">
+                Powered by <span className="text-white/70 font-semibold">SprintScale</span>
             </p>
         </div>
     );

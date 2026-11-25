@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Building2 } from 'lucide-react';
 import { db } from '@/db';
-import { eq, and, inArray } from 'drizzle-orm';
+import { eq, and, inArray, isNull } from 'drizzle-orm';
 import { children, organisations, payments } from '@/db/schema';
 import { resolveActiveCentreId } from '@/lib/centre-filter';
 import { getUserAccessibleCentres, getVisibleChildIds } from '@/lib/permissions';
@@ -45,9 +45,10 @@ export default async function ReceiptPage(props: { searchParams?: Promise<{ paym
                 <div className="flex items-center gap-4 no-print">
                     <Link
                         href="/dashboard/finance"
-                        className="p-2 hover:bg-secondary rounded-2xl transition-all text-muted-foreground hover:text-foreground"
+                        aria-label="Back to finance"
+                        className="min-h-11 min-w-11 inline-flex items-center justify-center p-2 hover:bg-secondary rounded-2xl transition-all text-muted-foreground hover:text-foreground"
                     >
-                        <ArrowLeft className="w-5 h-5" />
+                        <ArrowLeft className="w-5 h-5" aria-hidden="true" />
                     </Link>
                     <div className="flex-1">
                         <h1 className="text-3xl font-bold text-foreground tracking-tight">
@@ -67,36 +68,54 @@ export default async function ReceiptPage(props: { searchParams?: Promise<{ paym
         );
     }
 
-    // Fetch real organisation record so receipt headers never fall back to the logged-in user's personal name
-    const orgRecord = await db.query.organisations.findFirst({
-        where: eq(organisations.id, orgId),
-        columns: { id: true, name: true, slug: true },
-    });
-
-    // Fetch children with parent records for the selection dropdown (scoped to accessible centres)
-    const visibleChildIds = await getVisibleChildIds(session.user.id, orgId);
-    const validVisibleChildIds = visibleChildIds === null
-        ? null
-        : visibleChildIds.filter(isValidUuid);
-
-    const allChildren = validVisibleChildIds !== null && validVisibleChildIds.length === 0
-        ? []
-        : await db.query.children.findMany({
-            where: validVisibleChildIds === null
-                ? eq(children.organisationId, orgId)
-                : and(
-                    eq(children.organisationId, orgId),
-                    inArray(children.id, validVisibleChildIds)
-                ),
-            with: {
-                parent: true,
-            },
-            orderBy: (children, { asc }) => [asc(children.firstName)],
-        });
-
     const validPaymentId = isValidUuid(searchParams.paymentId)
         ? searchParams.paymentId
         : undefined;
+
+    const [orgRecord, allChildren, paymentRecord] = await Promise.all([
+        db.query.organisations.findFirst({
+            where: eq(organisations.id, orgId),
+            columns: { id: true, name: true, slug: true },
+        }),
+        (async () => {
+            const visibleChildIds = await getVisibleChildIds(session.user.id, orgId);
+            const validVisibleChildIds = visibleChildIds === null
+                ? null
+                : visibleChildIds.filter(isValidUuid);
+
+            if (validVisibleChildIds !== null && validVisibleChildIds.length === 0) {
+                return [];
+            }
+
+            return db.query.children.findMany({
+                where: validVisibleChildIds === null
+                    ? and(eq(children.organisationId, orgId), isNull(children.deletedAt))
+                    : and(
+                        eq(children.organisationId, orgId),
+                        isNull(children.deletedAt),
+                        inArray(children.id, validVisibleChildIds)
+                    ),
+                with: {
+                    parent: true,
+                },
+                orderBy: (children, { asc }) => [asc(children.firstName)],
+            });
+        })(),
+        validPaymentId
+            ? db.query.payments.findFirst({
+                where: eq(payments.id, validPaymentId),
+                with: {
+                    invoice: {
+                        with: {
+                            parent: true,
+                            child: true,
+                            centre: true,
+                        },
+                    },
+                },
+            })
+            : Promise.resolve(null),
+    ]);
 
     let initialPayment: {
         id: string;
@@ -115,18 +134,6 @@ export default async function ReceiptPage(props: { searchParams?: Promise<{ paym
     } | null = null;
 
     if (validPaymentId) {
-        const paymentRecord = await db.query.payments.findFirst({
-            where: eq(payments.id, validPaymentId),
-            with: {
-                invoice: {
-                    with: {
-                        parent: true,
-                        child: true,
-                        centre: true,
-                    },
-                },
-            },
-        });
 
         const inv = paymentRecord?.invoice;
         const canAccessPaymentInvoice = Boolean(
@@ -163,9 +170,10 @@ export default async function ReceiptPage(props: { searchParams?: Promise<{ paym
             <div className="flex items-center gap-4 no-print">
                 <Link
                     href={backHref}
-                    className="p-2 hover:bg-secondary rounded-2xl transition-all text-muted-foreground hover:text-foreground"
+                    aria-label="Back to finance"
+                    className="min-h-11 min-w-11 inline-flex items-center justify-center p-2 hover:bg-secondary rounded-2xl transition-all text-muted-foreground hover:text-foreground"
                 >
-                    <ArrowLeft className="w-5 h-5" />
+                    <ArrowLeft className="w-5 h-5" aria-hidden="true" />
                 </Link>
                 <div className="flex-1">
                     <h1 className="text-3xl font-bold text-foreground tracking-tight">

@@ -48,23 +48,24 @@ export default async function KioskPage(props: {
             : inArray(children.centreId, centreIds);
 
         try {
-            allChildrenAtCentre = await db.query.children.findMany({
-                where: and(centreChildrenCondition, eq(children.isRegistered, true), isNull(children.deletedAt)),
-                with: { parent: true, centre: true },
-                extras: { effectiveEnrolmentStatus: studentLifecycleStatusSql(enrolmentBusinessDate(now)).as('effective_enrolment_status') },
-            });
-
-            todayBookings = await db.query.bookings.findMany({
-                where: and(centreFilter, gte(bookings.startAt, dayStart), lte(bookings.startAt, dayEnd)),
-                with: {
-                    centre: true,
-                    attendees: {
-                        with: {
-                            child: true
+            [allChildrenAtCentre, todayBookings] = await Promise.all([
+                db.query.children.findMany({
+                    where: and(centreChildrenCondition, eq(children.isRegistered, true), isNull(children.deletedAt)),
+                    with: { parent: true, centre: true },
+                    extras: { effectiveEnrolmentStatus: studentLifecycleStatusSql(enrolmentBusinessDate(now)).as('effective_enrolment_status') },
+                }),
+                db.query.bookings.findMany({
+                    where: and(centreFilter, gte(bookings.startAt, dayStart), lte(bookings.startAt, dayEnd)),
+                    with: {
+                        centre: true,
+                        attendees: {
+                            with: {
+                                child: true
+                            }
                         }
-                    }
-                },
-            });
+                    },
+                }),
+            ]);
         } catch (e) {
             logger.error("Error fetching kiosk register", e);
             allChildrenAtCentre = [];
