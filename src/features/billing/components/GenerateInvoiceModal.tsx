@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState, useTransition } from 'react';
+import { useMemo, useRef, useState, useTransition } from 'react';
 import { X, Check, AlertTriangle, FileText, Users, History } from 'lucide-react';
 import { penceToPounds, poundsToPence } from '@/lib/billing';
 import {
@@ -10,6 +10,7 @@ import {
     isHistoricalBillingPeriod,
 } from '@/lib/billing/date-engine';
 import Link from 'next/link';
+import { useDialogFocusTrap } from '@/components/ui/useDialogFocusTrap';
 import type { DraftProblem } from '../draft-result';
 import { generateFamilyDraftInvoice } from '@/features/billing/actions';
 import type { CoveredChild } from '@/features/billing/queries';
@@ -123,16 +124,12 @@ export default function GenerateInvoiceModal({
     const [error, setError]             = useState('');
     const [isPending, start]            = useTransition();
     const [invoiceId, setInvoiceId]     = useState('');
+    const generatingRef                 = useRef(false);
+    const dialogRef                     = useRef<HTMLDivElement | null>(null);
 
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Escape' && !isPending) {
-                onClose();
-            }
-        };
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [isPending, onClose]);
+    useDialogFocusTrap(true, dialogRef, () => {
+        if (!generatingRef.current && !isPending) onClose();
+    });
 
     const handleFeeChange = (val: string) => {
         setEditedFee(val);
@@ -141,6 +138,7 @@ export default function GenerateInvoiceModal({
     };
 
     const handleGenerate = () => {
+        if (generatingRef.current || isPending) return;
         setError(''); setProblem(null);
         if (!editedPence || editedPence <= 0) {
             setError('Please enter a valid amount');
@@ -154,6 +152,7 @@ export default function GenerateInvoiceModal({
             }
         }
 
+        generatingRef.current = true;
         start(async () => {
             try {
                 const result = await generateFamilyDraftInvoice({
@@ -171,28 +170,41 @@ export default function GenerateInvoiceModal({
                 onSuccess();
             } catch {
                 setProblem({title:'Draft creation not confirmed',message:'Check the family ledger before retrying because a draft may already have been created. Your entries are still here; reload the page if the result is unclear.'});
+            } finally {
+                generatingRef.current = false;
             }
         });
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm">
-            <div role="dialog" aria-modal="true" aria-label={`Generate Draft Invoice for ${familyName}`} className="bg-card rounded-2xl shadow-2xl w-full max-w-md overflow-hidden max-h-[92vh] overflow-y-auto">
+        <div
+            onClick={(e) => { if (e.target === e.currentTarget && !isPending) onClose(); }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm"
+        >
+            <div
+                ref={dialogRef}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="generate-invoice-modal-title"
+                tabIndex={-1}
+                className="bg-card rounded-2xl shadow-2xl w-full max-w-md overflow-hidden max-h-[92vh] overflow-y-auto"
+            >
                 {/* Header */}
                 <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-border">
                     <div className="flex items-center gap-3">
                         <div className="w-9 h-9 bg-primary/5 border border-primary/20 rounded-xl flex items-center justify-center">
-                            <FileText className="w-4.5 h-4.5 text-primary" />
+                            <FileText className="w-4.5 h-4.5 text-primary" aria-hidden="true" />
                         </div>
                         <div>
-                            <p className="text-sm font-black text-foreground">Generate Draft Invoice</p>
+                            <h2 id="generate-invoice-modal-title" className="text-sm font-black text-foreground">Generate Draft Invoice</h2>
                             <p className="text-xs text-muted-foreground">{familyName}</p>
                         </div>
                     </div>
                     <button
+                        type="button"
                         onClick={onClose}
                         aria-label="Close modal"
-                        className="w-8 h-8 rounded-xl hover:bg-secondary/60 flex items-center justify-center text-muted-foreground hover:text-foreground transition-all"
+                        className="w-11 h-11 rounded-xl hover:bg-secondary/60 flex items-center justify-center text-muted-foreground hover:text-foreground transition-all"
                     >
                         <X className="w-4 h-4" />
                     </button>
@@ -203,10 +215,11 @@ export default function GenerateInvoiceModal({
                         {/* Period Selector */}
                         {selectablePeriods.length > 1 && (
                             <div>
-                                <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1.5">
+                                <label htmlFor="generate-invoice-period" className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1.5">
                                     Billing Period
                                 </label>
                                 <select
+                                    id="generate-invoice-period"
                                     value={selectedPeriodKey}
                                     onChange={(e) => {
                                         setSelectedPeriodKey(e.target.value);
@@ -252,10 +265,11 @@ export default function GenerateInvoiceModal({
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="block text-[11px] font-bold text-amber-900 dark:text-amber-200 uppercase tracking-wider mb-1">
+                                    <label htmlFor="generate-invoice-historical-reason" className="block text-[11px] font-bold text-amber-900 dark:text-amber-200 uppercase tracking-wider mb-1">
                                         Reason for Historical Draft (Required for Audit)
                                     </label>
                                     <input
+                                        id="generate-invoice-historical-reason"
                                         type="text"
                                         value={historicalReason}
                                         onChange={e => setHistoricalReason(e.target.value)}
@@ -295,12 +309,13 @@ export default function GenerateInvoiceModal({
 
                         {/* Amount — editable */}
                         <div>
-                            <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1.5">
+                            <label htmlFor="generate-invoice-amount" className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1.5">
                                 Invoice Amount
                             </label>
                             <div className="relative">
                                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-sm">£</span>
                                 <input
+                                    id="generate-invoice-amount"
                                     type="number"
                                     step="0.01"
                                     min="0"
@@ -316,10 +331,11 @@ export default function GenerateInvoiceModal({
 
                         {/* Notes */}
                         <div>
-                            <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1.5">
+                            <label htmlFor="generate-invoice-notes" className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1.5">
                                 Notes (optional)
                             </label>
                             <textarea
+                                id="generate-invoice-notes"
                                 value={notes}
                                 onChange={e => setNotes(e.target.value)}
                                 rows={2}
@@ -346,6 +362,7 @@ export default function GenerateInvoiceModal({
                         {/* Actions */}
                         <div className="flex gap-2 pt-1">
                             <button
+                                type="button"
                                 onClick={onClose}
                                 disabled={isPending}
                                 className="flex-1 h-11 rounded-xl border border-border text-muted-foreground text-sm font-bold hover:bg-secondary/40 transition-all disabled:opacity-50"
@@ -353,6 +370,7 @@ export default function GenerateInvoiceModal({
                                 Cancel
                             </button>
                             <button
+                                type="button"
                                 onClick={handleGenerate}
                                 disabled={isPending}
                                 className="flex-1 h-11 rounded-xl bg-primary text-primary-foreground text-sm font-black hover:bg-primary/90 transition-all disabled:opacity-60 active:scale-[0.98] flex items-center justify-center gap-2"
@@ -380,15 +398,16 @@ export default function GenerateInvoiceModal({
                         </div>
                         <div className="flex gap-2 justify-center">
                             <button
+                                type="button"
                                 onClick={onClose}
-                                className="px-5 h-10 rounded-xl border border-border text-foreground text-sm font-bold hover:bg-secondary/40 transition-all"
+                                className="px-5 min-h-11 rounded-xl border border-border text-foreground text-sm font-bold hover:bg-secondary/40 transition-all"
                             >
                                 Done
                             </button>
                             {invoiceId && (
                                 <a
                                     href={`/dashboard/finance/invoices/${invoiceId}`}
-                                    className="px-5 h-10 rounded-xl bg-primary text-primary-foreground text-sm font-black hover:bg-primary/90 transition-all flex items-center gap-1.5"
+                                    className="px-5 min-h-11 rounded-xl bg-primary text-primary-foreground text-sm font-black hover:bg-primary/90 transition-all flex items-center gap-1.5"
                                 >
                                     <FileText className="w-4 h-4" />
                                     Review & Issue Draft

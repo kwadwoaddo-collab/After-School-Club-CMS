@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { useDialogFocusTrap } from '@/components/ui/useDialogFocusTrap';
 import { CANONICAL_SCHOOL_YEARS, formatSchoolYearLabel } from '@/lib/school-year';
 
 
@@ -143,6 +144,17 @@ export function AttendeeCard({
     const [showMedicalModal, setShowMedicalModal] = useState(false);
     const [saved, setSaved]   = useState(false);
     const [isPending, startTransition] = useTransition();
+    const medicalDialogRef = useRef<HTMLDivElement | null>(null);
+
+    useDialogFocusTrap(showMedicalModal, medicalDialogRef, () => setShowMedicalModal(false));
+
+    useEffect(() => {
+        savedIds.current = { bookingId: attendee.bookingId, attendeeId: attendee.id };
+        setCheckIn(attendee.checkInTime ?? '');
+        setCheckOut(attendee.checkOutTime ?? '');
+        setIsAbsent(attendee.attendanceStatus === 'absent');
+        setAbsenceReason(attendee.attendanceStatus === 'absent' ? attendee.attendanceNote || 'other' : '');
+    }, [attendee.id, attendee.bookingId, attendee.checkInTime, attendee.checkOutTime, attendee.attendanceStatus, attendee.attendanceNote]);
 
     const safeAllergies = (attendee.allergies ?? []).map(a => a?.trim()).filter(Boolean) as string[];
     const dietaryRequirements = attendee.dietaryRequirements?.trim() || null;
@@ -404,12 +416,17 @@ export function AttendeeCard({
             {/* Medical & Authorised Collectors Detail Modal (non-safeguarding rows only) */}
             {showMedicalModal && (
                 <div
-                    role="dialog"
-                    aria-modal="true"
-                    aria-labelledby={`rollcall-medical-title-${attendee.id}`}
+                    onClick={(e) => { if (e.target === e.currentTarget) setShowMedicalModal(false); }}
                     className="fixed inset-0 z-[300] flex items-center justify-center bg-black/50 px-4 py-6"
                 >
-                    <div className="bg-surface border border-border rounded-lg shadow-[var(--shadow-popover)] max-w-md w-full max-h-[85vh] overflow-y-auto p-6 space-y-4">
+                    <div
+                        ref={medicalDialogRef}
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby={`rollcall-medical-title-${attendee.id}`}
+                        tabIndex={-1}
+                        className="bg-surface border border-border rounded-lg shadow-[var(--shadow-popover)] max-w-md w-full max-h-[85vh] overflow-y-auto p-6 space-y-4"
+                    >
                         <div className="flex items-start justify-between gap-3 border-b border-border-subtle pb-3">
                             <div>
                                 <div className="flex items-center gap-2">
@@ -426,7 +443,7 @@ export function AttendeeCard({
                                 type="button"
                                 onClick={() => setShowMedicalModal(false)}
                                 aria-label="Close medical summary"
-                                className="p-1.5 rounded-sm text-text-muted hover:text-text hover:bg-page transition-colors"
+                                className="min-w-[44px] min-h-[44px] p-2 inline-flex items-center justify-center rounded-sm text-text-muted hover:text-text hover:bg-page transition-colors"
                             >
                                 <X className="w-4 h-4" />
                             </button>
@@ -553,12 +570,18 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, canViewPr
     const [searchQuery, setSearchQuery] = useState('');
     const [showWalkIn, setShowWalkIn] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const submittingWalkInRef = useRef(false);
+    const walkInDialogRef = useRef<HTMLDivElement | null>(null);
     const [bulkPendingSlot, setBulkPendingSlot] = useState<string | null>(null);
     const [bulkError, setBulkError] = useState('');
 
-    const [markedStatus, setMarkedStatus] = useState<Record<string, AttendeeStatus>>(() => {
+    useDialogFocusTrap(showWalkIn, walkInDialogRef, () => {
+        if (!submittingWalkInRef.current) setShowWalkIn(false);
+    });
+
+    const buildMarkedStatusMap = (nextSlots: CompiledSlot[]): Record<string, AttendeeStatus> => {
         const map: Record<string, AttendeeStatus> = {};
-        for (const slot of slots) {
+        for (const slot of nextSlots) {
             for (const a of [...slot.regulars, ...slot.catchups]) {
                 map[a.id] = {
                     checkedIn: !!a.checkInTime,
@@ -568,7 +591,13 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, canViewPr
             }
         }
         return map;
-    });
+    };
+
+    const [markedStatus, setMarkedStatus] = useState<Record<string, AttendeeStatus>>(() => buildMarkedStatusMap(slots));
+
+    useEffect(() => {
+        setMarkedStatus(buildMarkedStatusMap(slots));
+    }, [slots, centreId, dateStr]);
 
     const updateMarkedStatus = (id: string, patch: Partial<AttendeeStatus>) => {
         setMarkedStatus(prev => ({ ...prev, [id]: { ...prev[id], ...patch } }));
@@ -690,11 +719,14 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, canViewPr
 
 
     const handleWalkInSubmit = async () => {
+        if (submittingWalkInRef.current || isSubmitting) return;
+        submittingWalkInRef.current = true;
         setIsSubmitting(true);
         try {
             if (walkInTab === 'existing') {
                 if (!selectedChildId) {
                     toast({ title: 'No student selected', message: 'Please select a student from the list first.', variant: 'warning' });
+                    submittingWalkInRef.current = false;
                     setIsSubmitting(false);
                     return;
                 }
@@ -704,6 +736,7 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, canViewPr
             } else {
                 if (!formChildFirst || !formChildLast || !formParentFirst || !formParentLast || !formParentEmail || !formChildDob) {
                     toast({ title: 'Missing information', message: 'Please fill in all required fields (including Child DOB) before submitting.', variant: 'warning' });
+                    submittingWalkInRef.current = false;
                     setIsSubmitting(false);
                     return;
                 }
@@ -727,6 +760,7 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, canViewPr
         } catch {
             toast({ title: 'Could not register student', message: 'Please check the details and try again.', variant: 'error' });
         } finally {
+            submittingWalkInRef.current = false;
             setIsSubmitting(false);
         }
     };
@@ -753,7 +787,7 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, canViewPr
             {bulkError && <div role="alert" className="rounded-md border border-destructive p-3 text-sm text-destructive"><p>{bulkError}</p><Button variant="outline" size="sm" onClick={() => window.location.reload()}>Reload saved register</Button></div>}
 
             {/* ── Sticky action bar ─────────────────────────────────────────── */}
-            <div className="sticky top-16 sm:top-20 z-20 -mx-4 sm:-mx-8 px-4 sm:px-8 py-3 bg-page/90 backdrop-blur-sm border-b border-border-subtle flex flex-col sm:flex-row items-stretch gap-2.5">
+            <div className="sticky top-14 z-20 -mx-4 sm:-mx-8 px-4 sm:px-8 py-3 bg-page/90 backdrop-blur-sm border-b border-border-subtle flex flex-col sm:flex-row items-stretch gap-2.5">
                 {/* Search */}
                 <div className="relative flex-1">
                     <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none" />
@@ -767,10 +801,12 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, canViewPr
                     />
                     {searchQuery && (
                         <button
+                            type="button"
+                            aria-label="Clear search"
                             onClick={() => setSearchQuery('')}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-sm hover:bg-page text-text-muted hover:text-text transition-all"
+                            className="absolute right-1.5 top-1/2 -translate-y-1/2 min-w-9 min-h-9 inline-flex items-center justify-center rounded-sm hover:bg-page text-text-muted hover:text-text transition-all"
                         >
-                            <X className="w-4 h-4" />
+                            <X className="w-4 h-4" aria-hidden="true" />
                         </button>
                     )}
                 </div>
@@ -847,9 +883,10 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, canViewPr
                                     <div className="flex items-center gap-2 flex-wrap justify-end">
                                         {!allMarked && (
                                             <button
+                                                type="button"
                                                 onClick={() => handleMarkAllIn(slot)}
                                                 disabled={bulkPendingSlot !== null || !!bulkError}
-                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors disabled:opacity-60 bg-success-soft text-emerald-700 dark:text-emerald-400 border-transparent hover:opacity-80"
+                                                className="inline-flex items-center gap-1.5 min-h-[44px] px-3.5 py-2 rounded-full text-xs font-semibold border transition-colors disabled:opacity-60 bg-success-soft text-emerald-700 dark:text-emerald-400 border-transparent hover:opacity-80"
                                             >
                                                 {bulkPendingSlot === slot.time
                                                     ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -860,9 +897,10 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, canViewPr
                                         )}
                                         {missingOut > 0 && (
                                             <button
+                                                type="button"
                                                 onClick={() => handleMarkAllOut(slot)}
                                                 disabled={bulkPendingSlot !== null || !!bulkError}
-                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors disabled:opacity-60 bg-warning-soft text-amber-700 dark:text-amber-400 border-transparent hover:opacity-80"
+                                                className="inline-flex items-center gap-1.5 min-h-[44px] px-3.5 py-2 rounded-full text-xs font-semibold border transition-colors disabled:opacity-60 bg-warning-soft text-amber-700 dark:text-amber-400 border-transparent hover:opacity-80"
                                             >
                                                 {bulkPendingSlot === `out-${slot.time}`
                                                     ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -965,16 +1003,26 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, canViewPr
 
             {/* ── Walk-In Modal ─────────────────────────────────────────────── */}
             {showWalkIn && (
-                <div className="fixed inset-0 z-[300] flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4">
-                    <div className="bg-surface border border-border rounded-t-lg sm:rounded-lg max-w-lg w-full overflow-hidden shadow-[var(--shadow-popover)]">
+                <div
+                    onClick={(e) => { if (e.target === e.currentTarget && !isSubmitting) setShowWalkIn(false); }}
+                    className="fixed inset-0 z-[300] flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4"
+                >
+                    <div
+                        ref={walkInDialogRef}
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="walk-in-dialog-title"
+                        tabIndex={-1}
+                        className="bg-surface border border-border rounded-t-lg sm:rounded-lg max-w-lg w-full overflow-hidden shadow-[var(--shadow-popover)]"
+                    >
                         {/* Header */}
                         <div className="flex items-center justify-between px-6 py-5 border-b border-border-subtle">
                             <div>
-                                <h3 className="text-section-title text-text">Register Walk-In</h3>
+                                <h3 id="walk-in-dialog-title" className="text-section-title text-text">Register Walk-In</h3>
                                 <p className="text-small-body text-text-secondary">Add a child for a one-off session</p>
                             </div>
-                            <Button variant="ghost" size="icon" onClick={() => setShowWalkIn(false)}>
-                                <X className="w-4 h-4" />
+                            <Button type="button" variant="ghost" size="icon" aria-label="Close walk-in dialog" className="min-w-[44px] min-h-[44px]" onClick={() => setShowWalkIn(false)}>
+                                <X className="w-4 h-4" aria-hidden="true" />
                             </Button>
                         </div>
 
@@ -1059,8 +1107,8 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, canViewPr
                                                 })()}
                                             </div>
                                             <div>
-                                                <label className={formLabel}>Session Time</label>
-                                                <select value={formSessionTime} onChange={e => setFormSessionTime(e.target.value)} className={formInput}>
+                                                <label htmlFor="walkin-existing-session-time" className={formLabel}>Session Time</label>
+                                                <select id="walkin-existing-session-time" value={formSessionTime} onChange={e => setFormSessionTime(e.target.value)} className={formInput}>
                                                     {['15:45', '17:00', '11:00', '12:15', '13:30', '14:45'].map(t => (
                                                         <option key={t} value={t}>{t}</option>
                                                     ))}
@@ -1069,56 +1117,56 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, canViewPr
                                         </>
                                     ) : (
                                         <>
-                                            <div className="grid grid-cols-2 gap-3">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                                 <div>
-                                                    <label className={formLabel}>Child First Name *</label>
-                                                    <input type="text" required value={formChildFirst} onChange={e => setFormChildFirst(e.target.value)} placeholder="e.g. John" className={formInput} />
+                                                    <label htmlFor="walkin-child-first" className={formLabel}>Child First Name *</label>
+                                                    <input id="walkin-child-first" type="text" required value={formChildFirst} onChange={e => setFormChildFirst(e.target.value)} placeholder="e.g. John" className={formInput} />
                                                 </div>
                                                 <div>
-                                                    <label className={formLabel}>Child Last Name *</label>
-                                                    <input type="text" required value={formChildLast} onChange={e => setFormChildLast(e.target.value)} placeholder="e.g. Doe" className={formInput} />
+                                                    <label htmlFor="walkin-child-last" className={formLabel}>Child Last Name *</label>
+                                                    <input id="walkin-child-last" type="text" required value={formChildLast} onChange={e => setFormChildLast(e.target.value)} placeholder="e.g. Doe" className={formInput} />
                                                 </div>
                                             </div>
-                                            <div className="grid grid-cols-3 gap-3">
+                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                                 <div>
-                                                    <label className={formLabel}>Date of Birth *</label>
-                                                    <input type="date" required value={formChildDob} onChange={e => setFormChildDob(e.target.value)} className={formInput} />
+                                                    <label htmlFor="walkin-child-dob" className={formLabel}>Date of Birth *</label>
+                                                    <input id="walkin-child-dob" type="date" required value={formChildDob} onChange={e => setFormChildDob(e.target.value)} className={formInput} />
                                                 </div>
                                                 <div>
-                                                    <label className={formLabel}>School Year</label>
-                                                    <select value={formYear} onChange={e => setFormYear(e.target.value)} className={formInput}>
+                                                    <label htmlFor="walkin-school-year" className={formLabel}>School Year</label>
+                                                    <select id="walkin-school-year" value={formYear} onChange={e => setFormYear(e.target.value)} className={formInput}>
                                                         {CANONICAL_SCHOOL_YEARS.map(yr => (
                                                             <option key={yr} value={yr}>{formatSchoolYearLabel(yr)}</option>
                                                         ))}
                                                     </select>
                                                 </div>
                                                 <div>
-                                                    <label className={formLabel}>Session Time</label>
-                                                    <select value={formSessionTime} onChange={e => setFormSessionTime(e.target.value)} className={formInput}>
+                                                    <label htmlFor="walkin-new-session-time" className={formLabel}>Session Time</label>
+                                                    <select id="walkin-new-session-time" value={formSessionTime} onChange={e => setFormSessionTime(e.target.value)} className={formInput}>
                                                         {['15:45', '17:00', '11:00', '12:15', '13:30', '14:45'].map(t => (
                                                             <option key={t} value={t}>{t}</option>
                                                         ))}
                                                     </select>
                                                 </div>
                                             </div>
-                                            <div className="pt-3 border-t border-border-subtle grid grid-cols-2 gap-3">
+                                            <div className="pt-3 border-t border-border-subtle grid grid-cols-1 sm:grid-cols-2 gap-3">
                                                 <div>
-                                                    <label className={formLabel}>Parent First Name *</label>
-                                                    <input type="text" required value={formParentFirst} onChange={e => setFormParentFirst(e.target.value)} placeholder="e.g. Mary" className={formInput} />
+                                                    <label htmlFor="walkin-parent-first" className={formLabel}>Parent First Name *</label>
+                                                    <input id="walkin-parent-first" type="text" required value={formParentFirst} onChange={e => setFormParentFirst(e.target.value)} placeholder="e.g. Mary" className={formInput} />
                                                 </div>
                                                 <div>
-                                                    <label className={formLabel}>Parent Last Name *</label>
-                                                    <input type="text" required value={formParentLast} onChange={e => setFormParentLast(e.target.value)} placeholder="e.g. Doe" className={formInput} />
+                                                    <label htmlFor="walkin-parent-last" className={formLabel}>Parent Last Name *</label>
+                                                    <input id="walkin-parent-last" type="text" required value={formParentLast} onChange={e => setFormParentLast(e.target.value)} placeholder="e.g. Doe" className={formInput} />
                                                 </div>
                                             </div>
-                                            <div className="grid grid-cols-2 gap-3">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                                 <div>
-                                                    <label className={formLabel}>Parent Email *</label>
-                                                    <input type="email" required value={formParentEmail} onChange={e => setFormParentEmail(e.target.value)} placeholder="mary@example.com" className={formInput} />
+                                                    <label htmlFor="walkin-parent-email" className={formLabel}>Parent Email *</label>
+                                                    <input id="walkin-parent-email" type="email" required value={formParentEmail} onChange={e => setFormParentEmail(e.target.value)} placeholder="mary@example.com" className={formInput} />
                                                 </div>
                                                 <div>
-                                                    <label className={formLabel}>Parent Phone</label>
-                                                    <input type="tel" value={formParentPhone} onChange={e => setFormParentPhone(e.target.value)} placeholder="07123456789" className={formInput} />
+                                                    <label htmlFor="walkin-parent-phone" className={formLabel}>Parent Phone</label>
+                                                    <input id="walkin-parent-phone" type="tel" value={formParentPhone} onChange={e => setFormParentPhone(e.target.value)} placeholder="07123456789" className={formInput} />
                                                 </div>
                                             </div>
                                         </>

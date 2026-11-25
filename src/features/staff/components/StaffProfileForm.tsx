@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Save, AlertTriangle, Trash2, Loader2 } from 'lucide-react';
 import { useToast } from '@/components/ui/ToastProvider';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { useDialogFocusTrap } from '@/components/ui/useDialogFocusTrap';
 import StaffRoleSelector from './StaffRoleSelector';
 import StaffCentreAssignment from './StaffCentreAssignment';
 import { updateStaffRole } from '@/features/staff/staff-actions';
@@ -52,6 +53,20 @@ export default function StaffProfileForm({
     const [saving, setSaving] = useState(false);
     const [removing, setRemoving] = useState(false);
     const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
+    const savingRef = useRef(false);
+    const removingRef = useRef(false);
+    const removeDialogRef = useRef<HTMLDivElement | null>(null);
+
+    useDialogFocusTrap(showRemoveConfirm, removeDialogRef, () => {
+        if (!removingRef.current) setShowRemoveConfirm(false);
+    });
+
+    const assignmentsKey = JSON.stringify([...currentAssignments].sort());
+    useEffect(() => {
+        setSelectedRole(currentRole);
+        setSelectedCentres(currentAssignments);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [userId, currentRole, assignmentsKey]);
 
     useEffect(() => {
         if (!currentUserId && isSelfProp === undefined) {
@@ -75,6 +90,8 @@ export default function StaffProfileForm({
     const isDirty = hasRoleChanged || hasCentresChanged;
 
     const handleSaveAll = async () => {
+        if (savingRef.current || saving) return;
+        savingRef.current = true;
         setSaving(true);
         try {
             // Save role if changed
@@ -106,11 +123,14 @@ export default function StaffProfileForm({
                 variant: 'error'
             });
         } finally {
+            savingRef.current = false;
             setSaving(false);
         }
     };
 
     const handleRemoveStaff = async () => {
+        if (removingRef.current || removing) return;
+        removingRef.current = true;
         setRemoving(true);
         try {
             const res = await fetch('/api/staff/remove', {
@@ -130,6 +150,7 @@ export default function StaffProfileForm({
                 message: err instanceof Error ? err.message : 'Failed to remove staff member',
                 variant: 'error'
             });
+            removingRef.current = false;
             setRemoving(false);
             setShowRemoveConfirm(false);
         }
@@ -171,7 +192,7 @@ export default function StaffProfileForm({
                         <button
                             type="button"
                             onClick={() => setShowRemoveConfirm(true)}
-                            className="flex items-center gap-2 text-small-body font-medium text-danger hover:opacity-80 transition-opacity"
+                            className="inline-flex items-center gap-2 min-h-[44px] text-small-body font-medium text-danger hover:opacity-80 transition-opacity"
                         >
                             <Trash2 className="w-4 h-4" />
                             Remove {staffName} from organisation
@@ -183,12 +204,22 @@ export default function StaffProfileForm({
             {/* Remove confirmation modal — same pattern as the Parents module's
                 destructive-action dialogs (BinActions / DeleteParentButton). */}
             {showRemoveConfirm && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-                    <div className="bg-surface border border-border rounded-lg shadow-[var(--shadow-popover)] p-6 max-w-sm w-full">
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+                    onClick={(e) => { if (e.target === e.currentTarget && !removing) setShowRemoveConfirm(false); }}
+                >
+                    <div
+                        ref={removeDialogRef}
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="remove-staff-dialog-title"
+                        tabIndex={-1}
+                        className="bg-surface border border-border rounded-lg shadow-[var(--shadow-popover)] p-6 max-w-sm w-full"
+                    >
                         <div className="w-11 h-11 bg-danger-soft rounded-md flex items-center justify-center mb-4">
-                            <AlertTriangle className="w-5 h-5 text-danger" />
+                            <AlertTriangle className="w-5 h-5 text-danger" aria-hidden="true" />
                         </div>
-                        <h3 className="text-section-title text-text mb-2">Remove {staffName}?</h3>
+                        <h3 id="remove-staff-dialog-title" className="text-section-title text-text mb-2">Remove {staffName}?</h3>
                         <p className="text-small-body text-text-secondary mb-6">
                             They will immediately lose access to the dashboard on their next page load. Their account is not deleted — they just lose access to this organisation.
                         </p>
@@ -206,7 +237,7 @@ export default function StaffProfileForm({
 
             {/* Sticky action bar */}
             {isDirty && (
-                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-3rem)] max-w-4xl bg-surface border border-border shadow-[var(--shadow-popover)] rounded-lg p-4 flex items-center justify-between z-40 gap-4 flex-wrap">
+                <div className="fixed bottom-20 lg:bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] sm:w-[calc(100%-3rem)] max-w-4xl bg-surface border border-border shadow-[var(--shadow-popover)] rounded-lg p-4 flex items-center justify-between z-40 gap-4 flex-wrap">
                     <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-full bg-accent-soft flex items-center justify-center flex-shrink-0">
                             <AlertTriangle className="w-4 h-4 text-accent" />

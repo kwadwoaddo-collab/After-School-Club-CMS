@@ -5,6 +5,7 @@ import { Loader2, X, AlertTriangle } from 'lucide-react';
 import { createIncident, getCentreChildren } from '@/features/incidents/actions';
 import SignatureCanvas from 'react-signature-canvas';
 import { logger } from '@/lib/logger';
+import { useDialogFocusTrap } from '@/components/ui/useDialogFocusTrap';
 
 type NewIncidentModalProps = {
     centreId: string;
@@ -87,6 +88,11 @@ export default function NewIncidentModal({ centreId, userRole, onClose, onSucces
     const sigPad = useRef<SignatureCanvas>(null);
     const dialogRef = useRef<HTMLDivElement>(null);
     const closeButtonRef = useRef<HTMLButtonElement>(null);
+    const submitLockRef = useRef(false);
+
+    useDialogFocusTrap(true, dialogRef, () => {
+        if (!isSubmitting && !submitLockRef.current) onClose();
+    });
 
     const canLogSafeguarding = userRole !== 'FRONT_DESK' && userRole !== 'TUTOR';
     const visibleIncidentTypes = INCIDENT_TYPES.filter(
@@ -102,7 +108,9 @@ export default function NewIncidentModal({ centreId, userRole, onClose, onSucces
         closeButtonRef.current?.focus();
 
         const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.defaultPrevented) return;
             if (e.key === 'Escape') {
+                if (submitLockRef.current) return;
                 e.preventDefault();
                 onClose();
                 return;
@@ -151,6 +159,7 @@ export default function NewIncidentModal({ centreId, userRole, onClose, onSucces
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (submitLockRef.current) return;
         setError(null);
         if (!childId)            return setError('Please select a child');
         if (!description.trim()) return setError('Please provide a description');
@@ -173,6 +182,7 @@ export default function NewIncidentModal({ centreId, userRole, onClose, onSucces
             signature = buildTypedSignatureDataUrl(typedSignatureName, submittedAt);
         }
 
+        submitLockRef.current = true;
         setIsSubmitting(true);
         try {
             await createIncident({
@@ -189,6 +199,7 @@ export default function NewIncidentModal({ centreId, userRole, onClose, onSucces
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to submit incident');
         } finally {
+            submitLockRef.current = false;
             setIsSubmitting(false);
         }
     };
@@ -199,6 +210,11 @@ export default function NewIncidentModal({ centreId, userRole, onClose, onSucces
             role="dialog"
             aria-modal="true"
             aria-labelledby="incident-modal-title"
+            onClick={(e) => {
+                if (e.target === e.currentTarget && !isSubmitting && !submitLockRef.current) {
+                    onClose();
+                }
+            }}
         >
             <div
                 ref={dialogRef}
@@ -214,7 +230,7 @@ export default function NewIncidentModal({ centreId, userRole, onClose, onSucces
                         type="button"
                         onClick={onClose}
                         aria-label="Close"
-                        className="p-1.5 min-h-6 min-w-6 hover:bg-page rounded-md transition-colors text-text-muted hover:text-text"
+                        className="h-11 w-11 min-h-[44px] min-w-[44px] flex items-center justify-center hover:bg-page rounded-md transition-colors text-text-muted hover:text-text"
                     >
                         <X className="w-4 h-4" aria-hidden="true" />
                     </button>
@@ -285,11 +301,11 @@ export default function NewIncidentModal({ centreId, userRole, onClose, onSucces
                                             id={`incident-type-${t}`}
                                             aria-pressed={isSelected}
                                             onClick={() => setType(t)}
-                                            className={`px-3 py-2.5 rounded-lg text-xs font-semibold border transition-all ${
+                                            className={`min-h-[44px] px-3 py-2.5 rounded-lg text-xs font-semibold border transition-all ${
                                                 isSelected
                                                     ? isSafeguarding
-                                                        ? 'bg-destructive text-[var(--destructive-foreground,#ffffff)] border-destructive shadow-sm'
-                                                        : 'bg-accent text-[var(--if-on-accent,#ffffff)] border-accent shadow-sm'
+                                                        ? 'bg-danger text-on-danger border-danger shadow-sm'
+                                                        : 'bg-accent text-on-accent border-accent shadow-sm'
                                                     : 'bg-surface text-text-secondary border-border hover:border-accent/30 hover:text-text'
                                             }`}
                                         >
@@ -349,7 +365,7 @@ export default function NewIncidentModal({ centreId, userRole, onClose, onSucces
 
                         {/* Staff Signature */}
                         <div>
-                            <div className="flex items-center justify-between gap-2 mb-2">
+                            <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
                                 <span
                                     id="incident-signature-label"
                                     className="block text-xs font-semibold text-text-muted uppercase tracking-wider"
@@ -458,7 +474,7 @@ export default function NewIncidentModal({ centreId, userRole, onClose, onSucces
                         type="button"
                         onClick={onClose}
                         disabled={isSubmitting}
-                        className="px-4 py-2.5 rounded-lg font-semibold text-sm text-text-secondary hover:bg-page transition-colors disabled:opacity-50"
+                        className="min-h-[44px] px-4 py-2.5 rounded-lg font-semibold text-sm text-text-secondary hover:bg-page transition-colors disabled:opacity-50"
                     >
                         Cancel
                     </button>
@@ -466,7 +482,7 @@ export default function NewIncidentModal({ centreId, userRole, onClose, onSucces
                         form="incident-form"
                         type="submit"
                         disabled={isSubmitting}
-                        className="px-5 py-2.5 bg-accent text-[var(--if-on-accent,#ffffff)] font-semibold text-sm rounded-lg hover:bg-accent/90 transition-colors shadow-sm flex items-center gap-2 disabled:opacity-60"
+                        className="min-h-[44px] px-5 py-2.5 bg-accent text-on-accent font-semibold text-sm rounded-lg hover:bg-accent/90 transition-colors shadow-sm flex items-center gap-2 disabled:opacity-60"
                     >
                         {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />}
                         Submit Record

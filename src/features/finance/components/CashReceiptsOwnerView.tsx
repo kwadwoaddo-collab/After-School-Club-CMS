@@ -1,6 +1,6 @@
 'use client';
 
-import { Fragment, useEffect, useState, useTransition } from 'react';
+import { Fragment, useEffect, useRef, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ChevronDown, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
@@ -221,6 +221,7 @@ export default function CashReceiptsOwnerView({
 
   // Inline delete confirmation state
   const [confirmDeleteExpenseId, setConfirmDeleteExpenseId] = useState<string | null>(null);
+  const expenseMutationLockRef = useRef(false);
 
   const toggleWeek = (weekNumber: number) => {
     setExpandedWeeks((prev) => ({ ...prev, [weekNumber]: !prev[weekNumber] }));
@@ -247,35 +248,46 @@ export default function CashReceiptsOwnerView({
 
   const handleQuickAddSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (expenseMutationLockRef.current || isPending) return;
+    expenseMutationLockRef.current = true;
     setQuickFeedback(null);
 
     startTransition(async () => {
-      const res = await createFinanceExpense({
-        centreId: quickCentreId,
-        expenseDate: quickDate,
-        amount: quickAmount,
-        description: quickDescription,
-        category: quickCategory,
-      });
+      try {
+        const res = await createFinanceExpense({
+          centreId: quickCentreId,
+          expenseDate: quickDate,
+          amount: quickAmount,
+          description: quickDescription,
+          category: quickCategory,
+        });
 
-      if (!res.success) {
+        if (!res.success) {
+          setQuickFeedback({
+            type: 'error',
+            message: res.error ?? 'Could not record outgoing.',
+          });
+          return;
+        }
+
+        setQuickAmount('');
+        setQuickDescription('');
+        setQuickFeedback({
+          type: 'success',
+          message:
+            res.createdCount && res.createdCount > 1
+              ? `Outgoing split equally across ${res.createdCount} centres.`
+              : 'Outgoing recorded in ledger.',
+        });
+        router.refresh();
+      } catch (err) {
         setQuickFeedback({
           type: 'error',
-          message: res.error ?? 'Could not record outgoing.',
+          message: err instanceof Error ? err.message : 'Could not record outgoing.',
         });
-        return;
+      } finally {
+        expenseMutationLockRef.current = false;
       }
-
-      setQuickAmount('');
-      setQuickDescription('');
-      setQuickFeedback({
-        type: 'success',
-        message:
-          res.createdCount && res.createdCount > 1
-            ? `Outgoing split equally across ${res.createdCount} centres.`
-            : 'Outgoing recorded in ledger.',
-      });
-      router.refresh();
     });
   };
 
@@ -299,26 +311,34 @@ export default function CashReceiptsOwnerView({
 
   const handleWeekInlineAddSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (expenseMutationLockRef.current || isPending) return;
+    expenseMutationLockRef.current = true;
     setWeekActionError(null);
 
     startTransition(async () => {
-      const res = await createFinanceExpense({
-        centreId: weekAddCentreId,
-        expenseDate: weekAddDate,
-        amount: weekAddAmount,
-        description: weekAddDescription,
-        category: weekAddCategory,
-      });
+      try {
+        const res = await createFinanceExpense({
+          centreId: weekAddCentreId,
+          expenseDate: weekAddDate,
+          amount: weekAddAmount,
+          description: weekAddDescription,
+          category: weekAddCategory,
+        });
 
-      if (!res.success) {
-        setWeekActionError(res.error ?? 'Could not record outgoing.');
-        return;
+        if (!res.success) {
+          setWeekActionError(res.error ?? 'Could not record outgoing.');
+          return;
+        }
+
+        setAddingInWeek(null);
+        setWeekAddAmount('');
+        setWeekAddDescription('');
+        router.refresh();
+      } catch (err) {
+        setWeekActionError(err instanceof Error ? err.message : 'Could not record outgoing.');
+      } finally {
+        expenseMutationLockRef.current = false;
       }
-
-      setAddingInWeek(null);
-      setWeekAddAmount('');
-      setWeekAddDescription('');
-      router.refresh();
     });
   };
 
@@ -334,37 +354,53 @@ export default function CashReceiptsOwnerView({
   };
 
   const handleSaveExpenseEdit = (expenseId: string) => {
+    if (expenseMutationLockRef.current || isPending) return;
+    expenseMutationLockRef.current = true;
     setWeekActionError(null);
     startTransition(async () => {
-      const res = await updateFinanceExpense({
-        expenseId,
-        centreId: editCentreId,
-        expenseDate: editDate,
-        amount: editAmount,
-        description: editDescription,
-        category: editCategory,
-      });
+      try {
+        const res = await updateFinanceExpense({
+          expenseId,
+          centreId: editCentreId,
+          expenseDate: editDate,
+          amount: editAmount,
+          description: editDescription,
+          category: editCategory,
+        });
 
-      if (!res.success) {
-        setWeekActionError(res.error ?? 'Could not update outgoing.');
-        return;
+        if (!res.success) {
+          setWeekActionError(res.error ?? 'Could not update outgoing.');
+          return;
+        }
+
+        setEditingExpenseId(null);
+        router.refresh();
+      } catch (err) {
+        setWeekActionError(err instanceof Error ? err.message : 'Could not update outgoing.');
+      } finally {
+        expenseMutationLockRef.current = false;
       }
-
-      setEditingExpenseId(null);
-      router.refresh();
     });
   };
 
   const handleConfirmDeleteExpense = (expenseId: string) => {
+    if (expenseMutationLockRef.current || isPending) return;
+    expenseMutationLockRef.current = true;
     setWeekActionError(null);
     startTransition(async () => {
-      const res = await deleteFinanceExpense({ expenseId });
-      if (!res.success) {
-        setWeekActionError(res.error ?? 'Could not delete outgoing.');
-        return;
+      try {
+        const res = await deleteFinanceExpense({ expenseId });
+        if (!res.success) {
+          setWeekActionError(res.error ?? 'Could not delete outgoing.');
+          return;
+        }
+        setConfirmDeleteExpenseId(null);
+        router.refresh();
+      } catch (err) {
+        setWeekActionError(err instanceof Error ? err.message : 'Could not delete outgoing.');
+      } finally {
+        expenseMutationLockRef.current = false;
       }
-      setConfirmDeleteExpenseId(null);
-      router.refresh();
     });
   };
 

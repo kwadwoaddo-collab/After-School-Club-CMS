@@ -1,7 +1,7 @@
 'use client';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { useState, useTransition } from 'react';
+import { useRef, useState, useTransition } from 'react';
 import Link from 'next/link';
 import {
     Plus,
@@ -54,6 +54,7 @@ export function InvoiceTable({
     const router = useRouter();
     const [confirmTarget, setConfirmTarget] = useState<{ id: string; invoiceNumber: string; action: 'delete' | 'void' } | null>(null);
     const [isPending, startTransition] = useTransition();
+    const confirmLockRef = useRef(false);
     const todayLondonIso = toLondonBusinessDate();
     
     if (!invoices || invoices.length === 0) {
@@ -121,7 +122,19 @@ export function InvoiceTable({
                                     } ${isPending ? 'cursor-wait opacity-60' : 'cursor-pointer'}`}
                                 >
                                     <td className="py-4 px-4">
-                                        <span className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">{invoice.invoiceNumber}</span>
+                                        <Link
+                                            href={`/dashboard/finance/invoices/${invoice.id}`}
+                                            onClick={(e) => {
+                                                if (isPending) {
+                                                    e.preventDefault();
+                                                    return;
+                                                }
+                                                e.stopPropagation();
+                                            }}
+                                            className="text-sm font-bold text-foreground group-hover:text-primary hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary rounded-sm transition-colors"
+                                        >
+                                            {invoice.invoiceNumber}
+                                        </Link>
                                     </td>
                                     <td className="py-4 px-4">
                                         <div className="flex flex-col">
@@ -214,7 +227,7 @@ export function InvoiceTable({
                                                         type="button"
                                                         disabled={isPending}
                                                         onClick={() => setConfirmTarget({ id: invoice.id, invoiceNumber: invoice.invoiceNumber, action: 'void' })}
-                                                        className="p-2 bg-amber-500/10 text-amber-800 dark:text-amber-200 hover:bg-amber-500/20 rounded-lg transition-all border border-amber-500/25 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 duration-100"
+                                                        className="min-w-[44px] min-h-[44px] p-2 inline-flex items-center justify-center bg-amber-500/10 text-amber-800 dark:text-amber-200 hover:bg-amber-500/20 rounded-lg transition-all border border-amber-500/25 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 duration-100"
                                                         title="Void Invoice"
                                                         aria-label="Void Invoice"
                                                     >
@@ -226,7 +239,7 @@ export function InvoiceTable({
                                                         type="button"
                                                         disabled={isPending}
                                                         onClick={() => setConfirmTarget({ id: invoice.id, invoiceNumber: invoice.invoiceNumber, action: 'delete' })}
-                                                        className="p-2 bg-destructive/10 text-destructive hover:bg-destructive/20 rounded-lg transition-all border border-destructive/20 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 duration-100"
+                                                        className="min-w-[44px] min-h-[44px] p-2 inline-flex items-center justify-center bg-destructive/10 text-destructive hover:bg-destructive/20 rounded-lg transition-all border border-destructive/20 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 duration-100"
                                                         title="Delete Draft"
                                                         aria-label="Delete Draft"
                                                     >
@@ -249,15 +262,20 @@ export function InvoiceTable({
                 variant={confirmTarget?.action ?? 'delete'}
                 invoiceNumber={confirmTarget?.invoiceNumber ?? ''}
                 onConfirm={async () => {
-                    if (!confirmTarget) return;
-                    startTransition(async () => {
+                    if (!confirmTarget || confirmLockRef.current) return;
+                    confirmLockRef.current = true;
+                    try {
                         if (confirmTarget.action === 'delete') {
                             await deleteInvoice(confirmTarget.id);
                         } else {
                             await voidInvoice(confirmTarget.id);
                         }
-                        router.refresh();
-                    });
+                        startTransition(() => {
+                            router.refresh();
+                        });
+                    } finally {
+                        confirmLockRef.current = false;
+                    }
                 }}
             />
         </>

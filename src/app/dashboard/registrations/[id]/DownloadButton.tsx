@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Download, Loader2 } from 'lucide-react';
 import { logger } from '@/lib/logger';
 
@@ -49,6 +49,7 @@ interface DownloadButtonProps {
 
 export default function DownloadButton(props: DownloadButtonProps) {
     const [isGenerating, setIsGenerating] = useState(false);
+    const generatingRef = useRef(false);
 
     const primaryParent = props.parents[0];
     const lastName = primaryParent?.lastName.toLowerCase() || 'parent';
@@ -56,7 +57,8 @@ export default function DownloadButton(props: DownloadButtonProps) {
     const fileName = `registration-${lastName}-${firstName}.pdf`.replace(/\s+/g, '-');
 
     const handleDownload = async () => {
-        if (isGenerating) return;
+        if (generatingRef.current || isGenerating) return;
+        generatingRef.current = true;
         setIsGenerating(true);
         try {
             const [{ pdf }, { RegistrationTemplate }] = await Promise.all([
@@ -93,6 +95,7 @@ export default function DownloadButton(props: DownloadButtonProps) {
         } catch (err) {
             logger.error('Failed to generate registration PDF:', err);
         } finally {
+            generatingRef.current = false;
             setIsGenerating(false);
         }
     };
@@ -102,7 +105,7 @@ export default function DownloadButton(props: DownloadButtonProps) {
             type="button"
             onClick={handleDownload}
             disabled={isGenerating}
-            className="flex items-center gap-2 px-4 py-2.5 bg-primary hover:opacity-90 text-white font-semibold rounded-xl text-sm transition-all shadow-md shadow-primary/20 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+            className="inline-flex items-center justify-center gap-2 min-h-[44px] px-4 py-2.5 bg-primary hover:opacity-90 text-primary-foreground font-semibold rounded-xl text-sm transition-all shadow-md shadow-primary/20 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
         >
             {isGenerating ? (
                 <Loader2 className="w-4 h-4 animate-spin" />

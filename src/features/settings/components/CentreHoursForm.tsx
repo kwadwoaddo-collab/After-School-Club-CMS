@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { useToast } from '@/components/ui/ToastProvider';
 import { Save, Calendar, Loader2 } from 'lucide-react';
@@ -12,14 +12,7 @@ import { Save, Calendar, Loader2 } from 'lucide-react';
 // isolation. We intentionally do NOT send `sessionSlots` from Settings:
 // the Centres Settings → Sessions tab owns sessionSlots (as structured
 // SessionSlot[] objects); this form owns only operatingHours (display hours).
-// Writing string[] display labels from this form would overwrite the
-// structured SessionSlot[] data, breaking the Centres Sessions tab.
-//
-// If simple display-label slot management is needed in Settings in future,
-// it should use a separate DB column (e.g. centres.displaySlots) to avoid
-// the shape collision. See project-notes/milestone-3j-settings-audit.md §F.
 
-// Only the fields this form actually reads — not the full Centre row.
 interface CentreHoursFormCentre {
     id: string;
     name: string;
@@ -48,45 +41,57 @@ type FormData = {
     hours: Record<Day, { open: boolean; start: string; end: string }>;
 };
 
+function parseOperatingHours(raw: string | null): FormData['hours'] {
+    const fallback = DAYS.reduce((acc, d) => ({ ...acc, [d]: { ...DEFAULT_DAY } }), {} as FormData['hours']);
+    if (!raw) return fallback;
+    try {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object') {
+            return DAYS.reduce((acc, d) => ({
+                ...acc,
+                [d]: {
+                    open: Boolean(parsed[d]?.open),
+                    start: typeof parsed[d]?.start === 'string' ? parsed[d].start : DEFAULT_DAY.start,
+                    end: typeof parsed[d]?.end === 'string' ? parsed[d].end : DEFAULT_DAY.end,
+                },
+            }), {} as FormData['hours']);
+        }
+    } catch {
+        // ignore invalid JSON and fall back safely
+    }
+    return fallback;
+}
+
 export default function CentreHoursForm({ centre }: { centre: CentreHoursFormCentre }) {
     const { toast } = useToast();
     const [saving, setSaving] = useState(false);
+    const [errorMsg, setErrorMsg] = useState<string | null>(null);
+    const savingRef = useRef(false);
 
-    let initialHours: FormData['hours'] = DAYS.reduce((acc, d) => ({ ...acc, [d]: DEFAULT_DAY }), {} as FormData['hours']);
-    if (centre.operatingHours) {
-        try {
-            initialHours = JSON.parse(centre.operatingHours);
-        } catch { }
-    }
-
-    const { control, handleSubmit, setValue, formState: { isDirty } } = useForm<FormData>({
+    const { control, handleSubmit, setValue, reset, formState: { isDirty } } = useForm<FormData>({
         defaultValues: {
-            hours: initialHours,
+            hours: parseOperatingHours(centre.operatingHours),
         }
     });
 
-    // useWatch (not methods.watch()) — react-hook-form's watch() escape hatch
-    // is flagged by the React Compiler as an incompatible-library pattern
-    // (react-hooks/incompatible-library); useWatch is the compiler-safe
-    // subscription API and preserves identical reactive behaviour here.
+    useEffect(() => {
+        reset({ hours: parseOperatingHours(centre.operatingHours) });
+        setErrorMsg(null);
+    }, [centre.id, centre.operatingHours, reset]);
+
     const hours = useWatch({ control, name: 'hours' });
 
     const updateDay = (day: Day, field: 'open' | 'start' | 'end', value: boolean | string) => {
+        setErrorMsg(null);
         setValue(`hours.${day}.${field}`, value, { shouldDirty: true });
     };
 
     const onSubmit = async (data: FormData) => {
+        if (savingRef.current) return;
+        savingRef.current = true;
         setSaving(true);
+        setErrorMsg(null);
         try {
-            // Milestone 3J Defect 2 fix: was /api/settings/centres/${centre.id}/hours (404).
-            // Corrected to /api/centres/${centre.id} which handles operatingHours correctly.
-            // Only operatingHours is sent — see header comment for sessionSlots rationale.
-            //
-            // Milestone 3J closure: send raw hours object (not JSON.stringify'd string).
-            // The route at /api/centres/[id] line 76 applies JSON.stringify() server-side,
-            // so sending a pre-stringified value would produce double-serialisation and
-            // break every JSON.parse(operatingHours) consumer (BookingForm, RescheduleForm,
-            // CentreHoursTab). The route expects the object; it serialises to TEXT itself.
             const res = await fetch(`/api/centres/${centre.id}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
@@ -94,19 +99,41 @@ export default function CentreHoursForm({ centre }: { centre: CentreHoursFormCen
                     operatingHours: data.hours,
                 })
             });
-            if (!res.ok) throw new Error('Failed to save changes');
-            toast({ title: 'Success', message: 'Opening hours saved.', variant: 'success' });
+            if (!res.ok) {
+                const payload = await res.json().catch(() => null);
+                const serverError = payload && typeof payload.error === 'string' && payload.error !== 'INTERNAL_SERVER_ERROR'
+                    ? payload.error
+                    : 'Unable to save opening hours right now. Please try again.';
+                throw new Error(serverError);
+            }
+            reset(data);
+            toast({ title: 'Opening hours saved', message: `Operating hours updated for ${centre.name}.`, variant: 'success' });
         } catch (error) {
-            toast({ title: 'Error', message: error instanceof Error ? error.message : 'Failed to save', variant: 'error' });
+            const rawMsg = error instanceof Error ? error.message : '';
+            const message = rawMsg && rawMsg !== 'INTERNAL_SERVER_ERROR'
+                ? rawMsg
+                : 'Unable to save opening hours right now. Please try again.';
+            setErrorMsg(message);
+            toast({ title: 'Could not save hours', message, variant: 'error' });
         } finally {
+            savingRef.current = false;
             setSaving(false);
         }
     };
 
     return (
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 animate-in fade-in duration-500 relative">
+        <form onSubmit={(e) => { void handleSubmit(onSubmit)(e); }} className="space-y-8 animate-in fade-in duration-500 relative">
+            {errorMsg && (
+                <div
+                    role="alert"
+                    className="rounded-xl border border-danger/25 bg-danger-soft px-4 py-3 text-sm font-medium text-danger"
+                >
+                    {errorMsg}
+                </div>
+            )}
+
             {/* ── Opening Hours ────────────────── */}
-            <div className="bg-card border border-border rounded-[32px] p-8 shadow-sm">
+            <div className="bg-card border border-border rounded-[32px] p-4 sm:p-8 shadow-sm">
                 <div className="flex items-center gap-3 mb-6">
                     <div className="w-10 h-10 bg-success/10 border border-success/20 rounded-xl flex items-center justify-center">
                         <Calendar className="w-5 h-5 text-success" />
@@ -120,45 +147,57 @@ export default function CentreHoursForm({ centre }: { centre: CentreHoursFormCen
                 <div className="space-y-3">
                     {DAYS.map(day => {
                         const sch = hours[day];
+                        const startId = `centre-hours-start-${day}`;
+                        const endId = `centre-hours-end-${day}`;
                         return (
                             <div key={day} className={`flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl border transition-all ${sch.open ? 'bg-secondary/60 border-border/60' : 'bg-transparent border-transparent opacity-60 grayscale hover:grayscale-0'}`}>
-                                <div className="flex items-center gap-4 w-40">
+                                <div className="flex items-center gap-4 w-full sm:w-40">
                                     <button
                                         type="button"
+                                        role="switch"
+                                        aria-checked={sch.open}
                                         onClick={() => updateDay(day, 'open', !sch.open)}
-                                        className={`relative w-10 h-5 rounded-full transition-colors duration-300 ${sch.open ? 'bg-success' : 'bg-secondary-foreground/20'}`}
+                                        className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent rounded-lg"
                                         aria-label={`Toggle ${DAY_LABELS[day]}`}
                                     >
-                                        <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-card rounded-full shadow transition-transform ${sch.open ? 'translate-x-5' : ''}`} />
+                                        <span className={`relative w-10 h-5 rounded-full transition-colors duration-300 ${sch.open ? 'bg-success' : 'bg-secondary-foreground/20'}`}>
+                                            <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-card rounded-full shadow transition-transform ${sch.open ? 'translate-x-5' : ''}`} />
+                                        </span>
                                     </button>
                                     <span className="text-sm font-semibold text-foreground">{DAY_LABELS[day]}</span>
                                 </div>
 
                                 {sch.open ? (
-                                    <div className="flex items-center gap-3 flex-1">
+                                    <div className="flex flex-wrap items-center gap-2 sm:gap-3 flex-1">
                                         <div className="flex items-center gap-2">
-                                            <label className="text-xs text-muted-foreground whitespace-nowrap">Opens</label>
+                                            <label htmlFor={startId} className="text-xs text-muted-foreground whitespace-nowrap">
+                                                Opens
+                                            </label>
                                             <input
+                                                id={startId}
                                                 type="time"
                                                 value={sch.start}
                                                 onChange={e => updateDay(day, 'start', e.target.value)}
-                                                className="px-3 py-1.5 bg-secondary/60 border border-border rounded-xl text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-success/20 focus:border-success transition-all font-mono"
+                                                className="min-h-[44px] px-3 py-1.5 bg-secondary/60 border border-border rounded-xl text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-success/20 focus:border-success transition-all font-mono"
                                             />
                                         </div>
-                                        <span className="text-muted-foreground/40 text-sm">–</span>
+                                        <span className="text-muted-foreground/60 text-sm" aria-hidden="true">–</span>
                                         <div className="flex items-center gap-2">
-                                            <label className="text-xs text-muted-foreground whitespace-nowrap">Closes</label>
+                                            <label htmlFor={endId} className="text-xs text-muted-foreground whitespace-nowrap">
+                                                Closes
+                                            </label>
                                             <input
+                                                id={endId}
                                                 type="time"
                                                 value={sch.end}
                                                 onChange={e => updateDay(day, 'end', e.target.value)}
-                                                className="px-3 py-1.5 bg-secondary/60 border border-border rounded-xl text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-success/20 focus:border-success transition-all font-mono"
+                                                className="min-h-[44px] px-3 py-1.5 bg-secondary/60 border border-border rounded-xl text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-success/20 focus:border-success transition-all font-mono"
                                             />
                                         </div>
                                         <span className="text-xs text-muted-foreground ml-1">{fmt12(sch.start)} – {fmt12(sch.end)}</span>
                                     </div>
                                 ) : (
-                                    <span className="text-sm text-muted-foreground/50 italic">Closed</span>
+                                    <span className="text-sm text-muted-foreground italic">Closed</span>
                                 )}
                             </div>
                         );
@@ -168,8 +207,8 @@ export default function CentreHoursForm({ centre }: { centre: CentreHoursFormCen
 
             {/* ── Info: Session Slots managed in Centres Settings ────────────────── */}
             <div className="bg-secondary/30 border border-dashed border-border rounded-2xl px-6 py-5 flex items-start gap-4">
-                <div className="w-8 h-8 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <Calendar className="w-4 h-4 text-primary" />
+                <div className="w-8 h-8 rounded-xl bg-accent-soft border border-accent/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Calendar className="w-4 h-4 text-accent" />
                 </div>
                 <div>
                     <p className="text-sm font-semibold text-foreground">Session time slots are managed in the Centre Settings</p>
@@ -181,14 +220,14 @@ export default function CentreHoursForm({ centre }: { centre: CentreHoursFormCen
             </div>
 
             {/* Atomic Save Action Bar */}
-            <div className="sticky bottom-4 z-10 flex items-center justify-between p-4 bg-card/90 backdrop-blur-md border border-border shadow-xl rounded-2xl">
+            <div className="sticky bottom-4 z-10 flex flex-wrap items-center justify-between gap-3 p-4 bg-card/90 backdrop-blur-md border border-border shadow-xl rounded-2xl">
                 <span className="text-muted-foreground text-sm font-medium px-2">
                     {isDirty ? 'Unsaved changes.' : 'All changes saved.'}
                 </span>
                 <button
                     type="submit"
                     disabled={saving || !isDirty}
-                    className="px-8 py-3 bg-primary text-primary-foreground rounded-xl text-sm font-bold hover:bg-primary/90 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 shadow-lg shadow-primary/25 disabled:opacity-50 disabled:scale-100"
+                    className="min-h-[44px] px-8 py-3 bg-accent text-on-accent rounded-xl text-sm font-bold hover:opacity-90 transition-all flex items-center gap-2 shadow-sm disabled:opacity-50"
                 >
                     {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                     Save Hours

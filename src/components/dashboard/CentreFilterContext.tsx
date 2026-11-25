@@ -73,11 +73,12 @@ export function CentreFilterProvider({
       // ignore
     }
     startTransition(() => {
-      if (searchParams.get('centre')) {
+      if (searchParams?.get('centre') || searchParams?.has('folder')) {
         const params = new URLSearchParams(searchParams.toString());
-        if (id === 'all') {
-          params.delete('centre');
-        } else {
+        params.delete('centre');
+        params.delete('folder');
+        params.delete('page');
+        if (id !== 'all') {
           params.set('centre', id);
         }
         const search = params.toString();
@@ -92,7 +93,7 @@ export function CentreFilterProvider({
   // router.replace() navigation (which previously caused a double server render
   // on every filter click whenever ?centre= was present).
   useEffect(() => {
-    const urlCentre = searchParams.get('centre');
+    const urlCentre = searchParams?.get('centre');
     if (urlCentre) {
       const isValid = urlCentre === 'all' || centres.some(c => c.id === urlCentre);
       if (isValid && urlCentre !== selectedCentreId) {

@@ -20,6 +20,8 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { formatSchoolYearLabel } from '@/lib/school-year';
+import { useDialogFocusTrap } from '@/components/ui/useDialogFocusTrap';
+import { useCentreFilter } from '@/components/dashboard/CentreFilterContext';
 
 const playChime = (type: 'success' | 'error') => {
     try {
@@ -168,6 +170,7 @@ function resolveValidPin(attendee: Attendee): string | null {
 // ── Individual student card ───────────────────────────────────────────────────
 function StudentCard({
     attendee,
+    currentStatus,
     dateStr,
     sessionTime,
     centreId,
@@ -176,6 +179,7 @@ function StudentCard({
     onStatusChange,
 }: {
     attendee: Attendee;
+    currentStatus: AttendanceStatus;
     dateStr: string;
     sessionTime: string;
     centreId: string;
@@ -186,7 +190,7 @@ function StudentCard({
     const [curBookingId, setCurBookingId] = useState<string | null>(attendee.bookingId);
     const [curAttendeeId, setCurAttendeeId] = useState<string>(attendee.id);
     const [status, addOptimisticStatus] = useOptimistic<AttendanceStatus, AttendanceStatus>(
-        attendee.attendanceStatus,
+        currentStatus,
         (_state, newStatus) => newStatus
     );
     const [isCheckedOut, setIsCheckedOut] = useState<boolean>(!!attendee.checkOutTime);
@@ -205,6 +209,16 @@ function StudentCard({
 
     const [pinPadOpen, setPinPadOpen] = useState(false);
     const [pin, setPin] = useState('');
+    const medicalDialogRef = useRef<HTMLDivElement>(null);
+    const pinDialogRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        setCurBookingId(attendee.bookingId);
+        setCurAttendeeId(attendee.id);
+        setIsCheckedOut(!!attendee.checkOutTime);
+        setNote(attendee.attendanceNote || '');
+        setLateMinutes(attendee.lateMinutes != null ? attendee.lateMinutes.toString() : '');
+    }, [attendee.bookingId, attendee.id, attendee.checkOutTime, attendee.attendanceNote, attendee.lateMinutes]);
     const [pinError, setPinError] = useState<string | null>(null);
     const [showStaffOverride, setShowStaffOverride] = useState<boolean>(!hasValidPin);
     const [staffOverrideVerified, setStaffOverrideVerified] = useState<boolean>(false);
@@ -232,12 +246,17 @@ function StudentCard({
         setOverrideError(null);
     };
 
+    useDialogFocusTrap(medicalModalOpen, medicalDialogRef, () => setMedicalModalOpen(false));
+    useDialogFocusTrap(pinPadOpen, pinDialogRef, closePinModal);
+
     const executeMark = (s: AttendanceStatus, overrideNote?: string) => {
         const next = s === 'check_out'
             ? 'check_out'
             : (status === s && !isCheckedOut ? null : s);
         if (next === 'late') setShowDetails(true);
 
+        const prevStatus = status;
+        const prevCheckedOut = isCheckedOut;
         const nextCheckedOut = next === 'check_out';
         const effectiveStatus: AttendanceStatus = next === 'check_out' ? 'present' : next;
         setIsCheckedOut(nextCheckedOut);
@@ -271,6 +290,13 @@ function StudentCard({
                     });
                 }
 
+                if (res && (res as any).success === false) {
+                    setIsCheckedOut(prevCheckedOut);
+                    onStatusChange?.(attendee.childId, prevStatus, prevCheckedOut);
+                    playChime('error');
+                    onToast({ title: 'Could not mark attendance', message: (res as any).error || 'Please try again or refresh.', variant: 'error' });
+                    return;
+                }
                 if (res && (!curBookingId || curBookingId.startsWith('temp-'))) {
                     setCurBookingId(res.bookingId);
                     setCurAttendeeId(res.attendeeId || attendee.id);
@@ -291,6 +317,8 @@ function StudentCard({
                     setTimeout(() => setFlash(false), 800);
                     playChime('success');
                 } else {
+                    setIsCheckedOut(prevCheckedOut);
+                    onStatusChange?.(attendee.childId, prevStatus, prevCheckedOut);
                     playChime('error');
                     onToast({ title: 'Could not mark attendance', message: 'Please try again or refresh.', variant: 'error' });
                 }
@@ -419,7 +447,7 @@ function StudentCard({
         present: { ring: 'border-emerald-500/30 bg-success-soft', avatar: 'bg-success-soft text-emerald-700 dark:text-emerald-400' },
         absent:  { ring: 'border-danger/30 bg-danger-soft',        avatar: 'bg-danger-soft text-danger' },
         late:    { ring: 'border-amber-500/30 bg-warning-soft',    avatar: 'bg-warning-soft text-amber-700 dark:text-amber-400' },
-        excused: { ring: 'border-blue-500/30 bg-info-soft',        avatar: 'bg-info-soft text-blue-700 dark:text-blue-400' },
+        excused: { ring: 'border-accent/30 bg-info-soft',          avatar: 'bg-info-soft text-accent' },
         check_out: { ring: 'border-border bg-page',               avatar: 'bg-page text-text-muted' },
     };
 
@@ -488,9 +516,12 @@ function StudentCard({
                 {!isPending && (
                     <div className="flex items-center justify-end gap-2 border-t border-border-subtle pt-3 w-full">
                         <button
+                            type="button"
                             onClick={() => setShowDetails(!showDetails)}
+                            aria-label="Add attendance notes or late minutes"
+                            aria-expanded={showDetails}
                             title="Add Notes/Details"
-                            className={`${btnSize} rounded-md font-semibold flex items-center justify-center transition-colors border ${showDetails
+                            className={`${btnSize} min-h-[44px] min-w-[44px] rounded-md font-semibold flex items-center justify-center transition-colors border ${showDetails
                                 ? 'bg-accent-soft border-accent/40 text-accent'
                                 : 'bg-page border-border text-text-muted hover:text-text'
                             }`}
@@ -498,14 +529,16 @@ function StudentCard({
                             <Edit2 className="w-4 h-4" />
                         </button>
                         {([
-                            { s: 'present' as const, icon: <CheckCircle2 className="w-4 h-4" />, label: 'In',   isActive: status === 'present' && !isCheckedOut, active: 'bg-emerald-500 text-white border-emerald-500', inactive: 'bg-page border-border text-text-muted hover:text-emerald-700 dark:hover:text-emerald-400 hover:border-emerald-500/30' },
-                            { s: 'late'    as const, icon: <Clock className="w-4 h-4" />,        label: 'Late', isActive: status === 'late' && !isCheckedOut,    active: 'bg-amber-500 text-white border-amber-500',      inactive: 'bg-page border-border text-text-muted hover:text-amber-700 dark:hover:text-amber-400 hover:border-amber-500/30' },
+                            { s: 'present' as const, icon: <CheckCircle2 className="w-4 h-4" />, label: 'In',   isActive: status === 'present' && !isCheckedOut, active: 'bg-emerald-700 text-white border-emerald-700', inactive: 'bg-page border-border text-text-muted hover:text-emerald-700 dark:hover:text-emerald-400 hover:border-emerald-500/30' },
+                            { s: 'late'    as const, icon: <Clock className="w-4 h-4" />,        label: 'Late', isActive: status === 'late' && !isCheckedOut,    active: 'bg-amber-700 text-white border-amber-700',      inactive: 'bg-page border-border text-text-muted hover:text-amber-700 dark:hover:text-amber-400 hover:border-amber-500/30' },
                             { s: 'check_out' as const, icon: <XCircle className="w-4 h-4" />,    label: 'Out',  isActive: isCheckedOut,                          active: 'bg-danger text-on-danger border-danger',            inactive: 'bg-page border-border text-text-muted hover:text-danger hover:border-danger/30' },
                         ]).map(({ s, icon, label, isActive, active, inactive }) => (
                             <button
                                 key={s}
+                                type="button"
+                                aria-pressed={isActive}
                                 onClick={() => mark(s)}
-                                className={`${btnSize} border rounded-md font-semibold flex items-center justify-center transition-colors active:scale-95 flex-1 ${isActive ? active : inactive}`}
+                                className={`${btnSize} min-h-[44px] border rounded-md font-semibold flex items-center justify-center transition-colors active:scale-95 flex-1 ${isActive ? active : inactive}`}
                             >
                                 {icon} <span className="ml-1">{label}</span>
                             </button>
@@ -519,8 +552,9 @@ function StudentCard({
                 <div className="bg-page border border-border rounded-md p-4 ml-6 space-y-3">
                     <div className="flex flex-col sm:flex-row gap-3">
                         <div className="flex-1">
-                            <label className="block text-label text-text-muted mb-1">Attendance Note</label>
+                            <label htmlFor={`kiosk-note-${attendee.id}`} className="block text-label text-text-muted mb-1">Attendance Note</label>
                             <input
+                                id={`kiosk-note-${attendee.id}`}
                                 type="text"
                                 value={note}
                                 onChange={(e) => setNote(e.target.value)}
@@ -529,8 +563,9 @@ function StudentCard({
                             />
                         </div>
                         <div className="w-full sm:w-28">
-                            <label className="block text-label text-text-muted mb-1">Late Mins</label>
+                            <label htmlFor={`kiosk-late-${attendee.id}`} className="block text-label text-text-muted mb-1">Late Mins</label>
                             <input
+                                id={`kiosk-late-${attendee.id}`}
                                 type="number"
                                 value={lateMinutes}
                                 onChange={(e) => setLateMinutes(e.target.value)}
@@ -560,7 +595,7 @@ function StudentCard({
                     aria-labelledby={`kiosk-medical-title-${attendee.id}`}
                     className="fixed inset-0 z-[300] flex items-center justify-center bg-black/50 px-4 py-6"
                 >
-                    <div className="bg-surface border border-border p-6 rounded-lg shadow-[var(--shadow-popover)] max-w-md w-full max-h-[85vh] overflow-y-auto space-y-4">
+                    <div ref={medicalDialogRef} tabIndex={-1} className="bg-surface border border-border p-6 rounded-lg shadow-[var(--shadow-popover)] max-w-md w-full max-h-[85vh] overflow-y-auto space-y-4">
                         <div className="flex items-start justify-between gap-3 border-b border-border-subtle pb-3">
                             <div>
                                 <div className="flex items-center gap-2">
@@ -692,7 +727,7 @@ function StudentCard({
                     aria-labelledby={`kiosk-pin-title-${attendee.id}`}
                     className="fixed inset-0 z-[300] flex items-center justify-center bg-black/50 px-4 py-6"
                 >
-                    <div className="bg-surface border border-border p-6 rounded-lg shadow-[var(--shadow-popover)] max-w-[380px] w-full max-h-[90vh] overflow-y-auto space-y-4">
+                    <div ref={pinDialogRef} tabIndex={-1} className="bg-surface border border-border p-6 rounded-lg shadow-[var(--shadow-popover)] max-w-[380px] w-full max-h-[90vh] overflow-y-auto space-y-4">
                         <div>
                             <h3 id={`kiosk-pin-title-${attendee.id}`} className="text-xl font-bold mb-1 text-center text-text">
                                 Confirm Check Out
@@ -738,7 +773,7 @@ function StudentCard({
                                     Enter the last 4 digits of the registered parent phone number:
                                 </p>
                                 {pinError && (
-                                    <p className="text-xs text-danger text-center font-medium">{pinError}</p>
+                                    <p role="alert" className="text-xs text-danger text-center font-medium">{pinError}</p>
                                 )}
                                 <div className="flex justify-center gap-4 py-1">
                                     {[0, 1, 2, 3].map(i => (
@@ -769,7 +804,7 @@ function StudentCard({
                                     No valid 4-digit parent phone number on file — PIN verification is disabled.
                                 </p>
                                 {pinError && (
-                                    <p className="text-xs text-danger font-medium">{pinError}</p>
+                                    <p role="alert" className="text-xs text-danger font-medium">{pinError}</p>
                                 )}
                             </div>
                         )}
@@ -813,7 +848,7 @@ function StudentCard({
                                 </div>
 
                                 {overrideError && (
-                                    <p className="text-xs text-danger font-medium">{overrideError}</p>
+                                    <p role="alert" className="text-xs text-danger font-medium">{overrideError}</p>
                                 )}
 
                                 <div className="flex items-center justify-end gap-2">
@@ -899,6 +934,7 @@ export function KioskClock() {
 export default function KioskRegister({ slots, date, dateStr, centreName, centres, activeCentreId }: Props) {
     const router = useRouter();
     const { toast } = useToast();
+    const { setSelectedCentreId } = useCentreFilter();
     const [slotIdx, setSlotIdx] = useState(0);
     const [isFullscreen, setIsFullscreen] = useState(false);
     const lastRefreshAtRef = useRef<number>(0);
@@ -906,6 +942,10 @@ export default function KioskRegister({ slots, date, dateStr, centreName, centre
     const [searchQuery, setSearchQuery] = useState('');
     const [showUnmarkedOnly, setShowUnmarkedOnly] = useState(false);
     const [optimisticStatuses, setOptimisticStatuses] = useState<Record<string, AttendanceStatus>>({});
+
+    useEffect(() => {
+        setOptimisticStatuses({});
+    }, [slots, activeCentreId]);
 
     const handleStatusChange = (childId: string, newStatus: AttendanceStatus) => {
         setOptimisticStatuses(prev => ({ ...prev, [childId]: newStatus }));
@@ -1081,9 +1121,15 @@ export default function KioskRegister({ slots, date, dateStr, centreName, centre
                     </Button>
                     {centres.length > 1 && (
                         <select
+                            aria-label="Select centre"
                             value={activeCentreId}
-                            onChange={e => router.push(`/dashboard/kiosk?centre=${e.target.value}`)}
-                            className="h-9 bg-surface border border-border text-text text-xs font-semibold px-3 rounded-sm outline-none focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent transition-colors"
+                            onChange={e => {
+                                setSlotIdx(0);
+                                setSearchQuery('');
+                                setSelectedCentreId(e.target.value);
+                                router.push(`/dashboard/kiosk?centre=${e.target.value}`);
+                            }}
+                            className="min-h-[44px] bg-surface border border-border text-text text-xs font-semibold px-3 rounded-sm outline-none focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent transition-colors"
                         >
                             <option value="all">All Centres</option>
                             {centres.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -1128,8 +1174,8 @@ export default function KioskRegister({ slots, date, dateStr, centreName, centre
                         const slotPresent = slotAll.filter(a => getEffectiveStatus(a) === 'present' || getEffectiveStatus(a) === 'late').length;
                         const slotDone = slotAll.length > 0 && slotAll.every(a => getEffectiveStatus(a) !== null);
                         return (
-                            <button key={slot.time} onClick={() => setSlotIdx(i)}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-semibold flex-shrink-0 border transition-colors ${
+                            <button key={slot.time} type="button" aria-pressed={i === slotIdx} onClick={() => setSlotIdx(i)}
+                                className={`min-h-[44px] flex items-center gap-2 px-4 py-2 rounded-md text-sm font-semibold flex-shrink-0 border transition-colors ${
                                     i === slotIdx
                                         ? 'bg-accent-soft text-accent border-accent/30'
                                         : 'bg-surface border-border text-text-muted hover:text-text'
@@ -1151,6 +1197,7 @@ export default function KioskRegister({ slots, date, dateStr, centreName, centre
                         <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
                         <input
                             type="text"
+                            aria-label="Search students"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             placeholder="Search students by name or parent..."
@@ -1168,9 +1215,10 @@ export default function KioskRegister({ slots, date, dateStr, centreName, centre
 
                     {/* Unmarked Only chip */}
                     <button
+                        type="button"
                         onClick={() => setShowUnmarkedOnly(v => !v)}
                         aria-pressed={showUnmarkedOnly}
-                        className={`flex-shrink-0 px-3 py-1.5 rounded-full border text-xs font-semibold transition-colors ${
+                        className={`min-h-[44px] flex-shrink-0 px-3.5 py-1.5 rounded-full border text-xs font-semibold transition-colors ${
                             showUnmarkedOnly
                                 ? 'bg-accent text-on-accent border-accent'
                                 : 'bg-surface border-border text-text-muted hover:border-accent/40'
@@ -1215,6 +1263,7 @@ export default function KioskRegister({ slots, date, dateStr, centreName, centre
                             <StudentCard
                                 key={a.id}
                                 attendee={a}
+                                currentStatus={getEffectiveStatus(a)}
                                 dateStr={resolvedDateStr}
                                 sessionTime={activeSlot!.time}
                                 centreId={activeCentreId}
