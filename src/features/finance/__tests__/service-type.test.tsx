@@ -17,7 +17,7 @@ const base = {
     invoiceNumber: 'INV-1', amount: '100.00', status: 'paid',
     invoiceDate: new Date('2026-09-01'), dueDate: new Date('2026-09-15'),
     billingPeriodStart: new Date('2026-09-01'), billingPeriodEnd: new Date('2026-09-30'),
-    centre: { id: 'c', name: 'Centre', address: '1 High St' },
+    centre: { id: 'c', name: 'Centre', address: '1 High St', ofstedId: 'EY123' },
     parent: { firstName: 'A', lastName: 'B' },
     payments: [{ id: 'p', amount: '100.00', method: 'card', recordedAt: new Date('2026-09-05'), status: 'verified' }],
 };
@@ -41,6 +41,9 @@ describe('service type (Childcare / Tuition)', () => {
             expect(inv).toContain('Childcare Services');
             expect(text(InvoiceTemplate({ invoice: { ...base, serviceType } }))).toContain('Childcare services');
             expect(text(ReceiptTemplate({ invoice: { ...base, serviceType } }))).toContain('Type of Service: Childcare');
+            expect(text(ReceiptTemplate({ invoice: { ...base, serviceType } }))).toContain('Ofsted Registration No: EY123');
+            expect(inv).toContain('Ofsted / Ref No: EY123');
+            expect(inv).toContain('Registered by Ofsted');
         }
     });
 
@@ -56,5 +59,8 @@ describe('service type (Childcare / Tuition)', () => {
         const receipt = text(ReceiptTemplate({ invoice: { ...base, serviceType: 'tuition' } }));
         expect(receipt).toContain('Type of Service: Tuition');
         expect(receipt).not.toContain('Type of Service: Childcare');
+        expect(receipt).not.toMatch(/Ofsted|EY123/);
+        expect(multi).not.toMatch(/Ofsted|EY123/);
+        expect(single).not.toMatch(/Ofsted|EY123/);
     });
 });

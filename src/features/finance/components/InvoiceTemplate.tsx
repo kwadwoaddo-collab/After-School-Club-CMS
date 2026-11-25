@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
 import { billingStylesBase, safeFormatDate, buildCentreAddressLines, getCoveredChildNames } from './billingPdfStyles';
-import { serviceTypeLabel } from '@/features/finance/service-type';
+import { normaliseServiceType, serviceTypeLabel } from '@/features/finance/service-type';
 import { evaluateInvoiceCollectionState, toLondonBusinessDate } from '@/features/finance/domain/invoice-collection-state';
 
 const styles = StyleSheet.create({
@@ -106,9 +106,13 @@ export const InvoiceTemplate = ({ invoice, organisationName }: InvoiceTemplatePr
                         <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#1e40af', marginTop: 2 }}>
                             {centre?.name || organisationName || 'CENTRE'}
                         </Text>
-                        <Text style={{ fontSize: 8, color: '#64748b', marginTop: 3 }}>
-                            Ofsted / Ref No: {centre?.ofstedId || 'N/A'}
-                        </Text>
+                        {normaliseServiceType(invoice.serviceType) !== 'tuition' && (
+
+                            <Text style={{ fontSize: 8, color: '#64748b', marginTop: 3 }}>
+                                Ofsted / Ref No: {centre?.ofstedId || 'N/A'}
+                            </Text>
+
+                        )}
                     </View>
                     <View style={styles.invoiceInfo}>
                         <View style={styles.infoRow}>
@@ -232,9 +236,13 @@ export const InvoiceTemplate = ({ invoice, organisationName }: InvoiceTemplatePr
                     <Text style={{ fontSize: 8, color: '#64748b', borderTopWidth: 1, borderTopColor: '#e2e8f0', paddingTop: 5, marginTop: 5 }}>
                         Cash payments can also be made directly at the centre.
                     </Text>
-                    <Text style={{ fontSize: 8, color: '#64748b', paddingTop: 3 }}>
-                        Registered by Ofsted · Registration Number: {centre?.ofstedId || '—'}
-                    </Text>
+                    {normaliseServiceType(invoice.serviceType) !== 'tuition' && (
+
+                        <Text style={{ fontSize: 8, color: '#64748b', paddingTop: 3 }}>
+                            Registered by Ofsted · Registration Number: {centre?.ofstedId || '—'}
+                        </Text>
+
+                    )}
                 </View>
 
                 {/* Authorised By */}
