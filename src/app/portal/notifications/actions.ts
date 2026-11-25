@@ -3,13 +3,30 @@ import { db } from '@/db';
 import { parents, portalNotifications } from '@/db/schema';
 import { eq, and, isNull, desc } from 'drizzle-orm';
 import { getCurrentParent } from '@/lib/parent-auth';
-import { getApiSession } from '@/lib/session';
 import {
   createRegistrationNotification as createServerRegistrationNotification,
   type CreateRegistrationNotificationParams,
 } from '@/lib/parent-notifications';
 
 const ALLOWED_NOTIFICATION_STAFF_ROLES = ['ORG_OWNER', 'MANAGER', 'FRONT_DESK'] as const;
+
+async function requireStaffPortalNotificationAccess(): Promise<
+  | { ok: true; organisationId: string }
+  | { ok: false; error: string }
+> {
+  const { getApiSession } = await import('@/lib/session');
+  const session = await getApiSession();
+  if (!session?.user?.id || !session.user.organisationId) {
+    return { ok: false, error: 'Unauthorised' };
+  }
+
+  const role = session.user.role as string | undefined;
+  if (!role || !(ALLOWED_NOTIFICATION_STAFF_ROLES as readonly string[]).includes(role)) {
+    return { ok: false, error: 'Forbidden' };
+  }
+
+  return { ok: true, organisationId: session.user.organisationId };
+}
 
 export async function getNotifications() {
   const parent = await getCurrentParent();
@@ -81,17 +98,12 @@ export async function markRead(notificationId: string) {
 export async function createRegistrationNotification(
   params: CreateRegistrationNotificationParams,
 ): Promise<{ ok: boolean; error?: string }> {
-  const session = await getApiSession();
-  if (!session?.user?.id || !session.user.organisationId) {
-    return { ok: false, error: 'Unauthorised' };
+  const access = await requireStaffPortalNotificationAccess();
+  if (!access.ok) {
+    return access;
   }
 
-  const role = session.user.role as string | undefined;
-  if (!role || !(ALLOWED_NOTIFICATION_STAFF_ROLES as readonly string[]).includes(role)) {
-    return { ok: false, error: 'Forbidden' };
-  }
-
-  if (params.organisationId !== session.user.organisationId) {
+  if (params.organisationId !== access.organisationId) {
     return { ok: false, error: 'Forbidden' };
   }
 
@@ -103,12 +115,12 @@ export async function createRegistrationNotification(
     columns: { id: true, organisationId: true },
   });
 
-  if (!parent || parent.organisationId !== session.user.organisationId) {
+  if (!parent || parent.organisationId !== access.organisationId) {
     return { ok: false, error: 'Forbidden' };
   }
 
   return createServerRegistrationNotification({
     ...params,
-    organisationId: session.user.organisationId,
+    organisationId: access.organisationId,
   });
 }
