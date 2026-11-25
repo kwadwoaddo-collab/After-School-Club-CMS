@@ -2,17 +2,22 @@
 import { logger } from '@/lib/logger';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-
 import { requireTenantSession } from '@/lib/session';
 import { db } from '@/db';
-import { children } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { auditEvents, children } from '@/db/schema';
+import { and, eq, isNull, sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 
 export interface RollResult {
   success: boolean;
   rolledCount: number;
   message: string;
+}
+
+function getAcademicRolloverYear(now: Date = new Date()): number {
+  // UK academic year cycle begins 1st September (UTC month index 8).
+  // Matches GET /api/cron/school-year-roll's September 1st `rolloverYear`.
+  return now.getUTCMonth() >= 8 ? now.getUTCFullYear() : now.getUTCFullYear() - 1;
 }
 
 export async function rollSchoolYearsAction(): Promise<RollResult> {
@@ -27,65 +32,152 @@ export async function rollSchoolYearsAction(): Promise<RollResult> {
   }
 
   const organisationId = session.user.organisationId;
+  const rolloverYear = getAcademicRolloverYear();
 
   try {
-    // 1. Fetch all children belonging strictly to this organisation
-    const orgChildren = await db
-      .select({ id: children.id, schoolYear: children.schoolYear })
-      .from(children)
-      .where(eq(children.organisationId, organisationId));
+    const txOutcome = await db.transaction(async (tx) => {
+      // 1. Concurrency guard: org-scoped transactional advisory lock
+      const lockRes = await tx.execute<{ locked: boolean }>(
+        sql`SELECT pg_try_advisory_xact_lock(hashtext(${`school_year_rollover:${organisationId}:${rolloverYear}`})) AS locked`
+      );
+      const lockRow = lockRes as unknown as {
+        rows?: Array<{ locked: boolean }>;
+        [0]?: { locked: boolean };
+      };
+      const isLocked = lockRow?.[0]?.locked ?? lockRow?.rows?.[0]?.locked;
 
-    let rolledCount = 0;
-
-    // 2. Perform updates inside a transaction
-    await db.transaction(async (tx) => {
-      for (const child of orgChildren) {
-        let newYear = child.schoolYear;
-        const cleanYear = child.schoolYear.trim().toLowerCase();
-
-        if (cleanYear === 'nursery' || cleanYear === 'nur' || cleanYear === 'n') {
-          newYear = 'Reception';
-        } else if (cleanYear === 'reception' || cleanYear === 'rec' || cleanYear === 'r' || cleanYear === 'year reception') {
-          newYear = 'Y1';
-        } else if (cleanYear === 'graduated') {
-          continue;
-        } else {
-          // Parse numeric year
-          const numericYear = parseInt(cleanYear.replace(/[^0-9]/g, ''), 10);
-          if (!isNaN(numericYear)) {
-            if (numericYear >= 13) {
-              newYear = 'Graduated';
-            } else if (numericYear >= 1 && numericYear < 13) {
-              newYear = `Y${numericYear + 1}`;
-            }
-          }
-        }
-
-        if (newYear !== child.schoolYear) {
-          await tx
-            .update(children)
-            .set({ schoolYear: newYear, updatedAt: new Date() })
-            .where(eq(children.id, child.id));
-          rolledCount++;
-        }
+      if (isLocked === false) {
+        logger.warn(
+          `[Roll Action] Concurrent school year rollover blocked for org ${organisationId} (${rolloverYear}).`
+        );
+        return {
+          status: 'locked' as const,
+          rolledCount: 0,
+        };
       }
+
+      // 2. Durable idempotency guard: prevent double-promotion within the same academic year
+      const existingRuns = await tx
+        .select({ id: auditEvents.id })
+        .from(auditEvents)
+        .where(
+          and(
+            eq(auditEvents.organisationId, organisationId),
+            eq(auditEvents.eventType, 'school_year_rollover_completed'),
+            sql`${auditEvents.eventData}::jsonb ->> 'rolloverYear' = ${String(rolloverYear)}`
+          )
+        )
+        .limit(1);
+
+      if (existingRuns.length > 0) {
+        logger.info(
+          `[Roll Action] School year rollover already completed for org ${organisationId} (${rolloverYear}).`
+        );
+        return {
+          status: 'already_completed' as const,
+          rolledCount: 0,
+        };
+      }
+
+      // 3. Single set-based canonical school-year transition (matching /api/cron/school-year-roll).
+      // Preserves composite labels ('Year 3/4', 'Y5/6') and excludes soft-deleted children.
+      const activeOrgFilter = and(
+        eq(children.organisationId, organisationId),
+        isNull(children.deletedAt)
+      );
+
+      const updateRes = await tx.execute<{ rolled_count: number }>(sql`
+        WITH mapped AS (
+          SELECT
+            id,
+            CASE
+              WHEN lower(btrim(school_year)) IN ('nursery', 'nur', 'n', 'year n', 'yr n', 'year nursery', 'yr nursery')
+                THEN 'Reception'
+              WHEN lower(btrim(school_year)) IN ('reception', 'rec', 'r', 'year r', 'yr r', 'year reception', 'yr reception')
+                THEN 'Y1'
+              WHEN lower(btrim(school_year)) ~ '^(?:year[[:space:]]*|yr[.]?[[:space:]]*|y)?(0?[0-9]|1[0-3])$' THEN
+                CASE (regexp_match(lower(btrim(school_year)), '^(?:year[[:space:]]*|yr[.]?[[:space:]]*|y)?([0-9]{1,2})$'))[1]::int
+                  WHEN 0 THEN 'Y1'
+                  WHEN 13 THEN 'Graduated'
+                  ELSE 'Y' || (((regexp_match(lower(btrim(school_year)), '^(?:year[[:space:]]*|yr[.]?[[:space:]]*|y)?([0-9]{1,2})$'))[1]::int) + 1)::text
+                END
+              ELSE school_year
+            END AS next_year
+          FROM ${children}
+          WHERE ${activeOrgFilter}
+        ),
+        updated AS (
+          UPDATE ${children} AS c
+          SET school_year = m.next_year,
+              updated_at = NOW()
+          FROM mapped AS m
+          WHERE c.id = m.id
+            AND c.organisation_id = ${organisationId}
+            AND c.deleted_at IS NULL
+            AND m.next_year IS NOT NULL
+            AND c.school_year IS DISTINCT FROM m.next_year
+          RETURNING c.id
+        )
+        SELECT COUNT(*)::int AS rolled_count FROM updated
+      `);
+
+      const updateRow = updateRes as unknown as {
+        rows?: Array<{ rolled_count: number | string }>;
+        [0]?: { rolled_count: number | string };
+      };
+      const rawRolledCount = updateRow?.[0]?.rolled_count ?? updateRow?.rows?.[0]?.rolled_count ?? 0;
+      const rolledCount = Number(rawRolledCount) || 0;
+
+      // 4. Record completion audit event for academic-year idempotency
+      await tx.insert(auditEvents).values({
+        organisationId,
+        userId: session.user.id,
+        eventType: 'school_year_rollover_completed',
+        eventData: JSON.stringify({
+          rolloverYear,
+          academicYearLabel: `${rolloverYear}/${rolloverYear + 1}`,
+          totalRolled: rolledCount,
+          source: 'manual',
+          completedAt: new Date().toISOString(),
+        }),
+      });
+
+      return {
+        status: 'rolled' as const,
+        rolledCount,
+      };
     });
+
+    if (txOutcome.status === 'locked') {
+      return {
+        success: false,
+        rolledCount: 0,
+        message: 'School year rollover is currently in progress. Please wait and refresh.',
+      };
+    }
+
+    if (txOutcome.status === 'already_completed') {
+      return {
+        success: false,
+        rolledCount: 0,
+        message: 'School years have already been rolled for this academic year.',
+      };
+    }
 
     revalidatePath('/dashboard/students');
     revalidatePath('/dashboard/settings');
 
     return {
       success: true,
-      rolledCount,
-      message: `Successfully rolled school years forward for ${rolledCount} student${rolledCount !== 1 ? 's' : ''}.`,
+      rolledCount: txOutcome.rolledCount,
+      message: `Successfully rolled school years forward for ${txOutcome.rolledCount} student${txOutcome.rolledCount !== 1 ? 's' : ''}.`,
     };
   } catch (err) {
     logger.error('[Roll Action] Failed to roll school years:', err);
-    const message = err instanceof Error ? err.message : undefined;
     return {
       success: false,
       rolledCount: 0,
-      message: message || 'Failed to roll school years. Check system logs.',
+      message: 'Failed to roll school years. Please try again.',
     };
   }
 }

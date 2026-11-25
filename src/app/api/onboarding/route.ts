@@ -6,11 +6,28 @@ import { eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
+function isAllowedLogoUrl(value: string): boolean {
+    if (value === '') return true;
+    if (value.startsWith('/uploads/')) {
+        return !value.includes('..') && !value.includes('\\');
+    }
+    try {
+        return new URL(value).protocol === 'https:';
+    } catch {
+        return false;
+    }
+}
+
 const schema = z.object({
-    organisationName: z.string().min(2, "Organisation name must be at least 2 characters"),
-    centreName: z.string().min(2, "Centre name must be at least 2 characters"),
-    brandColor: z.string().regex(/^#[0-9A-F]{6}$/i, "Invalid hex color"),
-    logoUrl: z.string().optional(),
+    organisationName: z.string().min(2, 'Organisation name must be at least 2 characters').max(255),
+    centreName: z.string().min(2, 'Centre name must be at least 2 characters').max(255),
+    brandColor: z.string().regex(/^#[0-9A-F]{6}$/i, 'Invalid hex color'),
+    logoUrl: z
+        .string()
+        .max(500)
+        .refine(isAllowedLogoUrl, 'Logo URL must begin with https:// or /uploads/')
+        .nullable()
+        .optional(),
 });
 
 function generateSlug(name: string) {
@@ -46,7 +63,7 @@ export async function POST(req: Request) {
                 name: data.organisationName,
                 slug: orgSlug,
                 brandColor: data.brandColor,
-                logoUrl: data.logoUrl,
+                logoUrl: data.logoUrl || null,
                 // PM-1.2: Explicitly set PENDING (defence-in-depth; DB default is also PENDING)
                 approvalStatus: 'PENDING',
             }).returning();
@@ -117,7 +134,6 @@ export async function POST(req: Request) {
 
         return NextResponse.json({
             error: 'Failed to create organisation.',
-            details: error instanceof Error ? error.message : String(error)
         }, { status: 500 });
     }
 }
