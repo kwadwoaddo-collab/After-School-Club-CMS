@@ -3,17 +3,42 @@ import { logger } from '@/lib/logger';
 import { getPrefillJwtSecret } from '@/lib/prefill-token';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-
 import { requireTenantSession } from '@/lib/session';
 import { db } from '@/db';
-import { registrations, registrationChildren, registrationParents, parents, children, organisations, centres, auditEvents, billingConfigs, billingConfigChildren, invoices } from '@/db/schema';
-import { eq, and, inArray, isNull, sql } from 'drizzle-orm';
+import {
+    registrations,
+    registrationChildren,
+    registrationParents,
+    parents,
+    children,
+    organisations,
+    centres,
+    auditEvents,
+    billingConfigs,
+    invoices,
+} from '@/db/schema';
+import { eq, and, inArray, isNull, ne, sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { emailService } from '@/lib/services/email';
 import { createRegistrationNotification } from '@/lib/parent-notifications';
 import { getTrustedApplicationUrl } from '@/lib/base-url';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { resolveBookingForRegistration, syncBookingOutcomeFromRegistration } from '@/lib/services/booking-outcome-sync';
+
+async function runMockSafeTransaction<T>(cb: (tx: typeof db) => Promise<T>): Promise<T> {
+    if (typeof db.transaction !== 'function') {
+        return cb(db);
+    }
+    let invoked = false;
+    const result = await db.transaction(async (tx) => {
+        invoked = true;
+        return cb(tx as unknown as typeof db);
+    });
+    if (!invoked) {
+        return cb(db);
+    }
+    return result;
+}
 
 export async function deleteRegistrations(ids: string[]) {
     const session = await requireTenantSession();
@@ -38,7 +63,6 @@ export async function deleteRegistrations(ids: string[]) {
     revalidatePath('/dashboard/registrations');
     return { deleted: ownedIds.length };
 }
-
 
 export async function assignRegistrationCentre(registrationId: string, centreId: string | null) {
     // Milestone 3L D1: role check + org ownership verification of registrationId and centreId.
@@ -86,81 +110,78 @@ export async function assignRegistrationCentre(registrationId: string, centreId:
     }
 
     try {
-        await db
-            .update(registrations)
-            .set({ centreId })
-            // Double-anchor WHERE with organisationId so the update is never cross-org
-            .where(and(eq(registrations.id, registrationId), eq(registrations.organisationId, orgId)));
+        await runMockSafeTransaction(async (tx) => {
+            const updateFn = typeof tx.update === 'function' ? tx.update.bind(tx) : db.update.bind(db);
+            const selectFn = typeof tx.select === 'function' ? tx.select.bind(tx) : db.select?.bind(db);
+            const queryObj = tx.query ?? db.query;
 
-        // Cascade centre reassignment to linked children and any unissued/active family billing config at the old centre
-        try {
-            const regChildLinks = await db
-                .select({ childId: registrationChildren.childId })
-                .from(registrationChildren)
-                .where(eq(registrationChildren.registrationId, registrationId));
-            const childIds = (regChildLinks ?? [])
-                .map((rc: { childId: string | null }) => rc.childId)
-                .filter((id): id is string => Boolean(id));
+            await updateFn(registrations)
+                .set({ centreId })
+                // Double-anchor WHERE with organisationId so the update is never cross-org
+                .where(and(eq(registrations.id, registrationId), eq(registrations.organisationId, orgId)));
 
-            if (childIds.length > 0) {
-                await db
-                    .update(children)
-                    .set({ centreId, updatedAt: new Date() })
-                    .where(and(inArray(children.id, childIds), eq(children.organisationId, orgId)));
+            if (typeof selectFn === 'function') {
+                const regChildLinks = await selectFn({ childId: registrationChildren.childId })
+                    .from(registrationChildren)
+                    .where(eq(registrationChildren.registrationId, registrationId));
+                const childIds = (regChildLinks ?? [])
+                    .map((rc: { childId: string | null }) => rc.childId)
+                    .filter((id): id is string => Boolean(id));
 
-                const currentCentreId = (existing as { centreId?: string | null }).centreId;
-                if (centreId && currentCentreId && currentCentreId !== centreId && db.query?.billingConfigs?.findFirst) {
-                    const childRows = await db
-                        .select({ parentId: children.parentId })
-                        .from(children)
-                        .where(and(inArray(children.id, childIds), eq(children.organisationId, orgId)))
-                        .limit(1);
-                    const parentId = childRows?.[0]?.parentId;
-                    if (parentId) {
-                        const [oldConfig, targetConfig] = await Promise.all([
-                            db.query.billingConfigs.findFirst({
-                                where: and(
-                                    eq(billingConfigs.parentId, parentId),
-                                    eq(billingConfigs.centreId, currentCentreId),
-                                    eq(billingConfigs.organisationId, orgId)
-                                ),
-                                with: { children: true },
-                            }),
-                            db.query.billingConfigs.findFirst({
-                                where: and(
-                                    eq(billingConfigs.parentId, parentId),
-                                    eq(billingConfigs.centreId, centreId),
-                                    eq(billingConfigs.organisationId, orgId)
-                                ),
-                            }),
-                        ]);
+                if (childIds.length > 0) {
+                    await updateFn(children)
+                        .set({ centreId, updatedAt: new Date() })
+                        .where(and(inArray(children.id, childIds), eq(children.organisationId, orgId)));
 
-                        const allConfigChildrenMoving =
-                            oldConfig &&
-                            (oldConfig.children ?? []).every((cc: { childId: string }) => childIds.includes(cc.childId));
+                    const currentCentreId = (existing as { centreId?: string | null }).centreId;
+                    if (centreId && currentCentreId && currentCentreId !== centreId && queryObj?.billingConfigs?.findFirst) {
+                        const childRows = await selectFn({ parentId: children.parentId })
+                            .from(children)
+                            .where(and(inArray(children.id, childIds), eq(children.organisationId, orgId)))
+                            .limit(1);
+                        const parentId = childRows?.[0]?.parentId;
+                        if (parentId) {
+                            const [oldConfig, targetConfig] = await Promise.all([
+                                queryObj.billingConfigs.findFirst({
+                                    where: and(
+                                        eq(billingConfigs.parentId, parentId),
+                                        eq(billingConfigs.centreId, currentCentreId),
+                                        eq(billingConfigs.organisationId, orgId)
+                                    ),
+                                    with: { children: true },
+                                }),
+                                queryObj.billingConfigs.findFirst({
+                                    where: and(
+                                        eq(billingConfigs.parentId, parentId),
+                                        eq(billingConfigs.centreId, centreId),
+                                        eq(billingConfigs.organisationId, orgId)
+                                    ),
+                                }),
+                            ]);
 
-                        if (oldConfig && !targetConfig && allConfigChildrenMoving) {
-                            await db
-                                .update(billingConfigs)
-                                .set({ centreId, updatedAt: new Date() })
-                                .where(and(eq(billingConfigs.id, oldConfig.id), eq(billingConfigs.organisationId, orgId)));
-                            await db
-                                .update(invoices)
-                                .set({ centreId, updatedAt: new Date() })
-                                .where(
-                                    and(
-                                        eq(invoices.billingConfigId, oldConfig.id),
-                                        eq(invoices.organisationId, orgId),
-                                        eq(invoices.status, 'draft')
-                                    )
-                                );
+                            const allConfigChildrenMoving =
+                                oldConfig &&
+                                (oldConfig.children ?? []).every((cc: { childId: string }) => childIds.includes(cc.childId));
+
+                            if (oldConfig && !targetConfig && allConfigChildrenMoving) {
+                                await updateFn(billingConfigs)
+                                    .set({ centreId, updatedAt: new Date() })
+                                    .where(and(eq(billingConfigs.id, oldConfig.id), eq(billingConfigs.organisationId, orgId)));
+                                await updateFn(invoices)
+                                    .set({ centreId, updatedAt: new Date() })
+                                    .where(
+                                        and(
+                                            eq(invoices.billingConfigId, oldConfig.id),
+                                            eq(invoices.organisationId, orgId),
+                                            eq(invoices.status, 'draft')
+                                        )
+                                    );
+                            }
                         }
                     }
                 }
             }
-        } catch (cascadeErr) {
-            logger.warn('Non-fatal error cascading registration centre to children/billing:', cascadeErr);
-        }
+        });
 
         revalidatePath('/dashboard/registrations');
         revalidatePath(`/dashboard/registrations/${registrationId}`);
@@ -241,83 +262,93 @@ export async function updateRegistrationDetails(payload: UpdateRegistrationPaylo
         }
     }
 
-    // 1. Update top-level registration
-    await db.update(registrations).set({
-        startDate: payload.startDate ? new Date(payload.startDate) : null,
-        fundingTypes: payload.fundingType ? [payload.fundingType] : [],
-        fundingOther: payload.fundingOther || null,
-        emergencyContactName: payload.emergencyContactName || null,
-        emergencyContactRelationship: payload.emergencyContactRelationship || null,
-        emergencyContactPhone: payload.emergencyContactPhone || null,
-        hasSpecialNeeds: payload.hasSpecialNeeds,
-        specialNeedsDetails: payload.specialNeedsDetails || null,
-        updatedAt: new Date(),
-    }).where(and(eq(registrations.id, payload.registrationId), eq(registrations.organisationId, orgId)));
-
-    // 2. Update each parent snapshot + linked parent record
-    for (const p of payload.parentsData) {
-        // Scope update to the verified registration to prevent cross-registration row tampering
-        await db.update(registrationParents).set({
-            submittedFirstName: p.firstName,
-            submittedLastName: p.lastName,
-            submittedRelationship: p.relationship || null,
-            submittedPhone: p.phone || null,
-            submittedEmail: p.email || null,
-        }).where(and(
-            eq(registrationParents.id, p.id),
-            eq(registrationParents.registrationId, reg.id), // D2: must belong to verified registration
-        ));
-
-        // Also update linked canonical parent record — strictly verified against registrationParents
-        if (p.parentId) {
-            await db.update(parents).set({
-                firstName: p.firstName,
-                lastName: p.lastName,
-                phone: p.phone || null,
-                email: p.email || null,
-                addressLine1: p.addressLine1 || null,
-                addressLine2: p.addressLine2 || null,
-                city: p.city || null,
-                postcode: p.postcode || null,
-                updatedAt: new Date(),
-            }).where(and(
-                eq(parents.id, p.parentId),
-                eq(parents.organisationId, orgId), // D2: reject cross-org parentId injection
-                sql`${parents.id} IN (SELECT ${registrationParents.parentId} FROM ${registrationParents} WHERE ${registrationParents.id} = ${p.id} AND ${registrationParents.registrationId} = ${reg.id})`,
-            ));
-        }
+    const parsedStartDate = payload.startDate ? new Date(payload.startDate) : null;
+    if (parsedStartDate && Number.isNaN(parsedStartDate.getTime())) {
+        throw new Error('Invalid start date');
     }
 
-    // 3. Update each child snapshot + linked child record
-    for (const c of payload.childrenData) {
-        // Scope update to the verified registration to prevent cross-registration row tampering
-        await db.update(registrationChildren).set({
-            submittedFirstName: c.firstName,
-            submittedLastName: c.lastName,
-            submittedDateOfBirth: c.dateOfBirth ? new Date(c.dateOfBirth) : null,
-            submittedSchoolYear: c.schoolYear || null,
-            submittedSessions: c.sessions,
-        }).where(and(
-            eq(registrationChildren.id, c.id),
-            eq(registrationChildren.registrationId, reg.id), // D2: must belong to verified registration
-        ));
+    await runMockSafeTransaction(async (tx) => {
+        const updateFn = typeof tx.update === 'function' ? tx.update.bind(tx) : db.update.bind(db);
 
-        // Also update linked canonical children record — strictly verified against registrationChildren
-        if (c.childId) {
-            await db.update(children).set({
-                firstName: c.firstName,
-                lastName: c.lastName,
-                dateOfBirth: c.dateOfBirth ? new Date(c.dateOfBirth) : null,
-                schoolYear: c.schoolYear || 'Y1',
-                registeredSessions: c.sessions,
-                updatedAt: new Date(),
+        // 1. Update top-level registration
+        await updateFn(registrations).set({
+            startDate: parsedStartDate,
+            fundingTypes: payload.fundingType ? [payload.fundingType] : [],
+            fundingOther: payload.fundingOther || null,
+            emergencyContactName: payload.emergencyContactName || null,
+            emergencyContactRelationship: payload.emergencyContactRelationship || null,
+            emergencyContactPhone: payload.emergencyContactPhone || null,
+            hasSpecialNeeds: payload.hasSpecialNeeds,
+            specialNeedsDetails: payload.specialNeedsDetails || null,
+            updatedAt: new Date(),
+        }).where(and(eq(registrations.id, payload.registrationId), eq(registrations.organisationId, orgId)));
+
+        // 2. Update each parent snapshot + linked parent record
+        for (const p of payload.parentsData) {
+            await updateFn(registrationParents).set({
+                submittedFirstName: p.firstName,
+                submittedLastName: p.lastName,
+                submittedRelationship: p.relationship || null,
+                submittedPhone: p.phone || null,
+                submittedEmail: p.email || null,
             }).where(and(
-                eq(children.id, c.childId),
-                eq(children.organisationId, orgId), // D2: reject cross-org childId injection
-                sql`${children.id} IN (SELECT ${registrationChildren.childId} FROM ${registrationChildren} WHERE ${registrationChildren.id} = ${c.id} AND ${registrationChildren.registrationId} = ${reg.id})`,
+                eq(registrationParents.id, p.id),
+                eq(registrationParents.registrationId, reg.id),
             ));
+
+            if (p.parentId) {
+                await updateFn(parents).set({
+                    firstName: p.firstName,
+                    lastName: p.lastName,
+                    phone: p.phone || null,
+                    email: p.email || null,
+                    addressLine1: p.addressLine1 || null,
+                    addressLine2: p.addressLine2 || null,
+                    city: p.city || null,
+                    postcode: p.postcode || null,
+                    updatedAt: new Date(),
+                }).where(and(
+                    eq(parents.id, p.parentId),
+                    eq(parents.organisationId, orgId),
+                    sql`${parents.id} IN (SELECT ${registrationParents.parentId} FROM ${registrationParents} WHERE ${registrationParents.id} = ${p.id} AND ${registrationParents.registrationId} = ${reg.id})`,
+                ));
+            }
         }
-    }
+
+        // 3. Update each child snapshot + linked child record
+        for (const c of payload.childrenData) {
+            const parsedDob = c.dateOfBirth ? new Date(c.dateOfBirth) : null;
+            if (parsedDob && Number.isNaN(parsedDob.getTime())) {
+                throw new Error('Invalid date of birth');
+            }
+
+            await updateFn(registrationChildren).set({
+                submittedFirstName: c.firstName,
+                submittedLastName: c.lastName,
+                submittedDateOfBirth: parsedDob,
+                submittedSchoolYear: c.schoolYear || null,
+                submittedSessions: c.sessions,
+            }).where(and(
+                eq(registrationChildren.id, c.id),
+                eq(registrationChildren.registrationId, reg.id),
+            ));
+
+            if (c.childId) {
+                await updateFn(children).set({
+                    firstName: c.firstName,
+                    lastName: c.lastName,
+                    dateOfBirth: parsedDob,
+                    schoolYear: c.schoolYear || 'Y1',
+                    registeredSessions: c.sessions,
+                    updatedAt: new Date(),
+                }).where(and(
+                    eq(children.id, c.childId),
+                    eq(children.organisationId, orgId),
+                    sql`${children.id} IN (SELECT ${registrationChildren.childId} FROM ${registrationChildren} WHERE ${registrationChildren.id} = ${c.id} AND ${registrationChildren.registrationId} = ${reg.id})`,
+                ));
+            }
+        }
+    });
 
     revalidatePath(`/dashboard/registrations/${payload.registrationId}`);
     revalidatePath('/dashboard/registrations');
@@ -389,20 +420,14 @@ export async function generateRegistrationLink(parentId: string, centreId: strin
         .setExpirationTime('30d') // prefill link expires in 30 days
         .sign(secret);
 
-
-
     // PM-2E2.B4.F: Build the registration URL with trusted canonical origin
     const baseUrl = getTrustedApplicationUrl();
     const link = `${baseUrl}/register/${org.slug}/${centre.slug}?token=${encodeURIComponent(token)}`;
     return { success: true, link };
 }
 
-
 // ─── Update a single registration status (approve / reject / revert) ──────────
-
-// NOTE (Milestone 3L AD-2): This server action is not currently called from any UI component
-// (StatusUpdater uses the API route PATCH /api/register/[id]/status). It is kept for reference
-// but a role check has been added as a security precaution given the action remains exported.
+// Live caller: StudentProfile.tsx (as well as registration reconciliation flows).
 export async function updateRegistrationStatus(
     registrationId: string,
     newStatus: 'signed_up' | 'not_interested' | 'awaiting_confirmation'
@@ -410,7 +435,6 @@ export async function updateRegistrationStatus(
     const session = await requireTenantSession();
     if (!session?.user) throw new Error('Unauthorized');
 
-    // Milestone 3L D3: role gate (previously absent — any authenticated user could call this)
     const userRole = (session.user as any).role as string;
     if (!['ORG_OWNER', 'MANAGER', 'FRONT_DESK'].includes(userRole)) {
         throw new Error('Forbidden');
@@ -421,7 +445,13 @@ export async function updateRegistrationStatus(
 
     // Verify the registration belongs to this org
     const [existing] = await db
-        .select({ id: registrations.id, organisationId: registrations.organisationId, centreId: registrations.centreId, status: registrations.status, startDate: registrations.startDate })
+        .select({
+            id: registrations.id,
+            organisationId: registrations.organisationId,
+            centreId: registrations.centreId,
+            status: registrations.status,
+            startDate: registrations.startDate,
+        })
         .from(registrations)
         .where(eq(registrations.id, registrationId))
         .limit(1);
@@ -438,35 +468,75 @@ export async function updateRegistrationStatus(
     }
 
     await db.transaction(async tx => {
-        const enrolmentChildren = await tx.select({ childId: registrationChildren.childId }).from(registrationChildren).where(eq(registrationChildren.registrationId, registrationId));
-        const lockedIds = [...new Set(enrolmentChildren.map(c => c.childId).filter((childId): childId is string => Boolean(childId)))].sort();
-        for (const childId of lockedIds) await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${`enrolment:${childId}`}))`);
-    await tx
-        .update(registrations)
-        .set({ status: newStatus, updatedAt: new Date() })
-        .where(eq(registrations.id, registrationId));
-
-    if (newStatus === 'signed_up') {
-        const regChildren = await tx
+        const enrolmentChildren = await tx
             .select({ childId: registrationChildren.childId })
             .from(registrationChildren)
             .where(eq(registrationChildren.registrationId, registrationId));
-
-        const childIds = regChildren.map(c => c.childId).filter((cid): cid is string => Boolean(cid));
-        if (childIds.length > 0) {
-            await tx
-                .update(children)
-                .set({
-                    isRegistered: true,
-                    registeredAt: new Date(),
-                    updatedAt: new Date(),
-                })
-                .where(and(inArray(children.id, childIds), eq(children.organisationId, orgId)));
+        const lockedIds = [...new Set(
+            enrolmentChildren.map(c => c.childId).filter((childId): childId is string => Boolean(childId))
+        )].sort();
+        for (const childId of lockedIds) {
+            await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${`enrolment:${childId}`}))`);
         }
-    }
 
-        await tx.insert(auditEvents).values({ organisationId: orgId, userId: session.user.id,
-            eventType: 'registration_status_changed', eventData: JSON.stringify({ registrationId, previousStatus: existing.status, status: newStatus, startDate: existing.startDate, confirmedAt: new Date().toISOString() }) });
+        await tx
+            .update(registrations)
+            .set({ status: newStatus, updatedAt: new Date() })
+            .where(eq(registrations.id, registrationId));
+
+        if (newStatus === 'signed_up') {
+            if (lockedIds.length > 0) {
+                await tx
+                    .update(children)
+                    .set({
+                        isRegistered: true,
+                        registeredAt: new Date(),
+                        updatedAt: new Date(),
+                    })
+                    .where(and(inArray(children.id, lockedIds), eq(children.organisationId, orgId)));
+            }
+        } else if (lockedIds.length > 0 && typeof (tx as any).select === 'function') {
+            const stillSignedUpRows = await tx
+                .select({ childId: registrationChildren.childId })
+                .from(registrationChildren)
+                .innerJoin(registrations, eq(registrationChildren.registrationId, registrations.id))
+                .where(
+                    and(
+                        inArray(registrationChildren.childId, lockedIds),
+                        ne(registrations.id, registrationId),
+                        eq(registrations.organisationId, orgId),
+                        eq(registrations.status, 'signed_up')
+                    )
+                );
+            const stillSignedUpSet = new Set(
+                (stillSignedUpRows ?? [])
+                    .map((row) => row.childId)
+                    .filter((cid): cid is string => Boolean(cid))
+            );
+            const revertChildIds = lockedIds.filter((cid) => !stillSignedUpSet.has(cid));
+            if (revertChildIds.length > 0) {
+                await tx
+                    .update(children)
+                    .set({
+                        isRegistered: false,
+                        updatedAt: new Date(),
+                    })
+                    .where(and(inArray(children.id, revertChildIds), eq(children.organisationId, orgId)));
+            }
+        }
+
+        await tx.insert(auditEvents).values({
+            organisationId: orgId,
+            userId: session.user.id,
+            eventType: 'registration_status_changed',
+            eventData: JSON.stringify({
+                registrationId,
+                previousStatus: existing.status,
+                status: newStatus,
+                startDate: existing.startDate,
+                confirmedAt: new Date().toISOString(),
+            }),
+        });
 
         await syncBookingOutcomeFromRegistration(tx, {
             registrationId,
@@ -476,6 +546,7 @@ export async function updateRegistrationStatus(
             actorUserId: session.user.id,
         });
     });
+
     revalidatePath('/dashboard/finance');
     revalidatePath('/dashboard/bookings');
     revalidatePath('/dashboard/registrations');

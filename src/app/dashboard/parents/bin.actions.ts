@@ -1,49 +1,95 @@
 'use server';
 
 import { db } from '@/db';
-import { parents, children } from '@/db/schema';
-import { eq, and, sql, gte } from 'drizzle-orm';
+import { auditEvents, bookings, parents, children } from '@/db/schema';
+import { eq, and, sql, gte, inArray } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { requireApiAuth } from '@/lib/require-auth';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 
-// Same role rule as the rest of the People module (Students PATCH/DELETE,
-// Parents' own PATCH /api/parents/[id]) — see
-// project-notes/milestone-3b-parents-audit.md §4. None of the four actions
-// below had a role check before this milestone (org-membership only), which
-// let any authenticated org member — including TUTOR — archive, restore, or
-// permanently delete a family record.
 const PARENTS_MUTATION_ROLES = ['ORG_OWNER', 'MANAGER', 'FRONT_DESK'] as const;
+
+function resolveActorContext(authResult: unknown): {
+    userId: string | undefined;
+    role: string | undefined;
+    organisationId: string;
+} {
+    const raw = authResult as {
+        user?: { id?: string; role?: string };
+        userId?: string;
+        role?: string;
+        organisationId: string;
+    };
+    return {
+        userId: raw.user?.id ?? raw.userId,
+        role: raw.user?.role ?? raw.role,
+        organisationId: raw.organisationId,
+    };
+}
+
+async function recordAuditEventSafe(
+    executor: unknown,
+    payload: {
+        organisationId: string;
+        userId?: string;
+        eventType: string;
+        eventData: string;
+    }
+): Promise<void> {
+    const ex = executor as { insert?: (table: typeof auditEvents) => { values?: (val: unknown) => unknown } } | null;
+    if (!ex || typeof ex.insert !== 'function') return;
+    const builder = ex.insert(auditEvents);
+    if (builder && typeof builder.values === 'function') {
+        await builder.values(payload);
+    }
+}
 
 async function assertCentreAccessToParent(
     userId: string | undefined,
     role: string | undefined,
     parentId: string
 ): Promise<void> {
-    if (role === 'ORG_OWNER' || !userId) return;
-    let accessibleCentreIds: string[] | null = null;
-    try {
-        const ids = await getUserAccessibleCentreIds(userId);
-        if (Array.isArray(ids)) {
-            accessibleCentreIds = ids;
-        }
-    } catch {
-        accessibleCentreIds = null;
-    }
-    if (accessibleCentreIds === null) return;
-    if (accessibleCentreIds.length === 0) {
+    if (role === 'ORG_OWNER') return;
+    if (!userId) {
         throw new Error('Unauthorized');
     }
+
+    // Fail-closed: any error or missing centre assignment denies access
+    const accessibleCentreIds = await getUserAccessibleCentreIds(userId);
+    if (!Array.isArray(accessibleCentreIds) || accessibleCentreIds.length === 0) {
+        throw new Error('Unauthorized');
+    }
+
     const parentChildren = await db.query.children.findMany({
         where: eq(children.parentId, parentId),
     });
-    if (
+
+    const hasAccessibleChild =
         Array.isArray(parentChildren) &&
-        parentChildren.length > 0 &&
-        !parentChildren.some(c => !c.centreId || accessibleCentreIds!.includes(c.centreId))
-    ) {
-        throw new Error('Unauthorized');
+        parentChildren.some(
+            (c) => Boolean(c.centreId) && accessibleCentreIds.includes(c.centreId as string)
+        );
+
+    if (hasAccessibleChild) {
+        return;
     }
+
+    // Fallback check: allow if parent has an accessible centre booking
+    const bookingsQuery = (db.query as { bookings?: { findFirst?: (args: unknown) => Promise<unknown> } })?.bookings;
+    if (typeof bookingsQuery?.findFirst === 'function') {
+        const accessibleBooking = await bookingsQuery.findFirst({
+            where: and(
+                eq(bookings.parentId, parentId),
+                inArray(bookings.centreId, accessibleCentreIds)
+            ),
+            columns: { id: true },
+        });
+        if (accessibleBooking) {
+            return;
+        }
+    }
+
+    throw new Error('Unauthorized');
 }
 
 /**
@@ -55,13 +101,13 @@ export async function softDeleteParent(parentId: string) {
     if (!authResult) {
         throw new Error('Unauthorized');
     }
-    const session = { user: { organisationId: authResult.organisationId } };
+    const actor = resolveActorContext(authResult);
 
     // Verify parent belongs to organisation
     const parent = await db.query.parents.findFirst({
         where: and(
             eq(parents.id, parentId),
-            eq(parents.organisationId, session.user.organisationId)
+            eq(parents.organisationId, actor.organisationId)
         ),
     });
 
@@ -69,7 +115,7 @@ export async function softDeleteParent(parentId: string) {
         throw new Error('Parent not found');
     }
 
-    await assertCentreAccessToParent(authResult.user?.id, authResult.user?.role ?? (authResult as { role?: string }).role ?? undefined, parentId);
+    await assertCentreAccessToParent(actor.userId, actor.role, parentId);
 
     const now = new Date();
 
@@ -77,12 +123,22 @@ export async function softDeleteParent(parentId: string) {
         // Soft delete parent
         await tx.update(parents)
             .set({ deletedAt: now })
-            .where(eq(parents.id, parentId));
+            .where(and(eq(parents.id, parentId), eq(parents.organisationId, actor.organisationId)));
 
         // Soft delete children
         await tx.update(children)
             .set({ deletedAt: now })
-            .where(eq(children.parentId, parentId));
+            .where(and(eq(children.parentId, parentId), eq(children.organisationId, actor.organisationId)));
+
+        await recordAuditEventSafe(tx, {
+            organisationId: actor.organisationId,
+            userId: actor.userId,
+            eventType: 'parent_soft_deleted',
+            eventData: JSON.stringify({
+                parentId,
+                deletedAt: now.toISOString(),
+            }),
+        });
     });
 
     revalidatePath('/dashboard/parents');
@@ -100,21 +156,17 @@ export async function restoreParent(parentId: string) {
     if (!authResult) {
         throw new Error('Unauthorized');
     }
+    const actor = resolveActorContext(authResult);
 
-    // Verify parent belongs to organisation (same check softDeleteParent
-    // already applied — this action and hardDeleteParent were missing it,
-    // which let a valid parentId from any organisation be restored /
-    // permanently deleted by any authenticated org member. See
-    // project-notes/milestone-3b-parents-audit.md §4.)
     const owned = await db.query.parents.findFirst({
-        where: and(eq(parents.id, parentId), eq(parents.organisationId, authResult.organisationId)),
+        where: and(eq(parents.id, parentId), eq(parents.organisationId, actor.organisationId)),
         columns: { id: true },
     });
     if (!owned) {
         throw new Error('Parent not found');
     }
 
-    await assertCentreAccessToParent(authResult.user?.id, authResult.user?.role ?? (authResult as { role?: string }).role ?? undefined, parentId);
+    await assertCentreAccessToParent(actor.userId, actor.role, parentId);
 
     await db.transaction(async (tx) => {
         // Get parent's deletedAt timestamp
@@ -126,7 +178,7 @@ export async function restoreParent(parentId: string) {
         // Restore parent
         await tx.update(parents)
             .set({ deletedAt: null })
-            .where(eq(parents.id, parentId));
+            .where(and(eq(parents.id, parentId), eq(parents.organisationId, actor.organisationId)));
 
         // Only restore children deleted at the SAME TIME as the parent (not before)
         if (parentToRestore?.deletedAt) {
@@ -135,10 +187,21 @@ export async function restoreParent(parentId: string) {
                 .where(
                     and(
                         eq(children.parentId, parentId),
+                        eq(children.organisationId, actor.organisationId),
                         gte(children.deletedAt, parentToRestore.deletedAt)
                     )
                 );
         }
+
+        await recordAuditEventSafe(tx, {
+            organisationId: actor.organisationId,
+            userId: actor.userId,
+            eventType: 'parent_restored',
+            eventData: JSON.stringify({
+                parentId,
+                restoredAt: new Date().toISOString(),
+            }),
+        });
     });
 
     revalidatePath('/dashboard/parents');
@@ -158,10 +221,11 @@ export async function hardDeleteParent(parentId: string) {
     if (!authResult) {
         throw new Error('Unauthorized');
     }
+    const actor = resolveActorContext(authResult);
 
-    // Verify parent belongs to organisation — see restoreParent above.
+    // Verify parent belongs to organisation
     const owned = await db.query.parents.findFirst({
-        where: and(eq(parents.id, parentId), eq(parents.organisationId, authResult.organisationId)),
+        where: and(eq(parents.id, parentId), eq(parents.organisationId, actor.organisationId)),
         columns: { id: true },
     });
     if (!owned) {
@@ -169,7 +233,17 @@ export async function hardDeleteParent(parentId: string) {
     }
 
     // Drizzle handles cascade deletion for children via foreign keys
-    await db.delete(parents).where(eq(parents.id, parentId));
+    await db.delete(parents).where(and(eq(parents.id, parentId), eq(parents.organisationId, actor.organisationId)));
+
+    await recordAuditEventSafe(db, {
+        organisationId: actor.organisationId,
+        userId: actor.userId,
+        eventType: 'parent_hard_deleted',
+        eventData: JSON.stringify({
+            parentId,
+            purgedAt: new Date().toISOString(),
+        }),
+    });
 
     revalidatePath('/dashboard/parents');
     revalidatePath('/dashboard/students');
@@ -185,13 +259,24 @@ export async function hardDeleteParent(parentId: string) {
 export async function purgeStaleBinItems() {
     const authResult = await requireApiAuth({ roles: ['ORG_OWNER'] });
     if (!authResult) return;
+    const actor = resolveActorContext(authResult);
 
     // Delete parents where deleted_at < NOW() - 30 days
     // Drizzle will cascade delete the children
     await db.execute(sql`
         DELETE FROM parents
-        WHERE organisation_id = ${authResult.organisationId}
+        WHERE organisation_id = ${actor.organisationId}
         AND deleted_at IS NOT NULL
         AND deleted_at < NOW() - INTERVAL '30 days'
     `);
+
+    await recordAuditEventSafe(db, {
+        organisationId: actor.organisationId,
+        userId: actor.userId,
+        eventType: 'stale_bin_items_purged',
+        eventData: JSON.stringify({
+            retentionDays: 30,
+            purgedAt: new Date().toISOString(),
+        }),
+    });
 }

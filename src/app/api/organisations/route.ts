@@ -12,6 +12,30 @@ import { hashToken } from '@/lib/magic-link';
 import { emailService } from '@/lib/services/email';
 import { getTrustedApplicationUrl } from '@/lib/base-url';
 
+function isHttpsUrl(value: string): boolean {
+    try {
+        return new URL(value).protocol === 'https:';
+    } catch {
+        return false;
+    }
+}
+
+function isHttpsOrUploadsUrl(value: string): boolean {
+    if (value.startsWith('/uploads/')) {
+        return !value.includes('..') && !value.includes('\\');
+    }
+    return isHttpsUrl(value);
+}
+
+const httpsUrlField = (maxLen: number) =>
+    z
+        .string()
+        .max(maxLen)
+        .refine((val) => val === '' || isHttpsUrl(val), {
+            message: 'URL must begin with https://',
+        })
+        .optional();
+
 const registrationSchema = z.object({
     organisationName: z.string().min(2).max(255),
     firstName: z.string().min(1).max(MAX_NAME_LENGTH),
@@ -19,11 +43,17 @@ const registrationSchema = z.object({
     contactEmail: z.string().min(3).max(MAX_EMAIL_LENGTH).email().transform(normalizeEmail),
     password: passwordSchema,
     contactPhone: z.string().max(20).optional(),
-    website: z.string().url().max(255).optional().or(z.literal('')),
-    privacyPolicyUrl: z.string().url().max(500).optional().or(z.literal('')),
+    website: httpsUrlField(255),
+    privacyPolicyUrl: httpsUrlField(500),
     address: z.string().max(1000).optional(),
     description: z.string().max(5000).optional(),
-    logoUrl: z.string().url().max(500).optional().or(z.literal('')),
+    logoUrl: z
+        .string()
+        .max(500)
+        .refine((val) => val === '' || isHttpsOrUploadsUrl(val), {
+            message: 'Logo URL must begin with https:// or /uploads/',
+        })
+        .optional(),
 });
 
 export async function POST(req: NextRequest) {

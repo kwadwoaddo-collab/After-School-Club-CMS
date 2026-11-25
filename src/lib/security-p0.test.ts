@@ -88,7 +88,7 @@ describe('PATCH /api/register/[id]/status', () => {
         vi.clearAllMocks();
     });
 
-    const params = Promise.resolve({ id: 'reg-abc' });
+    const params = Promise.resolve({ id: '00000000-0000-4000-8000-000000000001' });
 
     it('returns 401 when unauthenticated', async () => {
         const { auth } = await import('@/lib/auth');
@@ -106,6 +106,20 @@ describe('PATCH /api/register/[id]/status', () => {
         const PATCH = await getStatusRoute();
         const res = await PATCH(makeRequest({ status: 'signed_up' }) as any, { params });
         expect(res.status).toBe(401);
+    });
+
+    it('returns 400 when registration ID is not a valid UUID', async () => {
+        const { auth } = await import('@/lib/auth');
+        (auth as any).mockResolvedValueOnce({
+            user: { id: 'u1', organisationId: 'org-1', role: 'ORG_OWNER' },
+        });
+
+        const PATCH = await getStatusRoute();
+        const res = await PATCH(makeRequest({ status: 'signed_up' }) as any, {
+            params: Promise.resolve({ id: 'not-a-uuid' }),
+        });
+        expect(res.status).toBe(400);
+        await expect(res.json()).resolves.toEqual({ error: 'Invalid registration ID' });
     });
 
     it('returns 400 when status value is invalid', async () => {
@@ -141,7 +155,7 @@ describe('PATCH /api/register/[id]/status', () => {
         });
         const { db } = await import('@/db');
         (db.query.registrations.findFirst as any).mockResolvedValueOnce({
-            id: 'reg-abc',
+            id: '00000000-0000-4000-8000-000000000001',
             organisationId: 'org-1',
             centreId: 'centre-B',
         });
@@ -160,7 +174,7 @@ describe('PATCH /api/register/[id]/status', () => {
         });
         const { db } = await import('@/db');
         (db.query.registrations.findFirst as any).mockResolvedValueOnce({
-            id: 'reg-abc',
+            id: '00000000-0000-4000-8000-000000000001',
             organisationId: 'org-1',
             centreId: 'centre-A',
         });
@@ -183,7 +197,7 @@ describe('PATCH /api/register/[id]/status', () => {
         });
         const { db } = await import('@/db');
         (db.query.registrations.findFirst as any).mockResolvedValueOnce({
-            id: 'reg-abc',
+            id: '00000000-0000-4000-8000-000000000001',
             organisationId: 'org-1',
             centreId: 'centre-A',
         });
