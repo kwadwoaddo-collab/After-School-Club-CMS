@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { X, MapPin, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/ui/ToastProvider';
 import { Button } from '@/components/ui/Button';
+import { useDialogFocusTrap } from '@/components/ui/useDialogFocusTrap';
 
 interface ReassignCentreModalProps {
     bookingId: string;
@@ -17,8 +18,15 @@ interface ReassignCentreModalProps {
 export default function ReassignCentreModal({ bookingId, currentCentreId, centres, onClose, onSuccess }: ReassignCentreModalProps) {
     const [selectedCentreId, setSelectedCentreId] = useState(currentCentreId || '');
     const [isSaving, setIsSaving] = useState(false);
+    const dialogRef = useRef<HTMLDivElement>(null);
     const { toast } = useToast();
     const router = useRouter();
+
+    const handleEscape = useCallback(() => {
+        if (!isSaving) onClose();
+    }, [isSaving, onClose]);
+
+    useDialogFocusTrap(true, dialogRef, handleEscape);
 
     const availableCentres = centres.filter(c => c.id !== currentCentreId);
 
@@ -54,6 +62,7 @@ export default function ReassignCentreModal({ bookingId, currentCentreId, centre
 
     return (
         <div
+            ref={dialogRef}
             className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4"
             onClick={e => { if (e.target === e.currentTarget && !isSaving) onClose(); }}
             role="dialog"

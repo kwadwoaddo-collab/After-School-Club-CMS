@@ -57,6 +57,7 @@ interface Props {
     paymentId?: string;
     stableReceiptNo?: string;
     initialPayment?: InitialPayment | null;
+    initialCentreId?: string;
 }
 
 function mapMethodLabel(method?: string | null): 'Cash' | 'Card' | 'Bank Transfer' | 'Childcare Vouchers' {
@@ -81,7 +82,7 @@ function mapMethodLabel(method?: string | null): 'Cash' | 'Card' | 'Bank Transfe
     }
 }
 
-export default function ReceiptGeneratorClient({ organisation, centres, children: rawChildren, stableReceiptNo, initialPayment }: Props) {
+export default function ReceiptGeneratorClient({ organisation, centres, children: rawChildren, stableReceiptNo, initialPayment, initialCentreId }: Props) {
     const children = rawChildren as Child[];
     // Generate random receipt number
     const generateReceiptNumber = () => {
@@ -112,7 +113,7 @@ export default function ReceiptGeneratorClient({ organisation, centres, children
     const [paymentMethod, setPaymentMethod] = useState<'Cash' | 'Card' | 'Bank Transfer' | 'Childcare Vouchers'>(
         initialPayment?.method ? mapMethodLabel(initialPayment.method) : 'Cash'
     );
-    const [selectedCentreId, setSelectedCentreId] = useState(initialPayment?.centreId || centres[0]?.id || '');
+    const [selectedCentreId, setSelectedCentreId] = useState(initialPayment?.centreId || initialCentreId || centres[0]?.id || '');
     const [description, setDescription] = useState(
         initialPayment?.description ||
         (initialPayment?.invoiceNumber ? `Payment for Invoice ${initialPayment.invoiceNumber}` : 'Weekly Club Sessions')
@@ -378,7 +379,7 @@ export default function ReceiptGeneratorClient({ organisation, centres, children
                                 <p className="text-[10px] text-slate-500 font-semibold mt-1 whitespace-pre-line">{selectedCentre.address}</p>
                             )}
                             {(selectedCentre?.billingPhone || selectedCentre?.billingEmail || selectedCentre?.ofstedId) && (
-                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-1">
+                                <p className="text-[10px] text-slate-600 font-bold uppercase tracking-wider mt-1">
                                     {[
                                         selectedCentre?.ofstedId ? `Ofsted: ${selectedCentre.ofstedId}` : null,
                                         selectedCentre?.billingPhone ? `Tel: ${selectedCentre.billingPhone}` : null,
@@ -397,11 +398,11 @@ export default function ReceiptGeneratorClient({ organisation, centres, children
                     <div className="py-8 space-y-6">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                             <div className="space-y-1">
-                                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Date</span>
+                                <span className="text-[9px] font-bold text-slate-600 uppercase tracking-wider block">Date</span>
                                 <span className="text-xs font-bold text-slate-900">{date ? new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : 'N/A'}</span>
                             </div>
                             <div className="space-y-1">
-                                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Payment Method</span>
+                                <span className="text-[9px] font-bold text-slate-600 uppercase tracking-wider block">Payment Method</span>
                                 <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
                                     {paymentMethod === 'Cash' && <Coins className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />}
                                     {paymentMethod === 'Card' && <CreditCard className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />}
@@ -434,7 +435,7 @@ export default function ReceiptGeneratorClient({ organisation, centres, children
                         {/* Amount Box */}
                         <div className="bg-slate-50 rounded-2xl p-6 flex flex-col sm:flex-row justify-between items-center gap-4 mt-4 border border-slate-100">
                             <div>
-                                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Total Amount Received</span>
+                                <span className="text-[9px] font-bold text-slate-600 uppercase tracking-wider block">Total Amount Received</span>
                                 <span className="text-xs text-slate-500 italic mt-0.5 block leading-tight">Paid in Full</span>
                             </div>
                             <div className="text-3xl font-black text-slate-900 tracking-tight">
@@ -446,7 +447,7 @@ export default function ReceiptGeneratorClient({ organisation, centres, children
                     {/* Stamp and Signatures */}
                     <div className="grid grid-cols-2 gap-8 pt-10 border-t border-slate-100 mt-6">
                         <div className="space-y-2">
-                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Verified Status</span>
+                            <span className="text-[9px] font-bold text-slate-600 uppercase tracking-wider block">Verified Status</span>
                             <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-full text-[10px] font-extrabold uppercase tracking-wider shadow-sm">
                                 <Check className="w-3 h-3" /> OFFICIAL PAID
                             </div>
@@ -456,7 +457,7 @@ export default function ReceiptGeneratorClient({ organisation, centres, children
                                 <span className="font-serif italic text-base text-slate-600 opacity-75 tracking-wider">{selectedCentre?.managerName || 'Centre Manager'}</span>
                             </div>
                             <div className="border-t border-slate-200 pt-1.5">
-                                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Authorized Signature ({selectedCentreName})</span>
+                                <span className="text-[9px] font-bold text-slate-600 uppercase tracking-wider block">Authorised Signature ({selectedCentreName})</span>
                             </div>
                         </div>
                     </div>

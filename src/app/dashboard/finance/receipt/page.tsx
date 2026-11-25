@@ -6,14 +6,15 @@ import { ArrowLeft, Building2 } from 'lucide-react';
 import { db } from '@/db';
 import { eq, and, inArray } from 'drizzle-orm';
 import { children, organisations, payments } from '@/db/schema';
+import { resolveActiveCentreId } from '@/lib/centre-filter';
 import { getUserAccessibleCentres, getVisibleChildIds } from '@/lib/permissions';
 import { isValidUuid } from '@/lib/uuid';
 import ReceiptGeneratorClient from '@/features/finance/components/ReceiptGeneratorClient';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { stableReceiptNumber } from '@/lib/finance/receipt-number';
 
-export default async function ReceiptPage(props: { searchParams: Promise<{ paymentId?: string }> }) {
-    const searchParams = await props.searchParams;
+export default async function ReceiptPage(props: { searchParams?: Promise<{ paymentId?: string; centre?: string }> } = {}) {
+    const searchParams = (await props.searchParams) ?? {};
     const session = await requireTenantSession();
 
     if (!session?.user) return redirect('/login');
@@ -27,10 +28,16 @@ export default async function ReceiptPage(props: { searchParams: Promise<{ payme
     }
 
     // Fetch accessible centres first so non-owner staff with 0 centres short-circuit cleanly
-    const orgCentres = await getUserAccessibleCentres(session.user.id);
+    const orgCentres = (await getUserAccessibleCentres(session.user.id)) ?? [];
     const accessibleCentreIds = orgCentres
         .map((c: { id: string }) => c.id)
         .filter(isValidUuid);
+    const activeCentreId = accessibleCentreIds.length > 0
+        ? await resolveActiveCentreId(searchParams.centre, accessibleCentreIds)
+        : 'all';
+    const backHref = isValidUuid(activeCentreId)
+        ? `/dashboard/finance?${new URLSearchParams({ centre: activeCentreId })}`
+        : '/dashboard/finance';
 
     if (userRole !== 'ORG_OWNER' && accessibleCentreIds.length === 0) {
         return (
@@ -155,7 +162,7 @@ export default async function ReceiptPage(props: { searchParams: Promise<{ payme
             {/* Page Header */}
             <div className="flex items-center gap-4 no-print">
                 <Link
-                    href="/dashboard/finance"
+                    href={backHref}
                     className="p-2 hover:bg-secondary rounded-2xl transition-all text-muted-foreground hover:text-foreground"
                 >
                     <ArrowLeft className="w-5 h-5" />
@@ -184,6 +191,7 @@ export default async function ReceiptPage(props: { searchParams: Promise<{ payme
                     paymentId={validPaymentId}
                     stableReceiptNo={validPaymentId ? stableReceiptNumber(validPaymentId) : undefined}
                     initialPayment={initialPayment}
+                    initialCentreId={isValidUuid(activeCentreId) ? activeCentreId : undefined}
                 />
             </div>
         </div>

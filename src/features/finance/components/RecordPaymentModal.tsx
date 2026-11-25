@@ -2,11 +2,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 
-import { useState, useEffect } from 'react';
+import { useState, useId, useRef, useCallback } from 'react';
 import { X, CreditCard, Calendar, Check, Loader2, Landmark, Ticket, AlertTriangle, RefreshCw } from 'lucide-react';
 import { recordPayment } from '../actions';
 import { usePaymentIdempotency } from '../hooks/use-payment-idempotency';
 import { useToast } from '@/components/ui/ToastProvider';
+import { useDialogFocusTrap } from '@/components/ui/useDialogFocusTrap';
 
 interface RecordPaymentModalProps {
     invoiceId: string;
@@ -34,18 +35,19 @@ export default function RecordPaymentModal({
 }: RecordPaymentModalProps) {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [conflictPayment, setConflictPayment] = useState<any | null>(null);
+    const dialogRef = useRef<HTMLDivElement>(null);
+    const fieldId = useId();
+    const amountInputId = `${fieldId}-amount`;
+    const dateInputId = `${fieldId}-date`;
+    const referenceInputId = `${fieldId}-reference`;
     const { toast } = useToast();
     const { idempotencyKey, originalRecordedAt, rotateIdempotencyKey, clearIdempotencyKey } = usePaymentIdempotency(invoiceId);
-    
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Escape' && !isSubmitting) {
-                onClose();
-            }
-        };
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
+
+    const handleEscape = useCallback(() => {
+        if (!isSubmitting) onClose();
     }, [isSubmitting, onClose]);
+
+    useDialogFocusTrap(true, dialogRef, handleEscape);
 
     const [formData, setFormData] = useState({
         amount: remainingBalance.toString(),
@@ -114,7 +116,7 @@ export default function RecordPaymentModal({
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4 animate-in fade-in duration-300">
-            <div role="dialog" aria-modal="true" aria-labelledby="record-payment-title" className="bg-secondary/80 border border-border rounded-[32px] w-full max-w-lg max-h-[90dvh] shadow-2xl overflow-y-auto animate-in zoom-in-95 duration-300">
+            <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="record-payment-title" className="bg-secondary/80 border border-border rounded-[32px] w-full max-w-lg max-h-[90dvh] shadow-2xl overflow-y-auto animate-in zoom-in-95 duration-300">
                 {/* Header */}
                 <div className="px-8 py-6 border-b border-border flex items-center justify-between bg-card/50">
                     <div>
@@ -142,13 +144,13 @@ export default function RecordPaymentModal({
                 )}
 
                 {conflictPayment && (
-                    <div className="mx-8 mt-6 p-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl space-y-3">
+                    <div role="alert" className="mx-8 mt-6 p-4 bg-amber-500/15 border border-amber-500/30 rounded-2xl space-y-3">
                         <div className="flex items-start gap-3">
-                            <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-                            <div className="text-xs text-amber-200/90 space-y-1">
-                                <p className="font-bold text-amber-100">Payment Already Recorded With Different Parameters</p>
+                            <AlertTriangle className="w-5 h-5 text-amber-700 dark:text-amber-400 shrink-0 mt-0.5" aria-hidden="true" />
+                            <div className="text-xs text-amber-900 dark:text-amber-200 space-y-1">
+                                <p className="font-bold text-amber-950 dark:text-amber-100">Payment Already Recorded With Different Parameters</p>
                                 <p>An existing payment was previously recorded under this key:</p>
-                                <ul className="list-disc list-inside space-y-0.5 text-muted-foreground">
+                                <ul className="list-disc list-inside space-y-0.5 text-amber-900/90 dark:text-amber-200/90">
                                     <li>Amount: £{conflictPayment.amount}</li>
                                     <li>Method: {conflictPayment.method}</li>
                                     <li>Date: {conflictPayment.recordedAt ? new Date(conflictPayment.recordedAt).toLocaleDateString('en-GB') : 'N/A'}</li>
@@ -160,9 +162,9 @@ export default function RecordPaymentModal({
                         <button
                             type="button"
                             onClick={handleStartNewPayment}
-                            className="w-full py-2 px-3 bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-500/30 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5"
+                            className="w-full py-2 px-3 bg-amber-500/20 hover:bg-amber-500/30 text-amber-900 dark:text-amber-200 border border-amber-500/30 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5"
                         >
-                            <RefreshCw className="w-3.5 h-3.5" /> Start a New Payment
+                            <RefreshCw className="w-3.5 h-3.5" aria-hidden="true" /> Start a New Payment
                         </button>
                     </div>
                 )}
@@ -170,10 +172,11 @@ export default function RecordPaymentModal({
                 <form onSubmit={handleSubmit} className="p-8 space-y-6">
                     {/* Amount */}
                     <div className="space-y-2">
-                        <label className="text-xs font-black text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+                        <label htmlFor={amountInputId} className="text-xs font-black text-muted-foreground uppercase tracking-widest flex items-center gap-2">
                             Amount Received (£) <span className="text-primary">*</span>
                         </label>
                         <input
+                            id={amountInputId}
                             type="number"
                             step="0.01"
                             placeholder="0.00"
@@ -196,6 +199,7 @@ export default function RecordPaymentModal({
                                 <button
                                     key={m.id}
                                     type="button"
+                                    aria-pressed={formData.method === m.id}
                                     onClick={() => setFormData({ ...formData, method: m.id as any })}
                                     className={`relative flex items-center gap-3 p-4 rounded-2xl border transition-all ${
                                         formData.method === m.id 
@@ -217,10 +221,11 @@ export default function RecordPaymentModal({
 
                     {/* Date Received */}
                     <div className="space-y-2">
-                        <label className="text-xs font-black text-muted-foreground uppercase tracking-widest flex items-center gap-2">
-                            <Calendar className="w-3.5 h-3.5" /> Date Received
+                        <label htmlFor={dateInputId} className="text-xs font-black text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+                            <Calendar className="w-3.5 h-3.5" aria-hidden="true" /> Date Received
                         </label>
                         <input
+                            id={dateInputId}
                             type="date"
                             required
                             value={formData.recordedAt}
@@ -231,10 +236,11 @@ export default function RecordPaymentModal({
 
                     {/* Reference */}
                     <div className="space-y-2">
-                        <label className="text-xs font-black text-muted-foreground uppercase tracking-widest">
+                        <label htmlFor={referenceInputId} className="text-xs font-black text-muted-foreground uppercase tracking-widest">
                             Transaction Reference
                         </label>
                         <input
+                            id={referenceInputId}
                             type="text"
                             placeholder="e.g. Bank Ref, Receipt #"
                             value={formData.reference}

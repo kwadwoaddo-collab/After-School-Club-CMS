@@ -1,7 +1,8 @@
 'use client';
 
-import { type ReactNode, useCallback, useEffect, useState } from 'react';
+import { type ReactNode, useCallback, useRef, useState } from 'react';
 import { AlertCircle, AlertTriangle, Loader2, Trash2, X } from 'lucide-react';
+import { useDialogFocusTrap } from './useDialogFocusTrap';
 
 export interface ConfirmModalProps {
     isOpen: boolean;
@@ -37,6 +38,7 @@ export function ConfirmModal({
     closeOnConfirm = true,
 }: ConfirmModalProps) {
     const [internalLoading, setInternalLoading] = useState(false);
+    const dialogRef = useRef<HTMLDivElement>(null);
     const busy = isLoading || internalLoading;
 
     const handleClose = useCallback(() => {
@@ -47,16 +49,7 @@ export function ConfirmModal({
 
     const content = description ?? message;
 
-    useEffect(() => {
-        if (!isOpen) return;
-        const onKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') {
-                handleClose();
-            }
-        };
-        window.addEventListener('keydown', onKeyDown);
-        return () => window.removeEventListener('keydown', onKeyDown);
-    }, [isOpen, handleClose]);
+    useDialogFocusTrap(isOpen, dialogRef, handleClose);
 
     if (!isOpen) return null;
 
@@ -64,10 +57,10 @@ export function ConfirmModal({
     const iconColor = variant === 'danger' ? 'text-rose-500' : variant === 'warning' ? 'text-amber-500' : 'text-blue-500';
     const iconBg = variant === 'danger' ? 'bg-rose-500/10 border-rose-500/20' : variant === 'warning' ? 'bg-amber-500/10 border-amber-500/20' : 'bg-blue-500/10 border-blue-500/20';
     const confirmBtnColor = variant === 'danger'
-        ? 'bg-error text-white hover:bg-error/90'
+        ? 'bg-danger text-on-danger hover:opacity-90'
         : variant === 'warning'
-        ? 'bg-amber-500 text-white hover:bg-amber-600'
-        : 'bg-blue-500 text-white hover:bg-primary/90';
+        ? 'bg-amber-600 text-white hover:bg-amber-700'
+        : 'bg-accent text-on-accent hover:bg-accent-hover';
 
     const handleConfirmClick = async () => {
         if (busy) return;
@@ -90,6 +83,7 @@ export function ConfirmModal({
 
     return (
         <div
+            ref={dialogRef}
             role="dialog"
             aria-modal="true"
             aria-labelledby="confirm-modal-title"

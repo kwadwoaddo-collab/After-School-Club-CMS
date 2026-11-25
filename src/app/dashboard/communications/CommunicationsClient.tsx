@@ -64,21 +64,31 @@ export default function CommunicationsClient({
     centreId,
     centreName,
     requireConfirmation,
+    initialData,
 }: {
     centreId: string;
     centreName?: string | null;
     requireConfirmation?: boolean;
+    initialData?: {
+        broadcasts: Broadcast[];
+        parents: Parent[];
+        classes: ClubSession[];
+    };
 }) {
     const shouldConfirm = requireConfirmation ?? (typeof process === 'undefined' || !process.env.VITEST);
     const [activeTab, setActiveTab] = useState<'compose' | 'history'>('compose');
-    const [broadcasts, setBroadcasts] = useState<Broadcast[]>([]);
-    const [parents, setParents] = useState<Parent[]>([]);
-    const [classes, setClasses] = useState<ClubSession[]>([]);
+    const [broadcasts, setBroadcasts] = useState<Broadcast[]>(
+        initialData ? [...initialData.broadcasts].reverse() : []
+    );
+    const [parents, setParents] = useState<Parent[]>(initialData?.parents ?? []);
+    const [classes, setClasses] = useState<ClubSession[]>(initialData?.classes ?? []);
     const [selectedClassId, setSelectedClassId] = useState<string>('all');
     const [selectedBroadcast, setSelectedBroadcast] = useState<Broadcast | null>(null);
     const [deliveryDetails, setDeliveryDetails] = useState<DeliveryDetails | null>(null);
     const [isLoadingDetails, setIsLoadingDetails] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(!initialData);
+    const skipFirstLoadRef = useRef(Boolean(initialData));
+    const initialCentreIdRef = useRef(centreId);
     const [loadError, setLoadError] = useState(false);
     const [detailsError, setDetailsError] = useState(false);
     const [sendUnknown, setSendUnknown] = useState(false);
@@ -125,8 +135,17 @@ export default function CommunicationsClient({
     }, [centreId, selectedClassId]);
 
     useEffect(() => {
-        loadData();
-    }, [loadData]);
+        if (
+            skipFirstLoadRef.current &&
+            centreId === initialCentreIdRef.current &&
+            selectedClassId === 'all'
+        ) {
+            skipFirstLoadRef.current = false;
+            return;
+        }
+        skipFirstLoadRef.current = false;
+        void loadData();
+    }, [centreId, selectedClassId, loadData]);
 
     const handleSelectBroadcast = async (b: Broadcast) => {
         const request = ++detailsRequest.current;
@@ -344,7 +363,8 @@ export default function CommunicationsClient({
 
             {activeTab === 'history' && (
                 <div className="bg-card border border-border rounded-3xl overflow-hidden shadow-sm">
-                    <table className="w-full text-sm text-left">
+                    <div className="overflow-x-auto">
+                    <table className="w-full min-w-[640px] text-sm text-left">
                         <thead className="bg-secondary/40 border-b border-border">
                             <tr>
                                 <th className="px-6 py-4 font-bold text-muted-foreground uppercase text-xs tracking-wider">Date</th>
@@ -365,7 +385,7 @@ export default function CommunicationsClient({
                             ) : broadcasts.length === 0 ? (
                                 <tr>
                                     <td colSpan={6} className="p-6">
-                                        <div className="glassmorphic-card rounded-3xl p-12 text-center flex flex-col items-center gap-4">
+                                        <div className="bg-surface border border-border rounded-xl p-12 text-center flex flex-col items-center gap-4">
                                           <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
                                             <MessageSquare className="w-8 h-8 text-primary" />
                                           </div>
@@ -399,6 +419,7 @@ export default function CommunicationsClient({
                             )}
                         </tbody>
                     </table>
+                    </div>
                 </div>
             )}
 

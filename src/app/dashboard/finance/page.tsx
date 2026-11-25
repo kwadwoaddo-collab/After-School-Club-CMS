@@ -8,6 +8,7 @@ import { eq, asc, desc, and, count, inArray } from 'drizzle-orm';
 import { Download, CreditCard } from 'lucide-react';
 import { resolveActiveCentreId } from '@/lib/centre-filter';
 import { getUserAccessibleCentres, isOrgOwner } from '@/lib/permissions';
+import { isValidUuid } from '@/lib/uuid';
 import { Suspense } from 'react';
 import Link from 'next/link';
 import type { FinanceInvoice } from '@/features/finance/components/FinanceDataGridClient';
@@ -316,7 +317,7 @@ export default async function FinancePage(props: {
                             </>
                         )}
                         {[['history', 'All invoices'], ['families', 'Family accounts']].map(([view,label]) => <Link key={view} href={`/dashboard/finance?${new URLSearchParams({ ...activeCentreParam, view })}`} aria-current={searchParams.view === view ? 'page' : undefined} className="inline-flex min-h-10 items-center font-medium text-primary hover:underline">{label}</Link>)}
-                        <Link href="/dashboard/finance/receipt" className="inline-flex min-h-10 items-center font-medium text-primary hover:underline">Parent receipts</Link>
+                        <Link href={isValidUuid(activeCentreId) ? `/dashboard/finance/receipt?${new URLSearchParams(activeCentreParam)}` : '/dashboard/finance/receipt'} className="inline-flex min-h-10 items-center font-medium text-primary hover:underline">Parent receipts</Link>
                         <details className="relative"><summary className="flex min-h-10 cursor-pointer items-center text-muted-foreground">More</summary><div className="absolute right-0 top-10 z-20 w-64 rounded-lg border border-border bg-card p-3 shadow-lg"><Link href={`/dashboard/finance?${new URLSearchParams({ ...activeCentreParam, view:'former' })}`} className="block py-2 text-primary hover:underline">Paused / stopped balances</Link></div></details>
                     </nav>
                     <Suspense fallback={<div className="w-[180px] h-[44px] bg-secondary/60 rounded-2xl animate-pulse" />}>

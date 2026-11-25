@@ -4,6 +4,7 @@ import { organisations, centres } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { AlertTriangle, Building2 } from 'lucide-react';
 import CommunicationsClient from './CommunicationsClient';
+import { getBroadcasts, getParentsForCentre, getClassesForCentre } from '@/features/communications/actions';
 import { resolveActiveCentreId } from '@/lib/centre-filter';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
@@ -21,7 +22,8 @@ import { requireAuth } from '@/lib/require-auth';
  * independently enforces this — page-level gating alone is never treated
  * as sufficient authorization for a server action in this codebase.
  */
-export default async function CommunicationsPage() {
+export default async function CommunicationsPage(props: { searchParams?: Promise<{ centre?: string }> } = {}) {
+    const resolvedSearchParams = (await props.searchParams) ?? {};
     const { session } = await requireAuth({ roles: ['ORG_OWNER', 'MANAGER'] });
 
     let org = null;
@@ -39,7 +41,7 @@ export default async function CommunicationsPage() {
         org = foundOrg;
         
         centreIds = await getUserAccessibleCentreIds(session.user.id);
-        activeCentreId = await resolveActiveCentreId(undefined, centreIds);
+        activeCentreId = await resolveActiveCentreId(resolvedSearchParams.centre, centreIds);
         if (activeCentreId && activeCentreId !== 'all') {
             const foundCentre = await db.query.centres.findFirst({
                 where: eq(centres.id, activeCentreId),
@@ -54,6 +56,25 @@ export default async function CommunicationsPage() {
 
     if (!org && !hasError) return redirect('/onboarding');
     if (!activeCentreId) activeCentreId = 'all';
+
+    let initialData: {
+        broadcasts: Awaited<ReturnType<typeof getBroadcasts>>;
+        parents: Awaited<ReturnType<typeof getParentsForCentre>>;
+        classes: Awaited<ReturnType<typeof getClassesForCentre>>;
+    } | undefined = undefined;
+
+    if (!hasError) {
+        try {
+            const [broadcasts, parents, classes] = await Promise.all([
+                getBroadcasts(activeCentreId),
+                getParentsForCentre(activeCentreId, 'all'),
+                getClassesForCentre(activeCentreId),
+            ]);
+            initialData = { broadcasts, parents, classes };
+        } catch {
+            initialData = undefined;
+        }
+    }
 
     return (
         <div className="space-y-8 animate-in fade-in duration-700">
@@ -81,7 +102,7 @@ export default async function CommunicationsPage() {
             )}
 
             {/* Content */}
-            <CommunicationsClient centreId={activeCentreId} centreName={activeCentre?.name || null} />
+            <CommunicationsClient centreId={activeCentreId} centreName={activeCentre?.name || null} initialData={initialData} />
         </div>
     );
 }

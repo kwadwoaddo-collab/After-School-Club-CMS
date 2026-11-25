@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { X, BookOpen, Users, BarChart3, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { useDialogFocusTrap } from '@/components/ui/useDialogFocusTrap';
 
 interface WelcomeModalProps {
     orgName: string;
@@ -20,6 +21,7 @@ const STORAGE_KEY = 'sprintscale_welcome_seen';
  */
 export default function WelcomeModal({ orgName, ownerName }: WelcomeModalProps) {
     const [visible, setVisible] = useState(false);
+    const dialogRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         // Only show once per browser
@@ -32,10 +34,12 @@ export default function WelcomeModal({ orgName, ownerName }: WelcomeModalProps) 
         }
     }, []);
 
-    const dismiss = () => {
+    const dismiss = useCallback(() => {
         try { localStorage.setItem(STORAGE_KEY, 'true'); } catch { /* noop */ }
         setVisible(false);
-    };
+    }, []);
+
+    useDialogFocusTrap(visible, dialogRef, dismiss);
 
     if (!visible) return null;
 
@@ -48,6 +52,7 @@ export default function WelcomeModal({ orgName, ownerName }: WelcomeModalProps) 
     return (
         /* Backdrop */
         <div
+            ref={dialogRef}
             className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/50"
             onClick={e => { if (e.target === e.currentTarget) dismiss(); }}
             role="dialog"

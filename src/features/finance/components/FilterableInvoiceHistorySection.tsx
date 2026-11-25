@@ -20,9 +20,13 @@ type StatusFilter =
 interface Props {
     initialInvoices: InvoiceWithRelations[];
     isOwner: boolean;
+    activeCentreId?: string;
 }
 
-export default function FilterableInvoiceHistorySection({ initialInvoices, isOwner }: Props) {
+export default function FilterableInvoiceHistorySection({ initialInvoices, isOwner, activeCentreId }: Props) {
+    const createInvoiceHref = activeCentreId && activeCentreId !== 'all'
+        ? `/dashboard/finance?${new URLSearchParams({ centre: activeCentreId, create: '1' })}`
+        : '/dashboard/finance?create=1';
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
 
@@ -94,7 +98,7 @@ export default function FilterableInvoiceHistorySection({ initialInvoices, isOwn
                 </span>
                 {isOwner && (
                     <Link
-                        href="/dashboard/finance?create=1"
+                        href={createInvoiceHref}
                         className="flex items-center gap-2 px-4 py-2.5 h-10 bg-primary rounded-2xl text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-all shadow-sm shadow-primary/20"
                     >
                         <Plus className="w-4 h-4" aria-hidden="true" />
