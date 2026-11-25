@@ -10,6 +10,8 @@ import { resolveAttendanceStatus, getAttendanceColorClass, type AttendanceStatus
 import { cn } from '@/components/ui/utils';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { AttendanceRadial } from '@/components/ui/AttendanceRadial';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { formatSchoolYearLabel } from '@/lib/school-year';
 
 export default async function StudentAttendanceHistoryPage(
     props: {
@@ -134,11 +136,11 @@ export default async function StudentAttendanceHistoryPage(
 
                 {/* Header */}
                 <div className="flex flex-col gap-2">
-                    <h1 className="text-3xl font-bold text-foreground tracking-tight">
+                    <h1 className="text-page-title text-text">
                         {student.firstName} {student.lastName}
                     </h1>
                     <p className="text-sm text-muted-foreground">
-                        Full Attendance & Session History • Year {student.schoolYear.replace('Y', '')}
+                        Full Attendance & Session History • {formatSchoolYearLabel(student.schoolYear)}
                     </p>
                 </div>
 
@@ -296,10 +298,12 @@ export default async function StudentAttendanceHistoryPage(
                             })}
                         </div>
                     ) : (
-                        <div className="text-center py-12 bg-card rounded-2xl border border-dashed border-border">
-                            <Calendar className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
-                            <p className="text-sm text-muted-foreground">No attendance records found for this student.</p>
-                        </div>
+                        <EmptyState
+                            icon={<Calendar className="w-8 h-8" aria-hidden="true" />}
+                            title="No attendance records yet"
+                            description="No attendance records found for this student."
+                            className="m-0"
+                        />
                     )}
                 </div>
             </div>

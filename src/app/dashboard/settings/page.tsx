@@ -11,7 +11,7 @@ import SettingsTabs from '@/features/settings/components/SettingsTabs';
 
 export const metadata: Metadata = {
     title: 'Workspace Settings',
-    description: 'Manage your organization profile, opening hours, branding, pricing, and form options.',
+    description: 'Manage your organisation profile, opening hours, branding, pricing, and form options.',
 };
 
 export default async function SettingsPage() {
@@ -55,7 +55,7 @@ export default async function SettingsPage() {
         <div className="space-y-8 animate-in fade-in duration-700">
             {/* Page Header */}
             <div>
-                <h1 className="text-3xl font-black text-foreground tracking-tight">Workspace Settings</h1>
+                <h1 className="text-page-title text-text">Workspace Settings</h1>
                 <p className="text-sm text-muted-foreground mt-1">
                     Manage your club configuration, billing details, custom branding, and schedules.
                 </p>

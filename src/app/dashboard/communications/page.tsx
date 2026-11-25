@@ -64,7 +64,7 @@ export default async function CommunicationsPage() {
                         <Building2 className="w-3.5 h-3.5" />
                         <span>{activeCentre?.name || 'All Accessible Centres'}</span>
                     </div>
-                    <h1 className="text-2xl sm:text-3xl font-black text-foreground tracking-tight">
+                    <h1 className="text-page-title text-text">
                         Broadcast Messaging
                     </h1>
                     <p className="text-muted-foreground font-medium mt-1">

@@ -8,6 +8,7 @@ import { Clock, MapPin, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
 import { getUserAccessibleCentres } from '@/lib/permissions';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -48,12 +49,13 @@ export default async function AvailabilityPage() {
             <div className="flex items-center gap-4">
                 <Link
                     href="/dashboard"
+                    aria-label="Back to dashboard"
                     className="p-2 hover:bg-secondary rounded-xl transition-colors"
                 >
-                    <ChevronLeft className="w-5 h-5 text-muted-foreground" />
+                    <ChevronLeft className="w-5 h-5 text-muted-foreground" aria-hidden="true" />
                 </Link>
                 <div>
-                    <h1 className="text-3xl font-bold text-foreground tracking-tight">Centre Hours</h1>
+                    <h1 className="text-page-title text-text">Centre Hours</h1>
                     <p className="text-muted-foreground font-medium mt-1">
                         Configure opening hours for each centre
                     </p>
@@ -62,21 +64,20 @@ export default async function AvailabilityPage() {
 
             {/* Empty State */}
             {centresList.length === 0 && (
-                <div className="glass-card rounded-[32px] p-16 text-center">
-                    <div className="w-20 h-20 bg-primary/10 rounded-3xl flex items-center justify-center mx-auto mb-6">
-                        <Clock className="w-10 h-10 text-primary" />
-                    </div>
-                    <h3 className="text-2xl font-bold text-foreground mb-3">No centres found</h3>
-                    <p className="text-muted-foreground max-w-md mx-auto mb-8">
-                        Create a centre first, then configure its opening hours here.
-                    </p>
-                    <Link
-                        href="/dashboard/centres/add"
-                        className="inline-flex items-center gap-2 px-6 py-3 bg-primary rounded-2xl text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-all shadow-lg shadow-primary/30"
-                    >
-                        + Add Centre
-                    </Link>
-                </div>
+                <EmptyState
+                    icon={<Clock className="w-8 h-8" aria-hidden="true" />}
+                    title="No centres found"
+                    description="Create a centre first, then configure its opening hours here."
+                    className="m-0"
+                    action={
+                        <Link
+                            href="/dashboard/centres/add"
+                            className="inline-flex items-center gap-2 px-4 py-2.5 bg-accent rounded-md text-sm font-semibold text-white hover:bg-accent-hover transition-colors"
+                        >
+                            + Add Centre
+                        </Link>
+                    }
+                />
             )}
 
             {/* Centre Cards */}

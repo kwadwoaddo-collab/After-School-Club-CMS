@@ -424,6 +424,7 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                             <div className="relative group/tooltip mb-2">
                                 <Link
                                     href="/dashboard/share"
+                                    aria-label="Share Portals"
                                     className={`
                                         flex items-center gap-2.5 px-3 py-2 rounded-md
                                         text-sm font-medium text-text-secondary hover:text-text hover:bg-page

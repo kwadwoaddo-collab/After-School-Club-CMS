@@ -49,9 +49,9 @@ Fix only the specific issue described. Leave everything else untouched.
 ## RULE 3 — UI Consistency Check Before Delivery
 
 Before delivering any UI change, verify:
-- Text is readable — no same-colour-on-same-colour (white on white, dark on dark)
-- Design matches the dashboard's dark glassmorphism style
-- Font sizes and spacing are consistent with adjacent pages
+- Text is readable across both light and dark themes (`>= 4.5:1` WCAG 2.2 AA contrast) — no same-colour-on-same-colour
+- Design matches the InvoiceFlow warm-neutral flat design system (`--if-*` tokens, `bg-surface border border-border rounded-xl`)
+- Font sizes and spacing are consistent with adjacent pages (`text-page-title text-text` for page `<h1>`)
 - No regressions on other pages that share the modified component
 
 ---
@@ -72,14 +72,14 @@ Commit and push immediately after each fix with a clear, descriptive commit mess
 
 | Token | Value |
 |---|---|
-| Background | `#05070A` |
-| Cards | `bg-white/5 backdrop-blur-xl border border-white/10` |
-| Gradient buttons | `bg-gradient-to-r from-[#3b82f6] to-[#6366f1]` |
-| Muted text | `text-white/50` |
-| Border radius (large) | `rounded-[48px]` or `rounded-3xl` |
-| Glassmorphic card | `glassmorphic-card` CSS class |
+| Page background | `bg-page` (`--if-page`: `#FAF9F7` light / `#141413` dark) |
+| Cards & surfaces | `bg-surface border border-border rounded-xl` (`--if-surface`, flat opaque, zero `backdrop-blur`) |
+| Primary action | `bg-accent text-white` (`--if-accent`: `#0F5F5C` light / `#3BB5B0` dark) |
+| Secondary / muted text | `text-text-secondary` / `text-text-muted` (`--if-text-secondary`, `--if-text-muted`) |
+| Page title `<h1>` | `text-page-title text-text` (`24px / 600`) |
+| Status & destructive | Semantic `--if-*` and `--destructive` tokens (do not use deprecated `glassmorphic-card`) |
 
-All pages must match the dashboard's premium dark glassmorphism aesthetic.
+All pages must match the InvoiceFlow warm-neutral flat design system (`--if-*` CSS tokens in `src/app/globals.css`) across both light and dark modes.
 
 ## Financial communications — deliberate sending only
 

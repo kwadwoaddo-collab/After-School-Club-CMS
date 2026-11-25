@@ -75,7 +75,7 @@ export default function SettingsTabs({ org, centres, baseUrl, isOwner = true }: 
     };
 
     const allTabs = [
-        { id: 'general', label: 'General Info', icon: Building2, description: 'Organization name & contact info' },
+        { id: 'general', label: 'General Info', icon: Building2, description: 'Organisation name & contact info' },
         { id: 'hours', label: 'Operating Hours', icon: Clock, description: 'Hours & session slots' },
         { id: 'branding', label: 'Branding & Theme', icon: Palette, description: 'Brand color & logotype' },
         { id: 'finance', label: 'Finance & Pricing', icon: Wallet, description: 'Standard & assisted rates' },
@@ -127,8 +127,8 @@ export default function SettingsTabs({ org, centres, baseUrl, isOwner = true }: 
                     {activeTab === 'general' && (
                         <div className="space-y-8 animate-in fade-in duration-300">
                             <div>
-                                <h2 className="text-xl font-bold text-foreground tracking-tight">Organization Profile</h2>
-                                <p className="text-sm text-muted-foreground mt-1">Configure your organization details and workspace details.</p>
+                                <h2 className="text-xl font-bold text-foreground tracking-tight">Organisation Profile</h2>
+                                <p className="text-sm text-muted-foreground mt-1">Configure your organisation details and workspace details.</p>
                             </div>
                             <OrganisationInfoForm org={org} baseUrl={baseUrl} isOwner={isOwner} />
                         </div>
