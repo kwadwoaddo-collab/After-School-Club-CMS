@@ -8,6 +8,8 @@ import { requireTenantSession } from '@/lib/session';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { revalidatePath } from 'next/cache';
 
+const MAX_NOTE_CONTENT_LENGTH = 5000;
+
 function canManageSafeguardingNotes(role: unknown): boolean {
     return role === 'ORG_OWNER' || role === 'MANAGER';
 }
@@ -48,6 +50,9 @@ async function assertChildAccess(childId: string, session: any) {
 
     const userRole = (session.user as any).role;
     if (userRole !== 'ORG_OWNER') {
+        if (userRole === 'TUTOR' && !student.centreId) {
+            throw new Error('Forbidden');
+        }
         const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
         if (accessibleCentreIds.length === 0 || (student.centreId && !accessibleCentreIds.includes(student.centreId))) {
             throw new Error('Forbidden');
@@ -93,6 +98,14 @@ export async function addStudentNote(
     const session = await requireTenantSession();
     if (!session?.user?.id) {
         throw new Error('Unauthorized');
+    }
+
+    const trimmedContent = typeof content === 'string' ? content.trim() : '';
+    if (!trimmedContent) {
+        throw new Error('Note content cannot be empty');
+    }
+    if (trimmedContent.length > MAX_NOTE_CONTENT_LENGTH) {
+        throw new Error(`Note content cannot exceed ${MAX_NOTE_CONTENT_LENGTH} characters`);
     }
 
     const normalizedCategory = isSafeguardingCategory(category) ? 'Safeguarding' : (category?.trim() || 'General');
@@ -191,12 +204,20 @@ export async function editStudentNote(
         rating?: 'excellent' | 'good' | 'satisfactory' | 'needs_improvement' | 'unsatisfactory';
     }
 ) {
-    if (!content || !content.trim()) {
+    const trimmedContent = typeof content === 'string' ? content.trim() : '';
+    if (!trimmedContent) {
         const session = await requireTenantSession();
         if (!session?.user?.id) {
             throw new Error('Unauthorized');
         }
         throw new Error('Note content cannot be empty');
+    }
+    if (trimmedContent.length > MAX_NOTE_CONTENT_LENGTH) {
+        const session = await requireTenantSession();
+        if (!session?.user?.id) {
+            throw new Error('Unauthorized');
+        }
+        throw new Error(`Note content cannot exceed ${MAX_NOTE_CONTENT_LENGTH} characters`);
     }
 
     const { note, userRole } = await authorizeNoteMutation(noteId, 'edit this note');
@@ -209,7 +230,7 @@ export async function editStudentNote(
     // Perform the database update safely preserving non-updated optional fields
     await db.update(studentNotes)
         .set({
-            content: content.trim(),
+            content: trimmedContent,
             category: normalizedCategory,
             noteType: options?.noteType ?? note.noteType,
             subject: options?.subject !== undefined ? options.subject : note.subject,

@@ -8,7 +8,12 @@ import { requireApiAuth } from '@/lib/require-auth';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { confirmedEnrolmentChildSql } from '@/lib/enrolment/finance-eligibility';
 import { enrolmentBusinessDate } from '@/lib/enrolment/business-date';
+import { logger } from '@/lib/logger';
 import { lifecycleInput } from '@/features/students/lifecycle-validation';
+import {
+    applyReactivatedBillingSideEffects,
+    applyStoppedBillingSideEffects,
+} from '@/features/students/lifecycle-billing';
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
     const auth = await requireApiAuth({ roles: ['ORG_OWNER', 'MANAGER', 'FRONT_DESK'] });
@@ -53,7 +58,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
                 });
                 await tx.insert(auditEvents).values({ organisationId: auth.organisationId, userId: auth.user.id, eventType: 'student_enrolment_status_changed', eventData: JSON.stringify({ childId: id, ...data, feeReviewConfirmed }) });
                 if (data.status === 'stopped' && child.parentId && typeof (tx as { update?: unknown }).update === 'function') {
-                    const { applyStoppedBillingSideEffects } = await import('@/features/students/actions');
                     await applyStoppedBillingSideEffects(tx, {
                         childId: id,
                         parentId: child.parentId,
@@ -62,7 +66,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
                         today: enrolmentBusinessDate(),
                     });
                 } else if (isReactivatingStopped && feeReviewConfirmed && typeof (tx as { update?: unknown }).update === 'function') {
-                    const { applyReactivatedBillingSideEffects } = await import('@/features/students/actions');
                     await applyReactivatedBillingSideEffects(tx, {
                         childId: id,
                         organisationId: auth.organisationId,
@@ -78,7 +81,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         if ('error' in result) return NextResponse.json({ error: result.error }, { status: result.status });
         revalidatePath(`/dashboard/students/${id}`); revalidatePath('/dashboard/students'); revalidatePath('/dashboard/finance'); revalidatePath('/dashboard/registrations');
         return NextResponse.json(result);
-    } catch {
+    } catch (error) {
+        logger.error('[StudentLifecycle] Unexpected error:', error);
         return NextResponse.json({ error: 'The change could not be saved. No partial update was committed; please try again.' }, { status: 500 });
     }
 }
