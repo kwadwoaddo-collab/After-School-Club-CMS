@@ -114,6 +114,21 @@ export default function RegistrationsFilters({ centres, resultsCount = 0 }: Regi
                     />
                 </div>
 
+                {/* Status Filter — visible below lg where header-middle segmented tabs are hidden */}
+                <div className="relative lg:hidden min-w-[160px]">
+                    <select
+                        value={status}
+                        onChange={(e) => handleStatusChange(e.target.value)}
+                        aria-label="Filter by status"
+                        className="w-full pl-4 pr-8 py-2 rounded-xl text-sm font-medium text-foreground focus:ring-1 focus:ring-primary/40 transition-all outline-none appearance-none cursor-pointer text-left border bg-secondary/50 border-border"
+                    >
+                        {statusOptions.map((opt) => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                    </select>
+                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/60 pointer-events-none" />
+                </div>
+
                 {/* Centre Filter — only visible when there are multiple centres */}
                 {centres.length > 1 && (
                     <div className="relative min-w-[160px]">
@@ -161,7 +176,7 @@ export default function RegistrationsFilters({ centres, resultsCount = 0 }: Regi
                         </span>
                     )}
                     {selectedCentreId !== 'all' && (
-                        <span className="px-3 py-1 bg-accent-cyan/10 text-accent-cyan text-xs font-bold rounded-full border border-accent-cyan/15">
+                        <span className="px-3 py-1 bg-accent-soft text-accent text-xs font-bold rounded-full border border-accent/20">
                             Centre: {centres.find(c => c.id === selectedCentreId)?.name || 'Selected'}
                         </span>
                     )}

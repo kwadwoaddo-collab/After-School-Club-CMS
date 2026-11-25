@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import { neutralizeCsvFormula } from '@/lib/csv-safety';
 import { useRouter } from 'next/navigation';
 import { getAvatarGradient } from '@/components/ui/utils';
 import Link from 'next/link';
@@ -181,7 +182,7 @@ export default function RegistrationsBulkClient({ rows, statusBadge, statusLabel
             const centre = centres.find(c => c.id === r.centreId)?.name ?? '';
             const funding = (r.fundingTypes ?? []).map(t => FUNDING_LABELS[t] ?? t).join('; ');
 
-            const escape = (v: string | null | undefined) => `"${(v ?? '').replace(/"/g, '""')}"`;
+            const escape = (v: string | null | undefined) => `"${neutralizeCsvFormula(String(v ?? '')).replace(/"/g, '""')}"`;
 
             return [
                 escape(r.id),
@@ -407,7 +408,7 @@ export default function RegistrationsBulkClient({ rows, statusBadge, statusLabel
 
             {/* Floating Bulk action bar */}
             {someSelected && (
-                <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-4 py-3 bg-background/95 backdrop-blur-xl border border-border rounded-2xl shadow-2xl animate-in slide-in-from-bottom-8 duration-300">
+                <div className="fixed bottom-20 lg:bottom-8 left-1/2 -translate-x-1/2 z-50 w-[calc(100vw-1.5rem)] max-w-fit flex flex-wrap items-center justify-center gap-2 sm:gap-3 px-3 sm:px-4 py-3 bg-background/95 backdrop-blur-xl border border-border rounded-2xl shadow-2xl animate-in slide-in-from-bottom-8 duration-300">
                     <span className="text-primary text-sm font-bold pl-2 pr-1">{selected.size} selected</span>
                     <div className="h-4 w-px bg-border mx-1" />
 
@@ -424,7 +425,7 @@ export default function RegistrationsBulkClient({ rows, statusBadge, statusLabel
                         onClick={bulkSendEmail}
                         disabled={bulkLoading}
                         title="Send status notification email to selected parents"
-                        className="flex items-center gap-2 px-4 py-2 bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500/20 rounded-xl text-sm font-semibold transition-all disabled:opacity-50"
+                        className="flex items-center gap-2 px-4 py-2 bg-info-soft border border-accent/20 text-blue-700 dark:text-blue-400 hover:opacity-90 rounded-xl text-sm font-semibold transition-all disabled:opacity-50"
                     >
                         {bulkLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Mail className="w-3.5 h-3.5" />}
                         Send Email
@@ -458,7 +459,7 @@ export default function RegistrationsBulkClient({ rows, statusBadge, statusLabel
                                 <button
                                     onClick={bulkDelete}
                                     disabled={bulkLoading}
-                                    className="flex items-center gap-1.5 px-4 py-2 bg-destructive hover:bg-destructive/90 text-white rounded-xl text-sm font-bold transition-all disabled:opacity-50"
+                                    className="flex items-center gap-1.5 px-4 py-2 bg-destructive hover:bg-destructive/90 text-destructive-foreground rounded-xl text-sm font-bold transition-all disabled:opacity-50"
                                 >
                                     {bulkLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Yes, delete'}
                                 </button>

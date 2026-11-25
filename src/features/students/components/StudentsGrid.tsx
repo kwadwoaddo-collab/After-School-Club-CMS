@@ -1,5 +1,3 @@
-'use client';
-
 import Link from 'next/link';
 import { followUpBucket, FOLLOW_UP_LABELS } from '../follow-up-queue';
 import { AlertTriangle, Shield, Mail, Phone, Calendar } from 'lucide-react';
@@ -106,16 +104,22 @@ export default function StudentsGrid({ students, followUpMode = false, today = '
                                 </p>
                             )}
                             {student.parentEmail && (
-                                <p className="text-metadata flex items-center gap-1.5 truncate">
+                                <a
+                                    href={`mailto:${student.parentEmail}`}
+                                    className="relative z-10 text-metadata flex items-center gap-1.5 truncate hover:text-accent hover:underline"
+                                >
                                     <Mail className="w-3 h-3 flex-shrink-0 text-text-muted" />
                                     {student.parentEmail}
-                                </p>
+                                </a>
                             )}
                             {student.parentPhone && (
-                                <p className="text-metadata flex items-center gap-1.5 truncate">
+                                <a
+                                    href={`tel:${student.parentPhone}`}
+                                    className="relative z-10 text-metadata flex items-center gap-1.5 truncate hover:text-accent hover:underline"
+                                >
                                     <Phone className="w-3 h-3 flex-shrink-0 text-text-muted" />
                                     {student.parentPhone}
-                                </p>
+                                </a>
                             )}
                         </div>
 

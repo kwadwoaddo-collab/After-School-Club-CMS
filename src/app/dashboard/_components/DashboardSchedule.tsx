@@ -14,25 +14,31 @@ export default async function DashboardSchedule({
     accessibleCentreIds,
     hasCentres,
     userRole,
+    isOwner,
 }: {
     org: { id: string };
     activeCentreId?: string;
     accessibleCentreIds: string[];
     hasCentres: boolean;
     userRole?: string;
+    isOwner?: boolean;
 }) {
     const now = new Date();
+    const effectiveIsOwner = isOwner ?? userRole === 'ORG_OWNER';
 
-    // D2 (Milestone 3M): Scope Today's Schedule to the user's accessible centres
-    // and narrow to the active centre filter when one is selected.
+    // D2 (Milestone 3M) + Blind Spot #1: Scope Today's Schedule to the user's accessible centres
+    // and fail closed (`sql`false``) for non-owner staff with zero assigned centres.
     const centreScopeCondition = activeCentreId && activeCentreId !== 'all'
         ? eq(bookings.centreId, activeCentreId)
         : hasCentres
             ? inArray(bookings.centreId, accessibleCentreIds)
-            : eq(centres.organisationId, org.id); // fallback for zero-centre orgs (owner context)
+            : effectiveIsOwner
+                ? eq(centres.organisationId, org.id)
+                : sql`false`;
 
     const todayBookings = await db.select({
         id: bookings.id,
+        centreId: bookings.centreId,
         startAt: bookings.startAt,
         status: bookings.status,
         childName: sql<string>`concat(${children.firstName}, ' ', ${children.lastName})`,
@@ -49,6 +55,10 @@ export default async function DashboardSchedule({
     ))
     .orderBy(asc(bookings.startAt))
     .limit(10);
+
+    const registerHref = activeCentreId && activeCentreId !== 'all'
+        ? `/dashboard/attendance?centre=${activeCentreId}`
+        : '/dashboard/attendance';
 
     return (
         <Card className="overflow-hidden flex flex-col h-full">
@@ -77,28 +87,36 @@ export default async function DashboardSchedule({
                 </div>
             ) : (
                 <div className="flex-1 overflow-y-auto divide-y divide-border-subtle">
-                    {todayBookings.map((booking) => (
-                    <Link key={booking.id} href={`/dashboard/bookings/${booking.id}`}
-                        className="flex items-center gap-3 px-5 py-3 hover:bg-page transition-colors">
-                        <span className="text-xs font-mono text-text-muted w-10 flex-shrink-0">
-                        {format(new Date(booking.startAt), 'HH:mm')}
-                        </span>
-                        <span className="flex-1 text-sm font-medium text-text truncate">
-                        {booking.childName ?? 'Unknown'}
-                        </span>
-                        <span className="text-xs text-text-muted truncate hidden sm:block">{booking.centreName}</span>
-                        <span className={cn('text-xs font-semibold px-2 py-0.5 rounded-sm border',
-                            booking.status === 'confirmed' || booking.status === 'completed' || booking.status === 'signed_up' ? 'bg-success-soft text-success border-success/20' :
-                            booking.status === 'pending' || booking.status === 'did_not_attend' ? 'bg-warning-soft text-warning border-warning/20' :
-                            booking.status === 'cancelled' ? 'bg-danger-soft text-danger border-danger/20' :
-                            'bg-page text-text-muted border-border'
-                        )}>{booking.status === 'did_not_attend' ? 'Did Not Attend' : booking.status === 'completed' ? 'Attended' : booking.status === 'confirmed' ? 'Booked' : booking.status}</span>
-                        <ChevronRight className="size-4 text-text-muted flex-shrink-0" />
-                    </Link>
-                    ))}
+                    {todayBookings.map((booking) => {
+                        const bookingDate = format(new Date(booking.startAt), 'yyyy-MM-dd');
+                        const rowCentreId = booking.centreId || (activeCentreId && activeCentreId !== 'all' ? activeCentreId : undefined);
+                        const rowHref = userRole === 'TUTOR'
+                            ? `/dashboard/attendance?date=${bookingDate}${rowCentreId ? `&centre=${rowCentreId}` : ''}`
+                            : `/dashboard/bookings/${booking.id}`;
+
+                        return (
+                            <Link key={booking.id} href={rowHref}
+                                className="flex items-center gap-3 px-5 py-3 hover:bg-page transition-colors">
+                                <span className="text-xs font-mono text-text-muted w-10 flex-shrink-0">
+                                {format(new Date(booking.startAt), 'HH:mm')}
+                                </span>
+                                <span className="flex-1 text-sm font-medium text-text truncate">
+                                {booking.childName ?? 'Unknown'}
+                                </span>
+                                <span className="text-xs text-text-muted truncate hidden sm:block">{booking.centreName}</span>
+                                <span className={cn('text-xs font-semibold px-2 py-0.5 rounded-sm border',
+                                    booking.status === 'confirmed' || booking.status === 'completed' || booking.status === 'signed_up' ? 'bg-success-soft text-success border-success/20' :
+                                    booking.status === 'pending' || booking.status === 'did_not_attend' ? 'bg-warning-soft text-warning border-warning/20' :
+                                    booking.status === 'cancelled' ? 'bg-danger-soft text-danger border-danger/20' :
+                                    'bg-page text-text-muted border-border'
+                                )}>{booking.status === 'did_not_attend' ? 'Did Not Attend' : booking.status === 'completed' ? 'Attended' : booking.status === 'confirmed' ? 'Booked' : booking.status}</span>
+                                <ChevronRight className="size-4 text-text-muted flex-shrink-0" />
+                            </Link>
+                        );
+                    })}
                 </div>
             )}
-            <Link href="/dashboard/attendance" className="px-5 py-3 text-sm font-medium text-accent hover:underline border-t border-border">
+            <Link href={registerHref} className="px-5 py-3 text-sm font-medium text-accent hover:underline border-t border-border">
                 View today&apos;s register
             </Link>
         </Card>

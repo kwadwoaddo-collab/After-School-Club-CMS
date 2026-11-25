@@ -268,7 +268,7 @@ export default async function AttendancePage(props: {
                 <HeaderPortal targetId="header-right-actions">
                     {!isToday && (
                         <Button variant="outline" asChild>
-                            <Link href="/dashboard/attendance">
+                            <Link href={activeCentreId !== 'all' ? `/dashboard/attendance?centre=${activeCentreId}` : '/dashboard/attendance'}>
                                 <CalendarCheck className="w-3.5 h-3.5" />
                                 Go to Today
                             </Link>
@@ -370,6 +370,7 @@ export default async function AttendancePage(props: {
                 slots={sortedSlots as any}
                 centreId={activeCentreId}
                 dateStr={targetStr}
+                canViewProfiles={session.user.role !== 'TUTOR'}
                 allStudents={activeOrPausedChildrenAtCentre.map(c => ({
                     id: c.id,
                     firstName: c.firstName,

@@ -7,7 +7,7 @@ import { ClipboardCheck, Monitor, CalendarPlus, UserPlus, Receipt, Share2 } from
 import { db } from '@/db';
 import { organisations, centres, registrations, bookings, children, staffInvites } from '@/db/schema';
 import { resolveActiveCentreId } from '@/lib/centre-filter';
-import { eq, sql, inArray, or, count } from 'drizzle-orm';
+import { eq, sql, inArray, or } from 'drizzle-orm';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { Suspense } from 'react';
 import { normalizeString, normalizeDate } from '@/lib/search-params';
@@ -28,17 +28,16 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
     if (!session?.user) return redirect('/login');
     if (!session.user.organisationId) return redirect('/onboarding');
 
-    const userRole = (session.user as any).role as string;
+    const userRole = session.user.role ?? '';
     const isOwner = userRole === 'ORG_OWNER';
+    const isTutor = userRole === 'TUTOR';
 
-    const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
-    const hasCentres = accessibleCentreIds.length > 0;
-    const activeCentreId = await resolveActiveCentreId(searchParams.centre, accessibleCentreIds);
-
+    let accessibleCentreIds: string[] = [];
     let org: any;
     let centresList: unknown[] = [];
     try {
-        const [orgs, fetchedCentres] = await Promise.all([
+        const [fetchedAccessibleCentreIds, orgs, fetchedCentres] = await Promise.all([
+            getUserAccessibleCentreIds(session.user.id),
             db.select({
                 id: organisations.id,
                 name: organisations.name,
@@ -50,14 +49,18 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                 brandColor: organisations.brandColor,
                 logoUrl: organisations.logoUrl,
             }).from(organisations).where(eq(organisations.id, session.user.organisationId)).limit(1),
-            db.select().from(centres).where(eq(centres.organisationId, session.user.organisationId))
+            db.select().from(centres).where(eq(centres.organisationId, session.user.organisationId)),
         ]);
+        accessibleCentreIds = fetchedAccessibleCentreIds;
         org = orgs[0];
         centresList = fetchedCentres;
     } catch {
         throw new Error('Failed to load organisation data. Please try refreshing.');
     }
     if (!org) return redirect('/onboarding');
+
+    const hasCentres = accessibleCentreIds.length > 0;
+    const activeCentreId = await resolveActiveCentreId(searchParams.centre, accessibleCentreIds);
     const firstName = session.user.name?.split(' ')[0] || '';
 
     const typedCentres = centresList as { id: string; name: string }[];
@@ -67,7 +70,8 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
     const isCombinedView = activeCentreId === 'all' && !selectedCentreObj && typedCentres.length > 1;
     const activeCentreDisplayName = selectedCentreObj?.name || (isCombinedView ? 'Combined View — All Centres' : org.name);
     const canManageOperations = ['ORG_OWNER', 'MANAGER', 'FRONT_DESK'].includes(userRole);
-    const canManageFinanceAndShare = ['ORG_OWNER', 'MANAGER'].includes(userRole);
+    const canManageFinance = ['ORG_OWNER', 'MANAGER'].includes(userRole);
+    const canShareLinks = ['ORG_OWNER', 'MANAGER', 'FRONT_DESK'].includes(userRole);
 
     const now = new Date();
     const targetDateStr = normalizeDate(searchParams.date);
@@ -90,11 +94,13 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
         ? `${format(activeStartDate, 'MMM d')} - ${format(activeEndDate, 'MMM d, yyyy')}`
         : format(activeStartDate, 'MMMM yyyy');
 
-    const [{ totalRegistrations }, { totalBookingsAll }, { staffInviteCount }] = await Promise.all([
-        db.select({ totalRegistrations: sql<number>`count(*)::int` }).from(registrations).where(eq(registrations.organisationId, org.id)).then(r => r[0]),
-        hasCentres ? db.select({ totalBookingsAll: sql<number>`count(*)::int` }).from(bookings).where(inArray(bookings.centreId, accessibleCentreIds)).then(r => r[0]) : Promise.resolve({ totalBookingsAll: 0 }),
-        db.select({ staffInviteCount: sql<number>`count(*)::int` }).from(staffInvites).where(eq(staffInvites.organisationId, org.id)).then(r => r[0]),
-    ]);
+    const [{ totalRegistrations }, { totalBookingsAll }, { staffInviteCount }] = isOwner
+        ? await Promise.all([
+            db.select({ totalRegistrations: sql<number>`count(*)::int` }).from(registrations).where(eq(registrations.organisationId, org.id)).then(r => r[0]),
+            hasCentres ? db.select({ totalBookingsAll: sql<number>`count(*)::int` }).from(bookings).where(inArray(bookings.centreId, accessibleCentreIds)).then(r => r[0]) : Promise.resolve({ totalBookingsAll: 0 }),
+            db.select({ staffInviteCount: sql<number>`count(*)::int` }).from(staffInvites).where(eq(staffInvites.organisationId, org.id)).then(r => r[0]),
+        ])
+        : [{ totalRegistrations: 0 }, { totalBookingsAll: 0 }, { staffInviteCount: 0 }];
 
     const onboardingSteps = [
         { id: 'org-info', label: 'Complete your organisation profile', ctaLabel: 'Open organisation settings', description: 'Add your contact email, phone, and address in Settings.', href: '/dashboard/settings', done: !!(org.contactEmail && org.contactPhone) },
@@ -129,7 +135,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
             <nav aria-label="Quick actions" className="flex flex-wrap items-center gap-2">
                 <Link
                     href="/dashboard/attendance"
-                    className="inline-flex items-center gap-2 px-3.5 py-2 rounded-md bg-accent text-white text-xs sm:text-sm font-medium hover:bg-accent-hover transition-colors shadow-xs"
+                    className="inline-flex items-center gap-2 px-3.5 py-2 rounded-md bg-accent text-on-accent text-xs sm:text-sm font-medium hover:bg-accent-hover transition-colors shadow-xs"
                 >
                     <ClipboardCheck className="size-4 flex-shrink-0" aria-hidden="true" />
                     <span>Take Roll Call</span>
@@ -159,23 +165,23 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                         </Link>
                     </>
                 )}
-                {canManageFinanceAndShare && (
-                    <>
-                        <Link
-                            href="/dashboard/finance/receipt"
-                            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-md border border-border bg-surface text-text hover:bg-page text-xs sm:text-sm font-medium transition-colors"
-                        >
-                            <Receipt className="size-4 text-accent flex-shrink-0" aria-hidden="true" />
-                            <span>Create Receipt</span>
-                        </Link>
-                        <Link
-                            href="/dashboard/share"
-                            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-md border border-border bg-surface text-text hover:bg-page text-xs sm:text-sm font-medium transition-colors"
-                        >
-                            <Share2 className="size-4 text-accent flex-shrink-0" aria-hidden="true" />
-                            <span>Share Centre Links</span>
-                        </Link>
-                    </>
+                {canManageFinance && (
+                    <Link
+                        href="/dashboard/finance/receipt"
+                        className="inline-flex items-center gap-2 px-3.5 py-2 rounded-md border border-border bg-surface text-text hover:bg-page text-xs sm:text-sm font-medium transition-colors"
+                    >
+                        <Receipt className="size-4 text-accent flex-shrink-0" aria-hidden="true" />
+                        <span>Create Receipt</span>
+                    </Link>
+                )}
+                {canShareLinks && (
+                    <Link
+                        href="/dashboard/share"
+                        className="inline-flex items-center gap-2 px-3.5 py-2 rounded-md border border-border bg-surface text-text hover:bg-page text-xs sm:text-sm font-medium transition-colors"
+                    >
+                        <Share2 className="size-4 text-accent flex-shrink-0" aria-hidden="true" />
+                        <span>Share Centre Links</span>
+                    </Link>
                 )}
             </nav>
 
@@ -188,58 +194,68 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                 MANAGER/FRONT_DESK/TUTOR cannot complete onboarding steps. */}
             {isOwner && !onboardingAllDone && <OnboardingChecklist steps={onboardingSteps} completedCount={completedCount} />}
 
-            <Suspense fallback={<p role="status" className="text-sm text-muted-foreground">Checking today’s work…</p>}>
-                <TodayWork orgId={org.id} centreIds={accessibleCentreIds} centreId={activeCentreId} centreName={selectedCentreObj?.name} role={userRole}/>
-            </Suspense>
+            {!isTutor && (
+                <Suspense fallback={<p role="status" className="text-sm text-muted-foreground">Checking today’s work…</p>}>
+                    <TodayWork orgId={org.id} centreIds={accessibleCentreIds} centreId={activeCentreId} centreName={selectedCentreObj?.name} role={userRole}/>
+                </Suspense>
+            )}
 
-            <Suspense fallback={<OverviewSkeleton />}>
-                <DashboardKpisWidget activeCentreId={activeCentreId} userRole={userRole}
-                    orgId={org.id} 
-                    childrenCentreCondition={childrenCentreCondition}
-                    bookingsCentreCondition={bookingsCentreCondition}
-                    registrationsCentreCondition={registrationsCentreCondition}
-                    hasCentres={hasCentres}
-                    activeStartDate={activeStartDate} activeEndDate={activeEndDate}
-                    prevStartDate={prevStartDate} prevEndDate={prevEndDate}
-                    targetMonthStart={targetMonthStart} targetMonthEnd={targetMonthEnd}
-                    targetWeekStart={targetWeekStart} targetWeekEnd={targetWeekEnd}
-                    now={now}
-                />
-            </Suspense>
+            {!isTutor && (
+                <Suspense fallback={<OverviewSkeleton />}>
+                    <DashboardKpisWidget activeCentreId={activeCentreId} userRole={userRole}
+                        orgId={org.id} 
+                        childrenCentreCondition={childrenCentreCondition}
+                        bookingsCentreCondition={bookingsCentreCondition}
+                        registrationsCentreCondition={registrationsCentreCondition}
+                        hasCentres={hasCentres}
+                        activeStartDate={activeStartDate} activeEndDate={activeEndDate}
+                        prevStartDate={prevStartDate} prevEndDate={prevEndDate}
+                        targetMonthStart={targetMonthStart} targetMonthEnd={targetMonthEnd}
+                        targetWeekStart={targetWeekStart} targetWeekEnd={targetWeekEnd}
+                        now={now}
+                    />
+                </Suspense>
+            )}
 
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-                <div className="lg:col-span-3">
+                <div className={isTutor ? 'lg:col-span-5' : 'lg:col-span-3'}>
                     <Suspense fallback={<OverviewSkeleton />}>
                         {/* D2 (Milestone 3M): pass accessibleCentreIds+hasCentres so the schedule
                             respects the user's centre restriction, not org-wide access. */}
-                        <DashboardSchedule org={org} activeCentreId={activeCentreId} accessibleCentreIds={accessibleCentreIds} hasCentres={hasCentres} userRole={userRole} />
+                        <DashboardSchedule org={org} activeCentreId={activeCentreId} accessibleCentreIds={accessibleCentreIds} hasCentres={hasCentres} userRole={userRole} isOwner={isOwner} />
                     </Suspense>
                 </div>
-                <div className="lg:col-span-2">
-                    <Suspense fallback={<ActivitySkeleton />}>
-                        <ActivityTab searchParams={searchParams as any} org={org} activeCentreId={activeCentreId} accessibleCentreIds={accessibleCentreIds} hasCentres={hasCentres} userRole={userRole} isFeedOnly={true} />
-                    </Suspense>
-                </div>
+                {!isTutor && (
+                    <div className="lg:col-span-2">
+                        <Suspense fallback={<ActivitySkeleton />}>
+                            <ActivityTab searchParams={searchParams as any} org={org} activeCentreId={activeCentreId} accessibleCentreIds={accessibleCentreIds} hasCentres={hasCentres} userRole={userRole} isFeedOnly={true} />
+                        </Suspense>
+                    </div>
+                )}
             </div>
 
-            <div className="mt-8 space-y-8">
-                {/* D3 (Milestone 3M): Finance data is gated to ORG_OWNER on the Finance page.
-                    Showing it on the dashboard to TUTOR/FRONT_DESK/MANAGER was inconsistent.
-                    RevenueWidget is now rendered only for ORG_OWNER. */}
-                {isOwner && (
-                    <Suspense fallback={<OverviewSkeleton />}>
-                        <RevenueWidget
-                            organisationId={org.id}
-                            activeCentreId={activeCentreId}
-                            accessibleCentreIds={accessibleCentreIds}
-                        />
-                    </Suspense>
-                )}
-                
-                <Suspense fallback={<ActivitySkeleton />}>
-                    <ActivityTab searchParams={searchParams as any} org={org} activeCentreId={activeCentreId} accessibleCentreIds={accessibleCentreIds} hasCentres={hasCentres} userRole={userRole} isFunnelOnly={true} />
-                </Suspense>
-            </div>
+            {(isOwner || !isTutor) && (
+                <div className="mt-8 space-y-8">
+                    {/* D3 (Milestone 3M): Finance data is gated to ORG_OWNER on the Finance page.
+                        Showing it on the dashboard to TUTOR/FRONT_DESK/MANAGER was inconsistent.
+                        RevenueWidget is now rendered only for ORG_OWNER. */}
+                    {isOwner && (
+                        <Suspense fallback={<OverviewSkeleton />}>
+                            <RevenueWidget
+                                organisationId={org.id}
+                                activeCentreId={activeCentreId}
+                                accessibleCentreIds={accessibleCentreIds}
+                            />
+                        </Suspense>
+                    )}
+                    
+                    {!isTutor && (
+                        <Suspense fallback={<ActivitySkeleton />}>
+                            <ActivityTab searchParams={searchParams as any} org={org} activeCentreId={activeCentreId} accessibleCentreIds={accessibleCentreIds} hasCentres={hasCentres} userRole={userRole} isFunnelOnly={true} />
+                        </Suspense>
+                    )}
+                </div>
+            )}
         </div>
     );
 }

@@ -3,6 +3,7 @@ import { db } from '@/db';
 import { centres } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { getUserAccessibleCentres } from '@/lib/permissions';
+import { resolveActiveCentreId } from '@/lib/centre-filter';
 import BookingForm from '@/features/bookings/components/BookingForm';
 import Link from 'next/link';
 import { MapPin, ChevronLeft, ArrowRight } from 'lucide-react';
@@ -11,12 +12,13 @@ import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 
 export default async function NewBookingPage(props: {
-    searchParams: Promise<{ centreId?: string; centre?: string }>;
-}) {
+    searchParams?: Promise<{ centreId?: string; centre?: string }>;
+} = {}) {
     const { session } = await requireAuth({ roles: ['ORG_OWNER', 'MANAGER', 'FRONT_DESK'] });
 
-    const searchParams = await props.searchParams;
+    const searchParams = (await props.searchParams) ?? {};
     const userRole = (session.user as { role?: string }).role;
+    const canManageCentres = userRole === 'ORG_OWNER' || userRole === 'MANAGER';
 
     // Fetch accessible centres based on user role
     const orgCentres = userRole === 'ORG_OWNER'
@@ -32,12 +34,12 @@ export default async function NewBookingPage(props: {
                 <EmptyState
                     icon={<MapPin className="w-8 h-8" />}
                     title="No centres found"
-                    description="You need to create a centre before you can book sessions."
-                    action={
+                    description={canManageCentres ? "You need to create a centre before you can book sessions." : "You are not currently assigned to any centres. Ask an organisation owner or manager to assign your centre membership."}
+                    action={canManageCentres ? (
                         <Button asChild>
                             <Link href="/dashboard/centres">Go to Centres</Link>
                         </Button>
-                    }
+                    ) : undefined}
                 />
             </div>
         );
@@ -49,10 +51,18 @@ export default async function NewBookingPage(props: {
         return <BookingPageContent centre={centre} />;
     }
 
-    // Multiple centres — check if one is selected via URL param
+    // Multiple centres — check URL param first, then active centre cookie
     const requestedCentreId = searchParams.centreId || searchParams.centre;
-    const selectedCentre = requestedCentreId
-        ? orgCentres.find(c => c.id === requestedCentreId)
+    let activeCentreId = requestedCentreId || 'all';
+    if (!requestedCentreId) {
+        try {
+            activeCentreId = await resolveActiveCentreId(undefined, orgCentres.map(c => c.id));
+        } catch {
+            activeCentreId = 'all';
+        }
+    }
+    const selectedCentre = activeCentreId && activeCentreId !== 'all'
+        ? orgCentres.find(c => c.id === activeCentreId)
         : null;
 
     if (selectedCentre) {

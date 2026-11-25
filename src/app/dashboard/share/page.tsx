@@ -7,6 +7,7 @@ import { centres, organisations } from '@/db/schema';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { resolveActiveCentreId } from '@/lib/centre-filter';
 import { isValidUuid } from '@/lib/uuid';
+import { getTrustedApplicationUrl } from '@/lib/base-url';
 import FormsShareContent from '@/components/dashboard/FormsShareContent';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Share2 } from 'lucide-react';
@@ -16,30 +17,48 @@ export const metadata: Metadata = {
     description: 'Get your session booking and student registration links and embed codes to share with parents.',
 };
 
-export default async function SharePage() {
-    const { session, user, organisationId } = await requireAuth({
-        roles: ['ORG_OWNER', 'MANAGER', 'FRONT_DESK'],
-        deniedRedirect: '/dashboard/attendance',
-    });
-
-    const organisation = await db.query.organisations.findFirst({
-        where: eq(organisations.id, organisationId),
-    });
-
-    if (!organisation) {
-        redirect('/dashboard');
-    }
+export default async function SharePage(props: {
+    searchParams?: Promise<{ centre?: string; centreId?: string }>;
+} = {}) {
+    const [{ session, user, organisationId }, resolvedParams] = await Promise.all([
+        requireAuth({
+            roles: ['ORG_OWNER', 'MANAGER', 'FRONT_DESK'],
+            deniedRedirect: '/dashboard/attendance',
+        }),
+        props.searchParams ?? Promise.resolve({} as { centre?: string; centreId?: string }),
+    ]);
 
     const isOwner = user.role === 'ORG_OWNER';
+    let organisation: { id: string; name: string; slug: string; brandColor?: string | null } | undefined;
     let orgCentres: { id: string; name: string; slug: string }[] = [];
 
     if (isOwner) {
-        orgCentres = (await db.query.centres.findMany({
-            where: eq(centres.organisationId, organisationId),
-            orderBy: [asc(centres.name)],
-        })) ?? [];
+        const [orgRow, centreRows] = await Promise.all([
+            db.query.organisations.findFirst({
+                where: eq(organisations.id, organisationId),
+                columns: { id: true, name: true, slug: true, brandColor: true },
+            }),
+            db.query.centres.findMany({
+                where: eq(centres.organisationId, organisationId),
+                columns: { id: true, name: true, slug: true },
+                orderBy: [asc(centres.name)],
+            }),
+        ]);
+        organisation = orgRow;
+        orgCentres = centreRows ?? [];
     } else {
-        const accessibleCentreIds = (await getUserAccessibleCentreIds(session.user.id)).filter(isValidUuid);
+        const [orgRow, rawAccessibleIds] = await Promise.all([
+            db.query.organisations.findFirst({
+                where: eq(organisations.id, organisationId),
+                columns: { id: true, name: true, slug: true, brandColor: true },
+            }),
+            getUserAccessibleCentreIds(session.user.id),
+        ]);
+        organisation = orgRow;
+        if (!organisation) {
+            redirect('/dashboard');
+        }
+        const accessibleCentreIds = rawAccessibleIds.filter(isValidUuid);
         if (accessibleCentreIds.length === 0) {
             return (
                 <div className="max-w-5xl mx-auto py-8">
@@ -57,8 +76,13 @@ export default async function SharePage() {
                 eq(centres.organisationId, organisationId),
                 inArray(centres.id, accessibleCentreIds)
             ),
+            columns: { id: true, name: true, slug: true },
             orderBy: [asc(centres.name)],
         })) ?? [];
+    }
+
+    if (!organisation) {
+        redirect('/dashboard');
     }
 
     let initialCentreSlug = orgCentres.length === 1
@@ -67,7 +91,7 @@ export default async function SharePage() {
 
     if (orgCentres.length > 0) {
         try {
-            const activeCentreId = await resolveActiveCentreId(undefined, orgCentres.map(c => c.id));
+            const activeCentreId = await resolveActiveCentreId(resolvedParams.centre ?? resolvedParams.centreId, orgCentres.map(c => c.id));
             if (activeCentreId !== 'all') {
                 const matched = orgCentres.find(c => c.id === activeCentreId);
                 if (matched?.slug) initialCentreSlug = matched.slug;
@@ -82,6 +106,7 @@ export default async function SharePage() {
             organisation={organisation}
             centres={orgCentres}
             initialCentreSlug={initialCentreSlug}
+            baseUrl={getTrustedApplicationUrl()}
         />
     );
 }

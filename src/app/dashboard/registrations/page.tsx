@@ -64,8 +64,6 @@ export default async function RegistrationsPage(props: {
     let notInterestedCount = 0;
     let totalCount = 0;
     let rows: unknown[] = [];
-    let searchActiveAndNoResults = false;
-    let matchingIds: string[] = [];
     let fullRegistrationUrl: string | null = null;
 
     try {
@@ -118,7 +116,7 @@ export default async function RegistrationsPage(props: {
                 centreScopeCondition
             );
 
-            statusCountsAgg = await db.select({
+            const aggPromise = db.select({
                 status: registrations.status,
                 count: sql<number>`count(*)::int`
             })
@@ -126,39 +124,50 @@ export default async function RegistrationsPage(props: {
             .where(aggWhere)
             .groupBy(registrations.status);
 
-            awaitingConfirmationCount = statusCountsAgg.find(s => s.status === 'awaiting_confirmation')?.count || 0;
-            signedUpCount = statusCountsAgg.find(s => s.status === 'signed_up')?.count || 0;
-            notInterestedCount = statusCountsAgg.find(s => s.status === 'not_interested')?.count || 0;
-            totalCount = statusCountsAgg.reduce((sum, s) => sum + s.count, 0);
-
-            if (searchParams.search) {
-                const searchPattern = `%${searchParams.search}%`;
-                const matchingRegistrations = await db
-                    .select({ id: registrations.id })
-                    .from(registrations)
-                    .leftJoin(registrationParents, eq(registrations.id, registrationParents.registrationId))
-                    .leftJoin(registrationChildren, eq(registrations.id, registrationChildren.registrationId))
-                    .where(
-                        and(
-                            eq(registrations.organisationId, orgId),
-                            centreScopeCondition,
-                            or(
-                                ilike(registrationParents.submittedFirstName, searchPattern),
-                                ilike(registrationParents.submittedLastName, searchPattern),
-                                ilike(registrationParents.submittedEmail, searchPattern),
-                                ilike(registrationParents.submittedPhone, searchPattern),
-                                ilike(registrationChildren.submittedFirstName, searchPattern),
-                                ilike(registrationChildren.submittedLastName, searchPattern)
+            const rowsPromise = (async () => {
+                if (searchParams.search) {
+                    const searchPattern = `%${searchParams.search}%`;
+                    const matchingRegistrations = await db
+                        .select({ id: registrations.id })
+                        .from(registrations)
+                        .leftJoin(registrationParents, eq(registrations.id, registrationParents.registrationId))
+                        .leftJoin(registrationChildren, eq(registrations.id, registrationChildren.registrationId))
+                        .where(
+                            and(
+                                eq(registrations.organisationId, orgId),
+                                centreScopeCondition,
+                                or(
+                                    ilike(registrationParents.submittedFirstName, searchPattern),
+                                    ilike(registrationParents.submittedLastName, searchPattern),
+                                    ilike(registrationParents.submittedEmail, searchPattern),
+                                    ilike(registrationParents.submittedPhone, searchPattern),
+                                    ilike(registrationChildren.submittedFirstName, searchPattern),
+                                    ilike(registrationChildren.submittedLastName, searchPattern)
+                                )
                             )
-                        )
-                    );
-                matchingIds = matchingRegistrations.map(mr => mr.id).filter(isValidUuid);
-                if (matchingIds.length === 0) {
-                    searchActiveAndNoResults = true;
+                        );
+                    const matchedIds = matchingRegistrations.map(mr => mr.id).filter(isValidUuid);
+                    if (matchedIds.length === 0) {
+                        return [];
+                    }
+                    return db.query.registrations.findMany({
+                        where: and(
+                            eq(registrations.organisationId, orgId),
+                            summaryRangeSql(registrations.createdAt, summaryRange),
+                            centreScopeCondition,
+                            searchParams.status && searchParams.status !== 'all'
+                                ? eq(registrations.status, searchParams.status as any)
+                                : undefined,
+                            inArray(registrations.id, matchedIds)
+                        ),
+                        with: {
+                            registrationChildren: true,
+                            registrationParents: true,
+                        },
+                        orderBy: [desc(registrations.createdAt)],
+                    });
                 }
-            }
 
-            if (!searchActiveAndNoResults) {
                 const conditions = [eq(registrations.organisationId, orgId)];
                 const periodCondition = summaryRangeSql(registrations.createdAt, summaryRange);
                 if (periodCondition) conditions.push(periodCondition);
@@ -168,12 +177,10 @@ export default async function RegistrationsPage(props: {
                     conditions.push(eq(registrations.status, searchParams.status as any));
                 }
 
-                if (searchParams.search && matchingIds.length > 0) {
-                    conditions.push(inArray(registrations.id, matchingIds));
-                }
+
 
                 // Use relational query to fetch all registration data in ONE trip
-                rows = await db.query.registrations.findMany({
+                return db.query.registrations.findMany({
                     where: and(...conditions),
                     with: {
                         registrationChildren: true,
@@ -181,7 +188,14 @@ export default async function RegistrationsPage(props: {
                     },
                     orderBy: [desc(registrations.createdAt)],
                 });
-            }
+            })();
+
+            [statusCountsAgg, rows] = await Promise.all([aggPromise, rowsPromise]);
+
+            awaitingConfirmationCount = statusCountsAgg.find(s => s.status === 'awaiting_confirmation')?.count || 0;
+            signedUpCount = statusCountsAgg.find(s => s.status === 'signed_up')?.count || 0;
+            notInterestedCount = statusCountsAgg.find(s => s.status === 'not_interested')?.count || 0;
+            totalCount = statusCountsAgg.reduce((sum, s) => sum + s.count, 0);
         }
     } catch (e: any) {
         logger.error("Error fetching registrations", e);
@@ -204,7 +218,7 @@ export default async function RegistrationsPage(props: {
             {/* Header Portals — Fuses page header into the global header bar */}
             <HeaderPortal targetId="header-left">
                 <div className="flex items-center gap-2 flex-wrap">
-                    <h1 className="text-base sm:text-lg font-black text-foreground tracking-tight">Registrations</h1>
+                    <h1 className="text-page-title text-text">Registrations</h1>
                     <span className="px-2 py-0.5 rounded-full bg-secondary border border-border text-muted-foreground text-[10px] font-bold">
                         {isFiltered ? `${rows.length} of ${totalCount}` : totalCount}
                     </span>
@@ -246,7 +260,7 @@ export default async function RegistrationsPage(props: {
                             >
                                 <span>{tab.label}</span>
                                 <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-black leading-none ${
-                                    isActive ? 'bg-primary text-white shadow-sm' : `${tab.color || 'bg-secondary text-muted-foreground'}`
+                                    isActive ? 'bg-accent text-on-accent shadow-sm' : `${tab.color || 'bg-secondary text-muted-foreground'}`
                                 }`}>
                                     {tab.count}
                                 </span>
@@ -259,7 +273,7 @@ export default async function RegistrationsPage(props: {
             {fullRegistrationUrl && (
                 <HeaderPortal targetId="header-right-actions">
                     <Link
-                        href="/dashboard/share"
+                        href={activeCentreId !== 'all' ? `/dashboard/share?centre=${activeCentreId}` : '/dashboard/share'}
                         className="flex items-center gap-2 px-4 py-2 bg-secondary hover:bg-secondary/80 text-foreground text-xs font-bold rounded-xl transition-all border border-border shadow-sm active:scale-95 duration-100"
                     >
                         <Share2 className="w-3.5 h-3.5" />
@@ -269,9 +283,9 @@ export default async function RegistrationsPage(props: {
                         href={fullRegistrationUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-2 px-4 py-2 bg-primary rounded-xl text-xs font-bold text-white hover:bg-primary/90 transition-all shadow-lg shadow-primary/30 active:scale-95 duration-100"
+                        className="flex items-center gap-2 px-4 py-2 bg-accent rounded-xl text-xs font-bold text-on-accent hover:bg-accent-hover transition-all shadow-sm active:scale-95 duration-100"
                     >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 text-on-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                         </svg>
                         Open Form
@@ -281,9 +295,9 @@ export default async function RegistrationsPage(props: {
 
             {/* Filters — sticky */}
             {!hasZeroAccessibleCentres && (
-                <div className="sticky top-16 sm:top-20 z-20 -mx-4 sm:-mx-8 px-4 sm:px-8 py-3 bg-background/80 backdrop-blur-xl border-b border-border">
+                <div className="sticky top-14 z-20 -mx-4 sm:-mx-8 px-4 sm:px-8 py-3 bg-background/80 backdrop-blur-xl border-b border-border">
                     <SummaryRangeNotice range={summaryRange} basis="Registration forms received" clearHref={`/dashboard/registrations?${new URLSearchParams(Object.entries(searchParams).filter(([,value]) => typeof value === 'string') as [string,string][])}`}/>
-                    <Suspense fallback={<div className="h-10 animate-pulse bg-slate-800/50 rounded-xl w-full" />}>
+                    <Suspense fallback={<div className="h-10 animate-pulse bg-secondary rounded-xl w-full" />}>
                         <RegistrationsFilters centres={orgCentres} resultsCount={rows.length} />
                     </Suspense>
                 </div>
@@ -305,7 +319,7 @@ export default async function RegistrationsPage(props: {
                         Your registration records are safe, but the page query could not complete. Please refresh the page.
                     </p>
                     <Link
-                        href="/dashboard/registrations"
+                        href={activeCentreId !== 'all' ? `/dashboard/registrations?centre=${activeCentreId}` : '/dashboard/registrations'}
                         className="inline-flex items-center gap-2 px-5 py-2.5 bg-secondary text-foreground hover:bg-secondary/80 text-xs font-bold rounded-xl transition-all border border-border"
                     >
                         Refresh Registrations
