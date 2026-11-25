@@ -188,6 +188,11 @@ export async function RevenueWidget({
     status: 'overdue',
   }).toString()}`;
 
+  const monthLabel = formatYearMonthShort(currentMonth);
+  const formattedReceivedWeek = formatPenceToGBP(receivedThisWeekPence);
+  const formattedReceivedMonth = formatPenceToGBP(receivedThisMonthPence);
+  const formattedOutstanding = formatPenceToGBP(outstandingPence);
+
   return (
     <section
       aria-labelledby="dashboard-finance-heading"
@@ -202,7 +207,7 @@ export async function RevenueWidget({
         </h2>
         <Link
           href={cashflowHref}
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          className="inline-flex items-center min-h-6 min-w-6 py-1 gap-1.5 text-sm font-medium text-primary hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
         >
           <span>Open weekly cashflow & outgoings</span>
           <ArrowRight aria-hidden="true" className="h-4 w-4" />
@@ -217,9 +222,10 @@ export async function RevenueWidget({
           <dd className="mt-2">
             <Link
               href={cashflowHref}
-              className="text-2xl font-semibold tracking-tight text-foreground tabular-nums hover:text-primary hover:underline"
+              aria-label={`Received this week: ${formattedReceivedWeek} — open weekly cashflow`}
+              className="inline-flex items-center min-h-6 min-w-6 py-1 text-2xl font-semibold tracking-tight text-foreground tabular-nums hover:text-primary hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
             >
-              {formatPenceToGBP(receivedThisWeekPence)}
+              {formattedReceivedWeek}
             </Link>
           </dd>
           <p className="mt-1 text-xs text-muted-foreground tabular-nums">
@@ -236,14 +242,15 @@ export async function RevenueWidget({
 
         <div className="p-6">
           <dt className="text-sm font-medium text-muted-foreground">
-            Received in {formatYearMonthShort(currentMonth)} (Rolling Tally)
+            Received in {monthLabel} (Rolling Tally)
           </dt>
           <dd className="mt-2">
             <Link
               href={cashflowHref}
-              className="text-2xl font-semibold tracking-tight text-foreground tabular-nums hover:text-primary hover:underline"
+              aria-label={`Received in ${monthLabel}: ${formattedReceivedMonth} — open weekly cashflow`}
+              className="inline-flex items-center min-h-6 min-w-6 py-1 text-2xl font-semibold tracking-tight text-foreground tabular-nums hover:text-primary hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
             >
-              {formatPenceToGBP(receivedThisMonthPence)}
+              {formattedReceivedMonth}
             </Link>
           </dd>
           <p className="mt-1 text-xs text-muted-foreground tabular-nums">
@@ -263,9 +270,10 @@ export async function RevenueWidget({
           <dd className="mt-2">
             <Link
               href={awaitingPaymentHref}
-              className="text-2xl font-semibold tracking-tight text-foreground tabular-nums hover:text-primary hover:underline"
+              aria-label={`Outstanding balances: ${formattedOutstanding} across ${openInvoiceCount} unpaid invoice${openInvoiceCount === 1 ? '' : 's'} — open payments`}
+              className="inline-flex items-center min-h-6 min-w-6 py-1 text-2xl font-semibold tracking-tight text-foreground tabular-nums hover:text-primary hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
             >
-              {formatPenceToGBP(outstandingPence)}
+              {formattedOutstanding}
             </Link>
           </dd>
           <p className="mt-1 text-xs text-muted-foreground tabular-nums">
@@ -278,7 +286,8 @@ export async function RevenueWidget({
           <dd className="mt-2">
             <Link
               href={overdueHref}
-              className={`text-2xl font-semibold tracking-tight tabular-nums hover:underline ${
+              aria-label={`Overdue invoices: ${overdueCount} — view overdue invoices`}
+              className={`inline-flex items-center min-h-6 min-w-6 py-1 text-2xl font-semibold tracking-tight tabular-nums hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${
                 overdueCount > 0
                   ? 'text-rose-700 dark:text-rose-300'
                   : 'text-foreground'

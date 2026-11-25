@@ -512,7 +512,7 @@ export default async function ActivityTab({ searchParams, org, activeCentreId, a
                                     <p className="text-sm font-medium text-muted-foreground">No bookings for this period</p>
                                     <p className="text-xs text-muted-foreground/60 mt-1">Schedule a session to see it here</p>
                                 </div>
-                                <Link href="/dashboard/bookings/new" className="mt-1 text-xs font-semibold text-primary hover:underline">Create a booking →</Link>
+                                <Link href="/dashboard/bookings/new" className="mt-1 inline-flex items-center min-h-6 min-w-6 py-1 text-xs font-semibold text-primary hover:underline">Create a booking →</Link>
                             </div>
                         )}
                     </div>
@@ -571,7 +571,7 @@ export default async function ActivityTab({ searchParams, org, activeCentreId, a
                                     <p className="text-sm font-medium text-muted-foreground">No registrations for this period</p>
                                     <p className="text-xs text-muted-foreground/60 mt-1">Share your registration link to get started</p>
                                 </div>
-                                <Link href={registrationLink} className="mt-1 text-xs font-semibold text-primary hover:underline">Open registration form →</Link>
+                                <Link href={registrationLink} className="mt-1 inline-flex items-center min-h-6 min-w-6 py-1 text-xs font-semibold text-primary hover:underline">Open registration form →</Link>
                             </div>
                         )}
                     </div>

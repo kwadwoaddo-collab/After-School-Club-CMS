@@ -135,7 +135,7 @@ export default async function PortalDashboard() {
                 </div>
             </header>
 
-            <main className="max-w-5xl mx-auto px-4 py-8 space-y-8">
+            <main id="main-content" tabIndex={-1} className="max-w-5xl mx-auto px-4 py-8 space-y-8">
                 {totalOutstandingPence > 0 && (
                     <div
                         className={`rounded-2xl px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${COLLECTION_STAGE_STYLES[highestStage].badge}`}

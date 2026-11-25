@@ -78,7 +78,7 @@ export default function ForgotPasswordPage() {
             </div>
 
             {/* Right Side */}
-            <div className="flex flex-col items-center justify-center p-5 sm:p-8 min-w-0">
+            <main id="main-content" className="flex flex-col items-center justify-center p-5 sm:p-8 min-w-0">
                 <div className="md:hidden w-full flex justify-between items-center mb-6">
                     <BrandLockup />
                     <Link href="/" className={`min-h-[44px] inline-flex items-center text-sm text-[var(--if-text-secondary)] hover:text-[var(--if-text)] ${focusRing}`}>Home</Link>
@@ -201,12 +201,12 @@ export default function ForgotPasswordPage() {
 
                     <p className="text-center text-[var(--if-text-secondary)] text-sm mt-6">
                         Remember your password?{' '}
-                        <Link href="/login" className={linkClass}>
+                        <Link href="/login" className={`${linkClass} inline-flex items-center min-h-6 min-w-6 py-1`}>
                             Back to login
                         </Link>
                     </p>
                 </div>
-            </div>
+            </main>
         </div>
     );
 }

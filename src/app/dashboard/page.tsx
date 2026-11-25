@@ -97,13 +97,13 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
     ]);
 
     const onboardingSteps = [
-        { id: 'org-info', label: 'Complete your organisation profile', description: 'Add your contact email, phone, and address in Settings.', href: '/dashboard/settings', done: !!(org.contactEmail && org.contactPhone) },
-        { id: 'first-centre', label: 'Add your first centre', description: 'Set up a centre so you can receive registrations and bookings.', href: '/dashboard/centres/add', done: centresList.length > 0 },
-        { id: 'invite-staff', label: 'Invite your first staff member', description: 'Add your team so they can manage bookings and attendance.', href: '/dashboard/staff/invite', done: staffInviteCount > 0 },
-        { id: 'set-subdomain', label: 'Set your club subdomain', description: 'Give your club its own web address (e.g. yourclub.sprintscaleit.co.uk).', href: '/dashboard/settings', done: !!org.subdomain },
-        { id: 'registration-terms', label: 'Write your registration T&Cs', description: 'Parents will see these before signing the registration form.', href: '/dashboard/settings?tab=registration', done: !!(org.registrationTerms) },
-        { id: 'share-form', label: 'Share your registration link', description: 'Send the link to parents so they can register their children.', href: `/r/${org.slug}`, done: totalRegistrations > 0 },
-        { id: 'first-booking', label: 'Create your first booking', description: 'Schedule a session for a student.', href: '/dashboard/bookings/new', done: totalBookingsAll > 0 },
+        { id: 'org-info', label: 'Complete your organisation profile', ctaLabel: 'Open organisation settings', description: 'Add your contact email, phone, and address in Settings.', href: '/dashboard/settings', done: !!(org.contactEmail && org.contactPhone) },
+        { id: 'first-centre', label: 'Add your first centre', ctaLabel: 'Add a centre', description: 'Set up a centre so you can receive registrations and bookings.', href: '/dashboard/centres/add', done: centresList.length > 0 },
+        { id: 'invite-staff', label: 'Invite your first staff member', ctaLabel: 'Invite a staff member', description: 'Add your team so they can manage bookings and attendance.', href: '/dashboard/staff/invite', done: staffInviteCount > 0 },
+        { id: 'set-subdomain', label: 'Set your club subdomain', ctaLabel: 'Configure subdomain', description: 'Give your club its own web address (e.g. yourclub.sprintscaleit.co.uk).', href: '/dashboard/settings', done: !!org.subdomain },
+        { id: 'registration-terms', label: 'Write your registration T&Cs', ctaLabel: 'Update registration terms', description: 'Parents will see these before signing the registration form.', href: '/dashboard/settings?tab=registration', done: !!(org.registrationTerms) },
+        { id: 'share-form', label: 'Share your registration link', ctaLabel: 'Open registration form', description: 'Send the link to parents so they can register their children.', href: `/r/${org.slug}`, done: totalRegistrations > 0 },
+        { id: 'first-booking', label: 'Create your first booking', ctaLabel: 'Create a booking', description: 'Schedule a session for a student.', href: '/dashboard/bookings/new', done: totalBookingsAll > 0 },
     ];
     const onboardingAllDone = onboardingSteps.every(s => s.done);
     const completedCount = onboardingSteps.filter(s => s.done).length;
@@ -212,7 +212,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                     <Suspense fallback={<OverviewSkeleton />}>
                         {/* D2 (Milestone 3M): pass accessibleCentreIds+hasCentres so the schedule
                             respects the user's centre restriction, not org-wide access. */}
-                        <DashboardSchedule org={org} activeCentreId={activeCentreId} accessibleCentreIds={accessibleCentreIds} hasCentres={hasCentres} />
+                        <DashboardSchedule org={org} activeCentreId={activeCentreId} accessibleCentreIds={accessibleCentreIds} hasCentres={hasCentres} userRole={userRole} />
                     </Suspense>
                 </div>
                 <div className="lg:col-span-2">

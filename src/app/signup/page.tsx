@@ -162,7 +162,7 @@ export default function SignupPage() {
       </div>
 
       {/* Right Side - Signup Form */}
-      <div className="flex flex-col items-center justify-center p-5 sm:p-8 min-w-0">
+      <main id="main-content" className="flex flex-col items-center justify-center p-5 sm:p-8 min-w-0">
         <div className="md:hidden w-full flex justify-between items-center mb-6">
           <BrandLockup />
           <Link href="/" className={`min-h-[44px] inline-flex items-center text-sm text-[var(--if-text-secondary)] hover:text-[var(--if-text)] ${focusRing}`}>Home</Link>
@@ -320,7 +320,7 @@ export default function SignupPage() {
 
                 <p className="text-center text-sm text-[var(--if-text-secondary)]">
                   Already have an account?{' '}
-                  <Link href="/login" className={linkClass}>
+                  <Link href="/login" className={`${linkClass} inline-flex items-center min-h-6 min-w-6 py-1`}>
                     Sign in
                   </Link>
                 </p>
@@ -408,7 +408,7 @@ export default function SignupPage() {
             )}
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

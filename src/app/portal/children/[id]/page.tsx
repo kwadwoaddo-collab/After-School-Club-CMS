@@ -82,8 +82,12 @@ export default async function ChildDetailsPage(props: { params: Promise<{ id: st
         <div className="min-h-screen bg-background text-foreground pb-12">
             <header className="bg-card border-b border-border sticky top-0 z-20">
                 <div className="max-w-3xl mx-auto px-4 py-4 flex items-center gap-4">
-                    <Link href="/portal" className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 -ml-2 rounded-lg hover:bg-card transition-colors text-muted-foreground hover:text-foreground">
-                        <ArrowLeft className="w-5 h-5" />
+                    <Link
+                        href="/portal"
+                        aria-label="Back to Parent Portal"
+                        className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 -ml-2 rounded-lg hover:bg-card transition-colors text-muted-foreground hover:text-foreground"
+                    >
+                        <ArrowLeft className="w-5 h-5" aria-hidden="true" />
                     </Link>
                     <div className="flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
@@ -102,7 +106,7 @@ export default async function ChildDetailsPage(props: { params: Promise<{ id: st
                 </div>
             </header>
 
-            <main className="max-w-3xl mx-auto px-4 py-8 space-y-8">
+            <main id="main-content" tabIndex={-1} className="max-w-3xl mx-auto px-4 py-8 space-y-8">
                 {/* Upcoming Bookings */}
                 <section className="bg-card rounded-2xl border border-border overflow-hidden">
                     <div className="flex items-center gap-2 px-6 py-5 border-b border-border">
@@ -115,7 +119,7 @@ export default async function ChildDetailsPage(props: { params: Promise<{ id: st
                     {upcomingBookings.length === 0 ? (
                         <div className="px-6 py-10 text-center">
                             <p className="text-sm text-muted-foreground">No upcoming sessions booked.</p>
-                            <Link href="/portal/book" className="inline-block mt-4 text-xs font-bold text-primary hover:text-primary/80 transition-colors">
+                            <Link href="/portal/book" className="inline-flex items-center min-h-6 min-w-6 py-1 mt-4 text-xs font-bold text-primary hover:text-primary/80 transition-colors">
                                 Book a session →
                             </Link>
                         </div>

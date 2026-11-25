@@ -331,7 +331,7 @@ function LoginForm() {
               </Link>
               <p className="text-[var(--if-text-secondary)] text-sm">
                 Don&apos;t have an account?{' '}
-                <Link href="/signup" className={linkClass}>Sign up</Link>
+                <Link href="/signup" className={`${linkClass} inline-flex items-center min-h-6 min-w-6 py-1`}>Sign up</Link>
               </p>
             </div>
           </>
@@ -423,7 +423,7 @@ function LoginForm() {
 
       <p className="mt-6 text-center text-sm text-[var(--if-text-secondary)]">
         Looking for the Parent Portal?{' '}
-        <Link href="/portal/login" className={linkClass}>
+        <Link href="/portal/login" className={`${linkClass} inline-flex items-center min-h-6 min-w-6 py-1`}>
           Sign in as a parent →
         </Link>
       </p>
@@ -466,10 +466,10 @@ export default function LoginPage() {
         <div className="flex-1 flex flex-col justify-center">
           <BrandLockup />
 
-          <h1 className="text-4xl lg:text-5xl font-extrabold text-[var(--if-text)] mt-10 mb-6 leading-tight tracking-tight">
+          <h2 className="text-4xl lg:text-5xl font-extrabold text-[var(--if-text)] mt-10 mb-6 leading-tight tracking-tight">
             Run your club <br />
             <span className="text-[var(--if-accent)]">from one workspace</span>
-          </h1>
+          </h2>
 
           <p className="text-lg mb-10 leading-relaxed text-[var(--if-text-secondary)]">
             Sign in to manage sessions, student and family records, billing and staff register access.
@@ -497,7 +497,7 @@ export default function LoginPage() {
       </div>
 
       {/* Right Side - Login Form */}
-      <div className="flex flex-col items-center justify-between p-5 sm:p-8 relative min-w-0">
+      <main id="main-content" className="flex flex-col items-center justify-between p-5 sm:p-8 relative min-w-0">
         <div className="md:hidden w-full flex justify-between items-center">
           <BrandLockup />
           <Link href="/" className="min-h-[44px] inline-flex items-center text-sm text-[var(--if-text-secondary)] hover:text-[var(--if-text)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--if-accent)]">
@@ -525,7 +525,7 @@ export default function LoginPage() {
             After-School Club CMS · by <a href="https://sprintscaleit.co.uk" className="font-bold text-[var(--if-text-secondary)] underline-offset-2 hover:underline">SprintScale IT</a>
           </p>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

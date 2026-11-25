@@ -13,11 +13,13 @@ export default async function DashboardSchedule({
     activeCentreId,
     accessibleCentreIds,
     hasCentres,
+    userRole,
 }: {
     org: { id: string };
     activeCentreId?: string;
     accessibleCentreIds: string[];
     hasCentres: boolean;
+    userRole?: string;
 }) {
     const now = new Date();
 
@@ -53,17 +55,19 @@ export default async function DashboardSchedule({
             <div className="px-5 py-4 flex items-center justify-between border-b border-border">
                 <div className="flex items-center gap-2">
                     <Calendar className="size-4 text-text-muted" aria-hidden="true" />
-                    <h3 className="font-semibold text-sm text-text">Today's Bookings</h3>
+                    <h2 className="font-semibold text-sm text-text">Today&apos;s Bookings</h2>
                     <span className="text-text-muted">·</span>
                     <span className="text-xs text-text-muted">{format(now, 'MMM d, yyyy')}</span>
                 </div>
-                <Link
-                    href="/dashboard/bookings"
-                    className="text-xs text-accent hover:text-accent/80 font-medium transition-colors flex items-center gap-1"
-                >
-                    View all
-                    <ChevronRight className="size-3" />
-                </Link>
+                {userRole !== 'TUTOR' && (
+                    <Link
+                        href="/dashboard/bookings"
+                        className="inline-flex items-center min-h-6 min-w-6 py-1 gap-1 text-xs text-accent hover:text-accent/80 font-medium transition-colors"
+                    >
+                        View all
+                        <ChevronRight className="size-3" aria-hidden="true" />
+                    </Link>
+                )}
             </div>
             {todayBookings.length === 0 ? (
                 <div className="px-5 py-12 flex flex-col items-center gap-2 text-center flex-1 justify-center">
@@ -95,7 +99,7 @@ export default async function DashboardSchedule({
                 </div>
             )}
             <Link href="/dashboard/attendance" className="px-5 py-3 text-sm font-medium text-accent hover:underline border-t border-border">
-                View today's register
+                View today&apos;s register
             </Link>
         </Card>
     );
