@@ -215,6 +215,16 @@ export const authConfig: any = {
           return null;
         }
 
+        if (db.query?.organisations?.findFirst) {
+          const inviteOrg = await db.query.organisations.findFirst({
+            where: eq(organisations.id, invite.organisationId),
+            columns: { id: true, approvalStatus: true },
+          });
+          if (inviteOrg === null || (inviteOrg?.approvalStatus && inviteOrg.approvalStatus !== 'ACTIVE')) {
+            return null;
+          }
+        }
+
         const user = await db.query.users.findFirst({
           where: eq(users.email, invite.email),
         });

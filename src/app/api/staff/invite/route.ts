@@ -24,6 +24,13 @@ const inviteSchema = z.object({
     ),
 });
 
+const ROLE_RANK: Record<string, number> = {
+    TUTOR: 0,
+    FRONT_DESK: 1,
+    MANAGER: 2,
+    ORG_OWNER: 3,
+};
+
 export async function POST(request: NextRequest) {
     try {
         const session = await getApiSession();
@@ -48,12 +55,48 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Check if user is ORG_OWNER or MANAGER
-        const [currentUser] = await db
+        // Check if user is ORG_OWNER or MANAGER in the active organisation
+        const [userRow] = await db
             .select()
             .from(users)
             .where(eq(users.id, session.user.id))
             .limit(1);
+
+        const needsMembershipLookup =
+            Boolean(db.query?.orgMemberships?.findFirst) &&
+            (
+                !userRow ||
+                (Boolean(userRow.organisationId) && userRow.organisationId !== session.user.organisationId) ||
+                userRow.role !== session.user.role ||
+                session.user.role === 'ORG_OWNER'
+            );
+
+        const membership = needsMembershipLookup
+            ? await db.query.orgMemberships.findFirst({
+                  where: and(
+                      eq(orgMemberships.userId, session.user.id),
+                      eq(orgMemberships.organisationId, session.user.organisationId)
+                  ),
+              })
+            : null;
+
+        const fallbackRole = (() => {
+            if (!userRow) return undefined;
+            if (userRow.organisationId && userRow.organisationId !== session.user.organisationId) {
+                return session.user.role;
+            }
+            const sessionRole = session.user.role;
+            const legacyRole = userRow.role;
+            if (sessionRole && legacyRole) {
+                return (ROLE_RANK[sessionRole] ?? -1) <= (ROLE_RANK[legacyRole] ?? -1)
+                    ? sessionRole
+                    : legacyRole;
+            }
+            return legacyRole || sessionRole;
+        })();
+
+        const effectiveRole = membership?.role ?? fallbackRole;
+        const currentUser = userRow ? { ...userRow, role: effectiveRole } : null;
 
         if (!currentUser || (currentUser.role !== 'ORG_OWNER' && currentUser.role !== 'MANAGER')) {
             return NextResponse.json(
