@@ -15,18 +15,32 @@ export interface MagicSignature {
 export const IMAGE_MAGIC_SIGNATURES: MagicSignature[] = [
   { sig: [0x89, 0x50, 0x4e, 0x47], type: 'image/png' }, // PNG
   { sig: [0xff, 0xd8, 0xff], type: 'image/jpeg' }, // JPEG
-  { sig: [0x52, 0x49, 0x46, 0x46], type: 'image/webp' }, // WEBP (RIFF header)
+  { sig: [0x52, 0x49, 0x46, 0x46], type: 'image/webp' }, // WEBP (RIFF container + WEBP FourCC at bytes 8..11)
 ];
+
+const WEBP_FOURCC_BYTES = [0x57, 0x45, 0x42, 0x50] as const; // 'WEBP'
 
 /**
  * Detects the actual MIME type of a buffer by inspecting its magic bytes,
  * independent of whatever Content-Type the client claims. Optionally also
  * recognises SVG (XML text, no fixed magic bytes) when `allowSvg` is true.
+ *
+ * For WEBP, verifies BOTH the outer RIFF header (bytes 0..3 === 'RIFF') AND
+ * the inner FourCC signature (bytes 8..11 === 'WEBP') so other RIFF containers
+ * (.wav, .avi) disguised as .webp are rejected.
+ *
  * Returns null if the content doesn't match any allowed signature.
  */
 export function detectMimeFromBytes(buf: Buffer, allowSvg = false): string | null {
   for (const { sig, type } of IMAGE_MAGIC_SIGNATURES) {
-    if (sig.every((byte, i) => buf[i] === byte)) return type;
+    if (buf.length < sig.length) continue;
+    if (!sig.every((byte, i) => buf[i] === byte)) continue;
+    if (type === 'image/webp') {
+      if (buf.length < 12 || !WEBP_FOURCC_BYTES.every((byte, i) => buf[8 + i] === byte)) {
+        continue;
+      }
+    }
+    return type;
   }
   if (allowSvg) {
     const prefix = buf.subarray(0, 100).toString('utf8').trimStart();

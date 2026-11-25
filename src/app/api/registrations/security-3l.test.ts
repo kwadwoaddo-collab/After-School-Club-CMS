@@ -39,7 +39,7 @@ vi.mock('@/lib/services/email', () => ({
 }));
 
 // Mock notification helper
-vi.mock('@/app/portal/notifications/actions', () => ({
+vi.mock('@/lib/parent-notifications', () => ({
     createRegistrationNotification: vi.fn().mockResolvedValue(undefined),
 }));
 

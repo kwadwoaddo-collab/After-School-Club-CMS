@@ -6,8 +6,9 @@
  * It is used by BookingForm both from the authenticated dashboard and from
  * genuinely public, unauthenticated booking pages, so the fix is not "add
  * auth()" — it's a constrained public mechanism: rate limiting, mandatory
- * centre-ID validation (mirroring /api/bookings and /api/register), a size
- * cap, and magic-byte content validation against a strict allow-list.
+ * centre-ID + ACTIVE-organisation validation (mirroring /api/bookings and
+ * /api/register), a size cap, and magic-byte content validation against a
+ * strict allow-list (including full RIFF+WEBP 12-byte container verification).
  *
  * All tests mock at the module boundary; no DB, network, or blob-storage
  * calls are made.
@@ -47,6 +48,23 @@ vi.mock('@/lib/rate-limit', () => ({
 
 const PNG_BYTES = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0]);
 const JPEG_BYTES = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0, 0, 0, 0]);
+const WEBP_BYTES = Buffer.from([
+  0x52, 0x49, 0x46, 0x46, // "RIFF"
+  0x24, 0x00, 0x00, 0x00, // size
+  0x57, 0x45, 0x42, 0x50, // "WEBP"
+  0x56, 0x50, 0x38, 0x20, // "VP8 "
+]);
+const WAV_BYTES = Buffer.from([
+  0x52, 0x49, 0x46, 0x46, // "RIFF"
+  0x24, 0x00, 0x00, 0x00, // size
+  0x57, 0x41, 0x56, 0x45, // "WAVE" (disguised audio container)
+]);
+const AVI_BYTES = Buffer.from([
+  0x52, 0x49, 0x46, 0x46, // "RIFF"
+  0x24, 0x00, 0x00, 0x00, // size
+  0x41, 0x56, 0x49, 0x20, // "AVI " (disguised video container)
+]);
+const TRUNCATED_RIFF_BYTES = Buffer.from([0x52, 0x49, 0x46, 0x46, 0x00, 0x00, 0x00, 0x00]); // 8 bytes (< 12)
 const TEXT_BYTES = Buffer.from('this is not an image, just text pretending to be one');
 
 function makeUploadRequest(opts: {
@@ -82,11 +100,15 @@ async function getUploadRoute() {
   return POST;
 }
 
-async function mockHappyDb() {
+async function mockHappyDb(approvalStatus: 'ACTIVE' | 'PENDING' | 'SUSPENDED' | 'REJECTED' = 'ACTIVE') {
   const { db } = await import('@/db');
   (db.query.centres.findFirst as any).mockResolvedValueOnce({
     id: 'centre-1',
     organisationId: 'org-1',
+    organisation: {
+      id: 'org-1',
+      approvalStatus,
+    },
   });
 }
 
@@ -151,6 +173,24 @@ describe('POST /api/upload', () => {
     expect(json.error).toBe('Invalid centre ID');
   });
 
+  it.each(['PENDING', 'SUSPENDED', 'REJECTED'] as const)(
+    'returns 403 when centre organisation approvalStatus is %s',
+    async (status) => {
+      await mockAllowedRateLimit();
+      await mockHappyDb(status);
+
+      const { uploadToBlob } = await import('@/lib/services/blob');
+      const POST = await getUploadRoute();
+      const req = makeUploadRequest({ file: { bytes: PNG_BYTES, type: 'image/png' } });
+      const res = await POST(req as any);
+
+      expect(res.status).toBe(403);
+      const json = await res.json();
+      expect(json.error).toBe('Organisation is not active');
+      expect(uploadToBlob).not.toHaveBeenCalled();
+    },
+  );
+
   it('returns 413 when the file exceeds the size limit', async () => {
     await mockAllowedRateLimit();
     await mockHappyDb();
@@ -185,6 +225,34 @@ describe('POST /api/upload', () => {
     expect(res.status).toBe(400);
     const json = await res.json();
     expect(json.error).toMatch(/does not match declared type|Could not determine file type/);
+  });
+
+  it('rejects WAV and AVI RIFF containers disguised as image/webp (bytes 8..11 != WEBP)', async () => {
+    for (const [bytes, name] of [
+      [WAV_BYTES, 'spoofed.webp'],
+      [AVI_BYTES, 'movie.webp'],
+      [TRUNCATED_RIFF_BYTES, 'truncated.webp'],
+    ] as const) {
+      await mockAllowedRateLimit();
+      await mockHappyDb();
+
+      const POST = await getUploadRoute();
+      const req = makeUploadRequest({ file: { bytes, type: 'image/webp', name } });
+      const res = await POST(req as any);
+      expect(res.status).toBe(400);
+      const json = await res.json();
+      expect(json.error).toMatch(/does not match declared type|Could not determine file type/);
+    }
+  });
+
+  it('accepts a valid RIFF+WEBP image/webp file', async () => {
+    await mockAllowedRateLimit();
+    await mockHappyDb();
+
+    const POST = await getUploadRoute();
+    const req = makeUploadRequest({ file: { bytes: WEBP_BYTES, type: 'image/webp', name: 'avatar.webp' } });
+    const res = await POST(req as any);
+    expect(res.status).toBe(201);
   });
 
   it('rejects SVG entirely (not on this endpoint\'s allow-list, unlike the logo endpoint)', async () => {

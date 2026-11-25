@@ -10,7 +10,7 @@ import { registrations, registrationChildren, registrationParents, parents, chil
 import { eq, and, inArray, isNull, sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { emailService } from '@/lib/services/email';
-import { createRegistrationNotification } from '@/app/portal/notifications/actions';
+import { createRegistrationNotification } from '@/lib/parent-notifications';
 import { getTrustedApplicationUrl } from '@/lib/base-url';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { resolveBookingForRegistration, syncBookingOutcomeFromRegistration } from '@/lib/services/booking-outcome-sync';

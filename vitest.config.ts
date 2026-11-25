@@ -8,7 +8,8 @@ export default defineConfig({
     // PM-1.2: Register global test setup so next/navigation and org-approval-guard mocks apply
     setupFiles: ['./vitest.setup.ts'],
     alias: {
-      '@': path.resolve(__dirname, './src')
+      '@': path.resolve(__dirname, './src'),
+      'server-only': path.resolve(__dirname, './node_modules/next/dist/compiled/server-only/empty.js'),
     },
     exclude: [
       '**/node_modules/**',

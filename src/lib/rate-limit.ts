@@ -37,6 +37,19 @@ export const apiRateLimit = redis
   : null;
 
 /**
+ * Deep health probe rate limiter — 30 requests per 60 seconds per IP
+ * Generous enough for scheduled pre-session probes while blocking abusive Neon DB wakeup floods
+ */
+export const deepHealthRateLimit = redis
+  ? new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(30, '60 s'),
+      prefix: 'rl:health-deep',
+      analytics: true,
+    })
+  : null;
+
+/**
  * Strict rate limiter — 5 requests per 60 seconds per IP
  * Protects: password reset, email send endpoints
  */
