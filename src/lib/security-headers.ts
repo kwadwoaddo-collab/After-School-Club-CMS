@@ -46,6 +46,11 @@ export function buildSecurityHeaders(rawAllowedFrameAncestors = process.env.ALLO
       ],
     },
     {
+      // Prevent CDN / intermediary / shared-device caching of API JSON & CSV responses
+      source: '/api/:path*',
+      headers: [{ key: 'Cache-Control', value: 'private, no-store, max-age=0' }],
+    },
+    {
       // Deny framing everywhere EXCEPT booking embed surfaces (/book/*, /b/*, /centre-portal/:subdomain/book*).
       // Next.js merges non-conflicting header keys across matching rules, so applying DENY on /:path*
       // would cause embed routes to inherit X-Frame-Options: DENY when ALLOWED_FRAME_ANCESTORS is set.

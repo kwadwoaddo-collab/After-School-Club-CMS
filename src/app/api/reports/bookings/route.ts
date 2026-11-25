@@ -4,11 +4,13 @@ import { NextResponse } from 'next/server';
 import { getApiSession } from '@/lib/session';
 import { db } from '@/db';
 import { bookings, bookingAttendees, children, parents, centres } from '@/db/schema';
-import { eq, and, inArray } from 'drizzle-orm';
+import { eq, and, inArray, isNull, desc } from 'drizzle-orm';
 import { format } from 'date-fns';
 import { formatInTimezone } from '@/lib/datetime';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
-import { neutralizeCsvFormula } from '@/lib/csv-safety';
+import { encodeCsvCell } from '@/lib/csv-safety';
+
+const EXPORT_ROW_LIMIT = 10_000;
 
 export async function GET() {
   const session = await getApiSession();
@@ -32,11 +34,12 @@ export async function GET() {
         headers: {
           'Content-Type': 'text/csv; charset=utf-8',
           'Content-Disposition': `attachment; filename="bookings-${format(new Date(), 'yyyy-MM-dd')}.csv"`,
+          'Cache-Control': 'private, no-store',
         },
       });
     }
 
-    const rows = await db
+    let query: any = db
       .select({
         bookingId: bookings.id,
         startAt: bookings.startAt,
@@ -56,7 +59,34 @@ export async function GET() {
       .innerJoin(children, eq(bookingAttendees.childId, children.id))
       .innerJoin(parents, eq(bookings.parentId, parents.id))
       .innerJoin(centres, eq(bookings.centreId, centres.id))
-      .where(inArray(bookings.centreId, accessibleCentreIds));
+      .where(
+        and(
+          inArray(bookings.centreId, accessibleCentreIds),
+          isNull(children.deletedAt),
+          isNull(parents.deletedAt),
+        ),
+      );
+
+    if (typeof query.orderBy === 'function') {
+      query = query.orderBy(desc(bookings.startAt));
+    }
+    if (typeof query.limit === 'function') {
+      query = query.limit(EXPORT_ROW_LIMIT);
+    }
+    const rows: Array<{
+      bookingId: string;
+      startAt: Date | null;
+      status: string;
+      childFirstName: string;
+      childLastName: string;
+      parentEmail: string | null;
+      centreName: string;
+      confirmationCode: string | null;
+      modality: string | null;
+      attendanceStatus: string | null;
+      feedbackStatus: string | null;
+      feedbackScore: number | null;
+    }> = await query;
 
     const headers = [
       'Booking ID',
@@ -73,22 +103,19 @@ export async function GET() {
       'Feedback Score',
     ];
 
-    const escape = (val: string | null | undefined) =>
-      `"${neutralizeCsvFormula((val ?? '').toString()).replace(/"/g, '""')}"`;
-
     const csvRows = rows.map(r => [
-      escape(r.bookingId),
-      escape(r.confirmationCode),
-      r.startAt ? escape(new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/London', day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(r.startAt))) : '""',
-      r.startAt ? escape(formatInTimezone(new Date(r.startAt))) : '""',
-      escape(r.status),
-      escape(r.modality),
-      escape(`${r.childFirstName} ${r.childLastName}`),
-      escape(r.parentEmail),
-      escape(r.centreName),
-      escape(r.attendanceStatus ?? 'pending'),
-      escape(r.feedbackStatus),
-      escape(r.feedbackScore),
+      encodeCsvCell(r.bookingId),
+      encodeCsvCell(r.confirmationCode),
+      r.startAt ? encodeCsvCell(new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/London', day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(r.startAt))) : '""',
+      r.startAt ? encodeCsvCell(formatInTimezone(new Date(r.startAt))) : '""',
+      encodeCsvCell(r.status),
+      encodeCsvCell(r.modality),
+      encodeCsvCell(`${r.childFirstName} ${r.childLastName}`),
+      encodeCsvCell(r.parentEmail),
+      encodeCsvCell(r.centreName),
+      encodeCsvCell(r.attendanceStatus ?? 'pending'),
+      encodeCsvCell(r.feedbackStatus),
+      encodeCsvCell(r.feedbackScore),
     ]);
 
     const csv = [headers.join(','), ...csvRows.map(r => r.join(','))].join('\n');
@@ -99,6 +126,7 @@ export async function GET() {
       headers: {
         'Content-Type': 'text/csv; charset=utf-8',
         'Content-Disposition': `attachment; filename="${filename}"`,
+        'Cache-Control': 'private, no-store',
       },
     });
   } catch (e) {

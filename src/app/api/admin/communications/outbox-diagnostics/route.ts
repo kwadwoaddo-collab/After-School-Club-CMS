@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getTypedSession } from '@/lib/session';
+import { getApiSession, getTypedSession } from '@/lib/session';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { db } from '@/db';
 import {
@@ -15,6 +15,7 @@ export const maxDuration = 60;
  *
  * Implements Action 19 and human decision H-23:
  * (1) TENANT scope (default): session ORG_OWNER (org-wide) or MANAGER (assigned centres);
+ *     Requires an ACTIVE tenant organisation via getApiSession();
  *     Every query carries server-side organisation_id filter;
  *     Returns PII-free counts (no breaker, no provider reason/error name/probe time).
  *     ORG_OWNER additionally receives up to 100 non-PII identifiers for own org.
@@ -74,15 +75,21 @@ export async function GET(request: NextRequest) {
     });
   }
 
+  // Enforce ACTIVE tenant organisation status for TENANT scope
+  const tenantSession = await getApiSession();
+  if (!tenantSession?.user?.organisationId) {
+    return NextResponse.json({ error: 'Organisation is not active' }, { status: 403 });
+  }
+
   let centreIds: string[] | null = null;
   if (role === 'MANAGER') {
-    centreIds = await getUserAccessibleCentreIds(session.user.id);
+    centreIds = await getUserAccessibleCentreIds(tenantSession.user.id);
   }
 
   const includeIdentifiers = role === 'ORG_OWNER';
 
   const data = await getTenantDiagnostics(db, {
-    organisationId,
+    organisationId: tenantSession.user.organisationId,
     centreIds,
     includeIdentifiers,
   });

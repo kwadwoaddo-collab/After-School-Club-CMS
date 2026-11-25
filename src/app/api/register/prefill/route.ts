@@ -8,13 +8,15 @@ import { jwtVerify } from 'jose';
 import { resolveBookingForRegistration } from '@/lib/services/booking-outcome-sync';
 import { getPrefillJwtSecret } from '@/lib/prefill-token';
 
+const NO_STORE_HEADERS = { 'Cache-Control': 'private, no-store' } as const;
+
 export async function GET(req: NextRequest) {
     try {
         const { searchParams } = new URL(req.url);
         const token = searchParams.get('token');
 
         if (!token) {
-            return NextResponse.json({ error: 'Token is required' }, { status: 400 });
+            return NextResponse.json({ error: 'Token is required' }, { status: 400, headers: NO_STORE_HEADERS });
         }
 
         // 1. Verify prefill token (JWT signature + expiry) — fail closed in production if secret unset
@@ -25,13 +27,13 @@ export async function GET(req: NextRequest) {
             payload = result.payload;
         } catch (err) {
             logger.error('[Prefill API] Token verification failed:', err);
-            return NextResponse.json({ error: 'Invalid or expired prefill token' }, { status: 400 });
+            return NextResponse.json({ error: 'Invalid or expired prefill token' }, { status: 400, headers: NO_STORE_HEADERS });
         }
 
         const { parentId, centreId, childIds, bookingId: tokenBookingId } = payload;
         const queryBookingId = searchParams.get('bookingId');
         if (!parentId || !centreId) {
-            return NextResponse.json({ error: 'Malformed token payload' }, { status: 400 });
+            return NextResponse.json({ error: 'Malformed token payload' }, { status: 400, headers: NO_STORE_HEADERS });
         }
 
         // 2. Resolve centre + parent organisation and enforce ACTIVE approval status
@@ -45,11 +47,11 @@ export async function GET(req: NextRequest) {
             },
         });
         if (!centre || !centre.organisation) {
-            return NextResponse.json({ error: 'Centre not found' }, { status: 404 });
+            return NextResponse.json({ error: 'Centre not found' }, { status: 404, headers: NO_STORE_HEADERS });
         }
 
         if (centre.organisation.approvalStatus !== 'ACTIVE') {
-            return NextResponse.json({ error: 'Organisation is not active' }, { status: 403 });
+            return NextResponse.json({ error: 'Organisation is not active' }, { status: 403, headers: NO_STORE_HEADERS });
         }
 
         // 3. Fetch parent — must belong to this centre's organisation and not be soft-deleted
@@ -61,7 +63,7 @@ export async function GET(req: NextRequest) {
             ),
         });
         if (!parent) {
-            return NextResponse.json({ error: 'Parent record not found' }, { status: 404 });
+            return NextResponse.json({ error: 'Parent record not found' }, { status: 404, headers: NO_STORE_HEADERS });
         }
 
         // 4. Fetch children of this parent at this centre (must not be soft-deleted)
@@ -119,16 +121,19 @@ export async function GET(req: NextRequest) {
             explicitBookingId: tokenBookingId || queryBookingId || null,
         });
 
-        return NextResponse.json({
-            success: true,
-            parentId,
-            centreId,
-            bookingId: resolvedBookingId,
-            parents: transformedParents,
-            children: transformedChildren,
-        });
+        return NextResponse.json(
+            {
+                success: true,
+                parentId,
+                centreId,
+                bookingId: resolvedBookingId,
+                parents: transformedParents,
+                children: transformedChildren,
+            },
+            { headers: NO_STORE_HEADERS },
+        );
     } catch (err) {
         logger.error('[Prefill API] Error:', err);
-        return NextResponse.json({ error: 'Failed to fetch prefill details' }, { status: 500 });
+        return NextResponse.json({ error: 'Failed to fetch prefill details' }, { status: 500, headers: NO_STORE_HEADERS });
     }
 }

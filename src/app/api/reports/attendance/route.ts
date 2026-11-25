@@ -4,10 +4,12 @@ import { NextResponse } from 'next/server';
 import { getApiSession } from '@/lib/session';
 import { db } from '@/db';
 import { bookings, bookingAttendees, children, parents, centres } from '@/db/schema';
-import { eq, and, inArray, isNotNull } from 'drizzle-orm';
+import { eq, and, inArray, isNull, desc } from 'drizzle-orm';
 import { format } from 'date-fns';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
-import { neutralizeCsvFormula } from '@/lib/csv-safety';
+import { encodeCsvCell } from '@/lib/csv-safety';
+
+const EXPORT_ROW_LIMIT = 10_000;
 
 export async function GET() {
   const session = await getApiSession();
@@ -31,11 +33,12 @@ export async function GET() {
         headers: {
           'Content-Type': 'text/csv; charset=utf-8',
           'Content-Disposition': `attachment; filename="attendance-${format(new Date(), 'yyyy-MM-dd')}.csv"`,
+          'Cache-Control': 'private, no-store',
         },
       });
     }
 
-    const rows = await db
+    let query: any = db
       .select({
         bookingId: bookings.id,
         startAt: bookings.startAt,
@@ -52,7 +55,31 @@ export async function GET() {
       .innerJoin(children, eq(bookingAttendees.childId, children.id))
       .innerJoin(parents, eq(bookings.parentId, parents.id))
       .innerJoin(centres, eq(bookings.centreId, centres.id))
-      .where(inArray(bookings.centreId, accessibleCentreIds));
+      .where(
+        and(
+          inArray(bookings.centreId, accessibleCentreIds),
+          isNull(children.deletedAt),
+          isNull(parents.deletedAt),
+        ),
+      );
+
+    if (typeof query.orderBy === 'function') {
+      query = query.orderBy(desc(bookings.startAt));
+    }
+    if (typeof query.limit === 'function') {
+      query = query.limit(EXPORT_ROW_LIMIT);
+    }
+    const rows: Array<{
+      bookingId: string;
+      startAt: Date | null;
+      childFirstName: string;
+      childLastName: string;
+      parentEmail: string | null;
+      centreName: string;
+      attendanceStatus: string | null;
+      attendanceNote: string | null;
+      attendanceMarkedAt: Date | null;
+    }> = await query;
 
     const headers = [
       'Booking ID',
@@ -66,19 +93,16 @@ export async function GET() {
       'Marked At',
     ];
 
-    const escape = (val: string | null | undefined) =>
-      `"${neutralizeCsvFormula((val ?? '').toString()).replace(/"/g, '""')}"`;
-
     const csvRows = rows.map(r => [
-      escape(r.bookingId),
-      r.startAt ? escape(format(new Date(r.startAt), 'dd/MM/yyyy')) : '""',
-      r.startAt ? escape(format(new Date(r.startAt), 'HH:mm')) : '""',
-      escape(`${r.childFirstName} ${r.childLastName}`),
-      escape(r.parentEmail),
-      escape(r.centreName),
-      escape(r.attendanceStatus ?? 'not_recorded'),
-      escape(r.attendanceNote),
-      r.attendanceMarkedAt ? escape(format(new Date(r.attendanceMarkedAt), 'dd/MM/yyyy HH:mm')) : '""',
+      encodeCsvCell(r.bookingId),
+      r.startAt ? encodeCsvCell(format(new Date(r.startAt), 'dd/MM/yyyy')) : '""',
+      r.startAt ? encodeCsvCell(format(new Date(r.startAt), 'HH:mm')) : '""',
+      encodeCsvCell(`${r.childFirstName} ${r.childLastName}`),
+      encodeCsvCell(r.parentEmail),
+      encodeCsvCell(r.centreName),
+      encodeCsvCell(r.attendanceStatus ?? 'not_recorded'),
+      encodeCsvCell(r.attendanceNote),
+      r.attendanceMarkedAt ? encodeCsvCell(format(new Date(r.attendanceMarkedAt), 'dd/MM/yyyy HH:mm')) : '""',
     ]);
 
     const csv = [headers.join(','), ...csvRows.map(r => r.join(','))].join('\n');
@@ -89,6 +113,7 @@ export async function GET() {
       headers: {
         'Content-Type': 'text/csv; charset=utf-8',
         'Content-Disposition': `attachment; filename="${filename}"`,
+        'Cache-Control': 'private, no-store',
       },
     });
   } catch (e) {

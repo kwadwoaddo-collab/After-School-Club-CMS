@@ -523,32 +523,71 @@ export interface PlatformDiagnostics {
 
 /** Platform scope: callable ONLY after resolveDiagnosticsScope returned PLATFORM. Cross-organisation, PII-free. */
 export async function getPlatformDiagnostics(rootDb: RootDb): Promise<PlatformDiagnostics> {
-  const breakerRows = await rootDb.execute(sql`SELECT state, reason, error_name, opened_at, next_probe_at, consecutive_failures, left(config_fingerprint, 8) AS fp FROM booking_email_provider_state WHERE id = 1`);
-  const b = breakerRows[0] as unknown as { state: string; reason: string | null; error_name: string | null; opened_at: Date | null; next_probe_at: Date | null; consecutive_failures: number; fp: string | null };
-  const held = await rootDb.execute(sql`SELECT count(*)::int AS n, extract(epoch FROM (now() - min(created_at)))::float8 AS oldest FROM booking_email_outbox WHERE status = 'HELD_PROVIDER_OPERATIONAL'`);
-  const h = held[0] as unknown as { n: number; oldest: number | null };
-  const att = await rootDb.execute(sql`SELECT attention_reason, count(*)::int AS n FROM booking_email_outbox WHERE status = 'ATTENTION' GROUP BY 1`);
-  const attentionByReason: Record<string, number> = {};
-  for (const r of att as unknown as { attention_reason: string | null; n: number }[]) attentionByReason[r.attention_reason ?? 'UNSPECIFIED'] = r.n;
-  const byType = await rootDb.execute(sql`SELECT communication_type, provider_hold_error_name AS error_name, count(*)::int AS n FROM booking_email_outbox WHERE status = 'HELD_PROVIDER_OPERATIONAL' GROUP BY 1, 2`);
-  const idRows = async (status: string) =>
+  const idRows = async (status: string): Promise<DiagnosticIdentifier[]> =>
     (
-      (await rootDb.execute(sql`SELECT id, booking_id, status::text AS status, attention_reason, created_at, attempt_count FROM booking_email_outbox WHERE status = ${status}::booking_email_outbox_status ORDER BY created_at DESC LIMIT 100`)) as unknown as {
+      ((await rootDb.execute(sql`SELECT id, booking_id, status::text AS status, attention_reason, created_at, attempt_count FROM booking_email_outbox WHERE status = ${status}::booking_email_outbox_status ORDER BY created_at DESC LIMIT 100`)) ?? []) as unknown as {
         id: string; booking_id: string | null; status: string; attention_reason: string | null; created_at: Date; attempt_count: number;
       }[]
     ).map((r) => ({ outboxId: r.id, bookingId: r.booking_id, status: r.status, attentionReason: r.attention_reason, createdAt: r.created_at, attemptCount: r.attempt_count }));
+
+  const [breakerRows, held, att, byType, attentionIdentifiers, heldIdentifiers] = await Promise.all([
+    rootDb.execute(sql`SELECT state, reason, error_name, opened_at, next_probe_at, consecutive_failures, left(config_fingerprint, 8) AS fp FROM booking_email_provider_state WHERE id = 1`),
+    rootDb.execute(sql`SELECT count(*)::int AS n, extract(epoch FROM (now() - min(created_at)))::float8 AS oldest FROM booking_email_outbox WHERE status = 'HELD_PROVIDER_OPERATIONAL'`),
+    rootDb.execute(sql`SELECT attention_reason, count(*)::int AS n FROM booking_email_outbox WHERE status = 'ATTENTION' GROUP BY 1`),
+    rootDb.execute(sql`SELECT communication_type, provider_hold_error_name AS error_name, count(*)::int AS n FROM booking_email_outbox WHERE status = 'HELD_PROVIDER_OPERATIONAL' GROUP BY 1, 2`),
+    idRows('ATTENTION'),
+    idRows('HELD_PROVIDER_OPERATIONAL'),
+  ]);
+
+  const b = ((breakerRows?.[0] as unknown) as {
+    state: string;
+    reason: string | null;
+    error_name: string | null;
+    opened_at: Date | null;
+    next_probe_at: Date | null;
+    consecutive_failures: number;
+    fp: string | null;
+  } | undefined) ?? {
+    state: 'CLOSED',
+    reason: null,
+    error_name: null,
+    opened_at: null,
+    next_probe_at: null,
+    consecutive_failures: 0,
+    fp: null,
+  };
+
+  const h = ((held?.[0] as unknown) as { n: number; oldest: number | null } | undefined) ?? {
+    n: 0,
+    oldest: null,
+  };
+
+  const attentionByReason: Record<string, number> = {};
+  for (const r of ((att ?? []) as unknown as { attention_reason: string | null; n: number }[])) {
+    attentionByReason[r.attention_reason ?? 'UNSPECIFIED'] = r.n;
+  }
+
   return {
     scope: 'PLATFORM',
     breaker: {
-      state: b.state, reason: b.reason, errorName: b.error_name, openedAt: b.opened_at, nextProbeAt: b.next_probe_at,
-      consecutiveFailures: b.consecutive_failures, fingerprintPrefix: b.fp,
+      state: b.state,
+      reason: b.reason,
+      errorName: b.error_name,
+      openedAt: b.opened_at,
+      nextProbeAt: b.next_probe_at,
+      consecutiveFailures: b.consecutive_failures,
+      fingerprintPrefix: b.fp,
     },
     heldCount: h.n,
     oldestHeldAgeSeconds: h.oldest,
     attentionByReason,
-    heldByTypeAndError: (byType as unknown as { communication_type: string; error_name: string | null; n: number }[]).map((r) => ({ communicationType: r.communication_type, errorName: r.error_name, count: r.n })),
-    attentionIdentifiers: await idRows('ATTENTION'),
-    heldIdentifiers: await idRows('HELD_PROVIDER_OPERATIONAL'),
+    heldByTypeAndError: ((byType ?? []) as unknown as { communication_type: string; error_name: string | null; n: number }[]).map((r) => ({
+      communicationType: r.communication_type,
+      errorName: r.error_name,
+      count: r.n,
+    })),
+    attentionIdentifiers,
+    heldIdentifiers,
   };
 }
 
