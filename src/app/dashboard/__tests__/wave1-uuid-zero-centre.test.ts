@@ -280,7 +280,7 @@ describe('Invalid UUID route/query params return notFound() before Postgres quer
         const html = renderToStaticMarkup(element);
 
         expect(db.query.payments.findFirst).not.toHaveBeenCalled();
-        expect(html).toContain('Cash Receipt Generator');
+        expect(html).toContain('Parent Payment Receipt');
     });
 });
 

@@ -66,7 +66,7 @@ export default async function FinancePage(props: {
             .catch((error: unknown) => ({ rows: [] as OrgCentre[], error })),
     ]);
 
-    if (searchParams.view === 'cashflow' && !isOwner) {
+    if ((searchParams.view === 'cashflow' || searchParams.view === 'outgoings') && !isOwner) {
         return redirect('/dashboard/finance');
     }
 
@@ -77,7 +77,9 @@ export default async function FinancePage(props: {
     const invoiceHistoryView = searchParams.view === 'history';
     const familyView = searchParams.view === 'families';
     const cashflowView = isOwner && searchParams.view === 'cashflow';
-    const workspaceView = !cashflowView && isFinanceWorkspaceView(searchParams);
+    const outgoingsView = isOwner && searchParams.view === 'outgoings';
+    const ledgerView = cashflowView || outgoingsView;
+    const workspaceView = !ledgerView && isFinanceWorkspaceView(searchParams);
 
     let orgCentres: OrgCentre[] = [];
     let activeCentreId = 'all';
@@ -150,7 +152,7 @@ export default async function FinancePage(props: {
                 formerBalancesView ? formerStudentOutstandingSql() : invoiceHistoryView ? undefined : activeStudentInvoiceSql(),
             );
 
-            if (cashflowView) {
+            if (ledgerView) {
                 const ledger = await fetchOwnerCashReceiptsLedger({
                     userId,
                     organisationId,
@@ -262,37 +264,66 @@ export default async function FinancePage(props: {
     const serializedInvoices = serialize(paginatedInvoices);
     const serializedBillingCycles = serialize(billingCycles);
 
+    const activeCentreParam: Record<string, string> = activeCentreId !== 'all' ? { centre: activeCentreId } : {};
+
     return (
         <div className="max-w-7xl mx-auto space-y-6">
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-semibold text-foreground tracking-tight">{cashflowView ? 'Cash received & weekly tally' : formerBalancesView ? 'Former / Paused Students Outstanding Balances' : invoiceHistoryView ? 'All Invoice History' : familyView ? 'Family accounts' : 'Finance'}</h1>
+                    <h1 className="text-3xl font-semibold text-foreground tracking-tight">
+                        {outgoingsView
+                            ? 'Outgoings & expenses'
+                            : cashflowView
+                              ? 'Cashflow & outgoings'
+                              : formerBalancesView
+                                ? 'Former / Paused Students Outstanding Balances'
+                                : invoiceHistoryView
+                                  ? 'All Invoice History'
+                                  : familyView
+                                    ? 'Family accounts'
+                                    : 'Finance'}
+                    </h1>
                     <p className="text-muted-foreground mt-1 text-sm">
-                        {cashflowView ? 'Verified Monday–Sunday cash receipts, rolling monthly tally, and Month-on-Month / Year-on-Year comparisons.' : formerBalancesView ? 'Follow up issued unpaid invoices without reactivating student billing.' : 'Review invoices and record money received.'}
+                        {outgoingsView
+                            ? 'Record club outgoings and expenses across centres, and review weekly and yearly totals.'
+                            : cashflowView
+                              ? 'Verified Monday–Sunday money in, club outgoings, net cashflow, and Month-on-Month / Year-on-Year comparisons.'
+                              : formerBalancesView
+                                ? 'Follow up issued unpaid invoices without reactivating student billing.'
+                                : 'Review invoices and record money received.'}
                     </p>
                 </div>
                 <div className="flex items-center gap-3 flex-wrap">
                     <nav aria-label="Finance views" className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-                        {!workspaceView && <Link href={`/dashboard/finance?${new URLSearchParams({...(activeCentreId !== 'all' ? {centre:activeCentreId} : {})})}`} className="inline-flex min-h-10 items-center font-medium text-primary hover:underline">Daily tasks</Link>}
+                        {!workspaceView && <Link href={`/dashboard/finance?${new URLSearchParams({ ...activeCentreParam })}`} className="inline-flex min-h-10 items-center font-medium text-primary hover:underline">Daily tasks</Link>}
                         {isOwner && (
-                            <Link
-                                href={`/dashboard/finance?${new URLSearchParams({ ...(activeCentreId !== 'all' ? { centre: activeCentreId } : {}), view: 'cashflow' })}`}
-                                aria-current={cashflowView ? 'page' : undefined}
-                                className={`inline-flex min-h-10 items-center font-medium hover:underline ${cashflowView ? 'text-foreground underline underline-offset-4' : 'text-primary'}`}
-                            >
-                                Cash received
-                            </Link>
+                            <>
+                                <Link
+                                    href={`/dashboard/finance?${new URLSearchParams({ ...activeCentreParam, view: 'cashflow' })}`}
+                                    aria-current={cashflowView ? 'page' : undefined}
+                                    className={`inline-flex min-h-10 items-center font-medium hover:underline ${cashflowView ? 'text-foreground underline underline-offset-4' : 'text-primary'}`}
+                                >
+                                    Cashflow & outgoings
+                                </Link>
+                                <Link
+                                    href={`/dashboard/finance?${new URLSearchParams({ ...activeCentreParam, view: 'outgoings' })}#quick-add-outgoing-heading`}
+                                    aria-current={outgoingsView ? 'page' : undefined}
+                                    className={`inline-flex min-h-10 items-center font-medium hover:underline ${outgoingsView ? 'text-foreground underline underline-offset-4' : 'text-primary'}`}
+                                >
+                                    Outgoings
+                                </Link>
+                            </>
                         )}
-                        {[['history', 'All invoices'], ['families', 'Family accounts']].map(([view,label]) => <Link key={view} href={`/dashboard/finance?${new URLSearchParams({ ...(activeCentreId !== 'all' ? {centre:activeCentreId} : {}), view })}`} aria-current={searchParams.view === view ? 'page' : undefined} className="inline-flex min-h-10 items-center font-medium text-primary hover:underline">{label}</Link>)}
-                        <Link href="/dashboard/finance/receipt" className="inline-flex min-h-10 items-center font-medium text-primary hover:underline">Receipts</Link>
-                        <details className="relative"><summary className="flex min-h-10 cursor-pointer items-center text-muted-foreground">More</summary><div className="absolute right-0 top-10 z-20 w-64 rounded-lg border border-border bg-card p-3 shadow-lg"><Link href={`/dashboard/finance?${new URLSearchParams({ ...(activeCentreId !== 'all' ? {centre:activeCentreId} : {}), view:'former' })}`} className="block py-2 text-primary hover:underline">Paused / stopped balances</Link></div></details>
+                        {[['history', 'All invoices'], ['families', 'Family accounts']].map(([view,label]) => <Link key={view} href={`/dashboard/finance?${new URLSearchParams({ ...activeCentreParam, view })}`} aria-current={searchParams.view === view ? 'page' : undefined} className="inline-flex min-h-10 items-center font-medium text-primary hover:underline">{label}</Link>)}
+                        <Link href="/dashboard/finance/receipt" className="inline-flex min-h-10 items-center font-medium text-primary hover:underline">Parent receipts</Link>
+                        <details className="relative"><summary className="flex min-h-10 cursor-pointer items-center text-muted-foreground">More</summary><div className="absolute right-0 top-10 z-20 w-64 rounded-lg border border-border bg-card p-3 shadow-lg"><Link href={`/dashboard/finance?${new URLSearchParams({ ...activeCentreParam, view:'former' })}`} className="block py-2 text-primary hover:underline">Paused / stopped balances</Link></div></details>
                     </nav>
                     <Suspense fallback={<div className="w-[180px] h-[44px] bg-secondary/60 rounded-2xl animate-pulse" />}>
                         <FinanceDashboardFilters centres={orgCentres} />
                     </Suspense>
                     {!workspaceView && <a
-                        href={`/api/export/finance?${new URLSearchParams({ from: monthStart, to: todayStr, ...(activeCentreId !== 'all' ? { centre: activeCentreId } : {}) })}`}
+                        href={`/api/export/finance?${new URLSearchParams({ from: monthStart, to: todayStr, ...activeCentreParam })}`}
                         download={`finance-${monthStart}-to-${todayStr}.csv`}
                         className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-xs font-bold hover:bg-emerald-500/20 shadow-sm transition-all active:scale-95 duration-150"
                         title="Download finance CSV for current month"
@@ -313,11 +344,16 @@ export default async function FinancePage(props: {
             {formerBalancesView && <p className="rounded-2xl border border-border bg-card p-4 text-sm text-muted-foreground">
                 These are existing issued balances, including shared family invoices where a covered student has paused or stopped. Payments and receipts remain available. Pausing a student does not void a debt, create a credit or issue another invoice.
             </p>}
-            {cashflowView && cashReceiptsLedger && <CashReceiptsOwnerView ledger={cashReceiptsLedger} />}
+            {ledgerView && cashReceiptsLedger && (
+                <CashReceiptsOwnerView
+                    ledger={cashReceiptsLedger}
+                    activeView={outgoingsView ? 'outgoings' : 'cashflow'}
+                />
+            )}
             {workspaceView && <FinanceWorkspace key={activeCentreId} invoices={serialize(workspaceInvoices)} cycles={serializedBillingCycles} today={todayStr} invoiceError={hasFetchError} cycleError={cycleFetchError}/>}
 
             {/* Main Finance Data Grid & KPI Summary */}
-            {!workspaceView && !familyView && !cashflowView && <Suspense fallback={<div className="h-[400px] bg-secondary/20 rounded-3xl animate-pulse border border-border/60" />}>
+            {!workspaceView && !familyView && !ledgerView && <Suspense fallback={<div className="h-[400px] bg-secondary/20 rounded-3xl animate-pulse border border-border/60" />}>
                 <FinanceDataGridClient 
                     invoices={serializedInvoices}
                     totalCount={totalInvoices}
@@ -336,7 +372,7 @@ export default async function FinancePage(props: {
                         Family accounts
                     </h2>
                 </div>
-                <Link className="mb-4 inline-block text-sm text-primary underline" href={`/dashboard/finance?${new URLSearchParams({...(activeCentreId !== 'all' ? {centre:activeCentreId} : {})})}`}>Back to daily tasks</Link>
+                <Link className="mb-4 inline-block text-sm text-primary underline" href={`/dashboard/finance?${new URLSearchParams({ ...activeCentreParam })}`}>Back to daily tasks</Link>
                 {cycleFetchError ? <p role="alert" className="text-sm text-destructive">Couldn’t load billing schedules. Refresh to try again.</p> : <BillingCyclesTab
                     cycles={searchParams.family ? serializedBillingCycles.filter(cycle => cycle.config.parentId === searchParams.family) : serializedBillingCycles}
                     centreId={activeCentreId}

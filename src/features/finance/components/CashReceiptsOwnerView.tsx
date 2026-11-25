@@ -141,9 +141,13 @@ function getBoundaryEntriesButtonLabel(
 
 export interface CashReceiptsOwnerViewProps {
   ledger: CashReceiptsLedgerResult;
+  activeView?: 'cashflow' | 'outgoings';
 }
 
-export default function CashReceiptsOwnerView({ ledger }: CashReceiptsOwnerViewProps) {
+export default function CashReceiptsOwnerView({
+  ledger,
+  activeView = 'cashflow',
+}: CashReceiptsOwnerViewProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
@@ -231,7 +235,7 @@ export default function CashReceiptsOwnerView({ ledger }: CashReceiptsOwnerViewP
     const centre = overrides.centre ?? ledger.activeCentreId;
     const month = overrides.month ?? ledger.selectedMonth;
     const params = new URLSearchParams();
-    params.set('view', 'cashflow');
+    params.set('view', activeView);
     if (centre && centre !== 'all') {
       params.set('centre', centre);
     }
@@ -371,6 +375,159 @@ export default function CashReceiptsOwnerView({ ledger }: CashReceiptsOwnerViewP
   // Columns: Week + [Centres] + Money In + Outgoings + Weekly Net + Rolling Tally + Entries
   const totalTableColumns = 6 + (showCentreColumns ? ledger.centreSummaries.length : 0);
   const ytd = ledger.yearlyRunningLedger;
+
+  // 3. Inline 3-Second Quick-Add Outgoing / Expense Bar
+  const quickAddOutgoingSection = (
+    <section
+      aria-labelledby="quick-add-outgoing-heading"
+      className="rounded-2xl border border-border bg-card p-4 sm:p-5"
+    >
+      <div className="flex flex-col justify-between gap-1 sm:flex-row sm:items-baseline">
+        <h2
+          id="quick-add-outgoing-heading"
+          className="text-base font-semibold tracking-tight text-foreground"
+        >
+          Record weekly outgoing or expense
+        </h2>
+        <p className="text-xs text-muted-foreground">
+          Deducts automatically from the matching Monday–Sunday week, monthly tally, and{' '}
+          {ytd.selectedYear} yearly running total.
+        </p>
+      </div>
+
+      <form
+        aria-labelledby="quick-add-outgoing-heading"
+        onSubmit={handleQuickAddSubmit}
+        className="mt-3.5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-12 lg:items-end"
+      >
+        <div className="flex flex-col gap-1 lg:col-span-2">
+          <label htmlFor="quick-expense-date" className="text-xs font-medium text-foreground">
+            Date <span aria-hidden="true">*</span>
+          </label>
+          <input
+            id="quick-expense-date"
+            name="expenseDate"
+            type="date"
+            required
+            value={quickDate}
+            onChange={(e) => setQuickDate(e.target.value)}
+            className={`min-h-10 rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground tabular-nums ${focusRing}`}
+          />
+        </div>
+
+        <div className="flex flex-col gap-1 lg:col-span-3">
+          <label htmlFor="quick-expense-centre" className="text-xs font-medium text-foreground">
+            Centre <span aria-hidden="true">*</span>
+          </label>
+          <select
+            id="quick-expense-centre"
+            name="centreId"
+            required
+            value={quickCentreId}
+            onChange={(e) => setQuickCentreId(e.target.value)}
+            className={`min-h-10 rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground ${focusRing}`}
+          >
+            {ledger.centreSummaries.map((c) => (
+              <option key={c.centreId} value={c.centreId}>
+                {c.centreName}
+              </option>
+            ))}
+            {ledger.centreSummaries.length > 1 && (
+              <option value="split_all">
+                Split equally across all {ledger.centreSummaries.length} centres
+              </option>
+            )}
+          </select>
+        </div>
+
+        <div className="flex flex-col gap-1 lg:col-span-2">
+          <label htmlFor="quick-expense-amount" className="text-xs font-medium text-foreground">
+            Amount (£) <span aria-hidden="true">*</span>
+          </label>
+          <input
+            id="quick-expense-amount"
+            name="amount"
+            type="text"
+            inputMode="decimal"
+            required
+            placeholder="e.g. 45.00"
+            value={quickAmount}
+            onChange={(e) => {
+              setQuickAmount(e.target.value);
+              if (quickFeedback?.type === 'error') setQuickFeedback(null);
+            }}
+            className={`min-h-10 rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground tabular-nums ${focusRing}`}
+          />
+        </div>
+
+        <div className="flex flex-col gap-1 lg:col-span-3">
+          <label
+            htmlFor="quick-expense-description"
+            className="text-xs font-medium text-foreground"
+          >
+            Description <span aria-hidden="true">*</span>
+          </label>
+          <input
+            id="quick-expense-description"
+            name="description"
+            type="text"
+            required
+            maxLength={300}
+            placeholder="Fruit & snacks, hall hire, supplies..."
+            value={quickDescription}
+            onChange={(e) => {
+              setQuickDescription(e.target.value);
+              if (quickFeedback?.type === 'error') setQuickFeedback(null);
+            }}
+            className={`min-h-10 rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground ${focusRing}`}
+          />
+        </div>
+
+        <div className="flex flex-col gap-1 lg:col-span-2">
+          <label htmlFor="quick-expense-category" className="text-xs font-medium text-foreground">
+            Category
+          </label>
+          <div className="flex items-center gap-2">
+            <select
+              id="quick-expense-category"
+              name="category"
+              value={quickCategory}
+              onChange={(e) => setQuickCategory(e.target.value)}
+              className={`min-h-10 w-full rounded-xl border border-border bg-background px-2.5 py-2 text-sm text-foreground ${focusRing}`}
+            >
+              {EXPENSE_CATEGORY_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+            <button
+              type="submit"
+              disabled={isPending}
+              className={`inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50 ${focusRing}`}
+            >
+              <Plus aria-hidden="true" className="h-4 w-4" />
+              <span>{isPending ? 'Saving...' : 'Add'}</span>
+            </button>
+          </div>
+        </div>
+      </form>
+
+      {quickFeedback && (
+        <div
+          role={quickFeedback.type === 'error' ? 'alert' : 'status'}
+          aria-live="polite"
+          className={`mt-3 text-xs font-medium ${
+            quickFeedback.type === 'error'
+              ? 'text-red-600 dark:text-red-400'
+              : 'text-emerald-700 dark:text-emerald-300'
+          }`}
+        >
+          {quickFeedback.message}
+        </div>
+      )}
+    </section>
+  );
 
   return (
     <div className="space-y-8">
@@ -521,6 +678,8 @@ export default function CashReceiptsOwnerView({ ledger }: CashReceiptsOwnerViewP
           )}
         </div>
       </div>
+
+      {activeView === 'outgoings' && quickAddOutgoingSection}
 
       {/* 2. 4-Column Divided Executive Ledger Strip */}
       <dl
@@ -746,156 +905,7 @@ export default function CashReceiptsOwnerView({ ledger }: CashReceiptsOwnerViewP
         </div>
       </dl>
 
-      {/* 3. Inline 3-Second Quick-Add Outgoing / Expense Bar */}
-      <section
-        aria-labelledby="quick-add-outgoing-heading"
-        className="rounded-2xl border border-border bg-card p-4 sm:p-5"
-      >
-        <div className="flex flex-col justify-between gap-1 sm:flex-row sm:items-baseline">
-          <h2
-            id="quick-add-outgoing-heading"
-            className="text-base font-semibold tracking-tight text-foreground"
-          >
-            Record weekly outgoing or expense
-          </h2>
-          <p className="text-xs text-muted-foreground">
-            Deducts automatically from the matching Monday–Sunday week, monthly tally, and{' '}
-            {ytd.selectedYear} yearly running total.
-          </p>
-        </div>
-
-        <form
-          aria-labelledby="quick-add-outgoing-heading"
-          onSubmit={handleQuickAddSubmit}
-          className="mt-3.5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-12 lg:items-end"
-        >
-          <div className="flex flex-col gap-1 lg:col-span-2">
-            <label htmlFor="quick-expense-date" className="text-xs font-medium text-foreground">
-              Date <span aria-hidden="true">*</span>
-            </label>
-            <input
-              id="quick-expense-date"
-              name="expenseDate"
-              type="date"
-              required
-              value={quickDate}
-              onChange={(e) => setQuickDate(e.target.value)}
-              className={`min-h-10 rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground tabular-nums ${focusRing}`}
-            />
-          </div>
-
-          <div className="flex flex-col gap-1 lg:col-span-3">
-            <label htmlFor="quick-expense-centre" className="text-xs font-medium text-foreground">
-              Centre <span aria-hidden="true">*</span>
-            </label>
-            <select
-              id="quick-expense-centre"
-              name="centreId"
-              required
-              value={quickCentreId}
-              onChange={(e) => setQuickCentreId(e.target.value)}
-              className={`min-h-10 rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground ${focusRing}`}
-            >
-              {ledger.centreSummaries.map((c) => (
-                <option key={c.centreId} value={c.centreId}>
-                  {c.centreName}
-                </option>
-              ))}
-              {ledger.centreSummaries.length > 1 && (
-                <option value="split_all">
-                  Split equally across all {ledger.centreSummaries.length} centres
-                </option>
-              )}
-            </select>
-          </div>
-
-          <div className="flex flex-col gap-1 lg:col-span-2">
-            <label htmlFor="quick-expense-amount" className="text-xs font-medium text-foreground">
-              Amount (£) <span aria-hidden="true">*</span>
-            </label>
-            <input
-              id="quick-expense-amount"
-              name="amount"
-              type="text"
-              inputMode="decimal"
-              required
-              placeholder="e.g. 45.00"
-              value={quickAmount}
-              onChange={(e) => {
-                setQuickAmount(e.target.value);
-                if (quickFeedback?.type === 'error') setQuickFeedback(null);
-              }}
-              className={`min-h-10 rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground tabular-nums ${focusRing}`}
-            />
-          </div>
-
-          <div className="flex flex-col gap-1 lg:col-span-3">
-            <label
-              htmlFor="quick-expense-description"
-              className="text-xs font-medium text-foreground"
-            >
-              Description <span aria-hidden="true">*</span>
-            </label>
-            <input
-              id="quick-expense-description"
-              name="description"
-              type="text"
-              required
-              maxLength={300}
-              placeholder="Fruit & snacks, hall hire, supplies..."
-              value={quickDescription}
-              onChange={(e) => {
-                setQuickDescription(e.target.value);
-                if (quickFeedback?.type === 'error') setQuickFeedback(null);
-              }}
-              className={`min-h-10 rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground ${focusRing}`}
-            />
-          </div>
-
-          <div className="flex flex-col gap-1 lg:col-span-2">
-            <label htmlFor="quick-expense-category" className="text-xs font-medium text-foreground">
-              Category
-            </label>
-            <div className="flex items-center gap-2">
-              <select
-                id="quick-expense-category"
-                name="category"
-                value={quickCategory}
-                onChange={(e) => setQuickCategory(e.target.value)}
-                className={`min-h-10 w-full rounded-xl border border-border bg-background px-2.5 py-2 text-sm text-foreground ${focusRing}`}
-              >
-                {EXPENSE_CATEGORY_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-              <button
-                type="submit"
-                disabled={isPending}
-                className={`inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50 ${focusRing}`}
-              >
-                <Plus aria-hidden="true" className="h-4 w-4" />
-                <span>{isPending ? 'Saving...' : 'Add'}</span>
-              </button>
-            </div>
-          </div>
-        </form>
-
-        {quickFeedback && (
-          <div
-            role={quickFeedback.type === 'error' ? 'alert' : 'status'}
-            aria-live="polite"
-            className={`mt-3 text-xs font-medium ${
-              quickFeedback.type === 'error'
-                ? 'text-red-600 dark:text-red-400'
-                : 'text-emerald-700 dark:text-emerald-300'
-            }`}
-          >
-            {quickFeedback.message}
-          </div>
-        )}
-      </section>
+      {activeView === 'cashflow' && quickAddOutgoingSection}
 
       {/* 4. Weekly Cashflow, Outgoings & Rolling Tally Table (Mon–Sun Weeks) */}
       <section aria-labelledby="weekly-cash-heading" className="space-y-3">

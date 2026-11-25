@@ -30,6 +30,8 @@ describe('finance work queues', () => {
         expect(isFinanceWorkspaceView({create:'true'})).toBe(false);
         expect(isFinanceWorkspaceView({view:'history'})).toBe(false);
         expect(isFinanceWorkspaceView({view:'families'})).toBe(false);
+        expect(isFinanceWorkspaceView({view:'cashflow'})).toBe(false);
+        expect(isFinanceWorkspaceView({view:'outgoings'})).toBe(false);
     });
     it('keeps paid October, unpaid November and upcoming December distinct', () => {
         const oct = invoice('oct',{status:'paid',billingPeriodStart:'2026-10-06',billingPeriodEnd:'2026-11-05',payments:[{id:'p',amount:'1900',status:'verified',recordedAt:today}]});

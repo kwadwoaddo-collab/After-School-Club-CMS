@@ -357,7 +357,7 @@ export default function FinanceWorkspace({ invoices, cycles, today, invoiceError
                 <div className="max-w-prose space-y-2 border-t border-border pt-3 text-muted-foreground">
                     <p><strong className="text-foreground">Upcoming periods</strong> contains drafts for future periods. Review their timing before issuing.</p>
                     <p><strong className="text-foreground">Historical drafts to check</strong> contains drafts for completed periods. They are preserved separately and excluded from the current-draft count. Check existing invoices and payments before issuing; do not issue an old draft simply to clear the list.</p>
-                    <p><strong className="text-foreground">Where to find records:</strong> use <strong>All invoices</strong> to browse invoice history, <strong>Family accounts</strong> for billing setup, and <strong>Receipts</strong> for payment receipts. Issuing and recording payment are separate actions.</p>
+                    <p><strong className="text-foreground">Where to find records:</strong> use <strong>All invoices</strong> to browse invoice history, <strong>Family accounts</strong> for billing setup, and <strong>Parent receipts</strong> for payment receipts. Issuing and recording payment are separate actions.</p>
                 </div>
             </div>
         </details>
