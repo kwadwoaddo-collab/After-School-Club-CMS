@@ -8,6 +8,7 @@ import { requireApiAuth } from '@/lib/require-auth';
 import { confirmedEnrolmentChildSql } from '@/lib/enrolment/finance-eligibility';
 import { enrolmentBusinessDate } from '@/lib/enrolment/business-date';
 import { isValidEnrolmentStartDate } from '@/lib/enrolment/start-date';
+import { logger } from '@/lib/logger';
 import { readEnrolmentStart } from '@/features/students/enrolment-start-query';
 
 const input = z.object({ startDate: z.string().refine(isValidEnrolmentStartDate), reason: z.string().trim().min(5).max(1000), expectedVersion: z.uuid().nullable(), correctionId: z.uuid() }).strict();
@@ -50,7 +51,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         if ('error' in result) return NextResponse.json({ error: result.error }, { status: result.status });
         revalidatePath(`/dashboard/students/${id}`); revalidatePath(`/dashboard/parents/${result.parentId}`); revalidatePath('/dashboard/students');
         return NextResponse.json({ success: true });
-    } catch {
+    } catch (error) {
+        logger.error('[StudentStartDate] Unexpected error:', error);
         return NextResponse.json({ error: 'The correction was not confirmed. Reload the profile and review the start date before trying again.' }, { status: 500 });
     }
 }
