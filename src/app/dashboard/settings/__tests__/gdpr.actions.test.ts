@@ -35,11 +35,22 @@ vi.mock('@/lib/logger', () => ({
 import { db } from '@/db';
 import { requireTenantSession } from '@/lib/session';
 import { getUserAccessibleCentres } from '@/lib/permissions';
-import { exportOrganisationData, WHOLE_ORG_EXPORT_SAR_NOTICE } from '../gdpr.actions';
+import * as gdprActionsModule from '../gdpr.actions';
+import { exportOrganisationData } from '../gdpr.actions';
+import { WHOLE_ORG_EXPORT_SAR_NOTICE } from '../gdpr.constants';
 
 describe('exportOrganisationData (UK GDPR controller archive & audit logging)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it('exports only async functions from the "use server" module for Next.js 16 Turbopack compatibility', () => {
+    const entries = Object.entries(gdprActionsModule);
+    expect(entries.length).toBeGreaterThan(0);
+    for (const [, value] of entries) {
+      expect(typeof value).toBe('function');
+      expect(value.constructor.name).toBe('AsyncFunction');
+    }
   });
 
   it('returns Unauthorised when session has no organisationId and writes no audit event', async () => {
