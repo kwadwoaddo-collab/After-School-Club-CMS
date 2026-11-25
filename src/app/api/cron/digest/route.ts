@@ -2,7 +2,7 @@ import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { verifyCronAuthorization } from '@/lib/cron-auth';
-import { users, notifications, auditEvents } from '@/db/schema';
+import { organisations, users, notifications, auditEvents } from '@/db/schema';
 import { eq, and, inArray, gte, lt } from 'drizzle-orm';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { sendEmail } from '@/lib/services/email';
@@ -18,21 +18,18 @@ export const maxDuration = 60;
 const CRON_BUDGET_MS = 50_000;
 const DIGEST_AUDIT_EVENT_TYPES = ['daily_digest_sent', 'daily_digest_dispatched'] as const;
 
+type ScopeMetrics = {
+    drafts: Awaited<ReturnType<typeof fetchDraftsToReview>>;
+    setupRequired: Awaited<ReturnType<typeof fetchBillingSetupRequired>>;
+    paymentsExpected: Awaited<ReturnType<typeof fetchPaymentsExpected>>;
+    overdueInvoices: Awaited<ReturnType<typeof fetchOverdueInvoices>>;
+};
+
 /**
  * POST /api/cron/digest
  *
  * Daily operational finance digest cron job (§49, B17, Issue C).
  * Runs at 07:00 UTC daily (`0 7 * * *` in `vercel.json`, after the 06:00 UTC billing generation run).
- *
- * Recipient Resolution:
- *  - ORG_OWNER: Organisation-wide metrics
- *  - MANAGER: Centre-scoped metrics for their assigned centres
- *
- * Exception-Based & Idempotent Delivery:
- *  - Per-recipient daily idempotency (`(organisationId, userId, todayUtc)`) prevents duplicate
- *    emails/notifications when a partial run is retried on the same UTC date.
- *  - If totalExceptions === 0, digest delivery is suppressed (no empty spam).
- *  - When exceptions exist: inserts in-app notification, sends email, and logs `daily_digest_sent` audit event.
  *
  * Secured by CRON_SECRET header (timing-safe via verifyCronAuthorization).
  */
@@ -54,7 +51,39 @@ export async function POST(request: NextRequest) {
     const tomorrowUtcStart = new Date(todayUtcStart.getTime() + 86_400_000);
 
     try {
-        const activeOrgs = await db.query.organisations.findMany();
+        const fetchedOrgs = await db.query.organisations.findMany({
+            where: eq(organisations.approvalStatus, 'ACTIVE'),
+        });
+        const activeOrgs = fetchedOrgs.filter((org) => {
+            const status = (org as { approvalStatus?: string }).approvalStatus;
+            return !status || status === 'ACTIVE';
+        });
+
+        // Memoise finance exception metrics per (orgId, canonicalScopeKey) across recipients in one invocation
+        const scopeMetricsCache = new Map<string, Promise<ScopeMetrics>>();
+        const getMetricsForScope = (orgId: string, centreScope: string | string[]): Promise<ScopeMetrics> => {
+            const scopeKey = Array.isArray(centreScope)
+                ? `centres:${[...centreScope].sort().join(',')}`
+                : 'all';
+            const cacheKey = `${orgId}:${scopeKey}`;
+            const existing = scopeMetricsCache.get(cacheKey);
+            if (existing) return existing;
+
+            const promise = Promise.all([
+                fetchDraftsToReview(orgId, centreScope),
+                fetchBillingSetupRequired(orgId, centreScope),
+                fetchPaymentsExpected(orgId, centreScope),
+                fetchOverdueInvoices(orgId, centreScope),
+            ]).then(([drafts, setupRequired, paymentsExpected, overdueInvoices]) => ({
+                drafts,
+                setupRequired,
+                paymentsExpected,
+                overdueInvoices,
+            }));
+
+            scopeMetricsCache.set(cacheKey, promise);
+            return promise;
+        };
 
         let totalNotificationsSent = 0;
         let totalEmailsSent = 0;
@@ -120,11 +149,13 @@ export async function POST(request: NextRequest) {
                     centreScope = userCentres;
                 }
 
-                // Query metrics for this recipient's scope
-                const drafts = await fetchDraftsToReview(org.id, centreScope);
-                const setupRequired = await fetchBillingSetupRequired(org.id, centreScope);
-                const paymentsExpected = await fetchPaymentsExpected(org.id, centreScope);
-                const overdueInvoices = await fetchOverdueInvoices(org.id, centreScope);
+                // Query metrics concurrently and reuse per-(org, scope) within this invocation
+                const {
+                    drafts,
+                    setupRequired,
+                    paymentsExpected,
+                    overdueInvoices,
+                } = await getMetricsForScope(org.id, centreScope);
 
                 const draftsCount = drafts.length;
                 const setupCount = setupRequired.length;
@@ -322,6 +353,10 @@ export async function POST(request: NextRequest) {
     }
 }
 
+/**
+ * GET /api/cron/digest
+ * Vercel Cron invokes scheduled routes via GET. Delegates to POST handler.
+ */
 export async function GET(request: NextRequest) {
     return POST(request);
 }

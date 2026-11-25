@@ -13,23 +13,22 @@ const EMAIL_IN_STRING_RE = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
 const TOKEN_QUERY_RE = /(?:^|[?&\s])token=|magicLinkToken=/i;
 
 /**
+ * Redacts PII (email addresses) and URL token query parameters from free-text
+ * strings without wiping scoped npm package frames (`@scope/pkg`) or SQL
+ * column identifiers (`magic_link_token`).
+ */
+function redactString(str: string): string {
+  if (TOKEN_QUERY_RE.test(str)) {
+    return '[REDACTED_TOKEN_URL]';
+  }
+  return str.replace(EMAIL_IN_STRING_RE, '[REDACTED_EMAIL]');
+}
+
+/**
  * Every call site in this codebase logs like `logger.error('message', err)`
  * or `logger.error('message', someValue)` — i.e. treats the second argument
  * the way `console.error(message, ...args)` works, not as a structured
- * `LogContext` object. That is the actual, consistent calling convention
- * (see architecture-decisions.md, "Logger context typing"), so the public
- * signature accepts it directly instead of requiring ~350 call sites to be
- * rewritten to fit a shape nothing actually uses.
- *
- * normalizeContext turns whatever was passed into a LogContext for `log()`
- * to redact/serialize. This also fixes a real runtime bug, not just a type
- * mismatch: `Error` instances have non-enumerable `message`/`stack`
- * properties (`JSON.stringify(new Error('x'))` is `"{}"`), so every prior
- * `logger.error('msg', someError)` call was silently logging an empty
- * object and forwarding no error detail to Sentry's `extra`. Every other
- * non-object value (a string, a number, an array, a caught `unknown`) hit
- * the same problem — `...redactedContext` spreads nothing useful from a
- * non-plain-object. This wraps those cases so the detail is actually kept.
+ * `LogContext` object.
  */
 function normalizeContext(context: unknown): LogContext | undefined {
   if (context === undefined || context === null) return undefined;
@@ -46,9 +45,6 @@ function normalizeContext(context: unknown): LogContext | undefined {
     return context as LogContext;
   }
 
-  // Primitives, arrays, or a caught `unknown` that isn't an Error instance
-  // (e.g. a thrown string) — wrap so it's still captured instead of
-  // silently dropped by the `...redactedContext` spread below.
   return { detail: context };
 }
 
@@ -57,12 +53,7 @@ function redact(obj: unknown): unknown {
   if (!obj) return obj;
   if (typeof obj !== 'object') {
     if (typeof obj === 'string') {
-      // Redact magic links / authorization query tokens without wiping SQL column names (e.g. magic_link_token)
-      if (TOKEN_QUERY_RE.test(obj)) {
-        return '[REDACTED_TOKEN_URL]';
-      }
-      // Redact email addresses in-place without wiping stack traces containing @scope/package.js
-      return obj.replace(EMAIL_IN_STRING_RE, '[REDACTED_EMAIL]');
+      return redactString(obj);
     }
     return obj;
   }
@@ -100,12 +91,13 @@ function redact(obj: unknown): unknown {
 
 export const logger = {
   log(level: LogLevel, message: string, context?: unknown) {
+    const safeMessage = typeof message === 'string' ? redactString(message) : String(message);
     const normalizedContext = normalizeContext(context);
     const redactedContext = normalizedContext ? (redact(normalizedContext) as LogContext) : undefined;
     const logData = {
       timestamp: new Date().toISOString(),
       level,
-      message,
+      message: safeMessage,
       ...redactedContext,
     };
 
@@ -121,17 +113,17 @@ export const logger = {
       const reset = '\x1b[0m';
       const color = colorMap[level] || reset;
       const contextStr = redactedContext ? ` ${JSON.stringify(redactedContext)}` : '';
-      console.log(`${color}[${level.toUpperCase()}]${reset} ${message}${contextStr}`);
+      console.log(`${color}[${level.toUpperCase()}]${reset} ${safeMessage}${contextStr}`);
     }
 
-    // Forward warnings and errors to Sentry
+    // Forward warnings and errors to Sentry with redacted message
     if (level === 'error') {
-      Sentry.captureMessage(message, {
+      Sentry.captureMessage(safeMessage, {
         level: 'error',
         extra: redactedContext,
       });
     } else if (level === 'warn') {
-      Sentry.captureMessage(message, {
+      Sentry.captureMessage(safeMessage, {
         level: 'warning',
         extra: redactedContext,
       });

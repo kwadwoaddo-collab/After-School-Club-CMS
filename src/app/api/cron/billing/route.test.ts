@@ -101,7 +101,7 @@ describe('Cron Billing Route (§9, Phase 11)', () => {
         expect(data.generated).toBe(0);
     });
 
-    it('Skips configs that are not due yet', async () => {
+    it('Skips configs that are not due yet without executing N+1 eligibility DB queries', async () => {
         const { POST } = await import('./route');
         mockDbQuery.billingConfigs.findMany.mockResolvedValue([
             {
@@ -128,6 +128,77 @@ describe('Cron Billing Route (§9, Phase 11)', () => {
         expect(data.processed).toBe(1);
         expect(data.skipped_not_due).toBe(1);
         expect(data.generated).toBe(0);
+        expect(mockEligibleRows).not.toHaveBeenCalled();
+    });
+
+    it('Excludes billing configs belonging to SUSPENDED or PENDING organisations', async () => {
+        const { POST } = await import('./route');
+        mockDbQuery.billingConfigs.findMany.mockResolvedValue([
+            {
+                id: 'cfg-suspended',
+                parentId: 'parent-suspended',
+                centreId: 'c-suspended',
+                organisationId: 'o-suspended',
+                status: 'active',
+                billingAnchorDate: '2026-01-01',
+                agreedMonthlyPence: 10000,
+                centre: { id: 'c-suspended', organisation: { id: 'o-suspended', approvalStatus: 'SUSPENDED' } },
+                runs: [],
+                skips: [],
+                children: [{ child: { id: 'child-1', firstName: 'Alice', lastName: 'Smith' } }],
+            },
+        ]);
+
+        const req = new NextRequest('http://localhost/api/cron/billing', {
+            headers: new Headers({ 'Authorization': 'Bearer test-secret' }),
+        });
+        const res = await POST(req);
+        expect(res.status).toBe(200);
+        const data = await res.json();
+        expect(data.processed).toBe(0);
+        expect(data.generated).toBe(0);
+        expect(mockTransaction).not.toHaveBeenCalled();
+    });
+
+    it('Sanitizes per-config and fatal 500 error payloads so SQL details never leak in HTTP responses', async () => {
+        const { POST } = await import('./route');
+        mockDbQuery.billingConfigs.findMany.mockResolvedValueOnce([
+            {
+                id: 'cfg-sql-err',
+                parentId: 'parent-err',
+                centreId: 'c-1',
+                organisationId: 'o-1',
+                status: 'active',
+                billingAnchorDate: '2026-01-01',
+                agreedMonthlyPence: 10000,
+                runs: [],
+                skips: [],
+                children: [{ child: { id: 'child-1', firstName: 'Alice', lastName: 'Smith' } }],
+            },
+        ]);
+        mockTransaction.mockRejectedValueOnce(new Error('duplicate key value violates unique constraint "invoices_pkey"'));
+
+        const res = await POST(new NextRequest('http://localhost/api/cron/billing', {
+            headers: new Headers({ 'Authorization': 'Bearer test-secret' }),
+        }));
+        expect(res.status).toBe(200);
+        const body = await res.json();
+        expect(body.errors).toBe(1);
+        expect(body.errorDetails).toEqual([
+            { configId: 'cfg-sql-err', errorCode: 'billing_generation_failed' },
+        ]);
+        expect(JSON.stringify(body)).not.toContain('invoices_pkey');
+
+        mockDbQuery.billingConfigs.findMany.mockRejectedValueOnce(
+            new Error('connection to server at "ep-secret.neon.tech" failed'),
+        );
+        const fatalRes = await POST(new NextRequest('http://localhost/api/cron/billing', {
+            headers: new Headers({ 'Authorization': 'Bearer test-secret' }),
+        }));
+        expect(fatalRes.status).toBe(500);
+        const fatalBody = await fatalRes.json();
+        expect(fatalBody).toEqual({ error: 'Cron failed' });
+        expect(JSON.stringify(fatalBody)).not.toContain('neon.tech');
     });
 
     it('Respects billing cycle skips by manager for current/upcoming periods and never walks historical periods', async () => {

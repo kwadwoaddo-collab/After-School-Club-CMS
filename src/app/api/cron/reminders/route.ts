@@ -2,7 +2,7 @@ import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { bookings } from '@/db/schema';
-import { and, gte, lte } from 'drizzle-orm';
+import { and, gte, lte, ne } from 'drizzle-orm';
 import { startOfDay, endOfDay, addDays } from 'date-fns';
 import { Resend } from 'resend';
 import { InferSelectModel } from 'drizzle-orm';
@@ -55,13 +55,14 @@ export async function POST(req: NextRequest) {
     const tomorrowEnd = endOfDay(tomorrow);
     const reminderDateKey = tomorrowStart.toISOString().slice(0, 10);
 
-    // ── 2. Fetch tomorrow's confirmed bookings ───────────────────────────────
+    // ── 2. Fetch tomorrow's non-cancelled bookings ───────────────────────────
     let upcomingBookings: ReminderBooking[];
     try {
         upcomingBookings = await db.query.bookings.findMany({
             where: and(
                 gte(bookings.startAt, tomorrowStart),
-                lte(bookings.startAt, tomorrowEnd)
+                lte(bookings.startAt, tomorrowEnd),
+                ne(bookings.status, 'cancelled'),
             ),
             with: {
                 parent: true,
@@ -94,7 +95,11 @@ export async function POST(req: NextRequest) {
         }
 
         if (!booking.parent?.email) continue;
+        if (booking.parent.deletedAt) continue;
         if (booking.status === 'cancelled') continue;
+
+        const orgApprovalStatus = booking.centre?.organisation?.approvalStatus;
+        if (orgApprovalStatus && orgApprovalStatus !== 'ACTIVE') continue;
 
         const orgName = booking.centre?.organisation?.name || 'After School Club';
         const centreName = booking.centre?.name || '';
@@ -105,7 +110,11 @@ export async function POST(req: NextRequest) {
         const sessionDate = booking.startAt.toLocaleDateString('en-GB', {
             weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Europe/London'
         });
-        const childNames = (booking.attendees ?? []).map((a) => a.child?.firstName).filter(Boolean).join(', ');
+        const childNames = (booking.attendees ?? [])
+            .filter((a) => !a.child?.deletedAt)
+            .map((a) => a.child?.firstName)
+            .filter(Boolean)
+            .join(', ');
 
         const html = `<!DOCTYPE html>
 <html>
@@ -161,9 +170,6 @@ export async function POST(req: NextRequest) {
             );
             sent++;
         } catch (err) {
-            // Previously called as logger.error(msg, booking.id, err) — a
-            // 3rd positional argument logger.error doesn't accept, so
-            // booking.id was silently dropped and never actually logged.
             logger.error('[Reminder] Failed to send for booking', { bookingId: booking.id, error: err });
             errors++;
         }

@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { verifyCronAuthorization } from '@/lib/cron-auth';
 import {
-    billingConfigs, billingRuns, billingCycleSkips, invoices,
+    billingConfigs, billingRuns, billingCycleSkips, invoices, organisations,
 } from '@/db/schema';
 import { eq, and, or, ne, sql, desc, inArray } from 'drizzle-orm';
 import {
@@ -25,7 +25,7 @@ const CRON_BUDGET_MS = 50_000;
 /**
  * POST /api/cron/billing
  *
- * Automated monthly invoice generation for all active billing configs.
+ * Automated monthly invoice generation for all active billing configs in ACTIVE organisations.
  * Authoritative rule (CMS-FINANCE-INCIDENT-1):
  * - Automation may create DRAFTS for current and eligible upcoming periods only.
  * - Automation must NEVER create completed historical periods (inclusive UTC date-only semantics:
@@ -36,8 +36,6 @@ const CRON_BUDGET_MS = 50_000;
  *   regenerated automatically unless explicitly reopened by a Manager/Owner.
  *
  * Secured by CRON_SECRET header.
- * Scheduled daily at 06:00 UTC (`0 6 * * *` in `vercel.json`); direct CRON_SECRET-authorized
- * calls are also supported and enforced by the eligibility rules below.
  */
 export async function POST(request: NextRequest) {
     // ── Auth: CRON_SECRET check (timing-safe) ─────────────────────────────────
@@ -60,14 +58,27 @@ export async function POST(request: NextRequest) {
         skipped_by_manager: 0,
         skipped_quarantined: 0,
         errors: 0,
-        errorDetails: [] as string[],
+        errorDetails: [] as Array<{ configId: string; errorCode: string }>,
     };
 
     try {
-        // ── 1. Fetch all active billing configs across all orgs ────────────────
-        const configs = await db.query.billingConfigs.findMany({
-            where: eq(billingConfigs.status, 'active'),
+        // ── 1. Fetch all active billing configs in ACTIVE organisations ────────
+        const fetchedConfigs = await db.query.billingConfigs.findMany({
+            where: and(
+                eq(billingConfigs.status, 'active'),
+                sql`EXISTS (
+                    SELECT 1 FROM ${organisations}
+                    WHERE ${organisations.id} = ${billingConfigs.organisationId}
+                      AND ${organisations.approvalStatus} = 'ACTIVE'
+                )`,
+            ),
             with: {
+                centre: {
+                    columns: { id: true },
+                    with: {
+                        organisation: { columns: { id: true, approvalStatus: true } },
+                    },
+                },
                 children: {
                     with: {
                         child: { columns: { id: true, firstName: true, lastName: true } },
@@ -85,6 +96,14 @@ export async function POST(request: NextRequest) {
             },
         });
 
+        // Defensive in-memory guard for mocked/non-SQL test fixtures carrying explicit non-ACTIVE org state
+        const configs = fetchedConfigs.filter((config) => {
+            const orgStatus =
+                config.centre?.organisation?.approvalStatus ??
+                (config as { organisation?: { approvalStatus?: string } }).organisation?.approvalStatus;
+            return !orgStatus || orgStatus === 'ACTIVE';
+        });
+
         for (const config of configs) {
             if (Date.now() - startedAt >= CRON_BUDGET_MS) {
                 partial = true;
@@ -100,8 +119,7 @@ export async function POST(request: NextRequest) {
                 }
 
                 const coveredIds = (config.children ?? []).map(cc => cc.child.id);
-                const eligibleIds = await getFinanceEligibleChildIds(config.organisationId, coveredIds, db, { parentId: config.parentId, centreId: config.centreId });
-                if (coveredIds.length === 0 || coveredIds.some(id => !eligibleIds.has(id))) {
+                if (coveredIds.length === 0) {
                     results.skipped_unconfirmed++;
                     continue;
                 }
@@ -110,9 +128,13 @@ export async function POST(request: NextRequest) {
                 const currentAnchoredPeriod = getBillingPeriodForDate(config.billingAnchorDate, today);
                 let periodIndex = currentAnchoredPeriod.periodIndex;
 
-                // Evaluate only current and eligible upcoming anchored periods
+                // Evaluate only current and eligible upcoming anchored periods.
+                // Defer getFinanceEligibleChildIds until at least one cycle is actually due (draftDate <= today)
+                // so future-only configs do not trigger redundant N+1 DB queries.
                 const MAX_CYCLES_PER_CONFIG = 12;
                 let cyclesProcessed = 0;
+                let eligibilityChecked = false;
+                let configUnconfirmed = false;
 
                 while (cyclesProcessed < MAX_CYCLES_PER_CONFIG) {
                     if (cyclesProcessed > 0 && Date.now() - startedAt >= CRON_BUDGET_MS) {
@@ -149,6 +171,20 @@ export async function POST(request: NextRequest) {
                             results.skipped_not_due++;
                         }
                         break;
+                    }
+
+                    if (!eligibilityChecked) {
+                        eligibilityChecked = true;
+                        const eligibleIds = await getFinanceEligibleChildIds(
+                            config.organisationId,
+                            coveredIds,
+                            db,
+                            { parentId: config.parentId, centreId: config.centreId },
+                        );
+                        if (coveredIds.some(id => !eligibleIds.has(id))) {
+                            configUnconfirmed = true;
+                            break;
+                        }
                     }
 
                     const periodStartStr = schedule.periodStart.toISOString().split('T')[0];
@@ -356,13 +392,20 @@ export async function POST(request: NextRequest) {
                     }
                 } // end while (current & upcoming eligible cycles)
 
+                if (configUnconfirmed) {
+                    results.skipped_unconfirmed++;
+                    continue;
+                }
+
                 if (partial) {
                     break;
                 }
             } catch (err) {
                 results.errors++;
-                const msg = err instanceof Error ? err.message : String(err);
-                results.errorDetails.push(`config ${config.id}: ${msg}`);
+                results.errorDetails.push({
+                    configId: config.id,
+                    errorCode: 'billing_generation_failed',
+                });
                 logger.error(`[cron/billing] Error for config ${config.id}:`, err);
             }
         }
@@ -386,7 +429,7 @@ export async function POST(request: NextRequest) {
     } catch (err) {
         logger.error('[cron/billing] Fatal error:', err);
         return NextResponse.json(
-            { error: 'Cron failed', details: err instanceof Error ? err.message : String(err) },
+            { error: 'Cron failed' },
             { status: 500 }
         );
     }

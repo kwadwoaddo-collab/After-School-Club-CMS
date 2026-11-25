@@ -2,27 +2,17 @@
 
 import { db } from '@/db';
 import { parents, broadcasts, broadcastDeliveries, bookings, clubSessions, auditEvents } from '@/db/schema';
-import { eq, inArray, and, sql } from 'drizzle-orm';
+import { eq, inArray, and, isNull, sql } from 'drizzle-orm';
 import { requireTenantSession, TypedSession } from '@/lib/session';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
 import { revalidatePath } from 'next/cache';
-import { processBroadcastDeliveries, escapeHtml } from './delivery';
+import { processBroadcastDeliveries } from './delivery';
 
 /**
- * Milestone 3H, C1-C4: `sendBroadcast` previously took `organisationId` as a
- * caller-supplied argument and never called `auth()` at all — no session
- * check of any kind. Its recipient query
- * (`db.query.parents.findMany({ where: inArray(parents.id, audienceParentIds) })`)
- * had no organisation filter, and `communicationsConsent` was filtered only
- * client-side in CommunicationsClient.tsx, never re-verified here. Any
- * request that could reach this server action could broadcast a real email,
- * under any organisation's name, to any parent in the database — consented
- * or not. See project-notes/milestone-3h-communications-audit.md, C1-C4.
- *
- * PM-2B: Replaced detached in-memory execution with a durable transactional
- * outbox. Broadcast headers, recipient delivery ledger rows, and audit events
- * are atomically committed to PostgreSQL before any external transmission.
+ * Milestone 3H, C1-C4 & Wave 4B:
+ * Durable transactional broadcast queueing with server-side communications
+ * consent re-derivation, centre RBAC scoping, and soft-deleted parent exclusion.
  */
 export async function sendBroadcast(data: {
   centreId?: string;
@@ -71,9 +61,8 @@ export async function sendBroadcast(data: {
       ? sql`AND ${inArray(bookings.centreId, scopedCentreIdsForConsent)}`
       : sql``;
 
-  // Re-derive CURRENT consent server-side rather than trusting the client's own filtering.
-  // Instead of bool_or (which caused any historical true booking to permanently override later withdrawals),
-  // we select the latest booking's communicationsConsent ordered by createdAt DESC, id DESC.
+  // Re-derive CURRENT consent server-side rather than trusting the client's own filtering,
+  // excluding soft-deleted parents (UK GDPR erasure / bin isolation).
   const consentRows = await db.select({
     id: parents.id,
     firstName: parents.firstName,
@@ -94,19 +83,18 @@ export async function sendBroadcast(data: {
     .where(and(
       inArray(parents.id, data.audienceParentIds),
       eq(parents.organisationId, organisationId),
+      isNull(parents.deletedAt),
     ));
 
   const targetParents = consentRows.filter(
     (p) =>
       p.communicationsConsent &&
       p.email &&
+      !(p as { deletedAt?: Date | null }).deletedAt &&
       (!scopedCentreIdsForConsent || !(p as { centreId?: string }).centreId || scopedCentreIdsForConsent.includes((p as { centreId?: string }).centreId!))
   );
 
   // PM-2B.C: Deduplicate by destination email address deterministically.
-  // If multiple eligible parent records share the same email (e.g. family sharing an account),
-  // exactly one delivery record is queued per destination address to prevent spam and preserve
-  // the UNIQUE(broadcast_id, recipient_email) database constraint.
   const seenEmails = new Set<string>();
   const uniqueTargetParents: typeof targetParents = [];
 
@@ -170,9 +158,6 @@ export async function sendBroadcast(data: {
     return createdBroadcast;
   });
 
-  // Short post-commit bounded immediate processing attempt.
-  // All work is already safely persisted in the database outbox; if this process
-  // dies, serverless invocation halts, or skipImmediateProcessing is set, the recovery cron picks up remaining rows.
   if (!data.skipImmediateProcessing) {
     try {
       await processBroadcastDeliveries({ broadcastId: broadcast.id, limit: 50 });
@@ -193,16 +178,6 @@ export async function sendBroadcast(data: {
   };
 }
 
-/**
- * Milestone 3H, C4/C5: none of the three read functions below checked
- * getUserAccessibleCentreIds for non-owner roles — a caller-supplied
- * centreId was trusted outright, so a MANAGER/FRONT_DESK assigned only to
- * Centre A could call any of these with Centre B's id (same org) and read
- * Centre B's parent contact data / broadcast history / class list. Fixed
- * with the same non-owner centre-check pattern used throughout
- * finance/actions.ts. Kept as a small local helper rather than a new
- * shared module since it's only used by the three functions in this file.
- */
 const COMMUNICATIONS_ALLOWED_ROLES = ['ORG_OWNER', 'MANAGER', 'FRONT_DESK'] as const;
 
 async function resolveReadableCentreScope(
@@ -302,7 +277,10 @@ export async function getParentsForCentre(centreId: string, classId?: string) {
   .from(parents)
   .leftJoin(bookings, eq(parents.id, bookings.parentId));
 
-  const conditions = [eq(parents.organisationId, session.user.organisationId)];
+  const conditions = [
+    eq(parents.organisationId, session.user.organisationId),
+    isNull(parents.deletedAt),
+  ];
 
   if (centreId !== 'all') {
     conditions.push(eq(bookings.centreId, centreId));
