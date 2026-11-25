@@ -3,7 +3,7 @@ import { logger } from '@/lib/logger';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 
-import { useState, useTransition, useOptimistic, useEffect } from 'react';
+import { useState, useTransition, useOptimistic, useEffect, useRef } from 'react';
 import { markAttendeeAttendance } from '@/features/bookings/actions';
 import { queueOfflineAction, getUnsyncedActions, markActionSynced } from '@/lib/offline-sync';
 import {
@@ -840,13 +840,68 @@ function StudentCard({
     );
 }
 
+const KIOSK_REFRESH_INTERVAL_MS = 60_000;
+
+export function KioskClock() {
+    const [now, setNow] = useState(() => new Date());
+
+    useEffect(() => {
+        let timeoutId: ReturnType<typeof setTimeout> | null = null;
+        let intervalId: ReturnType<typeof setInterval> | null = null;
+
+        const clearTimers = () => {
+            if (timeoutId !== null) {
+                clearTimeout(timeoutId);
+                timeoutId = null;
+            }
+            if (intervalId !== null) {
+                clearInterval(intervalId);
+                intervalId = null;
+            }
+        };
+
+        const armMinuteTimer = () => {
+            clearTimers();
+            const msUntilNextMinute = 60_000 - (Date.now() % 60_000);
+            timeoutId = setTimeout(() => {
+                setNow(new Date());
+                intervalId = setInterval(() => setNow(new Date()), 60_000);
+            }, msUntilNextMinute);
+        };
+
+        armMinuteTimer();
+
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                setNow(new Date());
+                armMinuteTimer();
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => {
+            clearTimers();
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, []);
+
+    return (
+        <div
+            suppressHydrationWarning
+            className="text-text font-bold text-4xl tabular-nums tracking-tight"
+        >
+            {format(now, 'HH:mm')}
+        </div>
+    );
+}
+
 // ── Main Kiosk Register ───────────────────────────────────────────────────────
 export default function KioskRegister({ slots, date, dateStr, centreName, centres, activeCentreId }: Props) {
     const router = useRouter();
     const { toast } = useToast();
     const [slotIdx, setSlotIdx] = useState(0);
     const [isFullscreen, setIsFullscreen] = useState(false);
-    const [clock, setClock] = useState(() => new Date());
+    const lastRefreshAtRef = useRef<number>(0);
     const [large, setLarge] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [showUnmarkedOnly, setShowUnmarkedOnly] = useState(false);
@@ -865,16 +920,35 @@ export default function KioskRegister({ slots, date, dateStr, centreName, centre
     const resolvedDateStr = dateStr || new Date().toISOString().slice(0, 10);
     const activeSlot = slots.length > 0 ? slots[Math.min(slotIdx, slots.length - 1)] : null;
 
-    // Live clock
+    // Auto-refresh every 60s when tab is visible; refresh on return if stale (>60s)
     useEffect(() => {
-        const t = setInterval(() => setClock(new Date()), 1000);
-        return () => clearInterval(t);
-    }, []);
+        lastRefreshAtRef.current = Date.now();
 
-    // Auto-refresh every 60s
-    useEffect(() => {
-        const t = setInterval(() => router.refresh(), 60_000);
-        return () => clearInterval(t);
+        const triggerRefresh = () => {
+            lastRefreshAtRef.current = Date.now();
+            router.refresh();
+        };
+
+        const t = setInterval(() => {
+            if (document.visibilityState === 'visible') {
+                triggerRefresh();
+            }
+        }, KIOSK_REFRESH_INTERVAL_MS);
+
+        const handleVisibilityChange = () => {
+            if (
+                document.visibilityState === 'visible' &&
+                Date.now() - lastRefreshAtRef.current >= KIOSK_REFRESH_INTERVAL_MS
+            ) {
+                triggerRefresh();
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => {
+            clearInterval(t);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
     }, [router]);
 
     // Offline sync manager
@@ -899,6 +973,7 @@ export default function KioskRegister({ slots, date, dateStr, centreName, centre
                     }
                 }
                 toast({ title: 'Sync complete', message: 'All offline check-ins uploaded.', variant: 'success' });
+                lastRefreshAtRef.current = Date.now();
                 router.refresh();
             }
         };
@@ -992,12 +1067,10 @@ export default function KioskRegister({ slots, date, dateStr, centreName, centre
                     <p className="text-text-muted text-xs mt-0.5 font-medium">{date}</p>
                 </div>
 
-                <div className="text-text font-bold text-4xl tabular-nums tracking-tight">
-                    {format(clock, 'HH:mm')}
-                </div>
+                <KioskClock />
 
                 <div className="flex items-center gap-2">
-                    <Button variant="outline" size="icon" onClick={() => router.refresh()} aria-label="Refresh register" title="Refresh">
+                    <Button variant="outline" size="icon" onClick={() => { lastRefreshAtRef.current = Date.now(); router.refresh(); }} aria-label="Refresh register" title="Refresh">
                         <RefreshCw className="w-4 h-4" />
                     </Button>
                     <Button variant="outline" size="icon" onClick={() => setLarge(v => !v)} aria-label="Toggle card density" title="Toggle size">
