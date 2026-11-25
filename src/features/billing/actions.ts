@@ -7,6 +7,7 @@
 
 import { requireTenantSession, TypedSession } from '@/lib/session';
 import { db } from '@/db';
+import { isServiceType, normaliseServiceType, type ServiceType } from '@/features/finance/service-type';
 import { billingConfigs, billingConfigChildren, billingRuns, billingCycleSkips, invoices, children, auditEvents, payments, registrationChildren, registrations } from '@/db/schema';
 import { eq, and, sql, ne, inArray, isNull, desc, or } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
@@ -285,6 +286,8 @@ export interface BillingConfigData {
     leadTimeUnit?:      LeadTimeUnit | null;
     leadTimeValue?:     number | null;
     notes?:             string;
+    /** Per-family service type; defaults to childcare. */
+    serviceType?:       ServiceType;
     childIds:           string[]; // which children to cover
     confirmEnrolment?:  InlineEnrolmentConfirmationInput;
 }
@@ -301,6 +304,7 @@ export async function createBillingConfig(data: BillingConfigData) {
     if (!['ORG_OWNER', 'MANAGER'].includes(session.user.role)) throw new Error('Only an Owner or Manager can review family billing');
     if (!Number.isInteger(data.agreedMonthlyPence) || data.agreedMonthlyPence <= 0) throw new Error('Enter the agreed family fee before billing review');
 
+    if (data.serviceType !== undefined && !isServiceType(data.serviceType)) throw new Error('Choose Childcare or Tuition as the service type');
     if (data.childIds.length === 0) throw new Error('Select at least one confirmed signed-up student for billing');
     if (data.childIds.length > 0 && !data.confirmEnrolment?.confirmed) {
         const validChildren = await db.select({ id: children.id })
@@ -366,6 +370,7 @@ export async function createBillingConfig(data: BillingConfigData) {
             leadTimeUnit:       data.leadTimeUnit ?? null,
             leadTimeValue:      data.leadTimeValue ?? null,
             notes:              data.notes ?? null,
+            serviceType:        normaliseServiceType(data.serviceType),
             status:             'active',
         }).returning();
 
@@ -388,6 +393,7 @@ export async function createBillingConfig(data: BillingConfigData) {
                 parentId: data.parentId,
                 centreId: data.centreId,
                 agreedMonthlyPence: data.agreedMonthlyPence ?? 0,
+                serviceType: normaliseServiceType(data.serviceType),
             }),
         });
 
@@ -432,6 +438,7 @@ export async function updateBillingConfig(
     if ((data.agreedMonthlyPence !== undefined || data.billingAnchorDate !== undefined || data.childIds !== undefined || data.confirmEnrolment?.confirmed) && !['ORG_OWNER', 'MANAGER'].includes(session.user.role)) throw new Error('Only an Owner or Manager can review family billing and coverage');
     if (data.childIds !== undefined && !isFeeReview) throw new Error('Review billing settings with the family fee and start date when changing covered students');
     if (isFeeReview && (!Number.isInteger(data.agreedMonthlyPence) || data.agreedMonthlyPence! <= 0)) throw new Error('Enter the agreed family fee before billing review');
+    if (data.serviceType !== undefined && !isServiceType(data.serviceType)) throw new Error('Choose Childcare or Tuition as the service type');
     if (data.childIds !== undefined && childIds.length === 0) throw new Error('Select at least one confirmed active student');
 
     await db.transaction(async tx => {
@@ -468,6 +475,7 @@ export async function updateBillingConfig(
             ...(data.leadTimeUnit       !== undefined && { leadTimeUnit:       data.leadTimeUnit }),
             ...(data.leadTimeValue      !== undefined && { leadTimeValue:      data.leadTimeValue }),
             ...(data.notes              !== undefined && { notes:              data.notes }),
+            ...(data.serviceType        !== undefined && { serviceType:        data.serviceType }),
             ...(isFeeReview && existingConfig.status === 'cancelled' && { status: 'active' as const }),
             updatedAt: new Date(),
         })
@@ -488,6 +496,9 @@ export async function updateBillingConfig(
         eventData: JSON.stringify({
             configId,
             changedFields: Object.keys(data),
+            ...(data.serviceType !== undefined && data.serviceType !== existingConfig.serviceType && {
+                serviceType: { from: existingConfig.serviceType, to: data.serviceType },
+            }),
         }),
         });
         if (isFeeReview) await confirmRestartFeeReview(tx, orgId, session.user.id, configId, childIds,
@@ -1088,6 +1099,7 @@ async function generateInvoiceFromConfigInternal(input: GenerateInvoiceInput, el
             billingConfigId:     config.id,
             billingPeriodLabel:  canonicalPeriodLabel,
             coveredChildrenJson: coveredChildren,
+            serviceType:         normaliseServiceType(config.serviceType),
         }).returning();
 
         // Record the run

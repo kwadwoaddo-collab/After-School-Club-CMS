@@ -174,6 +174,7 @@ export default async function ParentProfilePage({ params, searchParams }: Parent
                 leadTimeValue: config.leadTimeValue,
                 status: config.status,
                 notes: config.notes,
+                serviceType: config.serviceType === 'tuition' ? 'tuition' as const : 'childcare' as const,
                 coveredChildren: config.children
                     .filter(c => c.child && !c.child.deletedAt && c.child.organisationId === organisationId && c.child.parentId === id && c.child.centreId === centre.id)
                     .map(c => ({ childId: c.child.id, childName: c.child.firstName + ' ' + c.child.lastName })),

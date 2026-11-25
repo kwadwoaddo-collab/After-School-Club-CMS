@@ -3,6 +3,7 @@ import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
 import { billingStylesBase, safeFormatDate, buildCentreAddressLines, getCoveredChildNames } from './billingPdfStyles';
 import {receiptIdentityPayment} from '../domain/payment-correction';
 import { stableReceiptNumber } from '@/lib/finance/receipt-number';
+import { normaliseServiceType, serviceTypeLabel } from '@/features/finance/service-type';
 
 
 const styles = StyleSheet.create({
@@ -70,9 +71,13 @@ export const ReceiptTemplate = ({ invoice, organisationName }: ReceiptTemplatePr
                         <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#1e40af', marginTop: 2 }}>
                             {centre?.name || organisationName || 'CENTRE'}
                         </Text>
-                        <Text style={{ fontSize: 8, color: '#64748b', marginTop: 3 }}>
-                            Ofsted Registration No: {centre?.ofstedId || '—'}
-                        </Text>
+                        {normaliseServiceType(invoice.serviceType) !== 'tuition' && (
+
+                            <Text style={{ fontSize: 8, color: '#64748b', marginTop: 3 }}>
+                                Ofsted Registration No: {centre?.ofstedId || '—'}
+                            </Text>
+
+                        )}
                     </View>
                     <View style={styles.invoiceInfo}>
                         <View style={styles.infoRow}>
@@ -117,7 +122,7 @@ export const ReceiptTemplate = ({ invoice, organisationName }: ReceiptTemplatePr
                                 {allChildNames.length > 1 ? `Child ${i + 1}: ` : 'Child: '}{name}
                             </Text>
                         ))}
-                        <Text>Type of Service: Childcare</Text>
+                        <Text>Type of Service: {serviceTypeLabel(invoice.serviceType)}</Text>
                         {billingPeriodStart && billingPeriodEnd ? (
                             <Text>Service Period: {safeFormatDate(billingPeriodStart, 'dd/MM/yyyy')} – {safeFormatDate(billingPeriodEnd, 'dd/MM/yyyy')}</Text>
                         ) : billingPeriodStart ? (
