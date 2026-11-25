@@ -13,7 +13,7 @@ import { resolveActiveCentreId } from '@/lib/centre-filter';
 export default async function AddStudentPage({
     searchParams,
 }: {
-    searchParams?: Promise<{ parentId?: string; centreId?: string }>;
+    searchParams?: Promise<{ parentId?: string; centreId?: string; centre?: string }>;
 } = {}) {
     // Same role rule as the rest of the Students module — see
     // project-notes/milestone-3-people-audit.md §2. Previously this page
@@ -46,10 +46,11 @@ export default async function AddStudentPage({
     }
 
     const resolvedParams = (await searchParams) ?? {};
+    const requestedCentreParam = resolvedParams.centreId ?? resolvedParams.centre;
     const accessibleCentreIds = accessibleCentres.map(c => c.id);
     let activeCentreCookieId = 'all';
     try {
-        activeCentreCookieId = (await resolveActiveCentreId(undefined, accessibleCentreIds)) || 'all';
+        activeCentreCookieId = (await resolveActiveCentreId(requestedCentreParam, accessibleCentreIds)) || 'all';
     } catch {
         activeCentreCookieId = 'all';
     }
@@ -70,8 +71,8 @@ export default async function AddStudentPage({
         : null;
 
     const paramCentreId =
-        resolvedParams.centreId && accessibleCentreIds.includes(resolvedParams.centreId)
-            ? resolvedParams.centreId
+        requestedCentreParam && accessibleCentreIds.includes(requestedCentreParam)
+            ? requestedCentreParam
             : undefined;
     const siblingCentreId = parent?.children?.find(
         (c: any) => c.centreId && accessibleCentreIds.includes(c.centreId)
@@ -85,7 +86,7 @@ export default async function AddStudentPage({
         <div className="max-w-2xl mx-auto space-y-5">
             <div>
                 <Link
-                    href={parent ? `/dashboard/parents/${parent.id}` : '/dashboard/students'}
+                    href={parent ? `/dashboard/parents/${parent.id}` : (activeCentreCookieId !== 'all' ? `/dashboard/students?centre=${activeCentreCookieId}` : '/dashboard/students')}
                     className="inline-flex items-center gap-1.5 text-small-body font-medium text-text-secondary hover:text-text transition-colors mb-3"
                 >
                     <ChevronLeft className="w-4 h-4" />

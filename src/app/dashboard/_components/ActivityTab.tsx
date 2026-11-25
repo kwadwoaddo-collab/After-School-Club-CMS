@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { db } from '@/db';
 import {
-    organisations, centres, children,
-    bookings, bookingAttendees, registrations, registrationChildren, studentNotes
+    centres, children,
+    bookings, bookingAttendees, registrations, registrationChildren
 } from '@/db/schema';
-import { eq, sql, and, gte, lt, lte, inArray, or, asc, desc } from 'drizzle-orm';
+import { eq, sql, and, gte, lte, inArray, or, asc, desc } from 'drizzle-orm';
 import Link from 'next/link';
 import { AttendanceRadial } from '@/components/ui/AttendanceRadial';
 import { CopyableLink } from '@/components/dashboard/CopyableLink';
@@ -26,6 +26,8 @@ interface ActivityTabProps {
 }
 
 export default async function ActivityTab({ searchParams, org, activeCentreId, accessibleCentreIds, hasCentres, userRole, isFeedOnly, isFunnelOnly }: ActivityTabProps) {
+    if (userRole === 'TUTOR') return null;
+
     const canViewSafeguarding = userRole === 'ORG_OWNER' || userRole === 'MANAGER';
     const childrenCentreCondition = activeCentreId !== 'all'
         ? eq(children.centreId, activeCentreId)
@@ -138,9 +140,11 @@ export default async function ActivityTab({ searchParams, org, activeCentreId, a
                 .limit(10)
             : Promise.resolve([]),
 
-        db.select({ status: registrations.status, count: sql<number>`count(*)::int` })
-        .from(registrations).where(and(eq(registrations.organisationId, org.id), registrationsCentreCondition))
-        .groupBy(registrations.status),
+        !isFeedOnly
+            ? db.select({ status: registrations.status, count: sql<number>`count(*)::int` })
+                .from(registrations).where(and(eq(registrations.organisationId, org.id), registrationsCentreCondition))
+                .groupBy(registrations.status)
+            : Promise.resolve([]),
 
         (!isFunnelOnly && hasCentres)
             ? db.select({
@@ -201,7 +205,7 @@ export default async function ActivityTab({ searchParams, org, activeCentreId, a
                     completed: Number(rawStats?.completed || 0)
                 };
             }
-        } catch (e) {}
+        } catch {}
 
         return {
             ...b,

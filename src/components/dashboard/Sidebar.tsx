@@ -63,7 +63,7 @@ const ROLE_NAV: Record<string, string[]> = {
 const ROLE_QUICK_ACTIONS: Record<string, string[]> = {
     ORG_OWNER: ['new-assessment', 'booking-link', 'registration-link'],
     MANAGER: ['new-assessment', 'booking-link', 'registration-link'],
-    FRONT_DESK: ['new-assessment'],
+    FRONT_DESK: ['new-assessment', 'booking-link', 'registration-link'],
     TUTOR: [],
 };
 
@@ -248,17 +248,21 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                                         </button>
                                     ))}
                                 </div>
-                                <div className="h-px bg-border-subtle my-1" />
-                                <Link
-                                    href="/dashboard/centres"
-                                    onClick={() => { closeCentreDropdown(); if (window.innerWidth < 1024) setCollapsed(true); }}
-                                    className={`w-full text-left px-3 py-2 text-[13px] font-medium flex items-center gap-2.5 rounded-sm hover:bg-page text-accent transition-colors ${
-                                        isCentresPageActive ? 'bg-accent-soft font-semibold' : ''
-                                    }`}
-                                >
-                                    <School className="w-4 h-4 flex-shrink-0" />
-                                    Manage Centres
-                                </Link>
+                                {(userRole === 'ORG_OWNER' || userRole === 'MANAGER') && (
+                                    <>
+                                        <div className="h-px bg-border-subtle my-1" />
+                                        <Link
+                                            href="/dashboard/centres"
+                                            onClick={() => { closeCentreDropdown(); if (window.innerWidth < 1024) setCollapsed(true); }}
+                                            className={`w-full text-left px-3 py-2 text-[13px] font-medium flex items-center gap-2.5 rounded-sm hover:bg-page text-accent transition-colors ${
+                                                isCentresPageActive ? 'bg-accent-soft font-semibold' : ''
+                                            }`}
+                                        >
+                                            <School className="w-4 h-4 flex-shrink-0" />
+                                            Manage Centres
+                                        </Link>
+                                    </>
+                                )}
                             </>
                         );
 

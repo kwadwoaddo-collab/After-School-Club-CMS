@@ -42,11 +42,13 @@ export default function ParentsFilters({ resultsCount = 0 }: ParentsFiltersProps
         const currentStatus = overrides?.newStatus !== undefined ? overrides.newStatus : status;
         if (currentStatus !== 'all') params.set('status', currentStatus);
 
+        if (selectedCentreId && selectedCentreId !== 'all') params.set('centre', selectedCentreId);
+
         const queryString = params.toString();
         startTransition(() => {
             router.push(`/dashboard/parents${queryString ? `?${queryString}` : ''}`);
         });
-    }, [search, status, router]);
+    }, [search, status, selectedCentreId, router]);
 
     const handleSearchChange = useCallback((value: string) => {
         setSearch(value);
@@ -57,10 +59,14 @@ export default function ParentsFilters({ resultsCount = 0 }: ParentsFiltersProps
     }, [applyFilters]);
 
     const handleClearFilters = () => {
+        if (debounceRef.current) clearTimeout(debounceRef.current);
         setSearch('');
         setStatus('all');
+        const clearHref = selectedCentreId && selectedCentreId !== 'all'
+            ? `/dashboard/parents?centre=${selectedCentreId}`
+            : '/dashboard/parents';
         startTransition(() => {
-            router.push('/dashboard/parents');
+            router.push(clearHref);
         });
     };
 

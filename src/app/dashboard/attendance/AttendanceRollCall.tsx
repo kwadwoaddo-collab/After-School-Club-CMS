@@ -80,6 +80,7 @@ interface Props {
     slots: CompiledSlot[];
     centreId: string;
     dateStr: string;
+    canViewProfiles?: boolean;
     allStudents?: {
         id: string;
         firstName: string;
@@ -119,6 +120,7 @@ export function AttendeeCard({
     dateStr,
     sessionTime,
     centreId,
+    canViewProfiles = true,
     onToast,
     onStatusChange,
 }: {
@@ -126,6 +128,7 @@ export function AttendeeCard({
     dateStr: string;
     sessionTime: string;
     centreId: string;
+    canViewProfiles?: boolean;
     onToast: ReturnType<typeof useToast>['toast'];
     onStatusChange?: (id: string, patch: { checkedIn?: boolean; checkedOut?: boolean; absent?: boolean }) => void;
 }) {
@@ -264,9 +267,15 @@ export function AttendeeCard({
                     </div>
                     <div>
                         <div className="flex items-center gap-2 flex-wrap">
-                            <Link href={`/dashboard/students/${attendee.childId}`} className="font-semibold text-text hover:text-accent transition-colors text-sm">
-                                {attendee.firstName} {attendee.lastName}
-                            </Link>
+                            {canViewProfiles ? (
+                                <Link href={`/dashboard/students/${attendee.childId}`} className="font-semibold text-text hover:text-accent transition-colors text-sm">
+                                    {attendee.firstName} {attendee.lastName}
+                                </Link>
+                            ) : (
+                                <span className="font-semibold text-text text-sm">
+                                    {attendee.firstName} {attendee.lastName}
+                                </span>
+                            )}
                             {isExtra && <Badge variant="warning">Extra</Badge>}
                             {hasMedicalOrCollector && (
                                 <button
@@ -294,7 +303,7 @@ export function AttendeeCard({
                             <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[7px] font-bold text-white bg-gradient-to-br ${getAvatarGradient(attendee.parentFirstName)}`}>
                                 {attendee.parentFirstName?.[0]}{attendee.parentLastName?.[0]}
                             </div>
-                            {attendee.parentId ? (
+                            {canViewProfiles && attendee.parentId ? (
                                 <Link href={`/dashboard/parents/${attendee.parentId}`} className="hover:text-accent hover:underline transition-colors">
                                     {attendee.parentFirstName} {attendee.parentLastName}
                                 </Link>
@@ -337,7 +346,7 @@ export function AttendeeCard({
                                             onChange={e => setCheckIn(e.target.value)}
                                             onBlur={e => saveTimeBlur('in', e.target.value)}
                                             disabled={!isIn || isPending}
-                                            className="h-8 w-24 px-2 text-xs rounded-sm border border-border bg-surface text-text focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent"
+                                            className="h-11 sm:h-8 w-28 sm:w-24 px-2 text-xs rounded-sm border border-border bg-surface text-text focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent"
                                         />
                                     )}
                                 </div>
@@ -360,7 +369,7 @@ export function AttendeeCard({
                                             onChange={e => setCheckOut(e.target.value)}
                                             onBlur={e => saveTimeBlur('out', e.target.value)}
                                             disabled={!isOut || isPending}
-                                            className="h-8 w-24 px-2 text-xs rounded-sm border border-border bg-surface text-text focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent"
+                                            className="h-11 sm:h-8 w-28 sm:w-24 px-2 text-xs rounded-sm border border-border bg-surface text-text focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent"
                                         />
                                     )}
                                 </div>
@@ -538,7 +547,7 @@ function SlotProgressBar({ marked, total }: { marked: number; total: number }) {
 // ─── Live status tracker ──────────────────────────────────────────────────────
 type AttendeeStatus = { checkedIn: boolean; checkedOut: boolean; absent: boolean };
 
-export default function AttendanceRollCall({ slots, centreId, dateStr, allStudents = [] }: Props) {
+export default function AttendanceRollCall({ slots, centreId, dateStr, canViewProfiles = true, allStudents = [] }: Props) {
     const router = useRouter();
     const { toast } = useToast();
     const [searchQuery, setSearchQuery] = useState('');
@@ -773,7 +782,7 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
                         Walk-In
                     </Button>
                     <Button variant="outline" size="lg" className="flex-1 sm:flex-none" asChild>
-                        <Link href="/dashboard/attendance/ledger">
+                        <Link href={centreId && centreId !== 'all' ? `/dashboard/attendance/ledger?centre=${centreId}` : '/dashboard/attendance/ledger'}>
                             <BookMarked className="w-4 h-4" />
                             Ledger
                         </Link>
@@ -904,6 +913,7 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
                                                     dateStr={dateStr}
                                                     sessionTime={slot.time}
                                                     centreId={centreId}
+                                                    canViewProfiles={canViewProfiles}
                                                     onToast={toast}
                                                     onStatusChange={updateMarkedStatus}
                                                 />
@@ -939,6 +949,7 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
                                                     dateStr={dateStr}
                                                     sessionTime={slot.time}
                                                     centreId={centreId}
+                                                    canViewProfiles={canViewProfiles}
                                                     onToast={toast}
                                                     onStatusChange={updateMarkedStatus}
                                                 />

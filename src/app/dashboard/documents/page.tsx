@@ -4,11 +4,11 @@ import { resolveActiveCentreId } from '@/lib/centre-filter';
 import { getCentreDocuments } from '@/features/documents/actions';
 import DocumentsClient from './DocumentsClient';
 
-export default async function DocumentsPage({ searchParams }: { searchParams: Promise<{ folder?: string }> }) {
-    const { folder } = await searchParams;
+export default async function DocumentsPage({ searchParams }: { searchParams?: Promise<{ folder?: string; centre?: string }> } = {}) {
+    const { folder, centre: rawCentre } = (await searchParams) ?? {};
     const { user } = await requireAuth();
     const centres = await getUserAccessibleCentres(user.id);
-    const selectedCentreId = await resolveActiveCentreId(undefined, centres.map(centre => centre.id));
+    const selectedCentreId = await resolveActiveCentreId(rawCentre, centres.map(centre => centre.id));
     const centre = centres.find(item => item.id === selectedCentreId);
     if (!centre) return <DocumentsClient centres={centres.map(({ id, name }) => ({ id, name }))} />;
     let result: Awaited<ReturnType<typeof getCentreDocuments>> | null = null;

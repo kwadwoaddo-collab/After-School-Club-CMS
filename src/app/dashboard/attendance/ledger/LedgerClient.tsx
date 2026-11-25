@@ -18,6 +18,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { formatSchoolYearLabel } from '@/lib/school-year';
+import { neutralizeCsvFormula } from '@/lib/csv-safety';
 
 interface Props {
     ledger: StudentLedgerEntry[];
@@ -52,9 +53,11 @@ function BalancePill({ balance }: { balance: number }) {
 function ForgivModal({
     entry,
     onClose,
+    canViewProfiles = true,
 }: {
     entry: StudentLedgerEntry;
     onClose: () => void;
+    canViewProfiles?: boolean;
 }) {
     const { toast } = useToast();
     const [amount, setAmount] = useState(1);
@@ -85,12 +88,18 @@ function ForgivModal({
                     <div>
                         <h3 className="text-section-title text-text">Forgive Sessions</h3>
                         <p className="text-xs text-text-muted mt-0.5">
-                            <Link
-                                href={`/dashboard/students/${entry.childId}`}
-                                className="hover:text-accent hover:underline transition-colors"
-                            >
-                                {entry.firstName} {entry.lastName}
-                            </Link>{' '}
+                            {canViewProfiles && entry.childId ? (
+                                <Link
+                                    href={`/dashboard/students/${entry.childId}`}
+                                    className="hover:text-accent hover:underline transition-colors"
+                                >
+                                    {entry.firstName} {entry.lastName}
+                                </Link>
+                            ) : (
+                                <span className="font-medium text-text">
+                                    {entry.firstName} {entry.lastName}
+                                </span>
+                            )}{' '}
                             · Currently {entry.netBalance < 0 ? `${Math.abs(entry.netBalance)} owed` : 'even/ahead'}
                         </p>
                     </div>
@@ -140,7 +149,7 @@ function ForgivModal({
     );
 }
 
-function LedgerRow({ entry, onRefresh, canForgive }: { entry: StudentLedgerEntry; onRefresh: () => void; canForgive: boolean }) {
+function LedgerRow({ entry, onRefresh, canForgive, canViewProfiles = true }: { entry: StudentLedgerEntry; onRefresh: () => void; canForgive: boolean; canViewProfiles?: boolean }) {
     const [expanded, setExpanded] = useState(false);
     const [showForgive, setShowForgive] = useState(false);
 
@@ -164,7 +173,7 @@ function LedgerRow({ entry, onRefresh, canForgive }: { entry: StudentLedgerEntry
 
                     {/* Name & schedule */}
                     <div className="flex-1 min-w-0">
-                        {entry.childId ? (
+                        {canViewProfiles && entry.childId ? (
                             <Link href={`/dashboard/students/${entry.childId}`} className="font-semibold text-text text-sm hover:underline hover:text-accent transition-colors" onClick={(e) => e.stopPropagation()}>
                                 {entry.firstName} {entry.lastName}
                             </Link>
@@ -283,7 +292,7 @@ function LedgerRow({ entry, onRefresh, canForgive }: { entry: StudentLedgerEntry
             </Card>
 
             {showForgive && (
-                <ForgivModal entry={entry} onClose={() => { setShowForgive(false); onRefresh(); }} />
+                <ForgivModal entry={entry} canViewProfiles={canViewProfiles} onClose={() => { setShowForgive(false); onRefresh(); }} />
             )}
         </>
     );
@@ -291,6 +300,8 @@ function LedgerRow({ entry, onRefresh, canForgive }: { entry: StudentLedgerEntry
 
 export default function LedgerClient({ ledger, centres, selectedCentreId, selectedYear, academicYears, userRole }: Props) {
     const canForgive = userRole === 'ORG_OWNER' || userRole === 'MANAGER';
+    const canViewProfiles = userRole !== 'TUTOR';
+    const canExportCsv = userRole !== 'TUTOR';
     const router = useRouter();
     const { setSelectedCentreId } = useCentreFilter();
     const [tab, setTab] = useState<'all' | 'arrears' | 'ahead' | 'even'>('all');
@@ -357,14 +368,19 @@ export default function LedgerClient({ ledger, centres, selectedCentreId, select
         // Use the global context setter — it writes the cookie AND calls router.refresh()
         // so the server re-render picks up the new value correctly
         setSelectedCentreId(centreId);
-        router.push(`/dashboard/attendance/ledger?year=${selectedYear}`);
+        const params = new URLSearchParams({ year: selectedYear });
+        if (centreId && centreId !== 'all') params.set('centre', centreId);
+        router.push(`/dashboard/attendance/ledger?${params.toString()}`);
     };
     const handleYearChange = (year: string) => {
-        router.push(`/dashboard/attendance/ledger?year=${year}`);
+        const params = new URLSearchParams({ year });
+        if (selectedCentreId && selectedCentreId !== 'all') params.set('centre', selectedCentreId);
+        router.push(`/dashboard/attendance/ledger?${params.toString()}`);
     };
 
 
     const exportCsv = () => {
+        const escapeCsv = (val: unknown) => `"${neutralizeCsvFormula(String(val ?? '')).replace(/"/g, '""')}"`;
         const headers = ['Name', 'Year', 'Schedule', 'Absences', 'Extras', 'Forgiven', 'Balance', 'Status'];
         const rows = filtered.map(e => [
             `${e.firstName} ${e.lastName}`,
@@ -376,11 +392,13 @@ export default function LedgerClient({ ledger, centres, selectedCentreId, select
             e.netBalance,
             e.netBalance < 0 ? 'In Arrears' : e.netBalance > 0 ? 'Ahead' : 'Even',
         ]);
-        const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
+        const csv = [headers, ...rows].map(r => r.map(escapeCsv).join(',')).join('\n');
+        const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
         const a = document.createElement('a');
-        a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+        a.href = url;
         a.download = `session-ledger-${selectedYear}.csv`;
         a.click();
+        URL.revokeObjectURL(url);
     };
 
     const TABS = [
@@ -395,12 +413,14 @@ export default function LedgerClient({ ledger, centres, selectedCentreId, select
             <HeaderPortal targetId="header-left">
                 <h1 className="text-page-title text-text">Session Ledger</h1>
             </HeaderPortal>
-            <HeaderPortal targetId="header-right-actions">
-                <Button variant="outline" onClick={exportCsv}>
-                    <Download className="w-4 h-4" />
-                    Export CSV
-                </Button>
-            </HeaderPortal>
+            {canExportCsv && (
+                <HeaderPortal targetId="header-right-actions">
+                    <Button variant="outline" onClick={exportCsv}>
+                        <Download className="w-4 h-4" />
+                        Export CSV
+                    </Button>
+                </HeaderPortal>
+            )}
 
             <p className="text-small-body text-text-secondary -mt-2">Track absences, catch-ups, and session balances — academic year {selectedYear}</p>
 
@@ -467,7 +487,7 @@ export default function LedgerClient({ ledger, centres, selectedCentreId, select
                         aria-pressed={datePreset === chip.id}
                         className={`px-3 py-1.5 rounded-full border text-xs font-semibold transition-colors ${
                             datePreset === chip.id
-                                ? 'bg-accent text-white border-accent'
+                                ? 'bg-accent text-on-accent border-accent'
                                 : 'bg-surface border-border text-text-muted hover:border-accent/40'
                         }`}
                     >
@@ -502,7 +522,7 @@ export default function LedgerClient({ ledger, centres, selectedCentreId, select
                         description="Try changing the filter or selecting a different centre."
                     />
                 ) : (
-                    filtered.map(entry => <LedgerRow key={entry.childId} entry={entry} canForgive={canForgive} onRefresh={() => router.refresh()} />)
+                    filtered.map(entry => <LedgerRow key={entry.childId} entry={entry} canForgive={canForgive} canViewProfiles={canViewProfiles} onRefresh={() => router.refresh()} />)
                 )}
             </div>
 

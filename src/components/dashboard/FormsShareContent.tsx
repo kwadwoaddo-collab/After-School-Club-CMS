@@ -29,7 +29,7 @@ type PortalType = 'booking' | 'registration';
 export default function FormsShareContent({ organisation, centres, initialCentreSlug, baseUrl: propBaseUrl }: Props) {
     const [activeTab, setActiveTab] = useState<PortalType>('booking');
     const [selectedCentre, setSelectedCentre] = useState<string>(
-        initialCentreSlug ?? (centres?.length === 1 ? centres[0].slug : '')
+        initialCentreSlug || (centres?.length === 1 ? centres[0].slug : '')
     );
     const [copiedLink, setCopiedLink] = useState(false);
     const [copiedEmbed, setCopiedEmbed] = useState(false);
@@ -41,7 +41,7 @@ export default function FormsShareContent({ organisation, centres, initialCentre
     const baseUrl = (
         propBaseUrl?.trim() ||
         process.env.NEXT_PUBLIC_APP_URL?.trim() ||
-        (typeof window !== 'undefined' ? window.location.origin : 'https://app.sprintscaleit.co.uk')
+        'https://app.sprintscaleit.co.uk'
     ).replace(/\/+$/, '');
 
     const getShareLink = () => {

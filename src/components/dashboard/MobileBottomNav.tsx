@@ -8,6 +8,7 @@ import {
     School,
     Users,
     Settings,
+    ClipboardCheck,
     ClipboardList,
     UserCircle2,
 } from 'lucide-react';
@@ -19,16 +20,17 @@ interface MobileNavProps {
 
 const ROLE_NAV: Record<string, string[]> = {
     ORG_OWNER: ['Dashboard', 'Students', 'Registrations', 'Settings'],
-    MANAGER: ['Dashboard', 'Students', 'Registrations'],
+    MANAGER: ['Dashboard', 'Students', 'Registrations', 'Settings'],
     // N-1 (Milestone 3M): Registrations added for FRONT_DESK mobile nav.
     // Sidebar (3L A-2) and page gate both permit FRONT_DESK access to Registrations;
     // the mobile nav was the sole remaining inconsistency.
     FRONT_DESK: ['Dashboard', 'Students', 'Registrations'],
-    TUTOR: ['Dashboard'],
+    TUTOR: ['Dashboard', 'Attendance'],
 };
 
 const ALL_NAV = [
     { name: 'Dashboard', icon: LayoutGrid, href: '/dashboard', exact: true },
+    { name: 'Attendance', icon: ClipboardCheck, href: '/dashboard/attendance', exact: false },
     { name: 'Centres', icon: School, href: '/dashboard/centres', exact: false },
     { name: 'Team', icon: UserCircle2, href: '/dashboard/staff', exact: false },
     { name: 'Students', icon: Users, href: '/dashboard/students', exact: false },
