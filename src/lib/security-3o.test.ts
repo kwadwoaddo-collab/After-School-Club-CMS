@@ -6,7 +6,7 @@
  *   S-2:    getCurrentParent() — soft-deleted parent → null (DB-level)
  *   S-4:    getCurrentParent() — soft-deleted child excluded from result
  *   S-3:    BookingService.createBooking() — rescheduleId ownership verification
- *   S-1:    GET /api/register/prefill — cross-org prefill token → 404
+ *   S-1:    GET /api/register/prefill — cross-org prefill token → 404 & non-ACTIVE org → 403
  *
  * AUTH-1 regression is covered in src/lib/magic-link.test.ts:
  *   - raw tokens are always stored hashed; only hash comparison is used in verify
@@ -90,7 +90,7 @@ vi.mock('jose', async (importOriginal) => {
 
 // ── Static imports (after all vi.mock declarations) ──
 
-import { signParentToken, verifyParentToken } from './parent-auth';
+import { verifyParentToken } from './parent-auth';
 import { cookies } from 'next/headers';
 import { db } from '@/db';
 import { jwtVerify } from 'jose';
@@ -401,10 +401,11 @@ describe('S-1: GET /api/register/prefill — cross-org isolation', () => {
             payload: { parentId: 'parent-org-a', centreId: 'centre-org-b', childIds: [] },
         });
 
-        // Centre is in org-b
+        // Centre is in org-b (ACTIVE)
         (db.query.centres.findFirst as any).mockResolvedValue({
             id: 'centre-org-b',
             organisationId: 'org-b',
+            organisation: { id: 'org-b', approvalStatus: 'ACTIVE' },
         });
 
         // S-1 fix: DB query now includes eq(parents.organisationId, 'org-b')
@@ -435,6 +436,31 @@ describe('S-1: GET /api/register/prefill — cross-org isolation', () => {
         expect(response.status).toBe(404);
     });
 
+    it.each(['PENDING', 'SUSPENDED', 'REJECTED'] as const)(
+        'returns 403 and zero PII when centre organisation approvalStatus is %s',
+        async (approvalStatus) => {
+            (jwtVerify as any).mockResolvedValue({
+                payload: { parentId: 'parent-a', centreId: 'centre-a', childIds: [] },
+            });
+
+            (db.query.centres.findFirst as any).mockResolvedValue({
+                id: 'centre-a',
+                organisationId: 'org-a',
+                organisation: { id: 'org-a', approvalStatus },
+            });
+
+            const req = new Request('http://localhost/api/register/prefill?token=valid-token');
+            const response = await prefillGET(req as any);
+
+            expect(response.status).toBe(403);
+            const body = await response.json();
+            expect(body.error).toBe('Organisation is not active');
+            expect(body.parents).toBeUndefined();
+            expect(body.children).toBeUndefined();
+            expect(db.query.parents.findFirst).not.toHaveBeenCalled();
+        }
+    );
+
     it('returns 400 for an invalid or expired token', async () => {
         (jwtVerify as any).mockRejectedValue(new Error('JWTExpired'));
 
@@ -451,7 +477,7 @@ describe('S-1: GET /api/register/prefill — cross-org isolation', () => {
         expect(response.status).toBe(400);
     });
 
-    it('returns parent PII when parent and centre are in the same organisation', async () => {
+    it('returns parent PII when parent and centre are in the same ACTIVE organisation', async () => {
         (jwtVerify as any).mockResolvedValue({
             payload: { parentId: 'parent-a', centreId: 'centre-a', childIds: [] },
         });
@@ -459,6 +485,7 @@ describe('S-1: GET /api/register/prefill — cross-org isolation', () => {
         (db.query.centres.findFirst as any).mockResolvedValue({
             id: 'centre-a',
             organisationId: 'org-a',
+            organisation: { id: 'org-a', approvalStatus: 'ACTIVE' },
         });
 
         (db.query.parents.findFirst as any).mockResolvedValue({
