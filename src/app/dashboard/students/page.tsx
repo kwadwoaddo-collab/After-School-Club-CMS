@@ -56,6 +56,7 @@ export default async function StudentsPage(props: {
     let hasError = false;
     let org: InferSelectModel<typeof organisations> | null = null;
     let accessibleCentreIds: string[] = [];
+    let activeCentreId = 'all';
     let accessibleCentres: Awaited<ReturnType<typeof getUserAccessibleCentres>> = [];
     let stats: StudentsStats | null = null;
     let filteredCount = 0;
@@ -66,16 +67,19 @@ export default async function StudentsPage(props: {
     let hasActiveFilters = false;
 
     try {
-        const [fetchedOrg] = await db
-            .select()
-            .from(organisations)
-            .where(eq(organisations.id, session.user.organisationId))
-            .limit(1);
+        const [[fetchedOrg], fetchedCentres] = await Promise.all([
+            db
+                .select()
+                .from(organisations)
+                .where(eq(organisations.id, session.user.organisationId))
+                .limit(1),
+            getUserAccessibleCentres(session.user.id),
+        ]);
 
         org = fetchedOrg;
         if (!org) throw new Error("NO_ORG");
 
-        accessibleCentres = await getUserAccessibleCentres(session.user.id);
+        accessibleCentres = fetchedCentres;
         accessibleCentreIds = accessibleCentres.map((c) => c.id);
 
         if (accessibleCentreIds.length === 0) {
@@ -96,7 +100,7 @@ export default async function StudentsPage(props: {
             );
         }
 
-        const activeCentreId = await resolveActiveCentreId(searchParams.centre, accessibleCentreIds);
+        activeCentreId = await resolveActiveCentreId(searchParams.centre, accessibleCentreIds);
 
         hasActiveFilters = !!(
             summaryRange || searchParams.search ||
@@ -324,6 +328,11 @@ export default async function StudentsPage(props: {
         hasError = true;
     }
 
+    const centreParam = activeCentreId !== 'all' ? `centre=${encodeURIComponent(activeCentreId)}` : '';
+    const baseStudentsHref = centreParam ? `/dashboard/students?${centreParam}` : '/dashboard/students';
+    const followUpsHref = centreParam ? `/dashboard/students?status=follow-ups&${centreParam}` : '/dashboard/students?status=follow-ups';
+    const lowAttendanceHref = centreParam ? `/dashboard/students?status=low-attendance&${centreParam}` : '/dashboard/students?status=low-attendance';
+
     return (
         <div className="space-y-6">
             {/* Header Portals */}
@@ -353,7 +362,7 @@ export default async function StudentsPage(props: {
 
             <div className="flex flex-wrap items-center justify-between gap-3">
                 <p className="text-sm text-muted-foreground">{showFollowUps ? 'Call paused or stopped families in due-date order. Open a student to record the outcome and next call. No messages are sent automatically.' : searchParams.status === 'billing-review' ? 'These reactivated students need a separate fee and billing-start review. Open their profile to check the restart; billing does not resume automatically.' : 'Student records include leads and confirmed members. Registration confirmation and attendance status are separate.'}</p>
-                <Link href={showFollowUps ? '/dashboard/students' : '/dashboard/students?status=follow-ups'} className="text-sm font-medium text-primary underline underline-offset-4">{showFollowUps ? 'All students' : 'Open follow-up calls'}</Link>
+                <Link href={showFollowUps ? baseStudentsHref : followUpsHref} className="text-sm font-medium text-primary underline underline-offset-4">{showFollowUps ? 'All students' : 'Open follow-up calls'}</Link>
             </div>
             {/* KPI stat cards */}
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
@@ -405,7 +414,7 @@ export default async function StudentsPage(props: {
                     </div>
                 </Card>
 
-                <Link href={showLowAttendance ? '/dashboard/students' : '/dashboard/students?status=low-attendance'} className="block">
+                <Link href={showLowAttendance ? baseStudentsHref : lowAttendanceHref} className="block">
                     <Card className={showLowAttendance ? 'ring-1 ring-warning/40 border-warning/40' : 'hover:border-warning/30 transition-colors'}>
                         <div className="p-4 flex items-center gap-3">
                             <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-warning-soft text-warning">
@@ -423,7 +432,7 @@ export default async function StudentsPage(props: {
             {/* Toolbar — sticky */}
             <SummaryRangeNotice range={summaryRange} basis="Student records created" clearHref={`/dashboard/students?${new URLSearchParams(Object.entries(searchParams).filter(([key,value]) => !['summaryFrom','summaryTo','page'].includes(key) && typeof value === 'string') as [string,string][])}`}/>
 
-            <div className="sticky top-16 sm:top-20 z-20 -mx-4 sm:-mx-8 px-4 sm:px-8 py-3 bg-page/90 backdrop-blur-sm border-b border-border-subtle">
+            <div className="sticky top-14 z-20 -mx-4 sm:-mx-8 px-4 sm:px-8 py-3 bg-page/90 backdrop-blur-sm border-b border-border-subtle">
                 <StudentsFilters
                     centres={accessibleCentres}
                     resultsCount={filteredCount}

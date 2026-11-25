@@ -500,7 +500,7 @@ function StudentCard({
                         {([
                             { s: 'present' as const, icon: <CheckCircle2 className="w-4 h-4" />, label: 'In',   isActive: status === 'present' && !isCheckedOut, active: 'bg-emerald-500 text-white border-emerald-500', inactive: 'bg-page border-border text-text-muted hover:text-emerald-700 dark:hover:text-emerald-400 hover:border-emerald-500/30' },
                             { s: 'late'    as const, icon: <Clock className="w-4 h-4" />,        label: 'Late', isActive: status === 'late' && !isCheckedOut,    active: 'bg-amber-500 text-white border-amber-500',      inactive: 'bg-page border-border text-text-muted hover:text-amber-700 dark:hover:text-amber-400 hover:border-amber-500/30' },
-                            { s: 'check_out' as const, icon: <XCircle className="w-4 h-4" />,    label: 'Out',  isActive: isCheckedOut,                          active: 'bg-danger text-white border-danger',            inactive: 'bg-page border-border text-text-muted hover:text-danger hover:border-danger/30' },
+                            { s: 'check_out' as const, icon: <XCircle className="w-4 h-4" />,    label: 'Out',  isActive: isCheckedOut,                          active: 'bg-danger text-on-danger border-danger',            inactive: 'bg-page border-border text-text-muted hover:text-danger hover:border-danger/30' },
                         ]).map(({ s, icon, label, isActive, active, inactive }) => (
                             <button
                                 key={s}
@@ -1172,13 +1172,13 @@ export default function KioskRegister({ slots, date, dateStr, centreName, centre
                         aria-pressed={showUnmarkedOnly}
                         className={`flex-shrink-0 px-3 py-1.5 rounded-full border text-xs font-semibold transition-colors ${
                             showUnmarkedOnly
-                                ? 'bg-accent text-white border-accent'
+                                ? 'bg-accent text-on-accent border-accent'
                                 : 'bg-surface border-border text-text-muted hover:border-accent/40'
                         }`}
                     >
                         Unmarked only
                         {showUnmarkedOnly && unmarkedCount > 0 && (
-                            <span className="ml-1.5 text-white/70">{unmarkedCount}</span>
+                            <span className="ml-1.5 text-on-accent/75">{unmarkedCount}</span>
                         )}
                     </button>
 

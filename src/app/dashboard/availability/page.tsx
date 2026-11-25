@@ -72,7 +72,7 @@ export default async function AvailabilityPage() {
                     action={
                         <Link
                             href="/dashboard/centres/add"
-                            className="inline-flex items-center gap-2 px-4 py-2.5 bg-accent rounded-md text-sm font-semibold text-white hover:bg-accent-hover transition-colors"
+                            className="inline-flex items-center gap-2 px-4 py-2.5 bg-accent rounded-md text-sm font-semibold text-on-accent hover:bg-accent-hover transition-colors"
                         >
                             + Add Centre
                         </Link>

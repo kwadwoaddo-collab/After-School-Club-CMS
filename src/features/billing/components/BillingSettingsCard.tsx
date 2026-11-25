@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useContext, useState, useTransition } from 'react';
+import { SessionContext } from 'next-auth/react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { PoundSterling, Pencil, X, Check, Pause, Play, AlertTriangle, FileText } from 'lucide-react';
@@ -53,6 +54,8 @@ interface Props {
 
     // Optional callback invoked when billing is set up for the first time
     onFirstSetupComplete?: () => void;
+    canManageBilling?: boolean;
+    userRole?: string;
 }
 
 // ─── Status badge ─────────────────────────────────────────────────────────────
@@ -80,9 +83,11 @@ function StatusBadge({ status }: { status: 'active' | 'paused' | 'cancelled' }) 
 function CollapsedView({
     config,
     onEdit,
+    canEdit = true,
 }: {
     config: StudentBillingConfig;
     onEdit: () => void;
+    canEdit?: boolean;
 }) {
     const preview = previewBillingPeriods(config.billingAnchorDate, 1, {
         leadTimeUnit: config.leadTimeUnit,
@@ -137,10 +142,16 @@ function CollapsedView({
             )}
 
             {/* Edit button */}
-            <Button variant="outline" size="sm" onClick={onEdit} className="w-full">
-                <Pencil className="w-3.5 h-3.5" />
-                Edit billing settings
-            </Button>
+            {canEdit ? (
+                <Button variant="outline" size="sm" onClick={onEdit} className="w-full">
+                    <Pencil className="w-3.5 h-3.5" />
+                    Edit billing settings
+                </Button>
+            ) : (
+                <p className="text-metadata text-text-muted">
+                    View-only — Organisation Owners and Managers can edit billing settings.
+                </p>
+            )}
         </div>
     );
 }
@@ -574,7 +585,7 @@ function EditForm({
                 </Button>
                 <Button onClick={() => handleSave()} disabled={isPending} className="flex-1">
                     {isPending ? (
-                        <><span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />Saving…</>
+                        <><span className="w-3.5 h-3.5 border-2 border-on-accent/30 border-t-on-accent rounded-full animate-spin" />Saving…</>
                     ) : (
                         <><Check className="w-4 h-4" />{familySurface?'Save billing cycle':isNew ? 'Set Up Billing' : 'Save Changes'}</>
                     )}
@@ -619,7 +630,7 @@ function StatusControls({ config, onDone }: { config: StudentBillingConfig; onDo
                             type="button"
                             onClick={() => changeStatus('cancel')}
                             disabled={isPending}
-                            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm bg-danger text-white text-xs font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+                            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm bg-danger text-on-danger text-xs font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
                         >
                             <Check className="w-3.5 h-3.5" />
                             Confirm Cancel
@@ -683,9 +694,16 @@ export default function BillingSettingsCard({
     startEditing=false,
     familySurface=false,
     onFirstSetupComplete,
+    canManageBilling,
+    userRole,
 }: Props) {
     const router = useRouter();
-    const [isEditing, setIsEditing] = useState(startEditing&&!isQuarantinedParentId(parentId));
+    const sessionCtx = useContext(SessionContext);
+    const effectiveRole = userRole ?? (sessionCtx?.data?.user as { role?: string } | undefined)?.role;
+    const canEdit = canManageBilling !== undefined
+        ? canManageBilling
+        : effectiveRole !== 'FRONT_DESK' && effectiveRole !== 'TUTOR';
+    const [isEditing, setIsEditing] = useState(canEdit && startEditing && !isQuarantinedParentId(parentId));
     const [firstSetupData, setFirstSetupData] = useState<FirstSetupSavedData | null>(null);
     const [showFirstDraftModal, setShowFirstDraftModal] = useState(false);
     const isQuarantined = isQuarantinedParentId(parentId);
@@ -770,7 +788,7 @@ export default function BillingSettingsCard({
                     </div>
                 )}
 
-                {isEditing ? (
+                {canEdit && isEditing ? (
                     <EditForm
                         childId={childId}
                         parentId={parentId}
@@ -784,8 +802,8 @@ export default function BillingSettingsCard({
                     />
                 ) : existingConfig ? (
                     <>
-                        <CollapsedView config={existingConfig} onEdit={() => setIsEditing(true)} />
-                        <StatusControls config={existingConfig} onDone={() => handleSaved()} />
+                        <CollapsedView config={existingConfig} onEdit={() => setIsEditing(true)} canEdit={canEdit} />
+                        {canEdit && <StatusControls config={existingConfig} onDone={() => handleSaved()} />}
                     </>
                 ) : isQuarantined ? (
                     <div className="rounded-md border border-amber-500/30 bg-amber-500/5 p-4 text-center space-y-3">
@@ -808,11 +826,17 @@ export default function BillingSettingsCard({
                             <PoundSterling className="w-4 h-4 text-text-muted" />
                         </div>
                         <p className="text-small-body font-semibold text-text mb-0.5">No billing set up</p>
-                        <p className="text-metadata mb-3">Set an agreed monthly fee for this family</p>
-                        <Button onClick={() => setIsEditing(true)} className="w-full">
-                            <PoundSterling className="w-4 h-4" />
-                            {familySurface?'Set up billing cycle':'Set Up Family Billing'}
-                        </Button>
+                        <p className="text-metadata mb-3">
+                            {canEdit
+                                ? 'Set an agreed monthly fee for this family'
+                                : 'Organisation Owners and Managers can set up monthly billing for this family.'}
+                        </p>
+                        {canEdit && (
+                            <Button onClick={() => setIsEditing(true)} className="w-full">
+                                <PoundSterling className="w-4 h-4" />
+                                {familySurface?'Set up billing cycle':'Set Up Family Billing'}
+                            </Button>
+                        )}
                     </div>
                 ) : null}
             </div>

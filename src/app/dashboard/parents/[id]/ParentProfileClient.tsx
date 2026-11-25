@@ -20,11 +20,18 @@ import {
     Plus,
 } from 'lucide-react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { cn } from '@/components/ui/utils';
-import { InvoiceTable } from '@/features/finance/components/FinanceDashboardClient';
 import { useToast } from '@/components/ui/ToastProvider';
 import { Card } from '@/components/ui/Card';
-import {ParentBillingSection,type ParentBillingGroup} from '@/features/billing/components/ParentBillingSection';
+import type { ParentBillingGroup } from '@/features/billing/components/ParentBillingSection';
+
+const InvoiceTable = dynamic(() =>
+    import('@/features/finance/components/FinanceDashboardClient').then((mod) => mod.InvoiceTable)
+);
+const ParentBillingSection = dynamic(() =>
+    import('@/features/billing/components/ParentBillingSection').then((mod) => mod.ParentBillingSection)
+);
 import { EmptyState } from '@/components/ui/EmptyState';
 import { formatSchoolYearLabel } from '@/lib/school-year';
 
@@ -338,8 +345,9 @@ export default function ParentProfileClient({ parent, invoices, stats, isOwner, 
                                     </p>
                                     <p className="text-metadata mt-1 mb-4">Outstanding amount</p>
                                     <button
+                                        type="button"
                                         onClick={() => setActiveTab('finance')}
-                                        className="w-full py-2 px-3 bg-accent text-white rounded-sm text-small-body font-medium hover:bg-accent-hover transition-colors inline-flex items-center justify-center gap-1.5"
+                                        className="w-full py-2 px-3 bg-accent text-on-accent rounded-sm text-small-body font-medium hover:bg-accent-hover transition-colors inline-flex items-center justify-center gap-1.5"
                                     >
                                         View full ledger <ChevronRight className="w-3.5 h-3.5" />
                                     </button>
