@@ -85,24 +85,26 @@ export default async function BillingDashboard(props: { searchParams: Promise<{ 
     const parent = await getCurrentParent();
     if (!parent) redirect('/portal/login');
 
-    const notifications = await getNotifications();
-    const unreadCount = notifications.filter(n => !n.readAt).length;
-
     // Check Stripe is available server-side (avoids exposing secret key to client)
     const stripeEnabled = !!(process.env.STRIPE_SECRET_KEY && !process.env.STRIPE_SECRET_KEY.startsWith('sk_xxx'));
 
-    const parentInvoices = await db.query.invoices.findMany({
-        where: and(eq(invoices.parentId, parent.id), ne(invoices.status, 'draft')),
-        orderBy: [desc(invoices.createdAt)],
-        with: {
-            centre: true,
-            child: true,
-            payments: {
-                where: (payments, { ne, and, isNull }) =>
-                    and(ne(payments.status, 'reversed'), isNull(payments.reversedAt)),
+    // Run independent billing queries concurrently (FE P2-1)
+    const [notifications, parentInvoices] = await Promise.all([
+        getNotifications(),
+        db.query.invoices.findMany({
+            where: and(eq(invoices.parentId, parent.id), ne(invoices.status, 'draft')),
+            orderBy: [desc(invoices.createdAt)],
+            with: {
+                centre: true,
+                child: true,
+                payments: {
+                    where: (payments, { ne, and, isNull }) =>
+                        and(ne(payments.status, 'reversed'), isNull(payments.reversedAt)),
+                }
             }
-        }
-    });
+        }),
+    ]);
+    const unreadCount = notifications.filter(n => !n.readAt).length;
 
     const todayLondonIso = toLondonBusinessDate();
     const evaluatedInvoices = parentInvoices.map(inv => ({
@@ -146,22 +148,22 @@ export default async function BillingDashboard(props: { searchParams: Promise<{ 
                 <div className="max-w-4xl mx-auto px-4 py-4 flex items-center gap-4">
                     <Link
                         href="/portal"
-                        aria-label="Back to portal"
+                        aria-label="Back to Parent Portal"
                         className="min-h-[44px] min-w-[44px] flex items-center justify-center p-2 -ml-2 rounded-lg hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
                     >
                         <ArrowLeft className="w-5 h-5" aria-hidden="true" />
                     </Link>
-                    <div className="flex-1">
-                        <h1 className="text-lg font-bold text-foreground">Billing &amp; Invoices</h1>
-                        <p className="text-xs text-muted-foreground">Manage your centre payments, bank transfers, and childcare vouchers</p>
+                    <div className="flex-1 min-w-0">
+                        <h1 className="text-lg font-bold text-foreground truncate">Billing &amp; Invoices</h1>
+                        <p className="text-xs text-muted-foreground truncate">Manage your centre payments, bank transfers, and childcare vouchers</p>
                     </div>
-                    <div className="flex items-center">
+                    <div className="flex items-center shrink-0">
                         <NotificationBell notifications={notifications} unreadCount={unreadCount} />
                     </div>
                 </div>
             </header>
 
-            <main className="max-w-4xl mx-auto px-4 py-8 space-y-8">
+            <main id="main-content" tabIndex={-1} className="max-w-4xl mx-auto px-4 py-8 space-y-8">
                 {/* Balance Overview */}
                 <section className="bg-primary/10 border border-primary/20 p-6 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4">
                     <div className="flex items-center gap-4">

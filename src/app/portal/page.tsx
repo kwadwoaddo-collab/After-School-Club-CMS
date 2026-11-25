@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import {
     CalendarCheck, CalendarPlus, Users, ChevronRight, Clock,
-    MapPin, ArrowRight, LogOut, AlertTriangle, CalendarClock
+    MapPin, ArrowRight, LogOut, AlertTriangle, CalendarClock, CreditCard
 } from 'lucide-react';
 import { CancelBookingButton } from '@/features/portal/components/CancelBookingButton';
 import NotificationBell from '@/features/portal/components/NotificationBell';
@@ -28,23 +28,34 @@ export default async function PortalDashboard() {
         redirect('/portal/login');
     }
 
-    const notifications = await getNotifications();
-    const unreadCount = notifications.filter(n => !n.readAt).length;
+    const allBookings = parent.bookings || [];
+    const bookingIds = allBookings.map(b => b.id);
 
-    // Fetch only invoices that are genuinely outstanding (owed) for this parent.
-    // Exclude draft (unissued), void (cancelled), and paid at the DB level so that
-    // draft invoices are never fetched and never surface to the parent.
-    const outstandingInvoices = await db.query.invoices.findMany({
-        where: and(
-            eq(invoices.parentId, parent.id),
-            notInArray(invoices.status, ['draft', 'void', 'paid'])
-        ),
-        with: {
-            payments: {
-                where: (payments, { ne }) => ne(payments.status, 'reversed')
+    // Run independent portal home queries concurrently (FE P2-1):
+    // - Notifications
+    // - Genuinely outstanding invoices (excluding draft, void, paid at DB level)
+    // - Booking attendee child mappings
+    const [notifications, outstandingInvoices, attendeeRows] = await Promise.all([
+        getNotifications(),
+        db.query.invoices.findMany({
+            where: and(
+                eq(invoices.parentId, parent.id),
+                notInArray(invoices.status, ['draft', 'void', 'paid'])
+            ),
+            with: {
+                payments: {
+                    where: (payments, { ne }) => ne(payments.status, 'reversed')
+                }
             }
-        }
-    });
+        }),
+        bookingIds.length > 0
+            ? db.query.bookingAttendees.findMany({
+                where: inArray(bookingAttendees.bookingId, bookingIds),
+            })
+            : Promise.resolve([]),
+    ]);
+
+    const unreadCount = notifications.filter(n => !n.readAt).length;
     const todayLondonIso = toLondonBusinessDate();
     const evaluatedInvoices = outstandingInvoices.map(inv =>
         evaluateInvoiceCollectionState(inv, todayLondonIso)
@@ -67,7 +78,6 @@ export default async function PortalDashboard() {
     }).format(totalOutstandingPence / 100);
 
     // Sort bookings (DC-13: exclude cancelled/rejected/rescheduled sessions from Upcoming)
-    const allBookings = parent.bookings || [];
     const now = new Date();
     const upcomingBookings = allBookings
         .filter(b => new Date(b.startAt) >= now && !INACTIVE_UPCOMING_STATUSES.has(String(b.status)))
@@ -85,50 +95,51 @@ export default async function PortalDashboard() {
         ] as string[])
     );
 
-    // Bookings link to children via the booking_attendees join table (a booking has no
-    // direct childId column), so resolve the attendee child for each booking here.
-    const bookingIds = allBookings.map(b => b.id);
-    const attendeeRows = bookingIds.length > 0
-        ? await db.query.bookingAttendees.findMany({
-            where: inArray(bookingAttendees.bookingId, bookingIds),
-        })
-        : [];
     const childIdByBookingId = new Map(attendeeRows.map(a => [a.bookingId, a.childId]));
 
     return (
         <div className="min-h-screen bg-background text-foreground pb-12">
             {/* Header */}
             <header className="bg-card border-b border-border sticky top-0 z-20">
-                <div className="max-w-5xl mx-auto px-4 py-4 flex justify-between items-center">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-primary/10 border border-primary/20 rounded-full flex items-center justify-center text-primary font-bold">
+                <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex justify-between items-center gap-2">
+                    <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                        <div className="w-10 h-10 bg-primary/10 border border-primary/20 rounded-full flex items-center justify-center text-primary font-bold shrink-0">
                             {parent.firstName[0]}
                         </div>
-                        <div>
+                        <div className="min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
-                                <h1 className="text-lg font-bold text-foreground">{parent.firstName}&apos;s Portal</h1>
+                                <h1 className="text-base sm:text-lg font-bold text-foreground truncate">
+                                    {parent.firstName}&apos;s Portal
+                                </h1>
                                 {familyCentreNames.length > 0 && (
-                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
-                                        <MapPin className="w-3 h-3" aria-hidden="true" />
-                                        {familyCentreNames.join(' · ')}
+                                    <span className="hidden md:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20 truncate max-w-[220px]">
+                                        <MapPin className="w-3 h-3 shrink-0" aria-hidden="true" />
+                                        <span className="truncate">{familyCentreNames.join(' · ')}</span>
                                     </span>
                                 )}
                             </div>
-                            <p className="text-xs text-muted-foreground">{parent.email}</p>
+                            <p className="hidden sm:block text-xs text-muted-foreground truncate">{parent.email}</p>
                         </div>
                     </div>
-                    <div className="flex items-center gap-4">
-                        <Link href="/portal/billing" className="text-sm font-bold text-primary hover:text-primary/80 transition-colors bg-primary/10 px-4 py-2 rounded-lg border border-primary/20 hover:border-primary/40">
-                            Billing & Vouchers
+                    <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+                        <Link
+                            href="/portal/billing"
+                            aria-label="Billing & Vouchers"
+                            className="inline-flex items-center gap-1.5 min-h-[44px] text-xs sm:text-sm font-bold text-primary hover:text-primary/80 transition-colors bg-primary/10 px-2.5 sm:px-4 py-2 rounded-lg border border-primary/20 hover:border-primary/40 whitespace-nowrap"
+                        >
+                            <CreditCard className="w-4 h-4 sm:hidden shrink-0" aria-hidden="true" />
+                            <span className="hidden sm:inline">Billing &amp; Vouchers</span>
+                            <span className="sm:hidden">Billing</span>
                         </Link>
                         <NotificationBell notifications={notifications} unreadCount={unreadCount} />
                         <form action="/api/portal/logout" method="POST">
                             <button
                                 type="submit"
-                                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors px-3 py-2 rounded-lg hover:bg-card cursor-pointer"
+                                aria-label="Sign Out"
+                                className="flex items-center justify-center gap-1.5 sm:gap-2 min-h-[44px] min-w-[44px] text-xs sm:text-sm text-muted-foreground hover:text-foreground transition-colors px-2.5 sm:px-3 py-2 rounded-lg hover:bg-secondary cursor-pointer whitespace-nowrap"
                             >
-                                <LogOut className="w-4 h-4" aria-hidden="true" />
-                                Sign Out
+                                <LogOut className="w-4 h-4 shrink-0" aria-hidden="true" />
+                                <span className="hidden min-[400px]:inline">Sign Out</span>
                             </button>
                         </form>
                     </div>
@@ -251,62 +262,70 @@ export default async function PortalDashboard() {
                         </div>
                     ) : (
                         <div className="space-y-4">
-                            {upcomingBookings.map(booking => (
-                                <div key={booking.id} className="bg-card p-6 rounded-xl border border-border flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-primary/30 transition-all group">
-                                    <div className="flex items-start gap-4">
-                                        <div className="w-12 h-12 bg-primary/10 text-primary rounded-xl flex flex-col items-center justify-center font-bold border border-primary/20 tabular-nums">
-                                            <span className="text-xs uppercase">{new Date(booking.startAt).toLocaleString('en-GB', { month: 'short' })}</span>
-                                            <span className="text-lg leading-none">{new Date(booking.startAt).getDate()}</span>
-                                        </div>
-                                        <div>
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <h3 className="font-bold text-foreground">
-                                                    {booking.assessmentType === 'initial_assessment' ? 'Initial Assessment' : 'Club Session'}
-                                                </h3>
-                                                <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${
-                                                    booking.status === 'pending'
-                                                        ? COLLECTION_STAGE_STYLES.in_period.badge
-                                                        : COLLECTION_STAGE_STYLES.paid.badge
-                                                }`}>
-                                                    {booking.status === 'pending' ? 'Pending' : 'Confirmed'}
-                                                </span>
+                            {upcomingBookings.map(booking => {
+                                const bookingChildId = childIdByBookingId.get(booking.id);
+                                return (
+                                    <div key={booking.id} className="bg-card p-6 rounded-xl border border-border flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-primary/30 transition-all group">
+                                        <div className="flex items-start gap-4">
+                                            <div className="w-12 h-12 bg-primary/10 text-primary rounded-xl flex flex-col items-center justify-center font-bold border border-primary/20 tabular-nums">
+                                                <span className="text-xs uppercase">{new Date(booking.startAt).toLocaleString('en-GB', { month: 'short' })}</span>
+                                                <span className="text-lg leading-none">{new Date(booking.startAt).getDate()}</span>
                                             </div>
-                                            <p className="text-sm text-muted-foreground flex items-center gap-1.5 tabular-nums">
-                                                <Clock className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-                                                {new Date(booking.startAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })} · {booking.duration} mins · In Person
-                                            </p>
-                                            <p className="text-xs text-primary font-medium mt-1 flex items-center gap-1">
-                                                <MapPin className="w-3 h-3" aria-hidden="true" /> {(booking as any).centre?.name || 'Centre'}
-                                            </p>
+                                            <div>
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <h3 className="font-bold text-foreground">
+                                                        {booking.assessmentType === 'initial_assessment' ? 'Initial Assessment' : 'Club Session'}
+                                                    </h3>
+                                                    <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${
+                                                        booking.status === 'pending'
+                                                            ? COLLECTION_STAGE_STYLES.in_period.badge
+                                                            : COLLECTION_STAGE_STYLES.paid.badge
+                                                    }`}>
+                                                        {booking.status === 'pending' ? 'Pending' : 'Confirmed'}
+                                                    </span>
+                                                </div>
+                                                <p className="text-sm text-muted-foreground flex items-center gap-1.5 tabular-nums">
+                                                    <Clock className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                                                    {new Date(booking.startAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })} · {booking.duration} mins · In Person
+                                                </p>
+                                                <p className="text-xs text-primary font-medium mt-1 flex items-center gap-1">
+                                                    <MapPin className="w-3 h-3" aria-hidden="true" /> {(booking as any).centre?.name || 'Centre'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            {(() => {
+                                                const bookingDate = new Date(booking.startAt);
+                                                const canReschedule = (bookingDate.getTime() - Date.now()) > (24 * 60 * 60 * 1000);
+
+                                                if (canReschedule) {
+                                                    return (
+                                                        <>
+                                                            <CancelBookingButton bookingId={booking.id} />
+                                                            <Link
+                                                                href={`/portal/book?reschedule=${booking.id}`}
+                                                                className="min-h-[44px] px-4 py-2 bg-secondary/40 border border-border text-primary text-sm font-bold rounded-lg hover:bg-secondary transition-colors flex items-center justify-center"
+                                                            >
+                                                                Reschedule
+                                                            </Link>
+                                                        </>
+                                                    );
+                                                }
+                                                return null;
+                                            })()}
+                                            {bookingChildId && (
+                                                <Link
+                                                    href={`/portal/children/${bookingChildId}`}
+                                                    className="text-xs font-bold text-primary hover:text-primary/80 transition-colors min-h-[44px] px-2 flex items-center gap-1"
+                                                >
+                                                    <span>Details</span>
+                                                    <ChevronRight className="w-3.5 h-3.5" aria-hidden="true" />
+                                                </Link>
+                                            )}
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                        {(() => {
-                                            const bookingDate = new Date(booking.startAt);
-                                            const canReschedule = (bookingDate.getTime() - Date.now()) > (24 * 60 * 60 * 1000);
-
-                                            if (canReschedule) {
-                                                return (
-                                                    <>
-                                                        <CancelBookingButton bookingId={booking.id} />
-                                                        <Link
-                                                            href={`/portal/book?reschedule=${booking.id}`}
-                                                            className="px-4 py-2 bg-secondary/40 border border-border text-primary text-sm font-bold rounded-lg hover:bg-card transition-colors flex items-center justify-center"
-                                                        >
-                                                            Reschedule
-                                                        </Link>
-                                                    </>
-                                                );
-                                            }
-                                            return null;
-                                        })()}
-                                        <Link href={`/portal/children/${childIdByBookingId.get(booking.id) ?? ''}`} className="text-xs font-bold text-primary hover:text-primary/80 transition-colors min-h-[44px] flex items-center gap-1">
-                                            <span>Details</span>
-                                            <ChevronRight className="w-3.5 h-3.5" aria-hidden="true" />
-                                        </Link>
-                                    </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     )}
                 </section>

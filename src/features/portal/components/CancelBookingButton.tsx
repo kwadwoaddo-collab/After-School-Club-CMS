@@ -25,8 +25,9 @@ export function CancelBookingButton({ bookingId }: { bookingId: string }) {
     <div>
       {!showConfirm ? (
         <button
+          type="button"
           onClick={() => setShowConfirm(true)}
-          className="min-h-[44px] px-4 py-2 border border-destructive/20 text-destructive text-sm font-semibold rounded-xl hover:bg-destructive/5 transition-all"
+          className="min-h-[44px] px-4 py-2 border border-destructive/20 text-destructive text-sm font-semibold rounded-xl hover:bg-destructive/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive transition-all"
         >
           Cancel Booking
         </button>
@@ -36,17 +37,19 @@ export function CancelBookingButton({ bookingId }: { bookingId: string }) {
           <p className="text-xs text-muted-foreground">This action cannot be undone.</p>
           <div className="flex gap-2">
             <button
+              type="button"
               onClick={handleCancel}
               disabled={isPending}
-              className="flex-1 py-2.5 bg-destructive text-white rounded-xl text-sm font-bold disabled:opacity-60 flex items-center justify-center gap-2"
+              className="flex-1 py-2.5 bg-destructive text-destructive-foreground rounded-xl text-sm font-bold disabled:opacity-60 flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive"
             >
-              {isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+              {isPending && <Loader2 className="w-3.5 h-3.5 motion-safe:animate-spin" aria-hidden="true" />}
               Yes, cancel
             </button>
             <button
+              type="button"
               onClick={() => setShowConfirm(false)}
               disabled={isPending}
-              className="flex-1 py-2.5 bg-secondary border border-border rounded-xl text-sm font-bold text-foreground disabled:opacity-60"
+              className="flex-1 py-2.5 bg-secondary border border-border rounded-xl text-sm font-bold text-foreground disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             >
               Keep booking
             </button>
