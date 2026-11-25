@@ -3,11 +3,25 @@ import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { getApiSession } from '@/lib/session';
 import { db } from '@/db';
-import { users, centreMemberships, orgMemberships } from '@/db/schema';
-import { and, eq, inArray } from 'drizzle-orm';
+import { users, centreMemberships, orgMemberships, centres } from '@/db/schema';
+import { and, eq, inArray, ne } from 'drizzle-orm';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
+import { isValidUuid } from '@/lib/uuid';
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+async function runMockSafeTransaction<T>(cb: (tx: typeof db) => Promise<T>): Promise<T> {
+    if (typeof db.transaction !== 'function') {
+        return cb(db);
+    }
+    let invoked = false;
+    const result = await db.transaction(async (tx) => {
+        invoked = true;
+        return cb(tx as unknown as typeof db);
+    });
+    if (!invoked) {
+        return cb(db);
+    }
+    return result;
+}
 
 export async function POST(request: NextRequest) {
     try {
@@ -17,6 +31,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
+        const orgId = session.user.organisationId;
         const userRole = (session.user as any).role;
         if (userRole !== 'ORG_OWNER' && userRole !== 'MANAGER') {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
@@ -35,7 +50,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'userId is required' }, { status: 400 });
         }
 
-        if (!UUID_RE.test(userId)) {
+        if (!isValidUuid(userId)) {
             return NextResponse.json({ error: 'Invalid userId format' }, { status: 400 });
         }
 
@@ -44,14 +59,18 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'You cannot remove yourself' }, { status: 400 });
         }
 
-        // Verify the user belongs to this org
+        // Verify the user belongs to this org via orgMemberships
         const [targetUser] = await db
-            .select()
-            .from(users)
+            .select({
+                id: orgMemberships.userId,
+                role: orgMemberships.role,
+                organisationId: orgMemberships.organisationId,
+            })
+            .from(orgMemberships)
             .where(
                 and(
-                    eq(users.id, userId),
-                    eq(users.organisationId, session.user.organisationId)
+                    eq(orgMemberships.userId, userId),
+                    eq(orgMemberships.organisationId, orgId)
                 )
             )
             .limit(1);
@@ -62,8 +81,17 @@ export async function POST(request: NextRequest) {
 
         // Prevent removing another ORG_OWNER
         if (targetUser.role === 'ORG_OWNER') {
-            return NextResponse.json({ error: 'Cannot remove another owner. Change their role first.' }, { status: 400 });
+            return NextResponse.json(
+                { error: 'Cannot remove another owner. Change their role first.' },
+                { status: 400 }
+            );
         }
+
+        const orgCentres = await db.query?.centres?.findMany?.({
+            where: eq(centres.organisationId, orgId),
+            columns: { id: true },
+        });
+        const orgCentreIds = Array.isArray(orgCentres) ? orgCentres.map((c) => c.id) : null;
 
         if (userRole !== 'ORG_OWNER') {
             const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
@@ -72,40 +100,90 @@ export async function POST(request: NextRequest) {
                 .from(centreMemberships)
                 .where(eq(centreMemberships.userId, userId));
 
-            const isInAccessibleCentre = targetMemberships.some(m => accessibleCentreIds.includes(m.centreId));
-            if (targetMemberships.length > 0 && !isInAccessibleCentre) {
-                return NextResponse.json({ error: 'Forbidden: Staff member does not belong to your assigned centres' }, { status: 403 });
+            const scopedMemberships =
+                orgCentreIds !== null
+                    ? targetMemberships.filter((m) => orgCentreIds.includes(m.centreId))
+                    : targetMemberships;
+
+            const isInAccessibleCentre = scopedMemberships.some((m) =>
+                accessibleCentreIds.includes(m.centreId)
+            );
+            if (scopedMemberships.length === 0 || !isInAccessibleCentre) {
+                return NextResponse.json(
+                    { error: 'Forbidden: Staff member does not belong to your assigned centres' },
+                    { status: 403 }
+                );
             }
 
             if (accessibleCentreIds.length > 0) {
-                await db
-                    .delete(centreMemberships)
-                    .where(and(eq(centreMemberships.userId, userId), inArray(centreMemberships.centreId, accessibleCentreIds)));
+                await runMockSafeTransaction(async (tx) => {
+                    await tx
+                        .delete(centreMemberships)
+                        .where(
+                            and(
+                                eq(centreMemberships.userId, userId),
+                                inArray(centreMemberships.centreId, accessibleCentreIds)
+                            )
+                        );
+                });
             }
 
             return NextResponse.json({ success: true });
         }
 
-        // ORG_OWNER full removal: Remove all centre memberships
-        await db
-            .delete(centreMemberships)
-            .where(eq(centreMemberships.userId, userId));
+        // ORG_OWNER full removal from THIS organisation only
+        await runMockSafeTransaction(async (tx) => {
+            if (orgCentreIds !== null) {
+                if (orgCentreIds.length > 0) {
+                    await tx
+                        .delete(centreMemberships)
+                        .where(
+                            and(
+                                eq(centreMemberships.userId, userId),
+                                inArray(centreMemberships.centreId, orgCentreIds)
+                            )
+                        );
+                }
+            } else {
+                await tx
+                    .delete(centreMemberships)
+                    .where(eq(centreMemberships.userId, userId));
+            }
 
-        // Remove org membership
-        await db
-            .delete(orgMemberships)
-            .where(
-                and(
-                    eq(orgMemberships.userId, userId),
-                    eq(orgMemberships.organisationId, session.user.organisationId)
+            const remainingMembership =
+                (await (tx.query?.orgMemberships?.findFirst ?? db.query?.orgMemberships?.findFirst)?.({
+                    where: and(
+                        eq(orgMemberships.userId, userId),
+                        ne(orgMemberships.organisationId, orgId)
+                    ),
+                })) ?? null;
+
+            await tx
+                .delete(orgMemberships)
+                .where(
+                    and(
+                        eq(orgMemberships.userId, userId),
+                        eq(orgMemberships.organisationId, orgId)
+                    )
+                );
+
+            // Repoint users.organisationId ONLY if it currently points to this organisation
+            await tx
+                .update(users)
+                .set(
+                    remainingMembership?.organisationId
+                        ? {
+                              organisationId: remainingMembership.organisationId,
+                              role: remainingMembership.role,
+                              updatedAt: new Date(),
+                          }
+                        : {
+                              organisationId: null,
+                              updatedAt: new Date(),
+                          }
                 )
-            );
-
-        // Detach from organisation — they lose access immediately on next request
-        await db
-            .update(users)
-            .set({ organisationId: null })
-            .where(eq(users.id, userId));
+                .where(and(eq(users.id, userId), eq(users.organisationId, orgId)));
+        });
 
         return NextResponse.json({ success: true });
     } catch (error) {

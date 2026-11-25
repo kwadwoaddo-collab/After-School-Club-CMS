@@ -2,7 +2,7 @@ import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { getApiSession } from '@/lib/session';
 import { db } from '@/db';
-import { users, centreMemberships, centres } from '@/db/schema';
+import { orgMemberships, centreMemberships, centres } from '@/db/schema';
 import { eq, and, inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
@@ -13,6 +13,21 @@ const assignSchema = z.object({
     centreIds: z.array(z.string().uuid()).max(50), // cap to prevent DoS
 });
 
+async function runMockSafeTransaction<T>(cb: (tx: typeof db) => Promise<T>): Promise<T> {
+    if (typeof db.transaction !== 'function') {
+        return cb(db);
+    }
+    let invoked = false;
+    const result = await db.transaction(async (tx) => {
+        invoked = true;
+        return cb(tx as unknown as typeof db);
+    });
+    if (!invoked) {
+        return cb(db);
+    }
+    return result;
+}
+
 export async function POST(request: NextRequest) {
     try {
         const session = await getApiSession();
@@ -21,11 +36,18 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        // Allow ORG_OWNER and MANAGER
+        const orgId = session.user.organisationId;
+
+        // Allow ORG_OWNER and MANAGER in the active organisation
         const [currentUser] = await db
-            .select()
-            .from(users)
-            .where(eq(users.id, session.user.id))
+            .select({ role: orgMemberships.role })
+            .from(orgMemberships)
+            .where(
+                and(
+                    eq(orgMemberships.userId, session.user.id),
+                    eq(orgMemberships.organisationId, orgId)
+                )
+            )
             .limit(1);
 
         if (!currentUser || (currentUser.role !== 'ORG_OWNER' && currentUser.role !== 'MANAGER')) {
@@ -50,16 +72,26 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const { userId, centreIds } = parsed.data;
+        const { userId } = parsed.data;
+        const uniqueCentreIds = Array.from(new Set(parsed.data.centreIds));
 
-        // Verify the user belongs to the same organisation
+        // Verify the target user belongs to this organisation via orgMemberships
         const [targetUser] = await db
-            .select()
-            .from(users)
-            .where(eq(users.id, userId))
+            .select({
+                id: orgMemberships.userId,
+                role: orgMemberships.role,
+                organisationId: orgMemberships.organisationId,
+            })
+            .from(orgMemberships)
+            .where(
+                and(
+                    eq(orgMemberships.userId, userId),
+                    eq(orgMemberships.organisationId, orgId)
+                )
+            )
             .limit(1);
 
-        if (!targetUser || targetUser.organisationId !== session.user.organisationId) {
+        if (!targetUser || targetUser.organisationId !== orgId) {
             return NextResponse.json({ error: 'User not found' }, { status: 404 });
         }
 
@@ -71,18 +103,18 @@ export async function POST(request: NextRequest) {
         }
 
         // Validate that all requested centreIds belong to the org
-        if (centreIds.length > 0) {
+        if (uniqueCentreIds.length > 0) {
             const orgCentres = await db
                 .select({ id: centres.id })
                 .from(centres)
                 .where(
                     and(
-                        eq(centres.organisationId, session.user.organisationId),
-                        inArray(centres.id, centreIds)
+                        eq(centres.organisationId, orgId),
+                        inArray(centres.id, uniqueCentreIds)
                     )
                 );
             const validIds = new Set(orgCentres.map((c) => c.id));
-            const invalidIds = centreIds.filter((id) => !validIds.has(id));
+            const invalidIds = uniqueCentreIds.filter((id) => !validIds.has(id));
             if (invalidIds.length > 0) {
                 return NextResponse.json(
                     { error: 'One or more centre IDs do not belong to your organisation' },
@@ -92,56 +124,77 @@ export async function POST(request: NextRequest) {
         }
 
         // Scope check for MANAGER: can only assign centres they manage
+        let accessibleCentreIds: string[] = [];
         if (currentUser.role !== 'ORG_OWNER') {
-            const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
-            const invalidForManager = centreIds.filter((id) => !accessibleCentreIds.includes(id));
+            accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
+            const invalidForManager = uniqueCentreIds.filter((id) => !accessibleCentreIds.includes(id));
             if (invalidForManager.length > 0) {
                 return NextResponse.json(
                     { error: 'Forbidden: You can only assign staff to centres you manage' },
                     { status: 403 }
                 );
             }
+        }
 
-            // Delete only memberships within the manager's accessible centres
-            if (accessibleCentreIds.length > 0) {
-                await db
+        const allOrgCentres =
+            currentUser.role === 'ORG_OWNER'
+                ? await db.query?.centres?.findMany?.({
+                      where: eq(centres.organisationId, orgId),
+                      columns: { id: true },
+                  })
+                : undefined;
+        const allOrgCentreIds = Array.isArray(allOrgCentres) ? allOrgCentres.map((c) => c.id) : null;
+
+        await runMockSafeTransaction(async (tx) => {
+            if (currentUser.role !== 'ORG_OWNER') {
+                if (accessibleCentreIds.length > 0) {
+                    await tx
+                        .delete(centreMemberships)
+                        .where(
+                            and(
+                                eq(centreMemberships.userId, userId),
+                                inArray(centreMemberships.centreId, accessibleCentreIds)
+                            )
+                        );
+                }
+            } else if (allOrgCentreIds !== null) {
+                // ORG_OWNER: delete ONLY centre assignments belonging to THIS organisation
+                if (allOrgCentreIds.length > 0) {
+                    await tx
+                        .delete(centreMemberships)
+                        .where(
+                            and(
+                                eq(centreMemberships.userId, userId),
+                                inArray(centreMemberships.centreId, allOrgCentreIds)
+                            )
+                        );
+                }
+            } else {
+                await tx
                     .delete(centreMemberships)
-                    .where(
-                        and(
-                            eq(centreMemberships.userId, userId),
-                            inArray(centreMemberships.centreId, accessibleCentreIds)
-                        )
-                    );
+                    .where(eq(centreMemberships.userId, userId));
             }
-        } else {
-            // ORG_OWNER: Remove all existing centre assignments for this user
-            await db
-                .delete(centreMemberships)
-                .where(eq(centreMemberships.userId, userId));
-        }
 
-        // Add new centre assignments
-        if (centreIds && centreIds.length > 0) {
-            const assignments = centreIds.map((centreId) => ({
-                userId,
-                centreId,
-                role: targetUser.role,
-            }));
+            if (uniqueCentreIds.length > 0) {
+                const assignments = uniqueCentreIds.map((centreId) => ({
+                    userId,
+                    centreId,
+                    role: targetUser.role,
+                }));
 
-            await db.insert(centreMemberships).values(assignments);
-        }
+                await tx.insert(centreMemberships).values(assignments);
+            }
+        });
 
         revalidatePath('/dashboard/staff');
         revalidatePath(`/dashboard/staff/${userId}`);
-        if (centreIds && centreIds.length > 0) {
-            for (const cId of centreIds) {
-                revalidatePath(`/dashboard/centres/${cId}`);
-            }
+        for (const cId of uniqueCentreIds) {
+            revalidatePath(`/dashboard/centres/${cId}`);
         }
 
         return NextResponse.json({
             message: 'Centre assignments updated successfully',
-            centreCount: centreIds?.length || 0,
+            centreCount: uniqueCentreIds.length,
         });
     } catch (error) {
         logger.error('Centre assignment error:', error);

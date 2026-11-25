@@ -2,27 +2,36 @@ import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { staffInvites, users, orgMemberships, centreMemberships, verificationTokens } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { hashToken } from '@/lib/magic-link';
 import { getApiSession } from '@/lib/session';
+import { validatePassword } from '@/lib/validations/auth';
 import bcrypt from 'bcryptjs';
 
 /**
  * POST /api/staff/accept-invite
  * Called when staff accept their invitation.
- * - For brand-new placeholder accounts: activates the account, creates org/centre memberships,
- *   and marks the invite as used.
+ * - For brand-new placeholder accounts: validates optional password via validatePassword(),
+ *   activates the account, creates org/centre memberships, and marks the invite as used.
  * - For existing accounts (e.g. invited to a second organisation): requires proof of account
  *   ownership (an active authenticated session for that email/user, or verifying their existing
- *   password via bcrypt.compare) before granting org/centre memberships, and never overwrites
- *   their existing passwordHash or primary organisation/role.
+ *   password via bcrypt.compare) before granting org/centre memberships, never overwrites
+ *   their existing passwordHash, and switches their active organisation/role to the newly
+ *   accepted invitation's organisation so they land in the invited workspace.
  */
 export async function POST(request: NextRequest) {
     try {
-        const body = await request.json();
-        const { token, password, name } = body;
+        const body = await request.json().catch(() => null);
+        if (!body || typeof body !== 'object') {
+            return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+        }
+        const { token, password, name } = body as {
+            token?: unknown;
+            password?: unknown;
+            name?: unknown;
+        };
 
-        if (!token) {
+        if (!token || typeof token !== 'string') {
             return NextResponse.json({ error: 'Missing token' }, { status: 400 });
         }
 
@@ -58,11 +67,12 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'User account not found' }, { status: 404 });
         }
 
-        const existingMemberships = db.query?.orgMemberships?.findMany
-            ? await db.query.orgMemberships.findMany({
-                  where: eq(orgMemberships.userId, user.id),
-              })
-            : [];
+        const existingMemberships =
+            (db.query?.orgMemberships?.findMany
+                ? await db.query.orgMemberships.findMany({
+                      where: eq(orgMemberships.userId, user.id),
+                  })
+                : []) ?? [];
 
         const isAlreadyMemberOfInviteOrg =
             (user.organisationId === invite.organisationId && Boolean(user.emailVerified)) ||
@@ -97,30 +107,40 @@ export async function POST(request: NextRequest) {
                 );
             }
 
-            // Grant membership in the invited organisation without overwriting existing passwordHash or primary org/role
-            await Promise.resolve(
-                db.insert(orgMemberships).values({
-                    userId: user.id,
-                    organisationId: invite.organisationId,
-                    role: invite.role,
-                }).onConflictDoNothing?.()
-            ).catch(() => {});
-
-            if (!user.organisationId) {
+            // Grant/sync membership in the invited organisation without overwriting existing passwordHash
+            const alreadyHasMembershipRow = existingMemberships.some(
+                (m) => m.organisationId === invite.organisationId
+            );
+            if (alreadyHasMembershipRow) {
                 await db
-                    .update(users)
-                    .set({
+                    .update(orgMemberships)
+                    .set({ role: invite.role })
+                    .where(
+                        and(
+                            eq(orgMemberships.userId, user.id),
+                            eq(orgMemberships.organisationId, invite.organisationId)
+                        )
+                    );
+            } else {
+                await Promise.resolve(
+                    db.insert(orgMemberships).values({
+                        userId: user.id,
                         organisationId: invite.organisationId,
                         role: invite.role,
-                        emailVerified: user.emailVerified ?? new Date(),
-                    })
-                    .where(eq(users.id, user.id));
-            } else if (!user.emailVerified) {
-                await db
-                    .update(users)
-                    .set({ emailVerified: new Date() })
-                    .where(eq(users.id, user.id));
+                    }).onConflictDoNothing?.()
+                ).catch(() => {});
             }
+
+            // Switch active organisation/role to the newly accepted org (preserving passwordHash)
+            await db
+                .update(users)
+                .set({
+                    organisationId: invite.organisationId,
+                    role: invite.role,
+                    emailVerified: user.emailVerified ?? new Date(),
+                    updatedAt: new Date(),
+                })
+                .where(eq(users.id, user.id));
         } else {
             // Brand-new invited staff member (or returning passwordless staff in same org)
             const updates: Record<string, unknown> = {
@@ -129,11 +149,22 @@ export async function POST(request: NextRequest) {
                 role: user.organisationId ? user.role : invite.role,
             };
 
-            if (!user.passwordHash && typeof password === 'string' && password.length >= 8) {
+            if (!user.passwordHash && password !== undefined && password !== null && password !== '') {
+                if (typeof password !== 'string') {
+                    return NextResponse.json({ error: 'Invalid password' }, { status: 400 });
+                }
+                const pwValidation = validatePassword(password);
+                if (!pwValidation.valid) {
+                    return NextResponse.json(
+                        { error: pwValidation.error || 'Invalid password' },
+                        { status: 400 }
+                    );
+                }
                 updates.passwordHash = await bcrypt.hash(password, 10);
             }
+
             if (typeof name === 'string' && name.trim().length > 0) {
-                updates.name = name.trim();
+                updates.name = name.trim().slice(0, 100);
             }
 
             await db

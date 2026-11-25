@@ -103,10 +103,11 @@ export async function POST(request: NextRequest) {
             expiresAt,
         });
 
-        // PM-2E2.B4.F: Build the magic link with trusted canonical origin — raw token in URL, hash in DB
+        // PM-2E2.B4.F + W4-D05: Build the magic link with trusted canonical origin and mode=login
         const baseUrl = getTrustedApplicationUrl();
         const magicLinkUrl = new URL('/accept-invite', baseUrl);
         magicLinkUrl.searchParams.set('token', rawToken);
+        magicLinkUrl.searchParams.set('mode', 'login');
         const magicLink = magicLinkUrl.toString();
 
         // Send the email — sender will show as "[Org Name] via SprintScale"
@@ -119,7 +120,8 @@ export async function POST(request: NextRequest) {
 
         if (!emailResult.success) {
             logger.error(`[Magic Link] Failed to send email to ${normalizedEmail}:`, emailResult.error);
-            return NextResponse.json({ error: 'Failed to send login link' }, { status: 500 });
+            // Return generic 200 to prevent account enumeration via email delivery failures
+            return NextResponse.json({ success: true });
         }
 
         logger.info(`[Magic Link] Sent to ${normalizedEmail}, token expires at ${expiresAt.toISOString()} (hash stored)`);
