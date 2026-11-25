@@ -6,6 +6,7 @@ import { invoices } from '@/db/schema';
 import { eq, and, gte, lte, desc, inArray } from 'drizzle-orm';
 import { getUserAccessibleCentres } from '@/lib/permissions';
 import { neutralizeCsvFormula } from '@/lib/csv-safety';
+import { isValidUuid } from '@/lib/uuid';
 import {
     evaluateInvoiceCollectionState,
     toLondonBusinessDate,
@@ -54,6 +55,10 @@ export async function GET(req: NextRequest) {
         const toParam = searchParams.get('to');
         const requestedCentre = searchParams.get('centre');
 
+        if (requestedCentre && requestedCentre !== 'all' && !isValidUuid(requestedCentre)) {
+            return new NextResponse('Invalid centre ID', { status: 400 });
+        }
+
         // Default: current month
         const now = new Date();
         const defaultFrom = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -93,6 +98,7 @@ export async function GET(req: NextRequest) {
                     headers: {
                         'Content-Type': 'text/csv; charset=utf-8',
                         'Content-Disposition': `attachment; filename="finance-${fromStr}-to-${toStr}.csv"`,
+                        'Cache-Control': 'private, no-store',
                     },
                 });
             }
@@ -106,7 +112,7 @@ export async function GET(req: NextRequest) {
             }
         }
 
-        // Query invoices in date range for this organisation
+        // Query invoices in date range for this organisation (bounded to 5000 rows)
         const invoiceRows = await db.query.invoices.findMany({
             where: and(
                 eq(invoices.organisationId, orgId),
@@ -115,6 +121,7 @@ export async function GET(req: NextRequest) {
                 centreCondition
             ),
             orderBy: [desc(invoices.invoiceDate)],
+            limit: 5000,
             with: {
                 parent: true,
                 child: true,
@@ -177,6 +184,7 @@ export async function GET(req: NextRequest) {
             headers: {
                 'Content-Type': 'text/csv; charset=utf-8',
                 'Content-Disposition': `attachment; filename="finance-${fromStr}-to-${toStr}.csv"`,
+                'Cache-Control': 'private, no-store',
             },
         });
     } catch (error) {

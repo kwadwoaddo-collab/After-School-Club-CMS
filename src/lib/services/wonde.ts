@@ -1,6 +1,6 @@
 import { db } from '@/db';
 import { children, parents } from '@/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, isNull } from 'drizzle-orm';
 import { logger } from '@/lib/logger';
 
 export interface WondeContact {
@@ -38,18 +38,22 @@ export class WondeService {
     };
 
     for (const ws of wondeStudents) {
-      // 1. Sync Contacts (Parents) first
+      // 1. Sync Contacts (Parents) first — strictly exclude soft-deleted parents
       let parentId: string | null = null;
       
       for (const wc of ws.contact_details) {
-        // Try to match parent
-        const existingParents = await db.query.parents.findMany({
+        // Try to match active (non-deleted) parent
+        const rawParents = await db.query.parents.findMany({
           where: and(
             eq(parents.organisationId, this.organisationId),
             eq(parents.firstName, wc.forename),
-            eq(parents.lastName, wc.surname)
+            eq(parents.lastName, wc.surname),
+            parents.deletedAt ? isNull(parents.deletedAt) : undefined
           )
         });
+        const existingParents = rawParents.filter(
+          (p) => (p as { deletedAt?: Date | null }).deletedAt == null
+        );
 
         let matchedParent = existingParents.find(p => p.email === wc.email || p.phone === wc.phone);
         if (!matchedParent && existingParents.length > 0) {
@@ -75,36 +79,45 @@ export class WondeService {
         }
       }
 
-      // If no contacts, we still need a dummy parent or skip. Let's skip if no parent to attach to.
+      // Skip if no parent contact could be synced
       if (!parentId) {
-        logger.warn(`Skipping Wonde student \${ws.id} because no contacts could be synced.`);
+        logger.warn(`Skipping Wonde student ${ws.id} because no contacts could be synced.`);
         continue;
       }
 
-      // 2. Sync Student
-      // Convert date string to Date object
+      // 2. Sync Student — strictly exclude soft-deleted children
       const dobDate = new Date(ws.date_of_birth);
 
-      const existingStudents = await db.query.children.findMany({
+      const rawStudents = await db.query.children.findMany({
         where: and(
           eq(children.organisationId, this.organisationId),
           eq(children.firstName, ws.forename),
-          eq(children.lastName, ws.surname)
+          eq(children.lastName, ws.surname),
+          children.deletedAt ? isNull(children.deletedAt) : undefined
         )
       });
+      const existingStudents = rawStudents.filter(
+        (s) => (s as { deletedAt?: Date | null }).deletedAt == null
+      );
 
-      // Simple match on Date of birth
+      // Match on Date of birth
       const matchedStudent = existingStudents.find(
         s => s.dateOfBirth && s.dateOfBirth.toISOString().split('T')[0] === ws.date_of_birth
       );
 
       if (matchedStudent) {
         results.matchedStudents++;
-        // Update if necessary (e.g. link centreId if not set)
+        // Link centreId if not set, scoped to organisationId and active child
         if (!matchedStudent.centreId) {
           await db.update(children)
             .set({ centreId: this.centreId })
-            .where(eq(children.id, matchedStudent.id));
+            .where(
+              and(
+                eq(children.id, matchedStudent.id),
+                eq(children.organisationId, this.organisationId),
+                children.deletedAt ? isNull(children.deletedAt) : undefined
+              )
+            );
         }
       } else {
         // Create student

@@ -2,7 +2,7 @@
 
 import { db } from '@/db';
 import { children } from '@/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, isNull } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { requireTenantSession } from '@/lib/session';
 import * as permissions from '@/lib/permissions';
@@ -18,12 +18,19 @@ export async function updateStudentSchedule(studentId: string, sessions: string[
         throw new Error('Forbidden: You do not have permission to update student schedules');
     }
 
-    // Verify student belongs to user's organisation
+    // Verify student is active (not soft-deleted) and belongs to user's organisation
     const student = await db.query.children.findFirst({
-        where: eq(children.id, studentId),
+        where: and(
+            eq(children.id, studentId),
+            children.deletedAt ? isNull(children.deletedAt) : undefined
+        ),
     });
 
-    if (!student || student.organisationId !== session.user.organisationId) {
+    if (
+        !student ||
+        (student as { deletedAt?: Date | null }).deletedAt != null ||
+        student.organisationId !== session.user.organisationId
+    ) {
         throw new Error('Student not found or unauthorized');
     }
 
@@ -37,13 +44,19 @@ export async function updateStudentSchedule(studentId: string, sessions: string[
         }
     }
 
-    // Update registeredSessions
+    // Update registeredSessions on non-deleted student
     await db.update(children)
         .set({
             registeredSessions: sessions,
             updatedAt: new Date(),
         })
-        .where(and(eq(children.id, studentId), eq(children.organisationId, session.user.organisationId)));
+        .where(
+            and(
+                eq(children.id, studentId),
+                eq(children.organisationId, session.user.organisationId),
+                children.deletedAt ? isNull(children.deletedAt) : undefined
+            )
+        );
 
     revalidatePath(`/dashboard/students/${studentId}`);
     revalidatePath('/dashboard/students');
