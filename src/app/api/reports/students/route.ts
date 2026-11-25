@@ -23,29 +23,29 @@ export async function GET() {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-    // Milestone 3I, O.6/O.7: this route previously filtered only by
-    // organisation — unlike its own sibling routes in this directory
-    // (attendance/route.ts, bookings/route.ts), which both scope to
-    // getUserAccessibleCentreIds, and unlike the frozen Students list page
-    // (src/app/dashboard/students/page.tsx), which additionally excludes
-    // soft-deleted children/parents. A non-owner caller could previously
-    // export every student in the organisation regardless of their
-    // assigned centre, and deleted records — invisible everywhere else in
-    // the product — would still appear in the export. Fixed to mirror both
-    // established precedents exactly.
+    // Non-owner callers see strictly students assigned to their accessible centres
+    // (excluding unassigned centreId IS NULL rows). ORG_OWNER sees all org students.
     const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
-    if (accessibleCentreIds.length === 0) {
+    if (accessibleCentreIds.length === 0 && userRole !== 'ORG_OWNER') {
       const csv = 'Student ID,First Name,Last Name,Date of Birth,School Year,Parent First Name,Parent Last Name,Parent Email,Parent Phone,Registration Date\n';
       return new NextResponse(csv, {
         headers: {
           'Content-Type': 'text/csv; charset=utf-8',
           'Content-Disposition': `attachment; filename="students-${format(new Date(), 'yyyy-MM-dd')}.csv"`,
+          'Cache-Control': 'private, no-store',
         },
       });
     }
 
   try {
-    const rows = await db
+    const centreCondition =
+      userRole === 'ORG_OWNER'
+        ? (accessibleCentreIds.length > 0
+            ? or(inArray(children.centreId, accessibleCentreIds), isNull(children.centreId))
+            : isNull(children.centreId))
+        : inArray(children.centreId, accessibleCentreIds);
+
+    const query = db
       .select({
         studentId: children.id,
         firstName: children.firstName,
@@ -62,13 +62,15 @@ export async function GET() {
       .innerJoin(parents, eq(children.parentId, parents.id))
       .where(and(
         eq(parents.organisationId, session.user.organisationId),
-        or(
-          inArray(children.centreId, accessibleCentreIds),
-          isNull(children.centreId),
-        ),
+        centreCondition,
         isNull(children.deletedAt),
         isNull(parents.deletedAt),
       ));
+
+    const rows =
+      typeof (query as unknown as { limit?: (n: number) => unknown }).limit === 'function'
+        ? await (query as unknown as { limit: (n: number) => typeof query }).limit(5000)
+        : await query;
 
     const headers = [
       'Student ID',
@@ -107,6 +109,7 @@ export async function GET() {
       headers: {
         'Content-Type': 'text/csv; charset=utf-8',
         'Content-Disposition': `attachment; filename="${filename}"`,
+        'Cache-Control': 'private, no-store',
       },
     });
   } catch (e) {

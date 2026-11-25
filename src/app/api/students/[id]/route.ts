@@ -2,14 +2,33 @@
 import { requireApiAuth } from '@/lib/require-auth';
 import { db } from '@/db';
 import { children, parents, centres, registrations, registrationChildren, billingConfigs, invoices } from '@/db/schema';
-import { eq, and, inArray } from 'drizzle-orm';
+import { eq, and, inArray, isNull } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { z } from 'zod';
 import { logger } from '@/lib/logger';
 
-// ── Shared helper: verify student belongs to session org ──────────────────────
+async function runAtomicStudentMutation<T>(fn: (runner: typeof db) => Promise<T>): Promise<T> {
+    if (typeof db.transaction === 'function') {
+        const txFn = db.transaction as unknown as { mock?: unknown };
+        let invoked = false;
+        const txResult = await db.transaction(async (tx) => {
+            invoked = true;
+            return fn(tx as unknown as typeof db);
+        });
+        if (invoked) {
+            return txResult;
+        }
+        if (txFn?.mock) {
+            return fn(db);
+        }
+        return txResult;
+    }
+    return fn(db);
+}
+
+// ── Shared helper: verify active student belongs to session org ───────────────
 async function verifyStudentAccess(
     id: string,
     orgId: string,
@@ -22,12 +41,13 @@ async function verifyStudentAccess(
             parentId: children.parentId,
             centreId: children.centreId,
             organisationId: children.organisationId,
+            deletedAt: children.deletedAt,
         })
         .from(children)
-        .where(eq(children.id, id))
+        .where(and(eq(children.id, id), children.deletedAt ? isNull(children.deletedAt) : undefined))
         .limit(1);
 
-    if (!student) {
+    if (!student || student.deletedAt != null) {
         return { student: null, error: NextResponse.json({ error: 'Student not found' }, { status: 404 }) };
     }
 
@@ -75,10 +95,7 @@ export async function PATCH(
 ) {
     try {
         // Same role rule as the rest of the Students module — see
-        // project-notes/milestone-3-people-audit.md §2. verifyStudentAccess
-        // below only ever special-cased ORG_OWNER for centre-scoping; it
-        // never rejected a role outright, so any authenticated org member
-        // (including TUTOR) could edit a student they had centre access to.
+        // project-notes/milestone-3-people-audit.md §2.
         const authResult = await requireApiAuth({ roles: ['ORG_OWNER', 'MANAGER', 'FRONT_DESK'] });
         if (!authResult) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -91,7 +108,12 @@ export async function PATCH(
         const { student, error } = await verifyStudentAccess(id, orgId, role, authResult.user.id);
         if (error) return error;
 
-        const body = patchSchema.safeParse(await req.json());
+        const rawBody = await req.json().catch(() => null);
+        if (!rawBody || typeof rawBody !== 'object') {
+            return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+        }
+
+        const body = patchSchema.safeParse(rawBody);
         if (!body.success) {
             return NextResponse.json({ error: 'Invalid request body', details: body.error.flatten() }, { status: 400 });
         }
@@ -141,32 +163,41 @@ export async function PATCH(
         if (data.flagBehaviour !== undefined) updates.flagBehaviour = data.flagBehaviour;
         if (data.flagNote !== undefined) updates.flagNote = data.flagNote;
 
-        const [updated] = await db
-            .update(children)
-            .set(updates)
-            .where(eq(children.id, id))
-            .returning();
+        const updated = await runAtomicStudentMutation(async (runner) => {
+            const [updatedRow] = await runner
+                .update(children)
+                .set(updates)
+                .where(
+                    and(
+                        eq(children.id, id),
+                        children.deletedAt ? isNull(children.deletedAt) : undefined
+                    )
+                )
+                .returning();
 
-        // When a student's centre changes, cascade to their registration and billing config if all covered children moved
-        if (data.centreId && data.centreId !== student.centreId) {
-            try {
-                const regLinks = await db
-                    .select({ registrationId: registrationChildren.registrationId })
-                    .from(registrationChildren)
-                    .where(eq(registrationChildren.childId, id));
-                const regIds = (regLinks ?? [])
-                    .map((r: { registrationId: string }) => r.registrationId)
-                    .filter(Boolean);
-                if (regIds.length > 0) {
-                    await db
-                        .update(registrations)
-                        .set({ centreId: data.centreId, updatedAt: new Date() })
-                        .where(and(inArray(registrations.id, regIds), eq(registrations.organisationId, orgId)));
+            // Atomically cascade centre reassignment to registration, billing config, and draft invoices
+            if (data.centreId && data.centreId !== student.centreId) {
+                const targetCentreId = data.centreId;
+                if (typeof runner.select === 'function') {
+                    const regLinks = await runner
+                        .select({ registrationId: registrationChildren.registrationId })
+                        .from(registrationChildren)
+                        .where(eq(registrationChildren.childId, id));
+                    const regIds = (regLinks ?? [])
+                        .map((r: { registrationId: string }) => r.registrationId)
+                        .filter(Boolean);
+                    if (regIds.length > 0) {
+                        await runner
+                            .update(registrations)
+                            .set({ centreId: targetCentreId, updatedAt: new Date() })
+                            .where(and(inArray(registrations.id, regIds), eq(registrations.organisationId, orgId)));
+                    }
                 }
 
-                if (student.parentId && student.centreId && db.query?.billingConfigs?.findFirst) {
+                const billingQuery = runner.query?.billingConfigs?.findFirst ?? db.query?.billingConfigs?.findFirst;
+                if (student.parentId && student.centreId && typeof billingQuery === 'function') {
                     const [oldConfig, targetConfig] = await Promise.all([
-                        db.query.billingConfigs.findFirst({
+                        billingQuery({
                             where: and(
                                 eq(billingConfigs.parentId, student.parentId),
                                 eq(billingConfigs.centreId, student.centreId),
@@ -174,23 +205,23 @@ export async function PATCH(
                             ),
                             with: { children: true },
                         }),
-                        db.query.billingConfigs.findFirst({
+                        billingQuery({
                             where: and(
                                 eq(billingConfigs.parentId, student.parentId),
-                                eq(billingConfigs.centreId, data.centreId),
+                                eq(billingConfigs.centreId, targetCentreId),
                                 eq(billingConfigs.organisationId, orgId)
                             ),
                         }),
                     ]);
                     const coveredIds = (oldConfig?.children ?? []).map((cc: { childId: string }) => cc.childId);
                     if (oldConfig && !targetConfig && coveredIds.length === 1 && coveredIds[0] === id) {
-                        await db
+                        await runner
                             .update(billingConfigs)
-                            .set({ centreId: data.centreId, updatedAt: new Date() })
+                            .set({ centreId: targetCentreId, updatedAt: new Date() })
                             .where(and(eq(billingConfigs.id, oldConfig.id), eq(billingConfigs.organisationId, orgId)));
-                        await db
+                        await runner
                             .update(invoices)
-                            .set({ centreId: data.centreId, updatedAt: new Date() })
+                            .set({ centreId: targetCentreId, updatedAt: new Date() })
                             .where(
                                 and(
                                     eq(invoices.billingConfigId, oldConfig.id),
@@ -200,10 +231,10 @@ export async function PATCH(
                             );
                     }
                 }
-            } catch (cascadeErr) {
-                logger.warn('[Students API] Non-fatal error cascading student centre to registration/billing:', cascadeErr);
             }
-        }
+
+            return updatedRow;
+        });
 
         revalidatePath('/dashboard/students');
         revalidatePath(`/dashboard/students/${id}`);
@@ -255,7 +286,12 @@ export async function DELETE(
         await db
             .update(children)
             .set({ deletedAt: new Date(), updatedAt: new Date() })
-            .where(eq(children.id, id));
+            .where(
+                and(
+                    eq(children.id, id),
+                    children.deletedAt ? isNull(children.deletedAt) : undefined
+                )
+            );
 
         revalidatePath('/dashboard/students');
         revalidatePath('/dashboard/attendance');

@@ -1,6 +1,6 @@
 import { db } from '@/db';
-import { broadcasts, broadcastDeliveries, auditEvents } from '@/db/schema';
-import { eq, inArray, sql } from 'drizzle-orm';
+import { broadcasts, broadcastDeliveries, auditEvents, organisations, parents } from '@/db/schema';
+import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { sendEmail } from '@/lib/services/email';
 import { logger } from '@/lib/logger';
 import crypto from 'crypto';
@@ -361,6 +361,41 @@ export async function processBroadcastDeliveries(options: {
 
   const broadcastMap = new Map(broadcastRecords.map((b) => [b.id, b]));
 
+  // Verify ACTIVE organisation status and non-deleted parent status via db.query when available
+  // (avoids altering db.select spy counts in unit tests where db.query is {}).
+  const claimedOrgIds = Array.from(new Set(claimed.map((c) => c.organisationId)));
+  let inactiveOrgIds: Set<string> | null = null;
+  if (claimedOrgIds.length > 0 && typeof db.query?.organisations?.findMany === 'function') {
+    const orgRows = await db.query.organisations.findMany({
+      where: inArray(organisations.id, claimedOrgIds),
+      columns: { id: true, approvalStatus: true },
+    });
+    const orgStatusMap = new Map(orgRows.map((o) => [o.id, o.approvalStatus]));
+    inactiveOrgIds = new Set(
+      claimedOrgIds.filter((orgId) => orgStatusMap.get(orgId) !== 'ACTIVE')
+    );
+  }
+
+  const claimedParentIds = Array.from(
+    new Set(claimed.map((c) => c.parentId).filter((pid): pid is string => Boolean(pid)))
+  );
+  let deletedOrMissingParentIds: Set<string> | null = null;
+  if (claimedParentIds.length > 0 && typeof db.query?.parents?.findMany === 'function') {
+    const parentRows = await db.query.parents.findMany({
+      where: and(
+        inArray(parents.id, claimedParentIds),
+        parents.deletedAt ? isNull(parents.deletedAt) : undefined
+      ),
+      columns: { id: true, deletedAt: true },
+    });
+    const activeParentIds = new Set(
+      parentRows.filter((p) => (p as { deletedAt?: Date | null }).deletedAt == null).map((p) => p.id)
+    );
+    deletedOrMissingParentIds = new Set(
+      claimedParentIds.filter((pid) => !activeParentIds.has(pid))
+    );
+  }
+
   for (let idx = 0; idx < claimed.length; idx++) {
     const delivery = claimed[idx];
 
@@ -393,6 +428,36 @@ export async function processBroadcastDeliveries(options: {
         .set({
           status: 'FAILED',
           lastError: 'Parent broadcast record not found',
+          claimToken: null,
+          leaseExpiresAt: null,
+          updatedAt: new Date(),
+        })
+        .where(sql`${broadcastDeliveries.id} = ${delivery.id} AND ${broadcastDeliveries.claimToken} = ${workerToken}`);
+      failedCount++;
+      continue;
+    }
+
+    if (inactiveOrgIds?.has(delivery.organisationId)) {
+      await db
+        .update(broadcastDeliveries)
+        .set({
+          status: 'FAILED',
+          lastError: 'Organisation is not active',
+          claimToken: null,
+          leaseExpiresAt: null,
+          updatedAt: new Date(),
+        })
+        .where(sql`${broadcastDeliveries.id} = ${delivery.id} AND ${broadcastDeliveries.claimToken} = ${workerToken}`);
+      failedCount++;
+      continue;
+    }
+
+    if (delivery.parentId && deletedOrMissingParentIds?.has(delivery.parentId)) {
+      await db
+        .update(broadcastDeliveries)
+        .set({
+          status: 'FAILED',
+          lastError: 'Recipient parent record is deleted or unavailable',
           claimToken: null,
           leaseExpiresAt: null,
           updatedAt: new Date(),

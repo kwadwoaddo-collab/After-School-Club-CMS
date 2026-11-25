@@ -10,7 +10,7 @@
 
 import { db } from '@/db';
 import { users, centres, centreMemberships, children, orgMemberships } from '@/db/schema';
-import { eq, and, inArray, or, sql } from 'drizzle-orm';
+import { eq, and, inArray, isNull } from 'drizzle-orm';
 import { requestCache } from '@/lib/request-cache';
 
 /** Match auth(): the active organisation must have a live membership.
@@ -122,7 +122,8 @@ export async function getUserRoleForCentre(userId: string, centreId: string): Pr
  * Get the set of child IDs visible to a user, scoped to their accessible centres.
  *
  * Returns `null` for ORG_OWNER — callers interpret this as "no restriction".
- * Returns a (possibly empty) string[] for all other roles.
+ * Returns a (possibly empty) string[] for all other roles, excluding soft-deleted
+ * children and unassigned (`centreId IS NULL`) children.
  */
 export async function getVisibleChildIds(
     userId: string,
@@ -141,10 +142,8 @@ export async function getVisibleChildIds(
         .where(
             and(
                 eq(children.organisationId, orgId),
-                or(
-                    inArray(children.centreId, accessibleCentreIds),
-                    sql`${children.centreId} IS NULL`
-                )
+                inArray(children.centreId, accessibleCentreIds),
+                children.deletedAt ? isNull(children.deletedAt) : undefined
             )
         );
 
