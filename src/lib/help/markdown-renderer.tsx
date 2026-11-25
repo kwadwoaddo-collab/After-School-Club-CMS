@@ -9,6 +9,70 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { getVideoById } from './get-help-content';
+import { HELP_GUIDES } from './help-manifest';
+
+const KNOWN_GUIDE_SLUGS = new Set(HELP_GUIDES.map(g => g.slug));
+const LEGACY_MD_SLUG_ALIASES: Record<string, string> = {
+  registrations: 'registrations-intake',
+  attendance: 'attendance-roll-call',
+  'attendance-register-kiosk': 'attendance-roll-call',
+  'parent-guide': 'parent-portal-guide',
+  parents: 'parents-family-records',
+  '01-system-foundations': 'master-system-foundations',
+  '02-family-to-booking': 'master-family-to-booking',
+  '03-attendance-to-safeguarding': 'master-attendance-to-safeguarding',
+  '04-finance-billing-payments': 'master-finance-billing-payments',
+  '05-administration-operations': 'master-administration-operations',
+};
+
+export function isUnsafeUrlScheme(rawUrl: string): boolean {
+  const cleaned = rawUrl.replace(/[\u0000-\u0020]+/g, '').toLowerCase();
+  return (
+    cleaned.startsWith('javascript:') ||
+    cleaned.startsWith('data:') ||
+    cleaned.startsWith('vbscript:')
+  );
+}
+
+export function normalizeInternalHelpHref(rawHref: string): string {
+  const trimmed = rawHref.trim();
+  if (!trimmed || trimmed.startsWith('#')) return trimmed;
+  const hashIdx = trimmed.indexOf('#');
+  const pathPart = hashIdx >= 0 ? trimmed.slice(0, hashIdx) : trimmed;
+  const hashPart = hashIdx >= 0 ? trimmed.slice(hashIdx) : '';
+
+  if (/\.md$/i.test(pathPart)) {
+    const baseName = (pathPart.split('/').pop() || '').replace(/\.md$/i, '');
+    const mappedSlug = KNOWN_GUIDE_SLUGS.has(baseName)
+      ? baseName
+      : LEGACY_MD_SLUG_ALIASES[baseName];
+    if (mappedSlug) {
+      return `/dashboard/help/guides/${mappedSlug}${hashPart}`;
+    }
+  }
+  return trimmed;
+}
+
+function parseHeadingTextAndId(
+  rawHeading: string,
+  slugCounts: Map<string, number>
+): { displayRaw: string; cleanTitle: string; id: string } {
+  const customIdMatch = rawHeading.match(/\s*\{#([a-zA-Z0-9_-]+)\}\s*$/);
+  const displayRaw = customIdMatch
+    ? rawHeading.slice(0, customIdMatch.index).trim()
+    : rawHeading.trim();
+  const cleanTitle = displayRaw.replace(/\*\*(.*?)\*\*/g, '$1').replace(/`([^`]+)`/g, '$1');
+  if (customIdMatch) {
+    const customId = customIdMatch[1];
+    slugCounts.set(customId, (slugCounts.get(customId) || 0) + 1);
+    return { displayRaw, cleanTitle, id: customId };
+  }
+  const baseSlug = slugify(cleanTitle) || 'section';
+  const count = slugCounts.get(baseSlug) || 0;
+  slugCounts.set(baseSlug, count + 1);
+  const id = count === 0 ? baseSlug : `${baseSlug}-${count + 1}`;
+  return { displayRaw, cleanTitle, id };
+}
 
 export interface TOCItem {
   id: string;
@@ -100,13 +164,7 @@ export function extractTOC(markdown: string): TOCItem[] {
 
     if (h2Match || h3Match) {
       const rawTitle = (h2Match ? h2Match[1] : h3Match![1]).trim();
-      // Strip markdown bold/code from heading text for clean TOC title
-      const cleanTitle = rawTitle.replace(/\*\*(.*?)\*\*/g, '$1').replace(/`([^`]+)`/g, '$1');
-      const baseSlug = slugify(cleanTitle) || 'section';
-      
-      const count = slugCounts.get(baseSlug) || 0;
-      slugCounts.set(baseSlug, count + 1);
-      const id = count === 0 ? baseSlug : `${baseSlug}-${count + 1}`;
+      const { cleanTitle, id } = parseHeadingTextAndId(rawTitle, slugCounts);
 
       items.push({
         id,
@@ -133,15 +191,19 @@ function renderInline(text: string): React.ReactNode[] {
     const imgMatch = remaining.match(/^!\[(.*?)\]\((.*?)\)/);
     if (imgMatch) {
       const [, alt, src] = imgMatch;
-      nodes.push(
-        <img
-          key={`inline-img-${keyIndex++}`}
-          src={src}
-          alt={alt}
-          className="inline-block max-h-6 align-middle rounded-sm"
-          loading="lazy"
-        />
-      );
+      if (!isUnsafeUrlScheme(src)) {
+        nodes.push(
+          <img
+            key={`inline-img-${keyIndex++}`}
+            src={src}
+            alt={alt}
+            className="inline-block max-h-6 align-middle rounded-sm"
+            loading="lazy"
+          />
+        );
+      } else if (alt) {
+        nodes.push(<span key={`blocked-img-${keyIndex++}`}>{alt}</span>);
+      }
       remaining = remaining.slice(imgMatch[0].length);
       continue;
     }
@@ -149,7 +211,13 @@ function renderInline(text: string): React.ReactNode[] {
     // 2. Link [text](url)
     const linkMatch = remaining.match(/^\[(.*?)\]\((.*?)\)/);
     if (linkMatch) {
-      const [, linkText, href] = linkMatch;
+      const [, linkText, rawHref] = linkMatch;
+      if (isUnsafeUrlScheme(rawHref)) {
+        nodes.push(<span key={`blocked-link-${keyIndex++}`}>{linkText}</span>);
+        remaining = remaining.slice(linkMatch[0].length);
+        continue;
+      }
+      const href = normalizeInternalHelpHref(rawHref);
       const isExternal = href.startsWith('http://') || href.startsWith('https://');
       const isVideo = href.endsWith('.mp4') || href.includes('/videos/');
 
@@ -347,12 +415,7 @@ export function MarkdownArticle({
 
     const h2Match = line.match(/^##\s+(.+)$/);
     if (h2Match) {
-      const raw = h2Match[1].trim();
-      const cleanTitle = raw.replace(/\*\*(.*?)\*\*/g, '$1').replace(/`([^`]+)`/g, '$1');
-      const baseSlug = slugify(cleanTitle) || 'section';
-      const count = slugCounts.get(baseSlug) || 0;
-      slugCounts.set(baseSlug, count + 1);
-      const id = count === 0 ? baseSlug : `${baseSlug}-${count + 1}`;
+      const { displayRaw, id } = parseHeadingTextAndId(h2Match[1], slugCounts);
 
       elements.push(
         <h2
@@ -360,7 +423,7 @@ export function MarkdownArticle({
           id={id}
           className="text-xl sm:text-2xl font-bold text-text mt-10 mb-4 scroll-mt-24 flex items-center gap-2 group"
         >
-          <span>{renderInline(raw)}</span>
+          <span>{renderInline(displayRaw)}</span>
         </h2>
       );
       i++;
@@ -369,12 +432,7 @@ export function MarkdownArticle({
 
     const h3Match = line.match(/^###\s+(.+)$/);
     if (h3Match) {
-      const raw = h3Match[1].trim();
-      const cleanTitle = raw.replace(/\*\*(.*?)\*\*/g, '$1').replace(/`([^`]+)`/g, '$1');
-      const baseSlug = slugify(cleanTitle) || 'section';
-      const count = slugCounts.get(baseSlug) || 0;
-      slugCounts.set(baseSlug, count + 1);
-      const id = count === 0 ? baseSlug : `${baseSlug}-${count + 1}`;
+      const { displayRaw, id } = parseHeadingTextAndId(h3Match[1], slugCounts);
 
       elements.push(
         <h3
@@ -382,7 +440,7 @@ export function MarkdownArticle({
           id={id}
           className="text-base sm:text-lg font-bold text-text mt-7 mb-3 scroll-mt-24"
         >
-          {renderInline(raw)}
+          {renderInline(displayRaw)}
         </h3>
       );
       i++;
@@ -414,24 +472,26 @@ export function MarkdownArticle({
         i++;
       }
 
-      elements.push(
-        <figure
-          key={`figure-${blockKey++}`}
-          className="my-6 rounded-xl border border-border bg-surface p-2.5 shadow-xs overflow-hidden"
-        >
-          <img
-            src={src}
-            alt={alt || 'Instructional screenshot'}
-            className="w-full h-auto rounded-lg object-contain border border-border-subtle"
-            loading="lazy"
-          />
-          {caption && (
-            <figcaption className="text-xs text-text-muted mt-2.5 text-center font-medium">
-              {caption}
-            </figcaption>
-          )}
-        </figure>
-      );
+      if (!isUnsafeUrlScheme(src)) {
+        elements.push(
+          <figure
+            key={`figure-${blockKey++}`}
+            className="my-6 rounded-xl border border-border bg-surface p-2.5 shadow-xs overflow-hidden"
+          >
+            <img
+              src={src}
+              alt={alt || 'Instructional screenshot'}
+              className="w-full h-auto rounded-lg object-contain border border-border-subtle"
+              loading="lazy"
+            />
+            {caption && (
+              <figcaption className="text-xs text-text-muted mt-2.5 text-center font-medium">
+                {caption}
+              </figcaption>
+            )}
+          </figure>
+        );
+      }
       i++;
       continue;
     }

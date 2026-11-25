@@ -1,5 +1,3 @@
-'use client';
-
 import React from 'react';
 import Link from 'next/link';
 import {
@@ -163,7 +161,7 @@ export default function LearningPathDetailView({
           >
             {/* Section Header */}
             <div className="flex items-center gap-3 pb-2 border-b border-border">
-              <span className="flex items-center justify-center size-7 rounded-lg bg-accent text-white font-bold text-xs shrink-0">
+              <span className="flex items-center justify-center size-7 rounded-lg bg-accent text-on-accent font-bold text-xs shrink-0">
                 {secIdx + 1}
               </span>
               <div>

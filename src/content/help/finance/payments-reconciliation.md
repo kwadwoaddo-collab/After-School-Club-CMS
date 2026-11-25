@@ -93,10 +93,10 @@ The submission is recorded in `payments` with status `pending`. The invoice stat
 *Figure 12.4 — Childcare Voucher Reconciliation Form*
 
 📹 **Video Walkthrough:** [Watch: Reconciling Childcare Vouchers & TFC](/training/assets/videos/SS-D6-V017.mp4)
-**Who Can Do This:** Organisation Owner, Centre Manager, Front Desk (for assigned centres)
+**Who Can Do This:** Organisation Owner, Centre Manager (for assigned centres)
 
 **Steps:**
-1. Navigate to: `Sidebar → Finance → Reconciliation` (`/dashboard/finance/reconciliation`).
+1. Navigate to `Sidebar → Finance` (`/dashboard/finance`) and click the **Reconcile** button in the top Finance toolbar (`/dashboard/finance/reconciliation`).
 2. Review the list of pending voucher submissions showing parent name, child, invoice number, amount, and reference code.
 3. Check your club's bank account or childcare voucher provider portal to verify the funds cleared.
 4. Click **Verify Payment** (green checkmark).
@@ -111,7 +111,7 @@ The submission is recorded in `payments` with status `pending`. The invoice stat
 ### Procedure 4: Rejecting / Failing an Invalid Voucher Claim
 
 📹 **Video Walkthrough:** [Watch: Handling Duplicate Childcare Voucher Reconciliation](/training/assets/videos/SS-D6-V045.mp4)
-**Who Can Do This:** Organisation Owner, Centre Manager, Front Desk (for assigned centres)
+**Who Can Do This:** Organisation Owner, Centre Manager (for assigned centres)
 
 **Steps:**
 1. On the Reconciliation screen (`/dashboard/finance/reconciliation`), locate the invalid submission (e.g. reference not found in bank account).

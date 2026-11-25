@@ -72,6 +72,14 @@
 
 ---
 
+### 5. Staff Member Assigned to Wrong Centre {#5-staff-member-assigned-to-wrong-centre}
+- **Symptom:** A staff member sees the wrong club venue or cannot see their assigned roster.
+- **Resolution:** An Organisation Owner or Centre Manager opens `Sidebar → Team` (`/dashboard/staff`), clicks the staff member, updates **Centre Memberships**, and saves.
+
+### 6. Wrong Role Assigned to Staff Member {#6-wrong-role-assigned-to-staff-member}
+- **Symptom:** Staff member has either too few or too many dashboard permissions.
+- **Resolution:** Navigate to `Sidebar → Team` (`/dashboard/staff`), select the user, and update their role (`MANAGER`, `FRONT_DESK`, or `TUTOR`). Only an `ORG_OWNER` can grant or modify owner privileges.
+
 ### 7. Tutor Cannot Access Finance
 - **Symptom:** Tutor asks why they cannot see the Finance tab or invoice records.
 - **Likely Cause:** Expected system behavior. By architectural design, the `TUTOR` role is strictly restricted to live registers, student notes, and scorecards.
@@ -85,6 +93,10 @@
 - **Safe Resolution:** Front Desk staff should escalate invoice void requests to their Organisation Owner (Centre Managers cannot void invoices), and safeguarding concerns to their Centre Manager or Organisation Owner.
 
 ---
+
+### 9. Manager Cannot See Other Venue {#9-manager-cannot-see-other-venue}
+- **Symptom:** A Centre Manager cannot view students, bookings, or invoices belonging to another branch.
+- **Resolution:** By design, `MANAGER` access is strictly isolated to centres listed in their `centreMemberships`. An `ORG_OWNER` can grant additional venue memberships under `Sidebar → Team`.
 
 ### 10. Parent Excluded from Email Broadcast
 - **Symptom:** A parent did not receive a general announcement broadcast sent to their centre.
@@ -101,6 +113,10 @@
 - **Safe Resolution:** Use the email broadcast channel (powered by Resend) for all parent announcements.
 
 ---
+
+### 12. Notification Bell Counter {#12-notification-bell-counter}
+- **Symptom:** The top header Notification Bell badge does not show expected alerts or still shows unread items.
+- **Resolution:** Click the **Notification Bell** in the top header to review recent alerts or click **Mark all read**. Operational registration/finance alerts are scoped to `ORG_OWNER` and assigned `MANAGER` users.
 
 ### 13. Pupil School Year Group Wrong
 - **Symptom:** Pupil is listed in Year 3 but should be in Year 4.

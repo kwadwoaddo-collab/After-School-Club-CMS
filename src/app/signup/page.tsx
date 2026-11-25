@@ -113,10 +113,10 @@ export default function SignupPage() {
         <div className="flex-1 flex flex-col justify-center">
           <BrandLockup />
 
-          <h1 className="text-4xl lg:text-5xl font-bold mt-10 mb-6">
+          <h2 className="text-4xl lg:text-5xl font-bold mt-10 mb-6">
             Set up your <br />
             <span className="text-[var(--if-accent)]">club workspace</span>
-          </h1>
+          </h2>
 
           <p className="text-lg mb-10 text-[var(--if-text-secondary)]">
             Any club administrator can sign up to set up their organisation. New club accounts undergo manual platform verification before dashboard access is activated.
@@ -162,14 +162,14 @@ export default function SignupPage() {
       </div>
 
       {/* Right Side - Signup Form */}
-      <main id="main-content" className="flex flex-col items-center justify-center p-5 sm:p-8 min-w-0">
+      <main id="main-content" tabIndex={-1} className="flex flex-col items-center justify-center p-5 sm:p-8 min-w-0">
         <div className="md:hidden w-full flex justify-between items-center mb-6">
           <BrandLockup />
           <Link href="/" className={`min-h-[44px] inline-flex items-center text-sm text-[var(--if-text-secondary)] hover:text-[var(--if-text)] ${focusRing}`}>Home</Link>
         </div>
         <div className="max-w-md w-full">
           <div className="text-center mb-8">
-            <h2 className="text-3xl md:text-4xl font-bold mb-2">Create your account</h2>
+            <h1 className="text-3xl md:text-4xl font-bold mb-2">Create your account</h1>
             <p className="text-sm text-[var(--if-text-secondary)]">
               Any club administrator can sign up. New club accounts undergo manual platform verification before dashboard access is activated.
             </p>

@@ -26,7 +26,7 @@ SprintScale enforces strict server-side authorization across all modules:
 | System Capability | Owner (`ORG_OWNER`) | Manager (`MANAGER`) | Front Desk (`FRONT_DESK`) | Tutor (`TUTOR`) |
 |---|---|---|---|---|
 | **Finance Dashboard (`/dashboard/finance`)** | ✅ All Centres | ✅ Assigned Centres | ❌ Blocked | ❌ Blocked |
-| **Centre Invoices & Offline Payments** | ✅ All Centres | ✅ Assigned Centres | ✅ Assigned Centres | ❌ Blocked |
+| **Centre Invoices & Offline Payments** | ✅ All Centres | ✅ Assigned Centres | ❌ Blocked (Receipts/Read-Only) | ❌ Blocked |
 | **Void Invoice (`voidInvoice`)** | ✅ **Owner Only** | ❌ Blocked | ❌ Blocked | ❌ Blocked |
 | **Delete Invoice (`deleteInvoice`, Zero Payments)** | ✅ **Owner Only** | ❌ Blocked | ❌ Blocked | ❌ Blocked |
 | **Staff Directory (`/dashboard/staff`)** | ✅ View / Manage All | ✅ View / Manage Assigned | ❌ Blocked | ❌ Blocked |
@@ -36,11 +36,11 @@ SprintScale enforces strict server-side authorization across all modules:
 | **Create New Centre (`/dashboard/centres/add`)** | ✅ Full Access | ✅ Full Access | ❌ Blocked | ❌ Blocked |
 | **Edit Centre General Settings** | ✅ All Centres | ✅ Assigned Centres | ❌ Blocked | ❌ Blocked |
 | **Edit Centre Bank & Billing Details** | ✅ All Centres | ✅ Assigned Centres | ❌ Blocked | ❌ Blocked |
-| **Student Directory & Medical Profiles** | ✅ All Centres | ✅ Assigned Centres | ✅ Assigned Centres | ✅ Assigned (View) |
+| **Student Directory & Medical Profiles** | ✅ All Centres | ✅ Assigned Centres | ✅ Assigned Centres | ❌ Blocked (Roll-Call Badges Only) |
 | **Public Registrations & Intake Triage** | ✅ All Centres | ✅ Assigned Centres | ✅ Assigned Centres | ❌ Blocked |
 | **Daily Attendance & Tablet Kiosk** | ✅ All Centres | ✅ Assigned Centres | ✅ Assigned Centres | ✅ Assigned (Live) |
-| **Session Credit Ledger (`/ledger`)** | ✅ All Centres | ✅ Assigned Centres | ❌ Blocked | ❌ Blocked |
-| **Standard Incident & First Aid Logging** | ✅ All Centres | ✅ Assigned Centres | ✅ Assigned Centres | ✅ Assigned Centres |
+| **Session Credit Ledger (`/ledger`)** | ✅ All Centres | ✅ Assigned Centres | ✅ Assigned Centres | ✅ Assigned (Read-Only) |
+| **Standard Incident & First Aid Logging** | ✅ All Centres | ✅ Assigned Centres | ✅ Assigned Centres | ❌ Escalate to Manager / Front Desk |
 | **Restricted Safeguarding Records (DSL)** | ✅ Full Access | ✅ Assigned Centres | ❌ Blocked | ❌ Blocked |
 | **Parent Broadcasts (`/communications`)** | ✅ All Centres | ✅ Assigned Centres | ❌ Blocked | ❌ Blocked |
 | **Operational Reports & CSV Exports** | ✅ Full Access | ✅ Assigned Centres | ❌ Blocked | ❌ Blocked |
@@ -69,7 +69,7 @@ SprintScale enforces strict server-side authorization across all modules:
 **Who Can Do This:** Organisation Owner (`ORG_OWNER`), Centre Manager (`MANAGER`) (for assigned centres)
 
 **Steps:**
-1. Navigate to: `Sidebar → Staff` (`/dashboard/staff`).
+1. Navigate to: `Sidebar → Team` (`/dashboard/staff`).
 2. Click **+ Invite Staff Member** (or go to `/dashboard/staff/invite`).
 3. Enter the staff member's **Email Address**, **First Name**, and **Last Name**.
 4. Select their **Role:** `MANAGER`, `FRONT_DESK`, or `TUTOR`. (Note: Only Organisation Owners can configure owner-level privileges).
@@ -98,7 +98,7 @@ SprintScale enforces strict server-side authorization across all modules:
 **Who Can Do This:** Organisation Owner (`ORG_OWNER`), Centre Manager (`MANAGER`) (for assigned centres)
 
 **Steps:**
-1. Navigate to: `Sidebar → Staff` (`/dashboard/staff`).
+1. Navigate to: `Sidebar → Team` (`/dashboard/staff`).
 2. Click on the staff member's name to open their profile (`/dashboard/staff/[userId]`).
 3. In the **Centre Memberships** section, check the boxes next to venues the staff member should access.
 4. Click **Save Centre Assignments**.

@@ -20,7 +20,7 @@
 10. [Parent cannot access bookings in Parent Portal](#10-parent-cannot-access-bookings-in-parent-portal)
 11. [Google Calendar appointment sync is missing](#11-google-calendar-appointment-sync-is-missing)
 12. [Archived parent or child needs urgent recovery](#12-archived-parent-or-child-needs-urgent-recovery)
-13. [Permanent purge warning & accidental deletion concerns](#13-permanent-purge-warning--accidental-deletion-concerns)
+13. [Permanent purge warning & accidental deletion concerns](#13-permanent-purge-warning-accidental-deletion-concerns)
 14. [Parent did not receive broadcast email (Consent Filter)](#14-parent-did-not-receive-broadcast-email-consent-filter)
 15. [Child is booked but missing from today's roll call](#15-child-is-booked-but-missing-from-todays-roll-call)
 

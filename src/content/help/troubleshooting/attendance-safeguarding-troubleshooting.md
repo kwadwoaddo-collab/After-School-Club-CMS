@@ -20,16 +20,16 @@
 10. [Staff PIN rejected on Kiosk screen](#10-staff-pin-rejected-on-kiosk)
 11. [Walk-in booking cannot be created](#11-walk-in-booking-cannot-be-created)
 12. [Attendance timestamp correction needed](#12-attendance-timestamp-correction-needed)
-13. [Session forgiveness does not change student ledger balance](#13-session-forgiveness-ledger-discrepancy)
-14. [Medical or severe allergy badge missing on attendance card](#14-medicalallergy-badge-missing-on-card)
-15. [Sensitive concern entered in ordinary notes by mistake](#15-sensitive-concern-entered-in-notes)
-16. [User cannot access the Safeguarding incident category](#16-user-cannot-access-safeguarding-category)
+13. [Session forgiveness does not change student ledger balance](#13-session-forgiveness-does-not-change-student-ledger-balance)
+14. [Medical or severe allergy badge missing on attendance card](#14-medical-or-severe-allergy-badge-missing-on-card)
+15. [Sensitive concern entered in ordinary notes by mistake](#15-sensitive-concern-entered-in-ordinary-notes-by-mistake)
+16. [User cannot access the Safeguarding incident category](#16-user-cannot-access-the-safeguarding-category)
 17. [Standard incident vs Safeguarding classification confusion](#17-incident-vs-safeguarding-confusion)
 18. [First aid record entered under wrong child or category](#18-incident-entered-under-wrong-category)
 19. [Sensitive information typed into general progress scorecards](#19-sensitive-information-in-scorecards)
-20. [Tablet Kiosk interface clipped or misaligned on mobile](#20-tablet-kiosk-layout-clipped)
-21. [Parent asks to see restricted safeguarding records](#21-parent-requests-safeguarding-file)
-22. [Incident record cannot be edited due to permission lock](#22-incident-cannot-be-edited-due-to-permissions)
+20. [Tablet Kiosk interface clipped or misaligned on mobile](#20-tablet-kiosk-interface-clipped-or-misaligned-on-mobile)
+21. [Parent asks to see restricted safeguarding records](#21-parent-requests-to-view-restricted-safeguarding-records)
+22. [Incident record cannot be edited due to permission lock](#22-incident-record-cannot-be-edited-due-to-permission-lock)
 
 ---
 
@@ -95,11 +95,23 @@
 
 ---
 
+### 9. Bulk Attendance Selection Issue {#9-bulk-attendance-selection-issue}
+- **Symptom:** Selecting multiple rows on the attendance register does not update every pupil.
+- **Resolution:** Ensure all target rows belong to the currently filtered session/centre and click **Apply** before switching dates or centres.
+
 ### 10. Staff PIN Rejected on Kiosk
 - **What You May See:** Tablet Kiosk displays "Invalid PIN" when attempting administrative overrides.
 - **How to Resolve:** Ensure you are entering your 4-digit staff PIN configured in your user profile. If forgotten, reset your PIN via your user profile in `/dashboard/settings`.
 
 ---
+
+### 11. Walk-In Booking Cannot Be Created {#11-walk-in-booking-cannot-be-created}
+- **Symptom:** Staff cannot add an ad-hoc walk-in child directly to the register.
+- **Resolution:** Walk-in bookings require `FRONT_DESK`, `MANAGER`, or `ORG_OWNER` permissions and an active registered student profile assigned to the selected centre.
+
+### 12. Attendance Timestamp Correction Needed {#12-attendance-timestamp-correction-needed}
+- **Symptom:** Check-in or check-out time needs retrospective adjustment after parent handover.
+- **Resolution:** On `/dashboard/attendance`, edit the arrival or departure time input directly on the pupil row to record the accurate custodial timestamp.
 
 ### 13. Session Forgiveness Does Not Change Student Ledger Balance
 - **What You May See:** Manager granted a forgiveness credit, but the child's net balance remains negative.
@@ -130,6 +142,18 @@
 - **How to Resolve:** Report the concern directly to an appointed Manager.
 
 ---
+
+### 17. Incident vs Safeguarding Classification Confusion {#17-incident-vs-safeguarding-confusion}
+- **Symptom:** Staff are unsure whether to log a minor playground bump as a standard incident or a restricted safeguarding concern.
+- **Resolution:** Routine first-aid bumps/scrapes use standard **Incident / First Aid** categories (logged by Front Desk or Managers). Child protection disclosures or welfare concerns must be escalated to the Designated Safeguarding Lead (DSL) under **Safeguarding** (`ORG_OWNER` / `MANAGER` only).
+
+### 18. Incident Entered Under Wrong Category {#18-incident-entered-under-wrong-category}
+- **Symptom:** A first-aid or behaviour incident was saved against the wrong pupil or category.
+- **Resolution:** Ask a Centre Manager or Organisation Owner to open `Sidebar → Incidents` (`/dashboard/incidents`), amend or close the erroneous entry with an audit note, and create the corrected record.
+
+### 19. Sensitive Information in Scorecards {#19-sensitive-information-in-scorecards}
+- **Symptom:** Confidential medical or welfare details were typed into an assessment feedback field shared with parents.
+- **Resolution:** Do not click **Send Feedback to Parent**. Immediately ask a Manager or Front Desk administrator to edit the booking assessment draft before dispatch.
 
 ### 20. Tablet Kiosk Interface Clipped or Misaligned on Mobile
 - **What You May See:** Kiosk buttons appear off-screen on a mobile device.

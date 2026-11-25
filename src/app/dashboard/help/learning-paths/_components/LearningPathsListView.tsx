@@ -1,5 +1,3 @@
-'use client';
-
 import React from 'react';
 import Link from 'next/link';
 import {
@@ -96,7 +94,7 @@ export default function LearningPathsListView({
           <div className="rounded-2xl border-2 border-accent/40 bg-gradient-to-br from-surface via-surface to-accent-soft/20 p-6 sm:p-8 shadow-sm transition-all">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
               <div className="space-y-3 max-w-3xl">
-                <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-accent text-white">
+                <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-accent text-on-accent">
                   <Sparkles className="size-3" aria-hidden="true" />
                   <span>Primary Recommendation</span>
                 </div>
@@ -143,7 +141,7 @@ export default function LearningPathsListView({
 
                 <Link
                   href={`/dashboard/help/learning-paths/${recommendedPath.slug}`}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-accent text-white font-semibold text-sm hover:bg-accent/90 shadow-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-accent text-on-accent font-semibold text-sm hover:bg-accent/90 shadow-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                 >
                   <span>Start Learning Path</span>
                   <ArrowRight className="size-4" aria-hidden="true" />

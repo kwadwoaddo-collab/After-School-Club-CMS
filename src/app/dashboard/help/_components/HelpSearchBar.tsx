@@ -127,7 +127,7 @@ export default function HelpSearchBar({
                 onClick={() => setActiveFilter('all')}
                 className={`px-2.5 py-1 rounded-md font-medium transition-all ${
                   activeFilter === 'all'
-                    ? 'bg-accent text-white shadow-xs'
+                    ? 'bg-accent text-on-accent shadow-xs'
                     : 'text-text-secondary hover:text-text hover:bg-page'
                 }`}
               >
@@ -138,7 +138,7 @@ export default function HelpSearchBar({
                 onClick={() => setActiveFilter('paths')}
                 className={`px-2.5 py-1 rounded-md font-medium transition-all ${
                   activeFilter === 'paths'
-                    ? 'bg-accent text-white shadow-xs'
+                    ? 'bg-accent text-on-accent shadow-xs'
                     : 'text-text-secondary hover:text-text hover:bg-page'
                 }`}
               >
@@ -149,7 +149,7 @@ export default function HelpSearchBar({
                 onClick={() => setActiveFilter('guides')}
                 className={`px-2.5 py-1 rounded-md font-medium transition-all ${
                   activeFilter === 'guides'
-                    ? 'bg-accent text-white shadow-xs'
+                    ? 'bg-accent text-on-accent shadow-xs'
                     : 'text-text-secondary hover:text-text hover:bg-page'
                 }`}
               >
@@ -160,7 +160,7 @@ export default function HelpSearchBar({
                 onClick={() => setActiveFilter('videos')}
                 className={`px-2.5 py-1 rounded-md font-medium transition-all ${
                   activeFilter === 'videos'
-                    ? 'bg-accent text-white shadow-xs'
+                    ? 'bg-accent text-on-accent shadow-xs'
                     : 'text-text-secondary hover:text-text hover:bg-page'
                 }`}
               >

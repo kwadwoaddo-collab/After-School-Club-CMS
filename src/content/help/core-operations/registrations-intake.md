@@ -95,7 +95,7 @@ Families register online via your unique organisation URL:
 5. **Funding & Special Needs:** Notes Tax-Free Childcare / voucher intent and SEN support requirements.
 6. **Terms & Digital Signature:** Reviews club terms and signs directly on the touchscreen/mouse canvas.
 7. **Immediate Email Confirmation:** Parent receives an automated email confirming receipt of the application.
-8. **In-App Notification:** Organisation Owners and Centre Managers receive an immediate notification in `/dashboard/notifications`.
+8. **In-App Notification:** Organisation Owners and assigned Centre Managers receive an immediate alert in the **Notification Bell** in the top header.
 
 ---
 

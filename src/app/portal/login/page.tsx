@@ -49,10 +49,19 @@ function PortalLoginForm() {
     return (
         <div className="w-full max-w-md bg-[var(--if-surface-elevated)] border border-[var(--if-border-subtle)] rounded-[14px] shadow-xl overflow-hidden">
             <div className="p-6 sm:p-8 text-center">
-                <div className="w-14 h-14 bg-[var(--if-accent-soft)] text-[var(--if-accent)] rounded-2xl flex items-center justify-center text-2xl mx-auto mb-4" aria-hidden="true">
-                    👋
+                <div className="flex justify-center mb-5">
+                    <Link
+                        href="/"
+                        className={`inline-flex items-center gap-2.5 min-h-[44px] text-[var(--if-text)] ${focusRing}`}
+                        aria-label="After-School Club CMS · by SprintScale IT"
+                    >
+                        <span className="w-9 h-9 rounded-lg bg-[#0F5F5C] text-white inline-flex items-center justify-center font-bold text-lg" aria-hidden="true">S</span>
+                        <span className="flex flex-col leading-tight text-left">
+                            <span className="font-bold text-sm">After-School Club CMS</span>
+                            <span className="text-xs text-[var(--if-text-muted)]">by <span data-testid="portal-brand">SprintScale</span> IT</span>
+                        </span>
+                    </Link>
                 </div>
-                <p className="text-sm font-bold text-[var(--if-accent)] mb-3" data-testid="portal-brand">SprintScale</p>
                 <p className="text-xs font-semibold uppercase tracking-wider text-[var(--if-accent)] mb-1">For Parents &amp; Carers</p>
                 <h1 className="text-2xl font-bold text-[var(--if-text)] mb-2">Parent Portal</h1>
                 <p className="text-sm text-[var(--if-text-secondary)] mb-8">
@@ -67,6 +76,11 @@ function PortalLoginForm() {
                 {errorParam === 'InvalidToken' && (
                     <div role="alert" className="bg-[var(--if-danger-soft)] text-[var(--if-danger)] border border-[var(--if-danger)] p-3 rounded-lg text-sm mb-6">
                         Invalid link. Please try again.
+                    </div>
+                )}
+                {errorParam === 'AccountSuspended' && (
+                    <div role="alert" className="bg-[var(--if-danger-soft)] text-[var(--if-danger)] border border-[var(--if-danger)] p-3 rounded-lg text-sm mb-6">
+                        This club&apos;s portal is temporarily unavailable. Please contact your club directly.
                     </div>
                 )}
 
@@ -123,8 +137,11 @@ function PortalLoginForm() {
                 <Link href="/" className={`inline-flex items-center min-h-6 min-w-6 py-1 hover:text-[var(--if-text)] transition-colors ${focusRing}`}>
                     ← Back to Home
                 </Link>
-                <span>
-                    Not a parent? <Link href="/staff-login" className={`inline-flex items-center min-h-6 min-w-6 py-1 text-[var(--if-accent)] font-medium hover:underline ${focusRing}`}>Staff Login</Link>
+                <span className="flex items-center gap-2">
+                    <span>Not a parent?</span>
+                    <Link href="/staff-login" className={`inline-flex items-center min-h-6 min-w-6 py-1 text-[var(--if-accent)] font-medium hover:underline ${focusRing}`}>Staff Login</Link>
+                    <span aria-hidden="true">·</span>
+                    <Link href="/login" className={`inline-flex items-center min-h-6 min-w-6 py-1 text-[var(--if-accent)] font-medium hover:underline ${focusRing}`}>Admin Login</Link>
                 </span>
             </div>
         </div>
@@ -133,7 +150,9 @@ function PortalLoginForm() {
 
 export default function PortalLoginPage() {
     return (
-        <main id="main-content" className="min-h-screen bg-[var(--if-page)] text-[var(--if-text)] flex flex-col items-center justify-center p-4">
+        <>
+            <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[100] focus:px-4 focus:py-2.5 focus:rounded-md focus:bg-[var(--if-accent)] focus:text-[var(--if-on-accent)] focus:text-sm focus:font-semibold focus:shadow-lg">Skip to main content</a>
+            <main id="main-content" tabIndex={-1} className="min-h-screen bg-[var(--if-page)] text-[var(--if-text)] flex flex-col items-center justify-center p-4">
             <Suspense fallback={
                 <div className="w-full max-w-md bg-[var(--if-surface-elevated)] border border-[var(--if-border-subtle)] rounded-[14px] shadow-xl p-8 text-center">
                     <div className="animate-pulse flex flex-col items-center">
@@ -146,5 +165,6 @@ export default function PortalLoginPage() {
                 <PortalLoginForm />
             </Suspense>
         </main>
+        </>
     );
 }

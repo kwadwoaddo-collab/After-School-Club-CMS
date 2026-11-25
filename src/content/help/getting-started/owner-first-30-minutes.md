@@ -94,6 +94,6 @@
 ---
 
 ## Next Steps & Comprehensive Documentation
-- [Organisation Owner Role Guide](../role-guides/owner-guide.md) — Complete operational, financial, and governance manual for owners.
-- [Multi-Centre Administration Manual](../functional-manuals/centres-multi-centre.md) — Venue setup, capacity controls, and banking configuration.
-- [Finance & Agreed-Fee Billing Manual](../functional-manuals/finance-overview.md) — Revenue reporting, batch invoicing runs, and reconciliation.
+- [Organisation Owner Role Guide](/dashboard/help/guides/owner-guide) — Complete operational, financial, and governance manual for owners.
+- [Multi-Centre Administration Manual](/dashboard/help/guides/centres-multi-centre) — Venue setup, capacity controls, and banking configuration.
+- [Finance & Agreed-Fee Billing Manual](/dashboard/help/guides/finance-overview) — Revenue reporting, batch invoicing runs, and reconciliation.

@@ -603,7 +603,7 @@ export const HELP_LEARNING_PATHS: HelpLearningPathMetadata[] = [
     slug: 'tutor-club-leader',
     title: 'Tutor & Club Leader: Session Delivery, Attendance & Welfare',
     description:
-      'Focused operational guidance for classroom tutors and activity leaders conducting roll call, monitoring medical alerts, logging incidents, and recording notes.',
+      'Focused operational guidance for classroom tutors and activity leaders signing in via staff magic link, conducting live roll call, monitoring medical badges, recording homework/behaviour flags, and escalating welfare or first-aid incidents to Managers.',
     persona: 'TUTOR',
     audienceLabel: 'Tutors, Coaches & Activity Leaders',
     primaryStaffRole: 'TUTOR',
@@ -614,17 +614,17 @@ export const HELP_LEARNING_PATHS: HelpLearningPathMetadata[] = [
       {
         id: 'tutor-orientation-roll-call',
         title: 'First Day Orientation & Roll Call',
-        description: 'Classroom setup, live register marking, and arrival/departure timestamps.',
+        description: 'Magic-link sign-in at /staff-login, live register marking, and arrival/departure timestamps.',
         items: [
           {
             type: 'guide',
             slug: 'tutor-first-day',
-            note: 'Session roll call, medical badge recognition, incident logging, and kiosk operation.',
+            note: 'Signing in via /staff-login, session roll call, medical badge recognition, kiosk operation, and DSL escalation.',
           },
           {
             type: 'guide',
             slug: 'tutor-guide',
-            note: 'Classroom roll call, student medical badges, behaviour notes, and safety protocols.',
+            note: 'Classroom roll call, roll-call medical badges, homework/behaviour flags, read-only session ledger, and escalation protocols.',
           },
           {
             type: 'video',
@@ -645,57 +645,37 @@ export const HELP_LEARNING_PATHS: HelpLearningPathMetadata[] = [
       },
       {
         id: 'tutor-medical-first-aid',
-        title: 'Pupil Welfare, Medical Alerts & First Aid',
-        description: 'Recognising allergy badges, emergency contacts, and minor injury logging.',
+        title: 'Pupil Welfare, Roll-Call Medical Alerts & Escalation',
+        description: 'Recognising allergy badges on the live register and escalating first-aid or safeguarding events to Managers/Front Desk.',
         items: [
           {
             type: 'guide',
             slug: 'attendance-roll-call',
-            note: 'Quick visual identification of allergy alerts and medical badges on the live register.',
-          },
-          {
-            type: 'guide',
-            slug: 'student-records-notes',
-            note: 'Reviewing dietary restrictions, emergency contacts, and collection permissions.',
+            note: 'Quick visual identification of allergy alerts, medical badges, and session credit ledger access from the live register.',
           },
           {
             type: 'guide',
             slug: 'incidents-safeguarding',
-            note: 'First aid incident logging protocol and immediate notification procedure.',
-          },
-          {
-            type: 'video',
-            slug: 'logging-a-first-aid-accident-on-body-map',
-            note: 'Marking minor playground bumps and scrapes on the interactive body map.',
-          },
-          {
-            type: 'video',
-            slug: 'updating-pupil-medical-and-allergy-profiles',
-            note: 'Verifying that medical conditions, inhalers, and Epipens are noted on the profile.',
+            note: 'Reference protocol for escalating first-aid accidents and safeguarding concerns to a Centre Manager, Front Desk, or DSL.',
           },
         ],
       },
       {
         id: 'tutor-progress-notes',
-        title: 'Pupil Notes & Session Engagement',
-        description: 'Recording academic progress, homework completion, and positive feedback.',
+        title: 'Roll-Call Flags & Session Engagement',
+        description: 'Recording homework completion and behaviour flags directly on the live attendance register.',
         items: [
-          {
-            type: 'guide',
-            slug: 'children-students',
-            note: 'Viewing pupil details, tutor notes history, and parent collection notes.',
-          },
           {
             type: 'video',
             slug: 'logging-student-homework-and-progress-notes',
-            note: 'Adding timestamped activity and engagement notes to a student record.',
+            note: 'Toggling homework and behaviour flags with operational notes during roll call.',
           },
         ],
       },
       {
         id: 'tutor-troubleshooting',
         title: 'Session Support Runbook',
-        description: 'Handling unlisted children, kiosk offline mode, and register disputes.',
+        description: 'Handling unlisted children, kiosk PIN checks, and register disputes.',
         items: [
           {
             type: 'guide',

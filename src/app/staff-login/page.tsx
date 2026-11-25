@@ -55,7 +55,9 @@ export default function StaffLoginPage() {
 
     if (step === 'sent') {
         return (
-            <main id="main-content" className="min-h-screen bg-[var(--if-page)] text-[var(--if-text)] flex items-center justify-center p-4 overflow-x-hidden">
+            <>
+            <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[100] focus:px-4 focus:py-2.5 focus:rounded-md focus:bg-[var(--if-accent)] focus:text-[var(--if-on-accent)] focus:text-sm focus:font-semibold focus:shadow-lg">Skip to main content</a>
+            <main id="main-content" tabIndex={-1} className="min-h-screen bg-[var(--if-page)] text-[var(--if-text)] flex items-center justify-center p-4 overflow-x-hidden">
                 <div className="max-w-md w-full bg-[var(--if-surface-elevated)] rounded-[14px] p-6 sm:p-8 border border-[var(--if-border-subtle)] text-center">
                     <div className="flex justify-center mb-6"><BrandLockup /></div>
                     <div className="w-16 h-16 bg-[var(--if-accent-soft)] rounded-2xl flex items-center justify-center mx-auto mb-6 text-[var(--if-accent)]">
@@ -78,11 +80,14 @@ export default function StaffLoginPage() {
                     </button>
                 </div>
             </main>
+            </>
         );
     }
 
     return (
-        <main id="main-content" className="min-h-screen bg-[var(--if-page)] text-[var(--if-text)] flex items-center justify-center p-4 overflow-x-hidden">
+        <>
+            <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[100] focus:px-4 focus:py-2.5 focus:rounded-md focus:bg-[var(--if-accent)] focus:text-[var(--if-on-accent)] focus:text-sm focus:font-semibold focus:shadow-lg">Skip to main content</a>
+            <main id="main-content" tabIndex={-1} className="min-h-screen bg-[var(--if-page)] text-[var(--if-text)] flex items-center justify-center p-4 overflow-x-hidden">
             <div className="max-w-md w-full">
                 <div className="bg-[var(--if-surface-elevated)] rounded-[14px] p-6 sm:p-8 border border-[var(--if-border-subtle)]">
                     <div className="text-center mb-8">
@@ -146,14 +151,20 @@ export default function StaffLoginPage() {
                 </div>
 
                 <div className="text-center mt-6 flex flex-col items-center">
-                    <Link href="/login" className={`min-h-[44px] inline-flex items-center text-[var(--if-text-secondary)] hover:text-[var(--if-text)] text-sm transition-colors ${focusRing}`}>
-                        Admin login →
-                    </Link>
+                    <div className="flex flex-wrap items-center justify-center gap-4">
+                        <Link href="/login" className={`min-h-[44px] inline-flex items-center text-[var(--if-text-secondary)] hover:text-[var(--if-text)] text-sm transition-colors ${focusRing}`}>
+                            Admin login →
+                        </Link>
+                        <Link href="/portal/login" className={`min-h-[44px] inline-flex items-center text-[var(--if-text-secondary)] hover:text-[var(--if-text)] text-sm transition-colors ${focusRing}`}>
+                            Parent Portal →
+                        </Link>
+                    </div>
                     <Link href="/" className={`min-h-[44px] inline-flex items-center text-[var(--if-text-muted)] hover:text-[var(--if-text)] text-xs transition-colors ${focusRing}`}>
                         ← Back to Home
                     </Link>
                 </div>
             </div>
         </main>
+        </>
     );
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from "next/link";
-import { useState, useEffect, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import "./landing.css";
 
 const CORPORATE_URL = "https://sprintscaleit.co.uk";
@@ -108,8 +108,34 @@ const FAQS: { question: string; answer: ReactNode }[] = [
 ];
 
 function LoginChooser() {
+    const detailsRef = useRef<HTMLDetailsElement>(null);
+
+    useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape' && detailsRef.current?.open) {
+                detailsRef.current.open = false;
+                detailsRef.current.querySelector('summary')?.focus();
+            }
+        };
+        const handlePointerDown = (event: PointerEvent) => {
+            if (
+                detailsRef.current?.open &&
+                event.target instanceof Node &&
+                !detailsRef.current.contains(event.target)
+            ) {
+                detailsRef.current.open = false;
+            }
+        };
+        document.addEventListener('keydown', handleKeyDown);
+        document.addEventListener('pointerdown', handlePointerDown);
+        return () => {
+            document.removeEventListener('keydown', handleKeyDown);
+            document.removeEventListener('pointerdown', handlePointerDown);
+        };
+    }, []);
+
     return (
-        <details className="relative" data-testid="login-chooser">
+        <details ref={detailsRef} className="relative" data-testid="login-chooser">
             <summary className="landing-navbar-link cursor-pointer list-none">Log in ▾</summary>
             <ul
                 className="absolute right-0 mt-2 min-w-[11rem] rounded-xl border p-2 z-50 space-y-1"

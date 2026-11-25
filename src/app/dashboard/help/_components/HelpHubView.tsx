@@ -163,7 +163,7 @@ export default function HelpHubView({
           <div className="rounded-xl border border-accent/40 bg-accent-soft/30 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-accent text-white">
+                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-accent text-on-accent">
                   Recommended Learning Path
                 </span>
                 <span className="text-xs text-text-muted">
@@ -179,7 +179,7 @@ export default function HelpHubView({
             </div>
             <Link
               href={`/dashboard/help/learning-paths/${recommendedPath.slug}`}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-accent text-white font-semibold text-xs hover:bg-accent/90 shrink-0 transition-colors"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-accent text-on-accent font-semibold text-xs hover:bg-accent/90 shrink-0 transition-colors"
             >
               <span>Explore Role Path</span>
               <ArrowRight className="size-3.5" aria-hidden="true" />
