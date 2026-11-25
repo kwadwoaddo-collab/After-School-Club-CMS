@@ -2,8 +2,8 @@
 import { requireAuth } from '@/lib/require-auth';
 import { getUserAccessibleCentres } from '@/lib/permissions';
 import { db } from '@/db';
-import { users, centreMemberships, centres, staffInvites } from '@/db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { users, centreMemberships, centres, staffInvites, orgMemberships, verificationTokens } from '@/db/schema';
+import { eq, desc, inArray } from 'drizzle-orm';
 import Link from 'next/link';
 import { UserPlus, Crown, Briefcase, MonitorSmartphone, GraduationCap } from 'lucide-react';
 import type { Metadata } from 'next';
@@ -27,7 +27,6 @@ const ROLE_ICONS: Record<string, any> = {
 };
 
 export default async function StaffPage() {
-    // Allow ORG_OWNER and MANAGER. Managers are scoped to their assigned centres.
     const { session } = await requireAuth({ roles: ['ORG_OWNER', 'MANAGER'] });
 
     const orgId = session.user.organisationId;
@@ -35,69 +34,98 @@ export default async function StaffPage() {
     const isOwner = userRole === 'ORG_OWNER';
 
     let hasError = false;
-    let staffList: any[] = [];
-    let memberships: any[] = [];
     let orgCentres: any[] = [];
     let pendingInvites: any[] = [];
     let enrichedStaff: any[] = [];
 
     try {
-        const accessibleCentres = isOwner
-            ? []
-            : await getUserAccessibleCentres(session.user.id);
+        const [
+            accessibleCentres,
+            orgMemberRows,
+            legacyUsers,
+            memberships,
+            ownerCentres,
+            rawInvites,
+        ] = await Promise.all([
+            isOwner ? Promise.resolve([]) : getUserAccessibleCentres(session.user.id),
+            db
+                .select({
+                    id: users.id,
+                    firstName: users.firstName,
+                    lastName: users.lastName,
+                    name: users.name,
+                    email: users.email,
+                    role: orgMemberships.role,
+                    createdAt: users.createdAt,
+                    lastLoginAt: (users as any).lastLoginAt ?? users.updatedAt,
+                })
+                .from(orgMemberships)
+                .innerJoin(users, eq(orgMemberships.userId, users.id))
+                .where(eq(orgMemberships.organisationId, orgId)),
+            db
+                .select({
+                    id: users.id,
+                    firstName: users.firstName,
+                    lastName: users.lastName,
+                    name: users.name,
+                    email: users.email,
+                    role: users.role,
+                    createdAt: users.createdAt,
+                    lastLoginAt: (users as any).lastLoginAt ?? users.updatedAt,
+                })
+                .from(users)
+                .where(eq(users.organisationId, orgId))
+                .orderBy(desc(users.createdAt)),
+            db
+                .select({
+                    userId: centreMemberships.userId,
+                    centreId: centreMemberships.centreId,
+                    centreName: centres.name,
+                })
+                .from(centreMemberships)
+                .innerJoin(centres, eq(centreMemberships.centreId, centres.id))
+                .where(eq(centres.organisationId, orgId)),
+            isOwner
+                ? db
+                    .select({ id: centres.id, name: centres.name })
+                    .from(centres)
+                    .where(eq(centres.organisationId, orgId))
+                    .orderBy(centres.name)
+                : Promise.resolve([]),
+            db
+                .select({
+                    id: staffInvites.id,
+                    email: staffInvites.email,
+                    role: staffInvites.role,
+                    token: staffInvites.token,
+                    expiresAt: staffInvites.expiresAt,
+                    usedAt: staffInvites.usedAt,
+                    createdAt: staffInvites.createdAt,
+                })
+                .from(staffInvites)
+                .where(eq(staffInvites.organisationId, orgId))
+                .orderBy(desc(staffInvites.createdAt)),
+        ]);
+
         const accessibleCentreIds = new Set(accessibleCentres.map((c: any) => c.id));
-
-        // Fetch all staff in the org
-        staffList = await db
-            .select({
-                id: users.id,
-                firstName: users.firstName,
-                lastName: users.lastName,
-                name: users.name,
-                email: users.email,
-                role: users.role,
-                createdAt: users.createdAt,
-                lastLoginAt: (users as any).lastLoginAt ?? users.updatedAt,
-            })
-            .from(users)
-            .where(eq(users.organisationId, orgId))
-            .orderBy(desc(users.createdAt));
-
-        // Fetch centre memberships for all staff
-        memberships = await db
-            .select({
-                userId: centreMemberships.userId,
-                centreId: centreMemberships.centreId,
-                centreName: centres.name,
-            })
-            .from(centreMemberships)
-            .innerJoin(centres, eq(centreMemberships.centreId, centres.id))
-            .where(eq(centres.organisationId, orgId));
-
-        // Fetch org centres for reassignment UI (scoped for managers)
         orgCentres = isOwner
-            ? await db
-                .select({ id: centres.id, name: centres.name })
-                .from(centres)
-                .where(eq(centres.organisationId, orgId))
-                .orderBy(centres.name)
+            ? ownerCentres
             : accessibleCentres.map((c: any) => ({ id: c.id, name: c.name }));
 
-        // Fetch pending invites (unused only)
-        pendingInvites = await db
-            .select({
-                id: staffInvites.id,
-                email: staffInvites.email,
-                role: staffInvites.role,
-                expiresAt: staffInvites.expiresAt,
-                usedAt: staffInvites.usedAt,
-                createdAt: staffInvites.createdAt,
-            })
-            .from(staffInvites)
-            .where(eq(staffInvites.organisationId, orgId))
-            .orderBy(desc(staffInvites.createdAt));
+        // Merge orgMemberships (authoritative role per org) with any legacy single-org user rows
+        const staffById = new Map<string, any>();
+        for (const row of orgMemberRows) {
+            staffById.set(row.id, row);
+        }
+        for (const row of legacyUsers) {
+            if (!staffById.has(row.id)) {
+                staffById.set(row.id, row);
+            }
+        }
+        const staffList = Array.from(staffById.values()).sort(
+            (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
 
-        // Group memberships by userId
         const membershipMap: Record<string, { centreId: string; centreName: string }[]> = {};
         for (const m of memberships) {
             if (!membershipMap[m.userId]) membershipMap[m.userId] = [];
@@ -112,17 +140,49 @@ export default async function StaffPage() {
             centres: membershipMap[s.id] ?? [],
         }));
 
+        let scopedInvites = rawInvites;
         if (!isOwner) {
-            // Managers only see staff who belong to at least one of their accessible centres,
-            // plus organization owners and themselves.
             enrichedStaff = enrichedStaff.filter(s =>
                 s.role === 'ORG_OWNER' ||
                 s.id === session.user.id ||
                 s.centres.some((c: { centreId: string }) => accessibleCentreIds.has(c.centreId))
             );
-            // Managers only see non-owner pending invites
-            pendingInvites = pendingInvites.filter(i => i.role !== 'ORG_OWNER');
+
+            const unusedInvites = rawInvites.filter(i => !i.usedAt && i.role !== 'ORG_OWNER' && i.token);
+            if (unusedInvites.length > 0 && accessibleCentreIds.size > 0) {
+                const identifiers = unusedInvites.map(i => `invite-centre:${i.token}`);
+                const tokenRows = await db
+                    .select({
+                        identifier: verificationTokens.identifier,
+                        token: verificationTokens.token,
+                    })
+                    .from(verificationTokens)
+                    .where(inArray(verificationTokens.identifier, identifiers));
+
+                const inviteCentreByIdentifier = new Map<string, string>();
+                for (const tr of tokenRows) {
+                    const parts = String(tr.token || '').split(':');
+                    if (parts[1]) inviteCentreByIdentifier.set(tr.identifier, parts[1]);
+                }
+
+                scopedInvites = unusedInvites.filter(i => {
+                    const boundCentreId = inviteCentreByIdentifier.get(`invite-centre:${i.token}`);
+                    return Boolean(boundCentreId && accessibleCentreIds.has(boundCentreId));
+                });
+            } else {
+                scopedInvites = [];
+            }
         }
+
+        // Never serialize token hashes into the client payload
+        pendingInvites = scopedInvites.map(({ id, email, role, expiresAt, usedAt, createdAt }) => ({
+            id,
+            email,
+            role,
+            expiresAt,
+            usedAt,
+            createdAt,
+        }));
     } catch (e: any) {
         logger.error("Error fetching staff data", e);
         hasError = true;
@@ -150,7 +210,6 @@ export default async function StaffPage() {
                 </Button>
             </HeaderPortal>
 
-            {/* Role-count stat cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {(['ORG_OWNER', 'MANAGER', 'FRONT_DESK', 'TUTOR'] as const).map(role => {
                     const count = enrichedStaff.filter(s => s.role === role).length;

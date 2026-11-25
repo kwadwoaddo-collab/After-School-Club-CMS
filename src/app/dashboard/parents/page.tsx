@@ -323,7 +323,7 @@ export default async function ParentsPage({ searchParams }: Props) {
             </div>
 
             {/* Toolbar — sticky */}
-            <div className="sticky top-16 sm:top-20 z-20 -mx-4 sm:-mx-8 px-4 sm:px-8 py-3 bg-page/90 backdrop-blur-sm border-b border-border-subtle">
+            <div className="sticky top-14 z-20 -mx-4 sm:-mx-8 px-4 sm:px-8 py-3 bg-page/90 backdrop-blur-sm border-b border-border-subtle">
                 <ParentsFilters resultsCount={filteredCount} />
             </div>
 

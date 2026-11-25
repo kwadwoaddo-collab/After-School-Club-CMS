@@ -43,24 +43,33 @@ export default async function RegistrationDetailPage({ params }: { params: Promi
         return notFound();
     }
 
-    const reg = await db.query.registrations.findFirst({
-        where: and(eq(registrations.id, id), eq(registrations.organisationId, orgId)),
-        with: {
-            registrationChildren: true,
-            registrationParents: {
-                with: {
-                    parent: true,
-                }
+    const [reg, rawAccessibleCentreIds, org] = await Promise.all([
+        db.query.registrations.findFirst({
+            where: and(eq(registrations.id, id), eq(registrations.organisationId, orgId)),
+            with: {
+                registrationChildren: true,
+                registrationParents: {
+                    with: {
+                        parent: true,
+                    }
+                },
             },
-        },
-    });
+        }),
+        userRole !== 'ORG_OWNER'
+            ? getUserAccessibleCentreIds(session.user.id)
+            : Promise.resolve([]),
+        db.query.organisations.findFirst({
+            where: eq(organisations.id, orgId),
+            columns: { name: true },
+        }),
+    ]);
     if (!reg) return notFound();
 
     // DC-03: Multi-centre isolation for non-ORG_OWNER staff (MANAGER, FRONT_DESK).
     // Org-wide submissions (/register/[orgSlug]) have centreId === null and MUST
     // remain triageable by staff who have at least one accessible centre.
     if (userRole !== 'ORG_OWNER') {
-        const accessibleCentreIds = (await getUserAccessibleCentreIds(session.user.id)).filter(isValidUuid);
+        const accessibleCentreIds = (rawAccessibleCentreIds ?? []).filter(isValidUuid);
         if (accessibleCentreIds.length === 0) {
             return notFound();
         }
@@ -69,41 +78,7 @@ export default async function RegistrationDetailPage({ params }: { params: Promi
         }
     }
 
-    const org = await db.query.organisations.findFirst({
-        where: eq(organisations.id, orgId),
-        columns: { name: true },
-    });
     const orgName = org?.name || 'SprintScale';
-
-    let centreName: string | null = null;
-    let centreAddress: string | null = null;
-    let centrePhone: string | null = null;
-    let centreEmail: string | null = null;
-    let centreOfstedId: string | null = null;
-    let centreSessionSlots: string[] | undefined;
-    if (isValidUuid(reg.centreId)) {
-        const centre = await db.query.centres.findFirst({
-            where: eq(centres.id, reg.centreId),
-            columns: {
-                name: true,
-                address: true,
-                billingPhone: true,
-                billingEmail: true,
-                ofstedId: true,
-                sessionSlots: true,
-            },
-        });
-        if (centre) {
-            centreName = centre.name;
-            centreAddress = centre.address ?? null;
-            centrePhone = centre.billingPhone ?? null;
-            centreEmail = centre.billingEmail ?? null;
-            centreOfstedId = centre.ofstedId ?? null;
-            if (centre.sessionSlots) {
-                try { centreSessionSlots = JSON.parse(centre.sessionSlots); } catch { /* ignore */ }
-            }
-        }
-    }
 
     const kids = reg.registrationChildren;
     const pars = reg.registrationParents;
@@ -113,12 +88,44 @@ export default async function RegistrationDetailPage({ params }: { params: Promi
         .map(k => k.childId)
         .filter(isValidUuid);
 
-    const [linkedChildren, linkedCollectors] = linkedChildIds.length > 0
-        ? await Promise.all([
-            db.select().from(children).where(and(inArray(children.id, linkedChildIds), eq(children.organisationId, orgId))),
-            db.select().from(authorisedCollectors).where(and(inArray(authorisedCollectors.childId, linkedChildIds), eq(authorisedCollectors.organisationId, orgId))),
-        ])
-        : [[], []];
+    const [centre, linkedChildren, linkedCollectors] = await Promise.all([
+        isValidUuid(reg.centreId)
+            ? db.query.centres.findFirst({
+                where: eq(centres.id, reg.centreId),
+                columns: {
+                    name: true,
+                    address: true,
+                    billingPhone: true,
+                    billingEmail: true,
+                    ofstedId: true,
+                    sessionSlots: true,
+                },
+            })
+            : Promise.resolve(null),
+        linkedChildIds.length > 0
+            ? db.select().from(children).where(and(inArray(children.id, linkedChildIds), eq(children.organisationId, orgId)))
+            : Promise.resolve([]),
+        linkedChildIds.length > 0
+            ? db.select().from(authorisedCollectors).where(and(inArray(authorisedCollectors.childId, linkedChildIds), eq(authorisedCollectors.organisationId, orgId)))
+            : Promise.resolve([]),
+    ]);
+
+    let centreName: string | null = null;
+    let centreAddress: string | null = null;
+    let centrePhone: string | null = null;
+    let centreEmail: string | null = null;
+    let centreOfstedId: string | null = null;
+    let centreSessionSlots: string[] | undefined;
+    if (centre) {
+        centreName = centre.name;
+        centreAddress = centre.address ?? null;
+        centrePhone = centre.billingPhone ?? null;
+        centreEmail = centre.billingEmail ?? null;
+        centreOfstedId = centre.ofstedId ?? null;
+        if (centre.sessionSlots) {
+            try { centreSessionSlots = JSON.parse(centre.sessionSlots); } catch { /* ignore */ }
+        }
+    }
 
     const childRecordMap = new Map(linkedChildren.map(c => [c.id, c]));
     const collectorsByChildId = new Map<string, typeof linkedCollectors>();

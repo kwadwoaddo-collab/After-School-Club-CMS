@@ -30,31 +30,35 @@ export default async function CentresPage() {
     const next7Days = addDays(now, 7);
 
     try {
-        const [foundOrg] = await db
-            .select()
-            .from(organisations)
-            .where(eq(organisations.id, session.user.organisationId))
-            .limit(1);
+        const [[foundOrg], managerAccessibleIds, ownerCentres] = await Promise.all([
+            db
+                .select()
+                .from(organisations)
+                .where(eq(organisations.id, session.user.organisationId))
+                .limit(1),
+            userRole === 'MANAGER' ? getUserAccessibleCentreIds(session.user.id) : Promise.resolve([]),
+            userRole === 'MANAGER'
+                ? Promise.resolve([])
+                : db
+                    .select()
+                    .from(centres)
+                    .where(eq(centres.organisationId, session.user.organisationId)),
+        ]);
         org = foundOrg;
 
         if (org) {
             if (userRole === 'MANAGER') {
-                const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
-                centresList = accessibleCentreIds.length > 0
+                centresList = managerAccessibleIds.length > 0
                     ? await db
                         .select()
                         .from(centres)
                         .where(and(
                             eq(centres.organisationId, org.id),
-                            inArray(centres.id, accessibleCentreIds)
+                            inArray(centres.id, managerAccessibleIds)
                         ))
                     : [];
             } else {
-                // Fetch all centres for this organisation (ORG_OWNER)
-                centresList = await db
-                    .select()
-                    .from(centres)
-                    .where(eq(centres.organisationId, org.id));
+                centresList = ownerCentres;
             }
 
             centreIds = centresList.map(c => c.id);

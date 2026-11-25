@@ -34,7 +34,7 @@ export default async function StudentAttendanceHistoryPage(
     const isOwner = userRole === 'ORG_OWNER';
 
     // Consolidated database queries to avoid round-trip latency overhead
-    const [studentData, bookingsRaw, [attendanceResults]] = await Promise.all([
+    const [studentData, bookingsRaw, [attendanceResults], accessibleCentreIds] = await Promise.all([
         db.select({
             id: children.id,
             firstName: children.firstName,
@@ -82,7 +82,9 @@ export default async function StudentAttendanceHistoryPage(
         })
         .from(bookingAttendees)
         .innerJoin(bookings, eq(bookingAttendees.bookingId, bookings.id))
-        .where(eq(bookingAttendees.childId, id))
+        .where(eq(bookingAttendees.childId, id)),
+
+        !isOwner ? getUserAccessibleCentreIds(session.user.id) : Promise.resolve([]),
     ]);
 
     if (studentData.length === 0) return notFound();
@@ -93,7 +95,6 @@ export default async function StudentAttendanceHistoryPage(
     if (studentOrgId !== session.user.organisationId) return notFound();
 
     if (!isOwner) {
-        const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
         if (!student.centreId || !accessibleCentreIds.includes(student.centreId)) {
             return notFound();
         }
@@ -127,7 +128,7 @@ export default async function StudentAttendanceHistoryPage(
                     </nav>
                     <Link
                         href={`/dashboard/students/${student.id}`}
-                        className="inline-flex items-center gap-2 text-xs font-bold text-muted-foreground hover:text-foreground transition-colors group mt-2"
+                        className="min-h-11 inline-flex items-center gap-2 text-xs font-bold text-muted-foreground hover:text-foreground transition-colors group mt-2"
                     >
                         <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
                         Back to Student Profile
