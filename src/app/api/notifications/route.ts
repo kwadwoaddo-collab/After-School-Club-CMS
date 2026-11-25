@@ -4,23 +4,29 @@ import { getApiSession } from '@/lib/session';
 import { db } from '@/db';
 import { notifications } from '@/db/schema';
 import { eq, and, desc } from 'drizzle-orm';
+import { isValidUuid } from '@/lib/uuid';
 
 export async function GET() {
     try {
         const session = await getApiSession();
 
-        if (!session?.user?.id) {
+        if (!session?.user?.id || !session.user.organisationId) {
             return NextResponse.json(
                 { error: 'Unauthorized' },
                 { status: 401 }
             );
         }
 
-        // Fetch notifications for the user
+        // Fetch notifications scoped strictly to both the user AND active organisation
         const userNotifications = await db
             .select()
             .from(notifications)
-            .where(eq(notifications.userId, session.user.id))
+            .where(
+                and(
+                    eq(notifications.userId, session.user.id),
+                    eq(notifications.organisationId, session.user.organisationId)
+                )
+            )
             .orderBy(desc(notifications.createdAt))
             .limit(20);
 
@@ -54,35 +60,58 @@ export async function PATCH(request: Request) {
     try {
         const session = await getApiSession();
 
-        if (!session?.user?.id) {
+        if (!session?.user?.id || !session.user.organisationId) {
             return NextResponse.json(
                 { error: 'Unauthorized' },
                 { status: 401 }
             );
         }
 
-        const body = await request.json();
-        const { notificationId, markAllAsRead } = body;
+        const body = await request.json().catch(() => null);
+        if (!body || typeof body !== 'object') {
+            return NextResponse.json(
+                { error: 'Invalid request' },
+                { status: 400 }
+            );
+        }
 
-        if (markAllAsRead) {
-            // Mark all notifications as read
+        const { notificationId, markAllAsRead } = body as {
+            notificationId?: unknown;
+            markAllAsRead?: unknown;
+        };
+
+        if (markAllAsRead === true) {
+            // Mark all notifications in the active organisation as read
             await db
                 .update(notifications)
                 .set({ isRead: true })
-                .where(eq(notifications.userId, session.user.id));
+                .where(
+                    and(
+                        eq(notifications.userId, session.user.id),
+                        eq(notifications.organisationId, session.user.organisationId)
+                    )
+                );
 
             return NextResponse.json({ success: true });
         }
 
-        if (notificationId) {
-            // Mark specific notification as read
+        if (notificationId !== undefined && notificationId !== null) {
+            if (!isValidUuid(notificationId)) {
+                return NextResponse.json(
+                    { error: 'Invalid notification ID' },
+                    { status: 400 }
+                );
+            }
+
+            // Mark specific notification in the active organisation as read
             await db
                 .update(notifications)
                 .set({ isRead: true })
                 .where(
                     and(
                         eq(notifications.id, notificationId),
-                        eq(notifications.userId, session.user.id)
+                        eq(notifications.userId, session.user.id),
+                        eq(notifications.organisationId, session.user.organisationId)
                     )
                 );
 
