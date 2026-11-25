@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useState, useTransition } from 'react';
+import { useEffect, useRef, useState, useTransition } from 'react';
 import { Search, Filter, Calendar, X, SlidersHorizontal } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCentreFilter } from '@/components/dashboard/CentreFilterContext';
 import { Button } from '@/components/ui/Button';
+import { useDialogFocusTrap } from '@/components/ui/useDialogFocusTrap';
 
 export interface BookingOutcomeCounts {
     all: number;
@@ -33,9 +34,20 @@ export default function BookingsFilters({ centres, resultsCount = 0, statusCount
     const [fromDate, setFromDate] = useState(searchParams.get('from') || '');
     const [toDate, setToDate] = useState(searchParams.get('to') || '');
     const [isMobileSheetOpen, setIsMobileSheetOpen] = useState(false);
+    const mobileSheetRef = useRef<HTMLDivElement | null>(null);
     const [isPending, startTransition] = useTransition();
+    const urlSearch = searchParams.get('search') || '';
     const urlStatus = searchParams.get('status') || 'all';
-    useEffect(() => { setStatus(urlStatus); }, [urlStatus]);
+    const urlFrom = searchParams.get('from') || '';
+    const urlTo = searchParams.get('to') || '';
+    useEffect(() => {
+        setSearch(urlSearch);
+        setStatus(urlStatus);
+        setFromDate(urlFrom);
+        setToDate(urlTo);
+    }, [urlSearch, urlStatus, urlFrom, urlTo]);
+
+    useDialogFocusTrap(isMobileSheetOpen, mobileSheetRef, () => setIsMobileSheetOpen(false));
 
     const isToday = searchParams.get('today') === 'true';
     const activeOutcome = searchParams.get('outcome') || 'all';
@@ -289,8 +301,9 @@ export default function BookingsFilters({ centres, resultsCount = 0, statusCount
                     />
                 </form>
                 <button
+                    type="button"
                     onClick={() => setIsMobileSheetOpen(true)}
-                    className="relative flex items-center justify-center h-10 w-10 rounded-sm border border-border bg-surface text-text hover:bg-page transition-colors flex-shrink-0"
+                    className="relative flex items-center justify-center h-11 w-11 rounded-sm border border-border bg-surface text-text hover:bg-page transition-colors flex-shrink-0"
                     aria-label="Open filters"
                 >
                     <SlidersHorizontal className="w-4 h-4" />
@@ -304,13 +317,20 @@ export default function BookingsFilters({ centres, resultsCount = 0, statusCount
             {isMobileSheetOpen && (
                 <div className="fixed inset-0 z-[200] flex justify-end flex-col lg:hidden">
                     <div className="absolute inset-0 bg-black/40" onClick={() => setIsMobileSheetOpen(false)} />
-                    <div className="relative bg-surface border-t border-border shadow-[var(--shadow-popover)] rounded-t-lg p-5 flex flex-col animate-in slide-in-from-bottom duration-300 max-h-[85vh] overflow-y-auto">
+                    <div
+                        ref={mobileSheetRef}
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="bookings-mobile-filters-title"
+                        tabIndex={-1}
+                        className="relative bg-surface border-t border-border shadow-[var(--shadow-popover)] rounded-t-lg p-5 flex flex-col animate-in slide-in-from-bottom duration-300 max-h-[85vh] overflow-y-auto"
+                    >
                         <div className="w-10 h-1 bg-border rounded-full mx-auto mb-5" />
 
                         <div className="flex items-center justify-between mb-5">
-                            <h2 className="text-section-title text-text">Filters</h2>
+                            <h2 id="bookings-mobile-filters-title" className="text-section-title text-text">Filters</h2>
                             {hasActiveFilters && (
-                                <button onClick={handleClearFilters} className="text-sm font-medium text-text-secondary hover:text-text">
+                                <button type="button" onClick={handleClearFilters} className="min-h-[44px] px-2 text-sm font-medium text-text-secondary hover:text-text">
                                     Clear all
                                 </button>
                             )}
@@ -336,6 +356,8 @@ export default function BookingsFilters({ centres, resultsCount = 0, statusCount
                                     {statusOptionsWithCounts.map((tab) => (
                                         <button
                                             key={tab.value}
+                                            type="button"
+                                            aria-pressed={status === tab.value}
                                             onClick={() => {
                                                 setStatus(tab.value);
                                                 applyFilters({ newStatus: tab.value });
@@ -356,8 +378,9 @@ export default function BookingsFilters({ centres, resultsCount = 0, statusCount
 
                             {centres.length > 1 && (
                                 <div>
-                                    <h3 className="text-label text-text-muted mb-2">Centre</h3>
+                                    <label htmlFor="bookings-mobile-centre" className="block text-label text-text-muted mb-2">Centre</label>
                                     <select
+                                        id="bookings-mobile-centre"
                                         value={selectedCentreId}
                                         onChange={(e) => {
                                             setSelectedCentreId(e.target.value);
@@ -377,8 +400,9 @@ export default function BookingsFilters({ centres, resultsCount = 0, statusCount
                                 <h3 className="text-label text-text-muted mb-2">Date Range</h3>
                                 <div className="grid grid-cols-2 gap-3">
                                     <div className="flex flex-col gap-1.5">
-                                        <label className="text-metadata text-text-secondary">From</label>
+                                        <label htmlFor="bookings-mobile-from" className="text-metadata text-text-secondary">From</label>
                                         <input
+                                            id="bookings-mobile-from"
                                             type="date"
                                             value={fromDate}
                                             onChange={(e) => {
@@ -390,8 +414,9 @@ export default function BookingsFilters({ centres, resultsCount = 0, statusCount
                                         />
                                     </div>
                                     <div className="flex flex-col gap-1.5">
-                                        <label className="text-metadata text-text-secondary">To</label>
+                                        <label htmlFor="bookings-mobile-to" className="text-metadata text-text-secondary">To</label>
                                         <input
+                                            id="bookings-mobile-to"
                                             type="date"
                                             value={toDate}
                                             onChange={(e) => {

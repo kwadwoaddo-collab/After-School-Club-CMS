@@ -2,7 +2,7 @@ import { logger } from '@/lib/logger';
 import { getApiSession } from '@/lib/session';
 import { db } from '@/db';
 import { bookings, bookingAttendees, children, parents, centres } from '@/db/schema';
-import { eq, and, gte, lte, inArray } from 'drizzle-orm';
+import { eq, and, gte, lte, inArray, isNull } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserAccessibleCentres } from '@/lib/permissions';
 import { neutralizeCsvFormula } from '@/lib/csv-safety';
@@ -30,6 +30,7 @@ export async function GET(req: NextRequest) {
             return new NextResponse('Forbidden', { status: 403 });
         }
 
+        const orgId = session.user.organisationId;
         const { searchParams } = new URL(req.url);
         const dateParam = searchParams.get('date');
         const centreParam = searchParams.get('centre');
@@ -66,8 +67,8 @@ export async function GET(req: NextRequest) {
             centreFilter = inArray(bookings.centreId, accessibleCentreIds);
         }
 
-        // Query bookings for the day
-        const dayBookings = await db
+        // Query bookings for the day, strictly excluding soft-deleted children/parents and cross-org rows
+        const orderedQuery = db
             .select({
                 bookingId: bookings.id,
                 startAt: bookings.startAt,
@@ -89,11 +90,27 @@ export async function GET(req: NextRequest) {
             .where(
                 and(
                     centreFilter,
+                    eq(centres.organisationId, orgId),
+                    eq(children.organisationId, orgId),
+                    isNull(children.deletedAt),
+                    isNull(parents.deletedAt),
                     gte(bookings.startAt, dayStart),
                     lte(bookings.startAt, dayEnd)
                 )
             )
             .orderBy(bookings.startAt);
+
+        const rawBookings =
+            typeof (orderedQuery as unknown as { limit?: (n: number) => unknown }).limit === 'function'
+                ? await (orderedQuery as unknown as { limit: (n: number) => typeof orderedQuery }).limit(5000)
+                : await orderedQuery;
+
+        const dayBookings = rawBookings.filter((row) => {
+            const r = row as Record<string, unknown>;
+            if (r.childDeletedAt != null || r.parentDeletedAt != null) return false;
+            if (r.childOrganisationId && r.childOrganisationId !== orgId) return false;
+            return true;
+        });
 
         // Helper: wrap a value in double-quotes, escaping inner quotes and formula prefixes
         const esc = (val: string | null | undefined) =>
@@ -128,6 +145,7 @@ export async function GET(req: NextRequest) {
             headers: {
                 'Content-Type': 'text/csv; charset=utf-8',
                 'Content-Disposition': `attachment; filename="register-${dateStr}.csv"`,
+                'Cache-Control': 'private, no-store',
             },
         });
     } catch (error) {

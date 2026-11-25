@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Trash2, Loader2, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import AlertModal from '@/components/ui/AlertModal';
 import { useToast } from '@/components/ui/ToastProvider';
 import { Button } from '@/components/ui/Button';
+import { useDialogFocusTrap } from '@/components/ui/useDialogFocusTrap';
 
 interface DeleteStudentButtonProps {
     studentId: string;
@@ -36,8 +37,20 @@ export default function StudentActions({
     const [isDeleting, setIsDeleting] = useState(false);
     const [isUpdatingLifecycle, setIsUpdatingLifecycle] = useState(false);
     const [alertError, setAlertError] = useState<string | null>(null);
+    const actionLockRef = useRef(false);
+    const stopDialogRef = useRef<HTMLDivElement | null>(null);
+    const deleteDialogRef = useRef<HTMLDivElement | null>(null);
+    const stopTitleId = useId();
+    const deleteTitleId = useId();
     const router = useRouter();
     const { toast } = useToast();
+
+    useDialogFocusTrap(showStopModal, stopDialogRef, () => {
+        if (!actionLockRef.current) setShowStopModal(false);
+    });
+    useDialogFocusTrap(showConfirm, deleteDialogRef, () => {
+        if (!actionLockRef.current) setShowConfirm(false);
+    });
 
     const isAllowedToDelete = canDelete !== undefined
         ? canDelete
@@ -46,6 +59,8 @@ export default function StudentActions({
             : true;
 
     const handleDelete = async () => {
+        if (actionLockRef.current || isDeleting) return;
+        actionLockRef.current = true;
         setIsDeleting(true);
         try {
             const res = await fetch(`/api/students/${studentId}`, { method: 'DELETE' });
@@ -64,12 +79,15 @@ export default function StudentActions({
             toast('Failed to delete student — please try again', 'error');
             setAlertError('An error occurred. Please try again.');
         } finally {
+            actionLockRef.current = false;
             setIsDeleting(false);
             setShowConfirm(false);
         }
     };
 
     const handleStop = async () => {
+        if (actionLockRef.current || isUpdatingLifecycle) return;
+        actionLockRef.current = true;
         setIsUpdatingLifecycle(true);
         const reason = [stopPreset, stopNote.trim()].filter(Boolean).join(' — ') || 'Marked as stopped by staff';
         try {
@@ -97,11 +115,14 @@ export default function StudentActions({
             toast('Failed to mark student as stopped — please try again', 'error');
             setAlertError('An error occurred while stopping the student. Please try again.');
         } finally {
+            actionLockRef.current = false;
             setIsUpdatingLifecycle(false);
         }
     };
 
     const handleReactivate = async () => {
+        if (actionLockRef.current || isUpdatingLifecycle) return;
+        actionLockRef.current = true;
         setIsUpdatingLifecycle(true);
         try {
             const res = await fetch(`/api/students/${studentId}/lifecycle`, {
@@ -128,6 +149,7 @@ export default function StudentActions({
             toast('Failed to reactivate student — please try again', 'error');
             setAlertError('An error occurred while reactivating the student. Please try again.');
         } finally {
+            actionLockRef.current = false;
             setIsUpdatingLifecycle(false);
         }
     };
@@ -138,11 +160,21 @@ export default function StudentActions({
             {showStopModal && isAllowedToDelete && (
                 <div
                     className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 text-left"
-                    onClick={(e) => e.stopPropagation()}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        if (e.target === e.currentTarget && !isUpdatingLifecycle) setShowStopModal(false);
+                    }}
                 >
-                    <div className="bg-surface border border-border rounded-lg shadow-[var(--shadow-popover)] p-6 max-w-md w-full space-y-4">
+                    <div
+                        ref={stopDialogRef}
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby={stopTitleId}
+                        tabIndex={-1}
+                        className="bg-surface border border-border rounded-lg shadow-[var(--shadow-popover)] p-6 max-w-md w-full space-y-4"
+                    >
                         <div>
-                            <h3 className="text-section-title text-text">Stop {studentName}?</h3>
+                            <h3 id={stopTitleId} className="text-section-title text-text">Stop {studentName}?</h3>
                             <p className="text-small-body text-text-secondary mt-1">
                                 Excludes this student from future billing cycles and registers from the stop date onward.
                             </p>
@@ -210,13 +242,23 @@ export default function StudentActions({
             {showConfirm && isAllowedToDelete && (
                 <div
                     className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-                    onClick={(e) => e.stopPropagation()}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        if (e.target === e.currentTarget && !isDeleting) setShowConfirm(false);
+                    }}
                 >
-                    <div className="bg-surface border border-border rounded-lg shadow-[var(--shadow-popover)] p-6 max-w-sm w-full">
+                    <div
+                        ref={deleteDialogRef}
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby={deleteTitleId}
+                        tabIndex={-1}
+                        className="bg-surface border border-border rounded-lg shadow-[var(--shadow-popover)] p-6 max-w-sm w-full"
+                    >
                         <div className="w-11 h-11 bg-danger-soft rounded-md flex items-center justify-center mb-4">
-                            <Trash2 className="w-5 h-5 text-danger" />
+                            <Trash2 className="w-5 h-5 text-danger" aria-hidden="true" />
                         </div>
-                        <h3 className="text-section-title text-text mb-2">Delete student?</h3>
+                        <h3 id={deleteTitleId} className="text-section-title text-text mb-2">Delete student?</h3>
                         <p className="text-small-body text-text-secondary mb-6">
                             This will remove <strong className="text-text font-medium">{studentName}</strong> from the active student list.
                         </p>
@@ -262,17 +304,19 @@ export default function StudentActions({
                 )}
                 <Link
                     href={`/dashboard/students/${studentId}`}
-                    className="px-3 py-1.5 text-accent hover:bg-accent-soft text-xs font-medium rounded-sm inline-flex items-center gap-1.5 transition-colors"
+                    className="min-h-[44px] px-3 py-1.5 text-accent hover:bg-accent-soft text-xs font-medium rounded-sm inline-flex items-center gap-1.5 transition-colors"
                 >
-                    Manage <ArrowRight className="w-3 h-3" />
+                    Manage <ArrowRight className="w-3 h-3" aria-hidden="true" />
                 </Link>
                 {isAllowedToDelete && (
                     <button
+                        type="button"
+                        aria-label={`Delete ${studentName}`}
                         onClick={() => setShowConfirm(true)}
-                        className="p-1.5 text-text-muted hover:text-danger hover:bg-danger-soft rounded-sm transition-colors"
+                        className="min-w-[44px] min-h-[44px] p-2 inline-flex items-center justify-center text-text-muted hover:text-danger hover:bg-danger-soft rounded-sm transition-colors"
                         title={`Delete ${studentName}`}
                     >
-                        <Trash2 className="w-3.5 h-3.5" />
+                        <Trash2 className="w-4 h-4" aria-hidden="true" />
                     </button>
                 )}
             </div>

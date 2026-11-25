@@ -404,7 +404,7 @@ export default async function BookingsPage(props: {
             </HeaderPortal>
 
             {/* Toolbar — sticky */}
-            <div className="sticky top-16 sm:top-20 z-20 -mx-4 sm:-mx-8 px-4 sm:px-8 py-2.5 bg-page/90 backdrop-blur-sm border-b border-border-subtle">
+            <div className="sticky top-14 z-20 -mx-4 sm:-mx-8 px-4 sm:px-8 py-2.5 bg-page/90 backdrop-blur-sm border-b border-border-subtle">
                 <SummaryRangeNotice range={summaryRange} basis="Bookings scheduled" clearHref={`/dashboard/bookings?${new URLSearchParams(Object.entries(searchParams).filter(([key,value]) => key !== 'page' && typeof value === 'string') as [string,string][])}`}/>
                 <Suspense fallback={<div className="h-10 animate-pulse bg-page rounded-sm w-full" />}>
                     <BookingsFilters

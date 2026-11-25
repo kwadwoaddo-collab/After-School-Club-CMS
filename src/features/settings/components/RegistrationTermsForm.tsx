@@ -1,9 +1,8 @@
 'use client';
  
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useToast } from '@/components/ui/ToastProvider';
-import Link from 'next/link';
-import { FileText, Save, ArrowLeft, ExternalLink } from 'lucide-react';
+import { FileText, Save, ExternalLink } from 'lucide-react';
  
 export default function RegistrationTermsForm({ initialTerms, orgSlug }: { initialTerms: string, orgSlug: string }) {
     const [terms, setTerms] = useState(initialTerms);
@@ -11,8 +10,22 @@ export default function RegistrationTermsForm({ initialTerms, orgSlug }: { initi
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
     const [error, setError] = useState('');
+    const savingRef = useRef(false);
+    const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    useEffect(() => {
+        setTerms(initialTerms);
+    }, [initialTerms]);
+
+    useEffect(() => {
+        return () => {
+            if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+        };
+    }, []);
  
     const handleSave = async () => {
+        if (savingRef.current || saving) return;
+        savingRef.current = true;
         setSaving(true); setSaved(false); setError('');
         try {
             const res = await fetch('/api/settings/registration-terms', {
@@ -23,12 +36,14 @@ export default function RegistrationTermsForm({ initialTerms, orgSlug }: { initi
             if (!res.ok) throw new Error('Failed to save');
             setSaved(true);
             toast({ title: 'Success', message: 'Registration terms & conditions saved successfully!', variant: 'success' });
-            setTimeout(() => setSaved(false), 3000);
+            if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+            savedTimerRef.current = setTimeout(() => setSaved(false), 3000);
         } catch {
             const errMsg = 'Failed to save terms. Please try again.';
             setError(errMsg);
             toast({ title: 'Error', message: errMsg, variant: 'error' });
         } finally {
+            savingRef.current = false;
             setSaving(false);
         }
     };
@@ -52,7 +67,7 @@ export default function RegistrationTermsForm({ initialTerms, orgSlug }: { initi
                         href={`/register/${orgSlug}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-2 px-4 py-2 bg-secondary hover:bg-secondary/80 border border-border text-foreground rounded-2xl transition-all text-sm hover:scale-[1.01] active:scale-[0.99]"
+                        className="inline-flex items-center gap-2 min-h-[44px] px-4 py-2 bg-secondary hover:bg-secondary/80 border border-border text-foreground rounded-2xl transition-all text-sm hover:scale-[1.01] active:scale-[0.99]"
                     >
                         <ExternalLink className="w-4 h-4" /> Preview form
                     </a>
@@ -74,7 +89,7 @@ export default function RegistrationTermsForm({ initialTerms, orgSlug }: { initi
  
                     {/* Textarea */}
                     <div>
-                        <label className="block text-sm font-bold text-foreground mb-2">
+                        <label htmlFor="registration-terms" className="block text-sm font-bold text-foreground mb-2">
                             Terms &amp; Conditions Text
                         </label>
                         <textarea
@@ -90,7 +105,7 @@ export default function RegistrationTermsForm({ initialTerms, orgSlug }: { initi
  
                     {/* Save / error */}
                     {error && (
-                        <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-600 font-bold text-sm">{error}</div>
+                        <div role="alert" className="p-3 bg-destructive/10 border border-destructive/20 rounded-2xl text-destructive font-bold text-sm">{error}</div>
                     )}
  
                     <div className="flex items-center justify-between">
@@ -104,9 +119,10 @@ export default function RegistrationTermsForm({ initialTerms, orgSlug }: { initi
                         ) : <div />}
                         <button
                             id="save-registration-terms"
+                            type="button"
                             onClick={handleSave}
                             disabled={saving}
-                            className="flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground text-sm font-bold rounded-2xl hover:bg-primary/90 hover:scale-[1.01] active:scale-[0.99] transition-all shadow-lg shadow-primary/30 disabled:opacity-50 disabled:bg-secondary"
+                            className="inline-flex items-center gap-2 min-h-[44px] px-6 py-3 bg-primary text-primary-foreground text-sm font-bold rounded-2xl hover:bg-primary/90 hover:scale-[1.01] active:scale-[0.99] transition-all shadow-lg shadow-primary/30 disabled:opacity-50 disabled:bg-secondary"
                         >
                             <Save className="w-4 h-4" />
                             {saving ? 'Saving…' : 'Save Terms'}

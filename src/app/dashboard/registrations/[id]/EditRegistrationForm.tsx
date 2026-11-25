@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useEffect, useRef, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { updateRegistrationDetails, UpdateRegistrationPayload } from '../actions';
 import { Pencil, X, Save, Loader2, CheckCircle2 } from 'lucide-react';
@@ -84,6 +84,14 @@ export default function EditRegistrationForm({ reg, pars, kids, centreSessionSlo
     const [isPending, startTransition] = useTransition();
     const [success, setSuccess] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const savingRef = useRef(false);
+    const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    useEffect(() => {
+        return () => {
+            if (successTimerRef.current) clearTimeout(successTimerRef.current);
+        };
+    }, []);
 
     // Editing states for sections
     const [editingSection, setEditingSection] = useState<string | null>(null);
@@ -173,6 +181,8 @@ export default function EditRegistrationForm({ reg, pars, kids, centreSessionSlo
     };
 
     const handleSave = (section: string) => {
+        if (savingRef.current || isPending) return;
+        savingRef.current = true;
         setError(null);
         setSuccess(null);
         const payload: UpdateRegistrationPayload = {
@@ -193,9 +203,12 @@ export default function EditRegistrationForm({ reg, pars, kids, centreSessionSlo
                 await updateRegistrationDetails(payload);
                 setSuccess(section);
                 setEditingSection(null);
-                setTimeout(() => setSuccess(null), 3000);
+                if (successTimerRef.current) clearTimeout(successTimerRef.current);
+                successTimerRef.current = setTimeout(() => setSuccess(null), 3000);
             } catch (e) {
                 setError(e instanceof Error ? e.message : 'Failed to save changes');
+            } finally {
+                savingRef.current = false;
             }
         });
     };
@@ -210,17 +223,18 @@ export default function EditRegistrationForm({ reg, pars, kids, centreSessionSlo
             </div>
             {editingSection !== sectionId ? (
                 <button
+                    type="button"
                     onClick={() => { setEditingSection(sectionId); setError(null); setSuccess(null); }}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-secondary/50 hover:bg-secondary text-muted-foreground hover:text-foreground rounded-md border border-border transition-all"
+                    className="inline-flex items-center gap-1.5 min-h-[44px] px-3 py-2 text-xs font-medium bg-secondary/50 hover:bg-secondary text-muted-foreground hover:text-foreground rounded-md border border-border transition-all"
                 >
                     <Pencil className="w-3.5 h-3.5" /> Edit
                 </button>
             ) : (
                 <div className="flex items-center gap-2">
-                    <button onClick={() => handleCancel(sectionId)} disabled={isPending} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                    <button type="button" onClick={() => handleCancel(sectionId)} disabled={isPending} className="inline-flex items-center gap-1 min-h-[44px] px-3 py-2 text-xs text-muted-foreground hover:text-foreground transition-colors">
                         <X className="w-3.5 h-3.5" /> Cancel
                     </button>
-                    <button onClick={() => handleSave(sectionId)} disabled={isPending} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-primary text-white rounded-md hover:bg-primary/90 transition-colors shadow-sm">
+                    <button type="button" onClick={() => handleSave(sectionId)} disabled={isPending} className="inline-flex items-center gap-1.5 min-h-[44px] px-3.5 py-2 text-xs font-semibold bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors shadow-sm disabled:opacity-60">
                         {isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} Save
                     </button>
                 </div>
@@ -231,7 +245,7 @@ export default function EditRegistrationForm({ reg, pars, kids, centreSessionSlo
     return (
         <div className="mt-6 space-y-6">
             {error && (
-                <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm">
+                <div role="alert" className="p-3 bg-destructive/10 border border-destructive/20 rounded-xl text-destructive text-sm">
                     {error}
                 </div>
             )}
@@ -420,7 +434,7 @@ export default function EditRegistrationForm({ reg, pars, kids, centreSessionSlo
                         {editingSection === 'medical' ? (
                             <div className="flex gap-3 mt-2 mb-3">
                                 {[{ v: false, l: 'No' }, { v: true, l: 'Yes' }].map(opt => (
-                                    <button key={String(opt.v)} onClick={() => setHasSpecialNeeds(opt.v)} className={`px-4 py-2 rounded-lg text-sm font-medium border transition-all ${hasSpecialNeeds === opt.v ? 'border-primary bg-primary/15 text-primary font-semibold' : 'border-border text-muted-foreground hover:border-primary/40 hover:text-foreground'}`}>
+                                    <button type="button" aria-pressed={hasSpecialNeeds === opt.v} key={String(opt.v)} onClick={() => setHasSpecialNeeds(opt.v)} className={`min-h-[44px] px-4 py-2 rounded-lg text-sm font-medium border transition-all ${hasSpecialNeeds === opt.v ? 'border-primary bg-primary/15 text-primary font-semibold' : 'border-border text-muted-foreground hover:border-primary/40 hover:text-foreground'}`}>
                                         {opt.l}
                                     </button>
                                 ))}

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useTransition } from 'react';
+import React, { useEffect, useRef, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { reconcilePayment } from '@/features/billing/actions/reconcile-payment';
@@ -56,15 +56,26 @@ export function ReconciliationClient({
   const [reference, setReference] = useState<string>('');
 
   const [confirmed, setConfirmed] = useState(false);
+  const reconcilingRef = useRef(false);
+
+  useEffect(() => {
+    if (selectedInvoice && !invoices.some((item) => item.id === selectedInvoice)) {
+      setSelectedInvoice(null);
+      setAmount('');
+      setReference('');
+      setConfirmed(false);
+    }
+  }, [invoices, selectedInvoice]);
 
   const handleReconcile = () => {
-    if (isPending || !confirmed) return;
+    if (reconcilingRef.current || isPending || !confirmed) return;
     if (!selectedInvoice || !invoices.some(item => item.id === selectedInvoice)) { toast('Please select an invoice', 'error'); return; }
     const parsedAmount = parseFloat(amount);
     if (isNaN(parsedAmount) || parsedAmount <= 0) { toast('Invalid amount', 'error'); return; }
     if (!reference) { toast('Reference is required', 'error'); return; }
 
     const allocation = { invoiceId: selectedInvoice, amount: parsedAmount, method, reference };
+    reconcilingRef.current = true;
     startTransition(async () => {
       try {
         const res = await reconcilePayment(allocation);
@@ -81,6 +92,8 @@ export function ReconciliationClient({
         }
       } catch {
         toast('Payment could not be confirmed. Check the invoice payment history before retrying.', 'error');
+      } finally {
+        reconcilingRef.current = false;
       }
     });
   };
@@ -110,8 +123,17 @@ export function ReconciliationClient({
             return (
               <div
                 key={inv.id}
+                tabIndex={0}
+                aria-label={`Invoice ${inv.invoiceNumber}`}
                 onClick={() => selectInvoice(inv)}
-                className={`p-4 border rounded-2xl transition-all cursor-pointer ${
+                onKeyDown={(e) => {
+                  if (e.target !== e.currentTarget) return;
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    selectInvoice(inv);
+                  }
+                }}
+                className={`p-4 border rounded-2xl transition-all cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${
                   isSelected
                     ? 'border-primary bg-primary/5 ring-1 ring-primary'
                     : 'border-border hover:border-primary/40 bg-card'
@@ -175,7 +197,7 @@ export function ReconciliationClient({
                         e.stopPropagation();
                         selectInvoice(inv);
                       }}
-                      className={`min-h-8 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
+                      className={`min-h-[44px] px-3.5 py-2 rounded-lg text-xs font-semibold border transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${
                         isSelected
                           ? 'bg-primary text-primary-foreground border-primary'
                           : 'bg-secondary/50 text-foreground border-border hover:bg-secondary'
@@ -261,7 +283,7 @@ export function ReconciliationClient({
                       disabled={isPending}
                       aria-pressed={method === m.id}
                       onClick={() => { setMethod(m.id); setConfirmed(false); }}
-                      className={`flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${
+                      className={`flex items-center gap-3 min-h-[44px] p-3 rounded-xl border transition-all text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${
                         method === m.id
                           ? 'bg-primary/10 border-primary ring-1 ring-primary'
                           : 'bg-secondary/40 border-border hover:bg-secondary/60'

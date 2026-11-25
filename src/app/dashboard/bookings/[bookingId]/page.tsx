@@ -57,31 +57,34 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
 
     if (!isValidUuid(bookingId)) return notFound();
 
-    const booking = await db.query.bookings.findFirst({
-        where: eq(bookings.id, bookingId),
-        with: {
-            parent: true,
-            centre: true,
-            attendees: {
-                with: {
-                    child: true
-                }
-            },
-            staff: true
-        }
-    });
+    const [booking, orgCentres] = await Promise.all([
+        db.query.bookings.findFirst({
+            where: eq(bookings.id, bookingId),
+            with: {
+                parent: true,
+                centre: true,
+                attendees: {
+                    with: {
+                        child: true
+                    }
+                },
+                staff: true
+            }
+        }),
+        getUserAccessibleCentres(session.user.id),
+    ]);
 
     if (!booking) return notFound();
     if (!booking.centre || booking.centre.organisationId !== session.user.organisationId) return notFound();
 
     if (userRole !== 'ORG_OWNER') {
-        const accessibleCentreIds = (await getUserAccessibleCentreIds(session.user.id)).filter(isValidUuid);
+        const accessibleCentreIds = (orgCentres ?? [])
+            .map((c: { id: string }) => c.id)
+            .filter(isValidUuid);
         if (accessibleCentreIds.length === 0 || (booking.centreId !== null && booking.centreId !== undefined && !accessibleCentreIds.includes(booking.centreId))) {
             return notFound();
         }
     }
-
-    const orgCentres = await getUserAccessibleCentres(session.user.id);
     const canManageSafeguarding = userRole === 'ORG_OWNER' || userRole === 'MANAGER';
 
     const getStudentInfo = () => {
@@ -166,8 +169,8 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-4 min-w-0">
-                    <Link href="/dashboard/bookings" className="p-2 rounded-sm text-text-muted hover:text-text hover:bg-page transition-colors flex-shrink-0">
-                        <ChevronLeft className="w-5 h-5" />
+                    <Link href="/dashboard/bookings" aria-label="Back to bookings" className="min-h-11 min-w-11 inline-flex items-center justify-center p-2 rounded-sm text-text-muted hover:text-text hover:bg-page transition-colors flex-shrink-0">
+                        <ChevronLeft className="w-5 h-5" aria-hidden="true" />
                     </Link>
                     <div className="min-w-0">
                         <div className="flex items-center gap-2.5 flex-wrap">

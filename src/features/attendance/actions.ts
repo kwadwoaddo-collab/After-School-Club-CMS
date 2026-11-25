@@ -3,7 +3,7 @@
 
 
 import { db } from '@/db';
-import { bookingAttendees, bookings, children, sessionCredits, users } from '@/db/schema';
+import { bookingAttendees, bookings, children, sessionCredits } from '@/db/schema';
 import { eq, and, gte, lte, inArray, isNull, sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { requireTenantSession } from '@/lib/session';
@@ -251,27 +251,47 @@ export async function forgiveSessionsAction(params: {
         throw new Error('Only managers and owners can forgive sessions');
     }
 
-    // childId is client-supplied — verify it belongs to the caller's
-    // organisation (and, for non-owners, an accessible centre) before
-    // granting a session credit against it.
+    if (
+        typeof params.sessionsAmount !== 'number' ||
+        !Number.isInteger(params.sessionsAmount) ||
+        params.sessionsAmount < 1 ||
+        params.sessionsAmount > 100
+    ) {
+        throw new Error('Invalid sessions amount: must be an integer between 1 and 100');
+    }
+
+    // childId is client-supplied — verify it is active (not soft-deleted) and
+    // belongs to the caller's organisation and an accessible centre.
     const targetChild = await db.query.children.findFirst({
-        where: eq(children.id, params.childId),
+        where: and(
+            eq(children.id, params.childId),
+            children.deletedAt ? isNull(children.deletedAt) : undefined
+        ),
     });
-    if (!targetChild || targetChild.organisationId !== session.user.organisationId) {
+    if (
+        !targetChild ||
+        (targetChild as { deletedAt?: Date | null }).deletedAt != null ||
+        targetChild.organisationId !== session.user.organisationId
+    ) {
         throw new Error('Child not found or unauthorized');
     }
-    if (targetChild.centreId && !(await canUserAccessCentre(session.user.id, targetChild.centreId))) {
+    if (!targetChild.centreId) {
+        if (role !== 'ORG_OWNER') {
+            throw new Error('Child not found or unauthorized');
+        }
+    } else if (!(await canUserAccessCentre(session.user.id, targetChild.centreId))) {
         throw new Error('Child not found or unauthorized');
     }
 
     const year = params.academicYear ?? getAcademicYear();
+    const cleanNote = params.note ? String(params.note).slice(0, 1000) : null;
 
     await db.insert(sessionCredits).values({
         childId: params.childId,
         academicYear: year,
         sessionsAmount: params.sessionsAmount,
         adminId: session.user.id as string,
-        note: params.note || null,
+        note: cleanNote,
     });
 
     revalidatePath('/dashboard/attendance/ledger');
@@ -288,25 +308,49 @@ export async function updateChildFlags(params: {
     const session = await requireTenantSession();
     if (!session?.user?.id || !session.user.organisationId) throw new Error('Unauthorized');
 
-    // childId is client-supplied — verify org/centre ownership before writing.
+    const role = (session.user as any).role as string;
+    if (!['ORG_OWNER', 'MANAGER', 'FRONT_DESK'].includes(role)) {
+        throw new Error('Forbidden: insufficient permissions to update student flags');
+    }
+
+    // childId is client-supplied — verify active (non-deleted) org/centre ownership before writing.
     const targetChild = await db.query.children.findFirst({
-        where: eq(children.id, params.childId),
+        where: and(
+            eq(children.id, params.childId),
+            children.deletedAt ? isNull(children.deletedAt) : undefined
+        ),
     });
-    if (!targetChild || targetChild.organisationId !== session.user.organisationId) {
+    if (
+        !targetChild ||
+        (targetChild as { deletedAt?: Date | null }).deletedAt != null ||
+        targetChild.organisationId !== session.user.organisationId
+    ) {
         throw new Error('Child not found or unauthorized');
     }
-    if (targetChild.centreId && !(await canUserAccessCentre(session.user.id, targetChild.centreId))) {
+    if (!targetChild.centreId) {
+        if (role !== 'ORG_OWNER') {
+            throw new Error('Child not found or unauthorized');
+        }
+    } else if (!(await canUserAccessCentre(session.user.id, targetChild.centreId))) {
         throw new Error('Child not found or unauthorized');
     }
 
+    const cleanFlagNote = params.flagNote != null ? String(params.flagNote).slice(0, 1000) : null;
+
     await db.update(children)
         .set({
-            flagHomework: params.flagHomework,
-            flagBehaviour: params.flagBehaviour,
-            flagNote: params.flagNote ?? null,
+            flagHomework: Boolean(params.flagHomework),
+            flagBehaviour: Boolean(params.flagBehaviour),
+            flagNote: cleanFlagNote,
             updatedAt: new Date(),
         })
-        .where(eq(children.id, params.childId));
+        .where(
+            and(
+                eq(children.id, params.childId),
+                eq(children.organisationId, session.user.organisationId),
+                children.deletedAt ? isNull(children.deletedAt) : undefined
+            )
+        );
 
     revalidatePath('/dashboard/attendance');
     revalidatePath('/dashboard/students');

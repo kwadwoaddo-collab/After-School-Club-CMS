@@ -9,6 +9,7 @@ import { z } from 'zod';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { revalidatePath } from 'next/cache';
 import { initializeBookingEnrolmentOutcomeOnCompletion } from '@/lib/services/booking-outcome-sync';
+import { isValidUuid } from '@/lib/uuid';
 
 // Must match the bookingStatusEnum in schema.ts: confirmed | cancelled | rescheduled | completed | pending | signed_up | did_not_attend
 const statusSchema = z.object({
@@ -26,15 +27,18 @@ export async function PATCH(request: Request, { params }: RouteContext) {
             return NextResponse.json({ error: 'Unauthorised' }, { status: 401 });
         }
 
+        const userRole = (session.user as any).role as string | undefined;
+        if (!userRole || !['ORG_OWNER', 'MANAGER', 'FRONT_DESK'].includes(userRole)) {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        }
+
         const { bookingId } = await params;
 
-        // UUID format check
-        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-        if (!uuidRegex.test(bookingId)) {
+        if (!isValidUuid(bookingId)) {
             return NextResponse.json({ error: 'Invalid booking ID' }, { status: 400 });
         }
 
-        const body = await request.json();
+        const body = await request.json().catch(() => null);
         const parsed = statusSchema.safeParse(body);
         if (!parsed.success) {
             return NextResponse.json({ error: 'Invalid status value', details: parsed.error.flatten() }, { status: 400 });
@@ -58,9 +62,8 @@ export async function PATCH(request: Request, { params }: RouteContext) {
 
         // ── Centre membership check for non-ORG_OWNER users ─────────────────
         // ORG_OWNER has implicit access to all centres within their org.
-        // MANAGER / FRONT_DESK / TUTOR must have an explicit centreMembership
+        // MANAGER / FRONT_DESK must have an explicit centreMembership
         // for the booking's centre — knowing a bookingId is not sufficient.
-        const userRole = (session.user as any).role as string | undefined;
         if (userRole !== 'ORG_OWNER' && booking.centreId) {
             const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
             if (!accessibleCentreIds.includes(booking.centreId)) {

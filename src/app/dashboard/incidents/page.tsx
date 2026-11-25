@@ -31,29 +31,36 @@ export default async function IncidentsPage(props: { searchParams?: Promise<{ ce
     let activeCentre: { name: string; ofstedId: string | null } | null = null;
     let hasError = false;
 
-    try {
-        const [foundOrg] = await db
-            .select()
-            .from(organisations)
-            .where(eq(organisations.id, session.user.organisationId))
-            .limit(1);
-        org = foundOrg;
+    let initialIncidents: Awaited<ReturnType<typeof getIncidents>> | undefined = undefined;
 
-        const rawCentreIds = await getUserAccessibleCentreIds(session.user.id);
+    try {
+        const [[foundOrg], rawCentreIds] = await Promise.all([
+            db
+                .select()
+                .from(organisations)
+                .where(eq(organisations.id, session.user.organisationId))
+                .limit(1),
+            getUserAccessibleCentreIds(session.user.id),
+        ]);
+        org = foundOrg;
         centreIds = (rawCentreIds ?? []).filter(isValidUuid);
 
-        if (centreIds.length > 0) {
+        if (org && centreIds.length > 0) {
             const resolved = await resolveActiveCentreId(resolvedSearchParams.centre, centreIds);
             activeCentreId = isValidUuid(resolved) && centreIds.includes(resolved)
                 ? resolved
                 : centreIds[0];
 
             if (isValidUuid(activeCentreId)) {
-                const foundCentre = await db.query.centres.findFirst({
-                    where: eq(centres.id, activeCentreId),
-                    columns: { name: true, ofstedId: true },
-                });
+                const [foundCentre, fetchedIncidents] = await Promise.all([
+                    db.query.centres.findFirst({
+                        where: eq(centres.id, activeCentreId),
+                        columns: { name: true, ofstedId: true },
+                    }),
+                    getIncidents(activeCentreId).catch(() => undefined),
+                ]);
                 activeCentre = foundCentre ?? null;
+                initialIncidents = fetchedIncidents;
             }
         }
     } catch (e) {
@@ -65,15 +72,6 @@ export default async function IncidentsPage(props: { searchParams?: Promise<{ ce
 
     const centreName = activeCentre?.name || undefined;
     const hasValidCentre = isValidUuid(activeCentreId);
-
-    let initialIncidents: Awaited<ReturnType<typeof getIncidents>> | undefined = undefined;
-    if (hasValidCentre) {
-        try {
-            initialIncidents = await getIncidents(activeCentreId);
-        } catch {
-            initialIncidents = undefined;
-        }
-    }
 
     return (
         <div className="space-y-8 animate-in fade-in duration-700">

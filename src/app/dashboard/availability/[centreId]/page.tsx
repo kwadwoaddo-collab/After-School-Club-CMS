@@ -10,12 +10,12 @@ import { canUserAccessCentre } from '@/lib/permissions';
 
 export default async function EditAvailabilityPage({ params }: { params: Promise<{ centreId: string }> }) {
     const { centreId } = await params;
- 
+
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
     if (!uuidRegex.test(centreId)) {
         notFound();
     }
- 
+
     const session = await requireTenantSession();
     if (!session?.user?.id) {
         redirect('/login');
@@ -30,35 +30,27 @@ export default async function EditAvailabilityPage({ params }: { params: Promise
         redirect('/dashboard');
     }
 
-    const hasAccess = await canUserAccessCentre(session.user.id, centreId);
+    const [hasAccess, [centre], existingRules] = await Promise.all([
+        canUserAccessCentre(session.user.id, centreId),
+        db
+            .select()
+            .from(centres)
+            .where(eq(centres.id, centreId))
+            .limit(1),
+        db
+            .select()
+            .from(centreAvailabilityRules)
+            .where(eq(centreAvailabilityRules.centreId, centreId)),
+    ]);
+
     if (!hasAccess) {
         redirect('/dashboard');
     }
 
-    const [centre] = await db
-        .select()
-        .from(centres)
-        .where(eq(centres.id, centreId))
-        .limit(1);
-
-    if (!centre) {
+    if (!centre || centre.organisationId !== session.user.organisationId) {
         notFound();
     }
 
-    // Verify ownership
-    if (centre.organisationId !== session.user.organisationId) {
-        // Technically this should be 403, but notFound hides existence
-        notFound();
-    }
-
-    const existingRules = await db
-        .select()
-        .from(centreAvailabilityRules)
-        .where(eq(centreAvailabilityRules.centreId, centreId));
-
-    // Prepare initial data for the form
-    // We want all 7 days represented, whether they have a rule in DB or not.
-    // Default open: 09:00 - 18:00
     const initialRules: DayRule[] = Array.from({ length: 7 }).map((_, i) => {
         const found = existingRules.find(r => r.dayOfWeek === i);
         return {

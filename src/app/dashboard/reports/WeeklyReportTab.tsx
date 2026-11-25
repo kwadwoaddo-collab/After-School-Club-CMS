@@ -503,9 +503,11 @@ export default function WeeklyReportTab({
                         return (
                             <button
                                 key={mode}
+                                type="button"
+                                aria-pressed={rangeMode === mode}
                                 onClick={() => { setRangeMode(mode); setReportData(null); setError(null); setPdfError(null); }}
-                                className={`px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-200 border ${rangeMode === mode
-                                    ? 'bg-primary text-white border-primary shadow-sm'
+                                className={`min-h-[44px] px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-200 border ${rangeMode === mode
+                                    ? 'bg-primary text-primary-foreground border-primary shadow-sm'
                                     : 'bg-card text-muted-foreground border-border hover:text-foreground hover:border-border hover:bg-secondary/40'
                                 }`}
                             >
@@ -589,9 +591,10 @@ export default function WeeklyReportTab({
                         {/* Download PDF */}
                         <div className="flex flex-col items-end gap-2">
                             <button
+                                type="button"
                                 onClick={handleDownloadPdf}
                                 disabled={isPdfLoading}
-                                className="flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/80 rounded-2xl text-sm font-semibold transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="min-h-[44px] flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/80 rounded-2xl text-sm font-semibold transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {isPdfLoading ? (
                                     <><Loader2 className="w-4 h-4 animate-spin" />Generating PDF…</>

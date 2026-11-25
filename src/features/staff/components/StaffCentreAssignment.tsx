@@ -50,8 +50,8 @@ export default function StaffCentreAssignment({
                 </div>
                 {allCentres.length > 0 && (
                     <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="sm" onClick={handleSelectAll}>Select all</Button>
-                        <Button variant="ghost" size="sm" onClick={handleClearAll}>Clear all</Button>
+                        <Button type="button" variant="ghost" size="sm" className="min-h-[44px]" onClick={handleSelectAll}>Select all</Button>
+                        <Button type="button" variant="ghost" size="sm" className="min-h-[44px]" onClick={handleClearAll}>Clear all</Button>
                     </div>
                 )}
             </div>
@@ -71,7 +71,7 @@ export default function StaffCentreAssignment({
                                 return (
                                     <label
                                         key={centre.id}
-                                        className={`flex items-center justify-between p-3 border rounded-md cursor-pointer transition-colors ${isSelected
+                                        className={`flex items-center justify-between min-h-[44px] p-3 border rounded-md cursor-pointer transition-colors focus-within:ring-2 focus-within:ring-accent/40 ${isSelected
                                                 ? 'border-accent bg-accent-soft'
                                                 : 'border-border-subtle hover:border-border bg-page'
                                             }`}
@@ -87,8 +87,8 @@ export default function StaffCentreAssignment({
                                                 onChange={() => handleToggleCentre(centre.id)}
                                                 className="sr-only"
                                             />
-                                            <div className={`w-5 h-5 rounded-sm flex items-center justify-center transition-colors ${isSelected ? 'bg-accent' : 'bg-surface border border-border'}`}>
-                                                {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
+                                            <div className={`w-5 h-5 rounded-sm flex items-center justify-center transition-colors ${isSelected ? 'bg-accent text-on-accent' : 'bg-surface border border-border'}`}>
+                                                {isSelected && <Check className="w-3.5 h-3.5 text-on-accent" aria-hidden="true" />}
                                             </div>
                                         </div>
                                     </label>

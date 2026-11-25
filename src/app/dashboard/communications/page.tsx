@@ -32,22 +32,44 @@ export default async function CommunicationsPage(props: { searchParams?: Promise
     let activeCentre: { name: string } | null = null;
     let hasError = false;
 
+    let initialData: {
+        broadcasts: Awaited<ReturnType<typeof getBroadcasts>>;
+        parents: Awaited<ReturnType<typeof getParentsForCentre>>;
+        classes: Awaited<ReturnType<typeof getClassesForCentre>>;
+    } | undefined = undefined;
+
     try {
-        const [foundOrg] = await db
-            .select()
-            .from(organisations)
-            .where(eq(organisations.id, session.user.organisationId))
-            .limit(1);
+        const [[foundOrg], fetchedCentreIds] = await Promise.all([
+            db
+                .select()
+                .from(organisations)
+                .where(eq(organisations.id, session.user.organisationId))
+                .limit(1),
+            getUserAccessibleCentreIds(session.user.id),
+        ]);
         org = foundOrg;
-        
-        centreIds = await getUserAccessibleCentreIds(session.user.id);
-        activeCentreId = await resolveActiveCentreId(resolvedSearchParams.centre, centreIds);
-        if (activeCentreId && activeCentreId !== 'all') {
-            const foundCentre = await db.query.centres.findFirst({
-                where: eq(centres.id, activeCentreId),
-                columns: { name: true },
-            });
+        centreIds = fetchedCentreIds;
+        activeCentreId = (await resolveActiveCentreId(resolvedSearchParams.centre, centreIds)) || 'all';
+
+        if (org) {
+            const [foundCentre, initialTuple] = await Promise.all([
+                activeCentreId !== 'all'
+                    ? db.query.centres.findFirst({
+                        where: eq(centres.id, activeCentreId),
+                        columns: { name: true },
+                    })
+                    : Promise.resolve(null),
+                Promise.all([
+                    getBroadcasts(activeCentreId),
+                    getParentsForCentre(activeCentreId, 'all'),
+                    getClassesForCentre(activeCentreId),
+                ]).catch(() => undefined),
+            ]);
             activeCentre = foundCentre ?? null;
+            if (initialTuple) {
+                const [broadcasts, parents, classes] = initialTuple;
+                initialData = { broadcasts, parents, classes };
+            }
         }
     } catch (e) {
         logger.error("Error fetching communications data", e);
@@ -56,25 +78,6 @@ export default async function CommunicationsPage(props: { searchParams?: Promise
 
     if (!org && !hasError) return redirect('/onboarding');
     if (!activeCentreId) activeCentreId = 'all';
-
-    let initialData: {
-        broadcasts: Awaited<ReturnType<typeof getBroadcasts>>;
-        parents: Awaited<ReturnType<typeof getParentsForCentre>>;
-        classes: Awaited<ReturnType<typeof getClassesForCentre>>;
-    } | undefined = undefined;
-
-    if (!hasError) {
-        try {
-            const [broadcasts, parents, classes] = await Promise.all([
-                getBroadcasts(activeCentreId),
-                getParentsForCentre(activeCentreId, 'all'),
-                getClassesForCentre(activeCentreId),
-            ]);
-            initialData = { broadcasts, parents, classes };
-        } catch {
-            initialData = undefined;
-        }
-    }
 
     return (
         <div className="space-y-8 animate-in fade-in duration-700">

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Send, Users, History, AlertCircle, Loader2, X, MessageSquare, CheckCircle, Clock } from 'lucide-react';
 import { sendBroadcast, getBroadcasts, getParentsForCentre, getClassesForCentre, getBroadcastDeliveryStats } from '@/features/communications/actions';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
+import { useDialogFocusTrap } from '@/components/ui/useDialogFocusTrap';
 
 const sendMessages: Record<string, string> = {
     'Unauthorized': 'Your access could not be confirmed. Sign in again before sending.',
@@ -29,7 +30,7 @@ function getStatusBadge(b: Broadcast) {
             );
         case 'PROCESSING':
             return (
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-info-soft text-accent border border-accent/20">
                     <Loader2 className="w-3 h-3 animate-spin" /> Sending
                 </span>
             );
@@ -89,6 +90,8 @@ export default function CommunicationsClient({
     const [isLoading, setIsLoading] = useState(!initialData);
     const skipFirstLoadRef = useRef(Boolean(initialData));
     const initialCentreIdRef = useRef(centreId);
+    const prevCentreIdRef = useRef(centreId);
+    const broadcastDrawerRef = useRef<HTMLDivElement>(null);
     const [loadError, setLoadError] = useState(false);
     const [detailsError, setDetailsError] = useState(false);
     const [sendUnknown, setSendUnknown] = useState(false);
@@ -102,16 +105,15 @@ export default function CommunicationsClient({
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [sendResult, setSendResult] = useState<{ success: boolean; count: number; sent: number; failed: number; status?: string; error?: string } | null>(null);
 
+    useDialogFocusTrap(Boolean(selectedBroadcast), broadcastDrawerRef, () => setSelectedBroadcast(null));
+
     useEffect(() => {
-        if (!selectedBroadcast) return;
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') {
-                setSelectedBroadcast(null);
-            }
-        };
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [selectedBroadcast]);
+        if (initialData && prevCentreIdRef.current === centreId) {
+            setBroadcasts([...initialData.broadcasts].reverse());
+            setParents(initialData.parents);
+            setClasses(initialData.classes);
+        }
+    }, [initialData, centreId]);
 
     const loadData = useCallback(async () => {
         const request = ++loadRequest.current;
@@ -135,6 +137,16 @@ export default function CommunicationsClient({
     }, [centreId, selectedClassId]);
 
     useEffect(() => {
+        if (prevCentreIdRef.current !== centreId) {
+            prevCentreIdRef.current = centreId;
+            setSelectedBroadcast(null);
+            setSendResult(null);
+            setSendUnknown(false);
+            if (selectedClassId !== 'all') {
+                setSelectedClassId('all');
+                return;
+            }
+        }
         if (
             skipFirstLoadRef.current &&
             centreId === initialCentreIdRef.current &&
@@ -224,10 +236,12 @@ export default function CommunicationsClient({
                 onConfirm={() => { void executeSend(); }}
                 onCancel={() => setShowConfirmModal(false)}
             />
-            <div className="inline-flex bg-secondary/60 p-1 rounded-2xl gap-1">
+            <div className="inline-flex flex-wrap bg-secondary/60 p-1 rounded-2xl gap-1">
                 <button
+                    type="button"
+                    aria-pressed={activeTab === 'compose'}
                     onClick={() => setActiveTab('compose')}
-                    className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                    className={`min-h-[44px] flex items-center gap-2 px-3.5 sm:px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
                         activeTab === 'compose' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
                     }`}
                 >
@@ -235,8 +249,10 @@ export default function CommunicationsClient({
                     Compose
                 </button>
                 <button
+                    type="button"
+                    aria-pressed={activeTab === 'history'}
                     onClick={() => setActiveTab('history')}
-                    className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                    className={`min-h-[44px] flex items-center gap-2 px-3.5 sm:px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
                         activeTab === 'history' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
                     }`}
                 >
@@ -403,7 +419,7 @@ export default function CommunicationsClient({
                                 broadcasts.map((b) => (
                                     <tr key={b.id} onClick={() => handleSelectBroadcast(b)} className="hover:bg-secondary/20 transition-colors cursor-pointer group">
                                         <td className="px-6 py-4 font-medium">{new Date(b.createdAt).toLocaleString('en-GB')}</td>
-                                        <td className="px-6 py-4 font-semibold text-foreground max-w-xs truncate group-hover:text-primary transition-colors">{b.subject}</td>
+                                        <td className="px-6 py-4 font-semibold text-foreground max-w-xs truncate"><button type="button" onClick={(e) => { e.stopPropagation(); void handleSelectBroadcast(b); }} className="text-left max-w-full truncate hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent rounded-sm">{b.subject}</button></td>
                                         <td className="px-6 py-4">{getStatusBadge(b)}</td>
                                         <td className="px-6 py-4 font-medium text-foreground">{b.recipientCount}</td>
                                         <td className="px-6 py-4 text-success font-bold">{b.successCount}</td>
@@ -435,7 +451,7 @@ export default function CommunicationsClient({
                         className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" 
                         onClick={() => setSelectedBroadcast(null)} 
                     />
-                    <div className="relative w-full max-w-lg bg-card shadow-2xl h-full flex flex-col animate-in slide-in-from-right duration-300 border-l border-border">
+                    <div ref={broadcastDrawerRef} tabIndex={-1} className="relative w-full max-w-lg bg-card shadow-2xl h-full flex flex-col animate-in slide-in-from-right duration-300 border-l border-border">
                         <div className="flex items-center justify-between p-6 border-b border-border">
                             <div>
                                 <h2 id="broadcast-details-title" className="text-lg font-bold text-foreground">Broadcast Details</h2>
@@ -445,7 +461,7 @@ export default function CommunicationsClient({
                                 type="button"
                                 onClick={() => setSelectedBroadcast(null)}
                                 aria-label="Close broadcast details"
-                                className="p-2 hover:bg-secondary/80 rounded-full transition-colors text-muted-foreground hover:text-foreground"
+                                className="min-h-[44px] min-w-[44px] flex items-center justify-center p-2 hover:bg-secondary/80 rounded-full transition-colors text-muted-foreground hover:text-foreground"
                             >
                                 <X className="w-5 h-5" />
                             </button>
@@ -462,7 +478,7 @@ export default function CommunicationsClient({
                                 </div>
                             </div>
                             
-                            <div className="grid grid-cols-4 gap-3">
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                                 <div className="bg-secondary/40 border border-border p-3 rounded-2xl text-center">
                                     <div className="text-xl font-black text-foreground">{selectedBroadcast.recipientCount}</div>
                                     <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mt-1">Total</div>

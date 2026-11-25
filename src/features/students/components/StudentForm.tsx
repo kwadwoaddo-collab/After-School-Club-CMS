@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { AlertCircle, Check } from 'lucide-react';
@@ -24,16 +24,16 @@ interface StudentFormProps {
 }
 
 function FormField({
-    label, required, error, children,
-}: { label: string; required?: boolean; error?: string; children: React.ReactNode }) {
+    label, htmlFor, required, error, children,
+}: { label: string; htmlFor?: string; required?: boolean; error?: string; children: React.ReactNode }) {
     return (
         <div>
-            <label className="text-label text-text-muted block mb-1.5">
+            <label htmlFor={htmlFor} className="text-label text-text-muted block mb-1.5">
                 {label}
                 {required && <span className="text-danger ml-0.5">*</span>}
             </label>
             {children}
-            {error && <p className="text-metadata text-danger mt-1">{error}</p>}
+            {error && <p role="alert" className="text-metadata text-danger mt-1">{error}</p>}
         </div>
     );
 }
@@ -58,6 +58,7 @@ export default function StudentForm({ accessibleCentres, initialParent, defaultC
     const [enrolmentReason, setEnrolmentReason] = useState('');
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const submittingRef = useRef(false);
     const [serverError, setServerError] = useState<string | null>(null);
     const [createdStudentId, setCreatedStudentId] = useState<string | null>(null);
 
@@ -103,6 +104,7 @@ export default function StudentForm({ accessibleCentres, initialParent, defaultC
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (submittingRef.current || isSubmitting) return;
         setServerError(null);
 
         if (!validate()) {
@@ -110,6 +112,7 @@ export default function StudentForm({ accessibleCentres, initialParent, defaultC
             return;
         }
 
+        submittingRef.current = true;
         setIsSubmitting(true);
         try {
             const res = await fetch('/api/students', {
@@ -134,12 +137,13 @@ export default function StudentForm({ accessibleCentres, initialParent, defaultC
             setServerError(err instanceof Error ? err.message : 'Something went wrong');
             window.scrollTo({ top: 0, behavior: 'smooth' });
         } finally {
+            submittingRef.current = false;
             setIsSubmitting(false);
         }
     };
 
     const inputClass = (field: string) =>
-        `w-full h-10 px-3 bg-surface border rounded-sm text-small-body text-text outline-none transition-colors focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent ${
+        `w-full h-11 px-3 bg-surface border rounded-sm text-small-body text-text outline-none transition-colors focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent ${
             errors[field] ? 'border-danger' : 'border-border'
         }`;
 
@@ -191,14 +195,14 @@ export default function StudentForm({ accessibleCentres, initialParent, defaultC
         <form onSubmit={handleSubmit} className="space-y-6">
             {/* Global Error Summary */}
             {serverError && (
-                <div className="flex items-start gap-2 p-3 bg-danger-soft text-danger rounded-sm text-small-body font-medium">
+                <div role="alert" className="flex items-start gap-2 p-3 bg-danger-soft text-danger rounded-sm text-small-body font-medium">
                     <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
                     {serverError}
                 </div>
             )}
 
             {Object.keys(errors).length > 0 && (
-                <div id="error-summary" className="flex items-start gap-2 p-3 bg-warning-soft text-warning rounded-sm text-small-body">
+                <div id="error-summary" role="alert" className="flex items-start gap-2 p-3 bg-warning-soft text-warning rounded-sm text-small-body">
                     <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
                     <span>Please check the {Object.keys(errors).length} field{Object.keys(errors).length !== 1 ? 's' : ''} marked below.</span>
                 </div>
@@ -207,7 +211,7 @@ export default function StudentForm({ accessibleCentres, initialParent, defaultC
             {/* Centre assignment */}
             <div className="space-y-3">
                 <h3 className="text-section-title text-text">Centre assignment</h3>
-                <FormField label="Assign to centre" required error={errors.centreId}>
+                <FormField label="Assign to centre" htmlFor="centreId" required error={errors.centreId}>
                     {accessibleCentres.length === 0 ? (
                         <p className="text-small-body text-text-secondary p-3 bg-page rounded-sm border border-border-subtle">
                             You have no accessible centres. Contact your organisation owner.
@@ -227,13 +231,13 @@ export default function StudentForm({ accessibleCentres, initialParent, defaultC
             <div className="space-y-3 pt-5 border-t border-border-subtle">
                 <h3 className="text-section-title text-text">Student details</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <FormField label="First name" required error={errors.firstName}>
+                    <FormField label="First name" htmlFor="firstName" required error={errors.firstName}>
                         <input type="text" name="firstName" id="firstName" value={formData.firstName} onChange={handleChange} className={inputClass('firstName')} placeholder="e.g. John" />
                     </FormField>
-                    <FormField label="Last name" required error={errors.lastName}>
+                    <FormField label="Last name" htmlFor="lastName" required error={errors.lastName}>
                         <input type="text" name="lastName" id="lastName" value={formData.lastName} onChange={handleChange} className={inputClass('lastName')} placeholder="e.g. Doe" />
                     </FormField>
-                    <FormField label="Date of birth" required error={errors.dateOfBirth}>
+                    <FormField label="Date of birth" htmlFor="dateOfBirth" required error={errors.dateOfBirth}>
                         <input
                             type="date" name="dateOfBirth" id="dateOfBirth"
                             max={new Date(new Date().getFullYear() - 4, 11, 31).toISOString().split('T')[0]}
@@ -241,7 +245,7 @@ export default function StudentForm({ accessibleCentres, initialParent, defaultC
                             value={formData.dateOfBirth} onChange={handleChange} className={inputClass('dateOfBirth')}
                         />
                     </FormField>
-                    <FormField label="School year" required error={errors.schoolYear}>
+                    <FormField label="School year" htmlFor="schoolYear" required error={errors.schoolYear}>
                         <select name="schoolYear" id="schoolYear" value={formData.schoolYear} onChange={handleChange} className={inputClass('schoolYear')}>
                             <option value="">— Select school year —</option>
                             <option value="Reception">Reception</option>
@@ -272,16 +276,16 @@ export default function StudentForm({ accessibleCentres, initialParent, defaultC
                 )}
                 <h3 className="text-section-title text-text">Parent / guardian details</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <FormField label="First name" required error={errors.parentFirstName}>
+                    <FormField label="First name" htmlFor="parentFirstName" required error={errors.parentFirstName}>
                         <input type="text" name="parentFirstName" id="parentFirstName" value={formData.parentFirstName} onChange={handleChange} className={inputClass('parentFirstName')} placeholder="e.g. Jane" />
                     </FormField>
-                    <FormField label="Last name" required error={errors.parentLastName}>
+                    <FormField label="Last name" htmlFor="parentLastName" required error={errors.parentLastName}>
                         <input type="text" name="parentLastName" id="parentLastName" value={formData.parentLastName} onChange={handleChange} className={inputClass('parentLastName')} placeholder="e.g. Doe" />
                     </FormField>
-                    <FormField label="Email" required error={errors.parentEmail}>
+                    <FormField label="Email" htmlFor="parentEmail" required error={errors.parentEmail}>
                         <input type="email" name="parentEmail" id="parentEmail" value={formData.parentEmail} onChange={handleChange} className={inputClass('parentEmail')} placeholder="e.g. jane@example.com" />
                     </FormField>
-                    <FormField label="Phone" required error={errors.parentPhone}>
+                    <FormField label="Phone" htmlFor="parentPhone" required error={errors.parentPhone}>
                         <input type="tel" name="parentPhone" id="parentPhone" value={formData.parentPhone} onChange={handleChange} className={inputClass('parentPhone')} />
                     </FormField>
                 </div>

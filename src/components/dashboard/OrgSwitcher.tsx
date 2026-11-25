@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useTransition } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useRef, useState, useTransition } from 'react';
 import { Check, ChevronDown, Loader2 } from 'lucide-react';
+import { useToast } from '@/components/ui/ToastProvider';
 
 interface OrgEntry {
     id: string;
@@ -19,9 +19,27 @@ interface OrgSwitcherProps {
 }
 
 export default function OrgSwitcher({ currentOrgId, currentOrgName, userOrgs, collapsed }: OrgSwitcherProps) {
-    const router = useRouter();
+    const { toast } = useToast();
     const [open, setOpen] = useState(false);
+    const [activeOrgId, setActiveOrgId] = useState<string | null | undefined>(currentOrgId);
+    const [errorMsg, setErrorMsg] = useState<string | null>(null);
     const [switching, startTransition] = useTransition();
+    const switchingRef = useRef(false);
+
+    useEffect(() => {
+        setActiveOrgId(currentOrgId);
+        setOpen(false);
+        setErrorMsg(null);
+    }, [currentOrgId, collapsed]);
+
+    useEffect(() => {
+        if (!open) return;
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') setOpen(false);
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [open]);
 
     // Only show switcher if user has more than one org
     if (!userOrgs || userOrgs.length <= 1) {
@@ -47,25 +65,46 @@ export default function OrgSwitcher({ currentOrgId, currentOrgName, userOrgs, co
     }
 
     const handleSwitch = (orgId: string) => {
-        if (orgId === currentOrgId) { setOpen(false); return; }
+        if (switchingRef.current || switching) return;
+        if (orgId === activeOrgId) { setOpen(false); return; }
         setOpen(false);
+        setErrorMsg(null);
+        switchingRef.current = true;
         startTransition(async () => {
-            await fetch('/api/user/switch-org', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ orgId }),
-            });
-            // Force a full page reload so Next.js re-fetches session with new org
-            window.location.href = '/dashboard';
+            try {
+                const res = await fetch('/api/user/switch-org', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ orgId }),
+                });
+                if (!res.ok) {
+                    const body = await res.json().catch(() => null);
+                    const message = (body && typeof body.error === 'string') ? body.error : 'Could not switch organisation. Please try again.';
+                    setErrorMsg(message);
+                    toast({ title: 'Switch failed', message, variant: 'error' });
+                    switchingRef.current = false;
+                    return;
+                }
+                setActiveOrgId(orgId);
+                window.location.href = '/dashboard';
+            } catch {
+                const message = 'Network error while switching organisation. Please try again.';
+                setErrorMsg(message);
+                toast({ title: 'Switch failed', message, variant: 'error' });
+                switchingRef.current = false;
+            }
         });
     };
 
     return (
         <div className={`relative mb-5 ${collapsed ? 'flex justify-center' : ''}`}>
             <button
+                type="button"
+                disabled={switching}
                 onClick={() => setOpen(o => !o)}
                 title={collapsed ? currentOrgName : undefined}
-                className={`flex items-center gap-2 rounded-md border border-border bg-surface text-left transition-colors hover:bg-page focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${collapsed ? 'justify-center p-1.5' : 'w-full px-2.5 py-2'}`}
+                aria-label={collapsed ? `Switch organisation (${currentOrgName})` : undefined}
+                className={`flex items-center gap-2 rounded-md border border-border bg-surface text-left transition-colors hover:bg-page focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-60 ${collapsed ? 'justify-center p-1.5 min-h-[44px] min-w-[44px]' : 'w-full px-2.5 py-2 min-h-[44px]'}`}
                 aria-haspopup="listbox"
                 aria-expanded={open}
             >
@@ -85,6 +124,12 @@ export default function OrgSwitcher({ currentOrgId, currentOrgName, userOrgs, co
                 )}
             </button>
 
+            {errorMsg && !collapsed && (
+                <p role="alert" className="mt-1.5 text-xs font-medium text-danger">
+                    {errorMsg}
+                </p>
+            )}
+
             {/* Dropdown */}
             {open && (
                 <>
@@ -100,14 +145,16 @@ export default function OrgSwitcher({ currentOrgId, currentOrgName, userOrgs, co
                         </div>
                         <div className="max-h-60 overflow-y-auto px-1">
                             {userOrgs.map(org => {
-                                const isActive = org.id === currentOrgId;
+                                const isActive = org.id === activeOrgId;
                                 return (
                                     <button
                                         key={org.id}
+                                        type="button"
                                         role="option"
                                         aria-selected={isActive}
+                                        disabled={switching}
                                         onClick={() => handleSwitch(org.id)}
-                                        className={`w-full flex items-center gap-2.5 px-2 py-2 rounded-sm text-sm transition-colors hover:bg-page ${isActive ? 'bg-accent-soft' : ''}`}
+                                        className={`w-full flex items-center gap-2.5 px-2 py-2 min-h-[44px] rounded-sm text-sm transition-colors hover:bg-page disabled:opacity-60 ${isActive ? 'bg-accent-soft' : ''}`}
                                     >
                                         <span className="flex size-6 shrink-0 items-center justify-center rounded-sm bg-accent-soft text-xs font-semibold text-accent">
                                             {org.name.slice(0, 2).toUpperCase()}

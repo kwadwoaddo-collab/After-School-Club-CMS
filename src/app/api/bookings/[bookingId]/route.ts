@@ -7,6 +7,7 @@ import { bookings } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { revalidatePath } from 'next/cache';
+import { isValidUuid } from '@/lib/uuid';
 
 interface RouteContext {
     params: Promise<{ bookingId: string }>;
@@ -26,10 +27,14 @@ export async function DELETE(_request: NextRequest, { params }: RouteContext) {
 
         const { bookingId } = await params;
 
-        // UUID format guard
-        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-        if (!uuidRegex.test(bookingId)) {
+        // UUID format guard (supports UUIDv4/v7)
+        if (!isValidUuid(bookingId)) {
             return NextResponse.json({ error: 'Invalid booking ID' }, { status: 400 });
+        }
+
+        const userRole = (session.user as any).role as string | undefined;
+        if (!['ORG_OWNER', 'MANAGER', 'FRONT_DESK'].includes(userRole ?? '')) {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
         // Verify the booking belongs to this organisation before deleting
@@ -46,14 +51,6 @@ export async function DELETE(_request: NextRequest, { params }: RouteContext) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
-        // Centre membership check for non-ORG_OWNER users — matches the check
-        // already applied by the sibling bulk-delete endpoint
-        // (POST /api/bookings/bulk-delete) for this identical action; this
-        // single-booking DELETE was missing it.
-        const userRole = (session.user as any).role as string | undefined;
-        if (!['ORG_OWNER', 'MANAGER', 'FRONT_DESK'].includes(userRole ?? '')) {
-            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-        }
         if (userRole !== 'ORG_OWNER' && booking.centreId) {
             const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
             if (!accessibleCentreIds.includes(booking.centreId)) {

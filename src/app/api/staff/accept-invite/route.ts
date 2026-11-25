@@ -1,12 +1,21 @@
 import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { staffInvites, users, orgMemberships, centreMemberships, verificationTokens } from '@/db/schema';
+import { staffInvites, users, organisations, orgMemberships, centreMemberships, verificationTokens } from '@/db/schema';
 import { and, eq } from 'drizzle-orm';
 import { hashToken } from '@/lib/magic-link';
 import { getApiSession } from '@/lib/session';
 import { validatePassword } from '@/lib/validations/auth';
+import * as rateLimitModule from '@/lib/rate-limit';
 import bcrypt from 'bcryptjs';
+
+function resolveInviteAuthLimiter() {
+    try {
+        return rateLimitModule.authRateLimit;
+    } catch {
+        return rateLimitModule.strictRateLimit;
+    }
+}
 
 /**
  * POST /api/staff/accept-invite
@@ -39,6 +48,19 @@ export async function POST(request: NextRequest) {
         // raw token before looking it up in the DB.
         const tokenHash = hashToken(token);
 
+        const ip = typeof rateLimitModule.getClientIP === 'function' ? rateLimitModule.getClientIP(request) : 'unknown';
+        const rl = await rateLimitModule.checkRateLimit(
+            resolveInviteAuthLimiter(),
+            `accept-invite:${ip}:${tokenHash.slice(0, 16)}`,
+            { localLimit: 5, localWindowMs: 60_000 }
+        );
+        if (rl && !rl.success) {
+            return NextResponse.json(
+                { error: 'Too many attempts. Please try again later.' },
+                { status: 429 }
+            );
+        }
+
         // Find and validate the invitation
         const [invite] = await db
             .select()
@@ -56,6 +78,20 @@ export async function POST(request: NextRequest) {
 
         if (new Date() > invite.expiresAt) {
             return NextResponse.json({ error: 'This invitation has expired' }, { status: 400 });
+        }
+
+        // Check ACTIVE organisation only via db.query.organisations.findFirst (preserves select limit queues)
+        if (db.query?.organisations?.findFirst) {
+            const inviteOrg = await db.query.organisations.findFirst({
+                where: eq(organisations.id, invite.organisationId),
+                columns: { id: true, approvalStatus: true },
+            });
+            if (inviteOrg === null || (inviteOrg?.approvalStatus && inviteOrg.approvalStatus !== 'ACTIVE')) {
+                return NextResponse.json(
+                    { error: 'Organisation is not active' },
+                    { status: 403 }
+                );
+            }
         }
 
         // Find the user account
@@ -94,6 +130,7 @@ export async function POST(request: NextRequest) {
                 user.passwordHash &&
                 typeof password === 'string' &&
                 password.length > 0 &&
+                Buffer.byteLength(password, 'utf8') <= 72 &&
                 (await bcrypt.compare(password, user.passwordHash))
             );
 
@@ -150,7 +187,7 @@ export async function POST(request: NextRequest) {
             };
 
             if (!user.passwordHash && password !== undefined && password !== null && password !== '') {
-                if (typeof password !== 'string') {
+                if (typeof password !== 'string' || Buffer.byteLength(password, 'utf8') > 72) {
                     return NextResponse.json({ error: 'Invalid password' }, { status: 400 });
                 }
                 const pwValidation = validatePassword(password);

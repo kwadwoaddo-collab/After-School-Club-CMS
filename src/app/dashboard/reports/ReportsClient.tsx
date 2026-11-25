@@ -323,9 +323,10 @@ export default function ReportsClient({ initialData = null, initialError = null 
                                         />
                                     </div>
                                     <button
+                                        type="button"
                                         onClick={() => handleExportBookings('custom')}
                                         disabled={isExportingBookings}
-                                        className="w-full py-3 bg-primary hover:bg-primary/90 active:bg-primary/80 text-white font-bold rounded-2xl text-sm transition-all flex justify-center items-center gap-2 shadow-sm disabled:opacity-50"
+                                        className="min-h-[44px] w-full py-3 bg-primary hover:bg-primary/90 active:bg-primary/80 text-primary-foreground font-bold rounded-2xl text-sm transition-all flex justify-center items-center gap-2 shadow-sm disabled:opacity-50"
                                     >
                                         {isExportingBookings ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
                                         Export Selection
@@ -412,9 +413,10 @@ export default function ReportsClient({ initialData = null, initialError = null 
                                         />
                                     </div>
                                     <button
+                                        type="button"
                                         onClick={() => handleExportStudents('custom')}
                                         disabled={isExportingStudents}
-                                        className="w-full py-3 bg-primary hover:bg-primary/90 active:bg-primary/80 text-white font-bold rounded-2xl text-sm transition-all flex justify-center items-center gap-2 shadow-sm disabled:opacity-50"
+                                        className="min-h-[44px] w-full py-3 bg-primary hover:bg-primary/90 active:bg-primary/80 text-primary-foreground font-bold rounded-2xl text-sm transition-all flex justify-center items-center gap-2 shadow-sm disabled:opacity-50"
                                     >
                                         {isExportingStudents ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
                                         Export Selection

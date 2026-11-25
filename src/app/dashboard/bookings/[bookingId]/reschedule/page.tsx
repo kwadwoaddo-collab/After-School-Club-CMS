@@ -28,27 +28,31 @@ export default async function ReschedulePage({ params }: { params: Promise<{ boo
         return notFound();
     }
 
-    // Fetch booking details with attendees
-    const [booking] = await db
-        .select({
-            id: bookings.id,
-            startAt: bookings.startAt,
-            duration: bookings.duration,
-            modality: bookings.modality,
-            status: bookings.status,
-            parentFirstName: parents.firstName,
-            parentLastName: parents.lastName,
-            parentEmail: parents.email,
-            centreName: centres.name,
-            centreId: centres.id,
-            centreOrganisationId: centres.organisationId,
-            centreOperatingHours: centres.operatingHours,
-        })
-        .from(bookings)
-        .leftJoin(parents, eq(bookings.parentId, parents.id))
-        .leftJoin(centres, eq(bookings.centreId, centres.id))
-        .where(eq(bookings.id, bookingId))
-        .limit(1);
+    const [[booking], rawAccessibleCentreIds] = await Promise.all([
+        db
+            .select({
+                id: bookings.id,
+                startAt: bookings.startAt,
+                duration: bookings.duration,
+                modality: bookings.modality,
+                status: bookings.status,
+                parentFirstName: parents.firstName,
+                parentLastName: parents.lastName,
+                parentEmail: parents.email,
+                centreName: centres.name,
+                centreId: centres.id,
+                centreOrganisationId: centres.organisationId,
+                centreOperatingHours: centres.operatingHours,
+            })
+            .from(bookings)
+            .leftJoin(parents, eq(bookings.parentId, parents.id))
+            .leftJoin(centres, eq(bookings.centreId, centres.id))
+            .where(eq(bookings.id, bookingId))
+            .limit(1),
+        userRole !== 'ORG_OWNER'
+            ? getUserAccessibleCentreIds(session.user.id)
+            : Promise.resolve([]),
+    ]);
 
     if (!booking) {
         return notFound();
@@ -61,13 +65,12 @@ export default async function ReschedulePage({ params }: { params: Promise<{ boo
 
     // Centre-membership check for non-ORG_OWNER users (DC-02)
     if (userRole !== 'ORG_OWNER') {
-        const accessibleCentreIds = (await getUserAccessibleCentreIds(session.user.id)).filter(isValidUuid);
+        const accessibleCentreIds = (rawAccessibleCentreIds ?? []).filter(isValidUuid);
         if (accessibleCentreIds.length === 0 || (booking.centreId !== null && booking.centreId !== undefined && !accessibleCentreIds.includes(booking.centreId))) {
             return notFound();
         }
     }
 
-    // Fetch attendees separately
     const attendees = await db
         .select({
             childId: children.id,
@@ -86,9 +89,10 @@ export default async function ReschedulePage({ params }: { params: Promise<{ boo
             <div className="flex items-center gap-4">
                 <Link
                     href={`/dashboard/bookings/${bookingId}`}
-                    className="p-2 rounded-sm text-text-muted hover:text-text hover:bg-page transition-colors"
+                    aria-label="Back to booking details"
+                    className="min-h-11 min-w-11 inline-flex items-center justify-center p-2 rounded-sm text-text-muted hover:text-text hover:bg-page transition-colors"
                 >
-                    <ChevronLeft className="w-5 h-5" />
+                    <ChevronLeft className="w-5 h-5" aria-hidden="true" />
                 </Link>
                 <div className="flex-1">
                     <h1 className="text-page-title text-text">Reschedule Booking</h1>

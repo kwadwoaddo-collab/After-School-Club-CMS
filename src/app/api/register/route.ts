@@ -18,6 +18,7 @@ import { resolveBookingForRegistration } from '@/lib/services/booking-outcome-sy
 import { z } from 'zod';
 import { apiRateLimit, checkRateLimit, getClientIP } from '@/lib/rate-limit';
 import { notifyOwners } from '@/lib/db-notifications';
+import { isValidUuid } from '@/lib/uuid';
 
 // Helper: treat empty strings as null and trim strings so fields and emails handle leading/trailing whitespace
 const emptyToNull = (v: unknown) => (typeof v === 'string' ? (v.trim() === '' ? null : v.trim()) : v);
@@ -713,46 +714,82 @@ export async function POST(req: NextRequest) {
     }
 }
 
+const REGISTER_READ_ROLES = ['ORG_OWNER', 'MANAGER', 'FRONT_DESK'] as const;
+const VALID_REGISTRATION_STATUSES = ['awaiting_confirmation', 'signed_up', 'not_interested', 'pending'] as const;
+
 export async function GET(req: NextRequest) {
-    // ── 1. Authentication — stop trusting the orgId query param ────────────
-    // Previously any caller who knew an orgId could enumerate all registrations.
-    // Now we derive the org from the authenticated session exclusively.
+    // ── 1. Authentication — derive org exclusively from session ────────────
     const session = await getApiSession();
     if (!session?.user?.organisationId) {
-        return NextResponse.json({ error: 'Unauthorised' }, { status: 401 });
+        return NextResponse.json(
+            { error: 'Unauthorised' },
+            { status: 401, headers: { 'Cache-Control': 'private, no-store' } }
+        );
+    }
+
+    const userRole = (session.user as any).role as string | undefined;
+    if (!userRole || !REGISTER_READ_ROLES.includes(userRole as (typeof REGISTER_READ_ROLES)[number])) {
+        return NextResponse.json(
+            { error: 'Forbidden' },
+            { status: 403, headers: { 'Cache-Control': 'private, no-store' } }
+        );
     }
 
     const orgId = session.user.organisationId;
     const { searchParams } = new URL(req.url);
     const status = searchParams.get('status');
+    const centreId = searchParams.get('centreId');
+
+    if (status && !VALID_REGISTRATION_STATUSES.includes(status as (typeof VALID_REGISTRATION_STATUSES)[number])) {
+        return NextResponse.json(
+            { error: 'Invalid status parameter' },
+            { status: 400, headers: { 'Cache-Control': 'private, no-store' } }
+        );
+    }
+
+    if (centreId && !isValidUuid(centreId)) {
+        return NextResponse.json(
+            { error: 'Invalid centre ID' },
+            { status: 400, headers: { 'Cache-Control': 'private, no-store' } }
+        );
+    }
 
     // ── 2. Centre-level restriction for non-ORG_OWNER users ─────────────────
-    // ORG_OWNER sees all registrations for their org.
-    // MANAGER / FRONT_DESK / TUTOR see only registrations for their centres.
-    const userRole = (session.user as any).role as string | undefined;
-
     let results;
     try {
         if (userRole === 'ORG_OWNER') {
+            const conditions = [eq(registrations.organisationId, orgId)];
+            if (centreId) {
+                conditions.push(eq(registrations.centreId, centreId));
+            }
+            if (status) {
+                conditions.push(eq(registrations.status, status as any));
+            }
             results = await db.query.registrations.findMany({
-                where: status
-                    ? and(eq(registrations.organisationId, orgId), eq(registrations.status, status as any))
-                    : eq(registrations.organisationId, orgId),
+                where: conditions.length === 1 ? conditions[0] : and(...conditions),
                 with: {
                     registrationChildren: true,
                     registrationParents: true,
                 },
                 orderBy: (r, { desc }) => [desc(r.createdAt)],
+                limit: 1000,
             });
         } else {
-            // Non-owners: restrict to registrations whose centreId is in their
-            // accessible set. Registrations with centreId = null are excluded
-            // because no centre membership can cover them.
             const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
             if (accessibleCentreIds.length === 0) {
-                return NextResponse.json([]);
+                return NextResponse.json([], {
+                    headers: { 'Cache-Control': 'private, no-store' },
+                });
             }
-            const centreCondition = inArray(registrations.centreId, accessibleCentreIds);
+            if (centreId && !accessibleCentreIds.includes(centreId)) {
+                return NextResponse.json(
+                    { error: 'Forbidden' },
+                    { status: 403, headers: { 'Cache-Control': 'private, no-store' } }
+                );
+            }
+            const centreCondition = centreId
+                ? eq(registrations.centreId, centreId)
+                : inArray(registrations.centreId, accessibleCentreIds);
             results = await db.query.registrations.findMany({
                 where: status
                     ? and(
@@ -769,12 +806,18 @@ export async function GET(req: NextRequest) {
                     registrationParents: true,
                 },
                 orderBy: (r, { desc }) => [desc(r.createdAt)],
+                limit: 1000,
             });
         }
     } catch (error) {
         logger.error('[Registration API GET] Error:', error);
-        return NextResponse.json({ error: 'Failed to load registrations', status: 500 }, { status: 500 });
+        return NextResponse.json(
+            { error: 'Failed to load registrations', status: 500 },
+            { status: 500, headers: { 'Cache-Control': 'private, no-store' } }
+        );
     }
 
-    return NextResponse.json(results);
+    return NextResponse.json(results, {
+        headers: { 'Cache-Control': 'private, no-store' },
+    });
 }
