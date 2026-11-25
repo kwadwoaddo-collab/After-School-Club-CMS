@@ -73,7 +73,8 @@ CREATE TABLE IF NOT EXISTS "contract_pdfs" (
 );
 --> statement-breakpoint
 -- Seed Sydenham provider details from the signed-off contract (insert only; no-op if no matching centre or already set).
-INSERT INTO "contract_centre_settings" ("organisation_id", "centre_id", "provider_name", "address", "phone", "website", "ofsted_reg_no")
-SELECT c."organisation_id", c."id", 'Sydenham After School Club LTD', '105 Sydenham Road, London, SE26 5UA', '020 3621 3942', 'www.sydenhamasc.co.uk', 'EY2854827'
+-- Ofsted registration number and signatory are left NULL so they read directly from the centre record (no "EY" prefix, manager K Addo).
+INSERT INTO "contract_centre_settings" ("organisation_id", "centre_id", "provider_name", "address", "phone", "website")
+SELECT c."organisation_id", c."id", 'Sydenham After School Club LTD', '105 Sydenham Road, London, SE26 5UA', '020 3621 3942 / 07584 874710', 'www.sydenhamasc.co.uk'
 FROM "centres" c WHERE lower(c."name") LIKE '%sydenham%'
 ON CONFLICT ("centre_id") DO NOTHING;
