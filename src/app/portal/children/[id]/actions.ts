@@ -4,7 +4,7 @@ import { logger } from '@/lib/logger';
 import { getCurrentParent } from '@/lib/parent-auth';
 import { db } from '@/db';
 import { studentNotes, children } from '@/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, isNull } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { notifyOwners } from '@/lib/db-notifications';
 
@@ -26,11 +26,12 @@ export async function addMedicalNote(childId: string, content: string, category:
             return { success: false, error: 'Invalid note category' };
         }
 
-        // Verify child belongs to parent
+        // Verify active (non-soft-deleted) child belongs to parent
         const child = await db.query.children.findFirst({
             where: and(
                 eq(children.id, childId),
-                eq(children.parentId, parent.id)
+                eq(children.parentId, parent.id),
+                isNull(children.deletedAt)
             )
         });
 

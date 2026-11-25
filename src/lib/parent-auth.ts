@@ -1,6 +1,5 @@
 import { logger } from '@/lib/logger';
 import { cookies } from 'next/headers';
-import { db } from '@/db';
 import { parents, children } from '@/db/schema';
 import { eq, isNull, and } from 'drizzle-orm';
 import { cache } from 'react';
@@ -67,6 +66,9 @@ export async function verifyParentToken(token: string): Promise<string | null> {
  * soft-deleted children do not appear in the portal child list or booking
  * selector.
  *
+ * SEC-W4-04: enforces assertOrgActive(parent.organisationId) so suspended,
+ * pending, or rejected organisations cannot access Parent Portal sessions.
+ *
  * The result is cached per-request via React cache() so that repeated calls
  * in the same RSC tree incur only a single DB round-trip.
  */
@@ -80,6 +82,9 @@ export const getCurrentParent = cache(async () => {
     if (!parentId) return null;
 
     try {
+        const { db } = await import('@/db');
+        const { assertOrgActive, OrgNotActiveError } = await import('@/lib/org-approval-guard');
+
         const parent = await db.query.parents.findFirst({
             where: and(
                 eq(parents.id, parentId),
@@ -109,7 +114,19 @@ export const getCurrentParent = cache(async () => {
                 }
             }
         });
-        return parent || null;
+
+        if (!parent) return null;
+
+        try {
+            await assertOrgActive(parent.organisationId);
+        } catch (orgErr) {
+            if (orgErr instanceof OrgNotActiveError || (orgErr instanceof Error && orgErr.name === 'OrgNotActiveError')) {
+                return null;
+            }
+            throw orgErr;
+        }
+
+        return parent;
     } catch (e) {
         logger.error('Parent auth error', e);
         return null;

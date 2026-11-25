@@ -2,15 +2,20 @@ import { logger } from '@/lib/logger';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { db } from '@/db';
 import { parents } from '@/db/schema';
-import { and, desc, eq, isNull } from 'drizzle-orm';
+import { and, desc, eq, isNull, ne } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 import { strictRateLimit, checkRateLimit, getClientIP } from '@/lib/rate-limit';
 import { generateMagicLinkToken, hashToken } from '@/lib/magic-link';
 import { EmailService } from '@/lib/services/email';
 import { getBaseUrl } from '@/lib/base-url';
 import { normalizeEmail, MAX_EMAIL_LENGTH } from '@/lib/validations/auth';
+import { assertOrgActive, OrgNotActiveError } from '@/lib/org-approval-guard';
 
 const GENERIC_PORTAL_LOGIN_MESSAGE = 'If an account exists with this email, a login link has been sent.';
+
+function isOrgNotActive(err: unknown): boolean {
+    return err instanceof OrgNotActiveError || (err instanceof Error && err.name === 'OrgNotActiveError');
+}
 
 export async function POST(req: NextRequest) {
     try {
@@ -50,7 +55,7 @@ export async function POST(req: NextRequest) {
 
         // DC-05: Exclude soft-deleted parent records and order deterministically so
         // deleted rows cannot authenticate or shadow active parent accounts.
-        const parent = await db.query.parents.findFirst({
+        const firstCandidate = await db.query.parents.findFirst({
             where: and(
                 eq(parents.email, normalizedEmail),
                 isNull(parents.deletedAt),
@@ -58,8 +63,47 @@ export async function POST(req: NextRequest) {
             orderBy: [desc(parents.updatedAt), desc(parents.createdAt)],
         });
 
-        if (!parent) {
+        if (!firstCandidate) {
             // Security (PM-2E2.B4): Don't reveal account existence.
+            return NextResponse.json({ success: true, message: GENERIC_PORTAL_LOGIN_MESSAGE });
+        }
+
+        // SEC-W4-04: Prefer an ACTIVE organisation row when multiple parent rows share an email,
+        // and silently return the generic 200 response without emailing if no org is ACTIVE.
+        let parent: typeof firstCandidate | null = null;
+        try {
+            await assertOrgActive(firstCandidate.organisationId);
+            parent = firstCandidate;
+        } catch (orgErr) {
+            if (!isOrgNotActive(orgErr)) {
+                throw orgErr;
+            }
+
+            if (typeof db.query.parents.findMany === 'function') {
+                const siblingCandidates = await db.query.parents.findMany({
+                    where: and(
+                        eq(parents.email, normalizedEmail),
+                        isNull(parents.deletedAt),
+                        ne(parents.id, firstCandidate.id),
+                    ),
+                    orderBy: [desc(parents.updatedAt), desc(parents.createdAt)],
+                });
+
+                for (const candidate of siblingCandidates) {
+                    try {
+                        await assertOrgActive(candidate.organisationId);
+                        parent = candidate;
+                        break;
+                    } catch (candidateErr) {
+                        if (!isOrgNotActive(candidateErr)) {
+                            throw candidateErr;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (!parent) {
             return NextResponse.json({ success: true, message: GENERIC_PORTAL_LOGIN_MESSAGE });
         }
 

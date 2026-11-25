@@ -4,6 +4,8 @@ import { parents } from '@/db/schema';
 import { eq, and, gt, isNull } from 'drizzle-orm';
 import { signParentToken } from '@/lib/parent-auth';
 import { hashToken } from '@/lib/magic-link';
+import { assertOrgActive, OrgNotActiveError } from '@/lib/org-approval-guard';
+import { strictRateLimit, checkRateLimit, getClientIP } from '@/lib/rate-limit';
 
 const TOKEN_SHAPE_REGEX = /^[A-Za-z0-9._-]{8,256}$/;
 
@@ -211,9 +213,22 @@ export async function GET(request: Request) {
 /**
  * POST /portal/verify
  * Atomically verifies and consumes the single-use hashed `magicLinkToken`,
- * issues the signed `parent_session` cookie, and redirects (`303 See Other`) to `/portal`.
+ * verifies the parent's organisation is ACTIVE, issues the signed `parent_session` cookie,
+ * and redirects (`303 See Other`) to `/portal`.
  */
 export async function POST(request: Request) {
+    const ip = getClientIP(request);
+    const rateLimitResult = await checkRateLimit(strictRateLimit, `portal-verify:${ip}`);
+    if (!rateLimitResult.success) {
+        return NextResponse.json(
+            { error: 'Too many verification attempts. Please try again later.' },
+            {
+                status: rateLimitResult.status === 'unavailable' ? 503 : 429,
+                headers: NO_STORE_HEADERS,
+            },
+        );
+    }
+
     let rawToken: string | null = null;
     let rawRedirect: string | null = null;
 
@@ -258,7 +273,7 @@ export async function POST(request: Request) {
                 isNull(parents.deletedAt),
             ),
         )
-        .returning({ id: parents.id });
+        .returning({ id: parents.id, organisationId: parents.organisationId });
 
     const parent = consumedRows[0] ?? null;
 
@@ -267,6 +282,18 @@ export async function POST(request: Request) {
             status: 303,
             headers: NO_STORE_HEADERS,
         });
+    }
+
+    try {
+        await assertOrgActive(parent.organisationId);
+    } catch (orgErr) {
+        if (orgErr instanceof OrgNotActiveError || (orgErr instanceof Error && orgErr.name === 'OrgNotActiveError')) {
+            return NextResponse.redirect(new URL('/portal/login?error=AccountSuspended', request.url), {
+                status: 303,
+                headers: NO_STORE_HEADERS,
+            });
+        }
+        throw orgErr;
     }
 
     const sessionToken = await signParentToken(parent.id);

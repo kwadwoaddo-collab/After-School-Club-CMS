@@ -2,24 +2,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NextRequest } from 'next/server';
 import { revalidatePath } from 'next/cache';
 
-/**
- * Milestone 3G, L4 regression coverage & MAINT-REL-1 freshness/safety coverage.
- *
- * Root cause (see project-notes/milestone-3g-finance-audit.md, L4): this
- * webhook handler inserted a payment row on every
- * 'checkout.session.completed' event with no guard against a duplicate
- * delivery — unlike reconcilePayment's own transactionReference uniqueness
- * check. Stripe redelivers webhooks on retry as a normal part of its
- * delivery model, so a retried delivery would previously insert a second
- * payment row for the same session, inflating the invoice's derived paid
- * total.
- *
- * MAINT-REL-1 additions:
- * 1. Category A draft/void status guards preventing payments on unissued/voided invoices.
- * 2. Post-commit revalidatePath() for finance dashboards, detail views, and parent portal.
- * 3. Graceful handling of revalidation errors without rolling back or failing the webhook.
- */
-
 vi.mock('next/cache', () => ({
     revalidatePath: vi.fn(),
 }));
@@ -32,17 +14,17 @@ vi.mock('@/lib/services/stripe', () => ({
 }));
 
 const paymentsFindFirst = vi.fn();
+const paymentsFindMany = vi.fn();
 const invoicesFindFirst = vi.fn();
 const dbInsertValues = vi.fn().mockResolvedValue([{ id: 'new-payment-id' }]);
+const dbUpdateSet = vi.fn();
 
 vi.mock('@/db', () => {
-    const makePaymentsFindMany = () => [];
-
     const txMock = {
         query: {
             payments: {
                 findFirst: (...args: unknown[]) => paymentsFindFirst(...args),
-                findMany: async () => makePaymentsFindMany(),
+                findMany: (...args: unknown[]) => paymentsFindMany(...args),
             },
             invoices: {
                 findFirst: (...args: unknown[]) => invoicesFindFirst(...args),
@@ -50,7 +32,10 @@ vi.mock('@/db', () => {
         },
         insert: vi.fn(() => ({ values: (...args: unknown[]) => dbInsertValues(...args) })),
         update: vi.fn(() => ({
-            set: vi.fn(() => ({ where: vi.fn().mockResolvedValue([]) })),
+            set: (...args: unknown[]) => {
+                dbUpdateSet(...args);
+                return { where: vi.fn().mockResolvedValue([]) };
+            },
         })),
     };
 
@@ -62,14 +47,26 @@ vi.mock('@/db', () => {
             },
             insert: vi.fn(() => ({ values: (...args: unknown[]) => dbInsertValues(...args) })),
             update: vi.fn(() => ({
-                set: vi.fn(() => ({ where: vi.fn().mockResolvedValue([]) })),
+                set: (...args: unknown[]) => {
+                    dbUpdateSet(...args);
+                    return { where: vi.fn().mockResolvedValue([]) };
+                },
             })),
             transaction: vi.fn((cb: (tx: unknown) => unknown) => cb(txMock)),
         },
     };
 });
 
-function makeSessionEvent(overrides: Partial<{ id: string; payment_status: string; amount_total: number | null; metadata: Record<string, string> }> = {}) {
+const VALID_INVOICE_ID = '11111111-1111-4111-8111-111111111111';
+
+function makeSessionEvent(
+    overrides: Partial<{
+        id: string;
+        payment_status: string;
+        amount_total: number | null;
+        metadata: Record<string, string>;
+    }> = {}
+) {
     return {
         type: 'checkout.session.completed',
         data: {
@@ -77,19 +74,24 @@ function makeSessionEvent(overrides: Partial<{ id: string; payment_status: strin
                 id: 'cs_test_123',
                 payment_status: 'paid',
                 amount_total: 5000,
-                metadata: { source: 'portal_invoice_payment', invoiceId: 'invoice-1', invoiceNumber: 'INV-ABC123' },
+                metadata: {
+                    source: 'portal_invoice_payment',
+                    invoiceId: VALID_INVOICE_ID,
+                    invoiceNumber: 'INV-ABC123',
+                },
                 ...overrides,
             },
         },
     };
 }
 
-describe('POST /api/webhooks/stripe-invoice — idempotency & cache revalidation (MAINT-REL-1)', () => {
+describe('POST /api/webhooks/stripe-invoice — idempotency & cache revalidation (MAINT-REL-1 + BE P1-2)', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         dbInsertValues.mockResolvedValue([{ id: 'new-payment-id' }]);
+        paymentsFindMany.mockResolvedValue([]);
         invoicesFindFirst.mockResolvedValue({
-            id: 'invoice-1',
+            id: VALID_INVOICE_ID,
             status: 'sent',
             amount: '50.00',
             parentId: 'parent-1',
@@ -97,9 +99,9 @@ describe('POST /api/webhooks/stripe-invoice — idempotency & cache revalidation
         });
     });
 
-    it('inserts a payment and triggers revalidation for finance and portal routes on first delivery', async () => {
+    it('inserts a payment with idempotencyKey and triggers revalidation on first delivery', async () => {
         constructInvoiceWebhookEvent.mockReturnValue(makeSessionEvent());
-        paymentsFindFirst.mockResolvedValue(undefined); // no existing payment
+        paymentsFindFirst.mockResolvedValue(undefined);
 
         const { POST } = await import('./route');
         const req = new NextRequest('http://localhost/api/webhooks/stripe-invoice', {
@@ -113,23 +115,65 @@ describe('POST /api/webhooks/stripe-invoice — idempotency & cache revalidation
         expect(json).toEqual({ ok: true });
         expect(dbInsertValues).toHaveBeenCalledTimes(1);
         expect(dbInsertValues.mock.calls[0][0]).toMatchObject({
-            invoiceId: 'invoice-1',
+            invoiceId: VALID_INVOICE_ID,
+            amount: '50.00',
             transactionReference: 'cs_test_123',
+            idempotencyKey: 'stripe:cs_test_123',
             status: 'verified',
         });
+        expect(dbUpdateSet).toHaveBeenCalledWith(expect.objectContaining({ status: 'paid' }));
 
-        // MAINT-REL-1: Verify revalidatePath calls
         expect(revalidatePath).toHaveBeenCalledWith('/dashboard/finance');
         expect(revalidatePath).toHaveBeenCalledWith('/dashboard/finance/invoices');
-        expect(revalidatePath).toHaveBeenCalledWith('/dashboard/finance/invoices/invoice-1');
+        expect(revalidatePath).toHaveBeenCalledWith(`/dashboard/finance/invoices/${VALID_INVOICE_ID}`);
         expect(revalidatePath).toHaveBeenCalledWith('/portal/billing');
         expect(revalidatePath).toHaveBeenCalledWith('/dashboard/parents/parent-1');
         expect(revalidatePath).toHaveBeenCalledWith('/dashboard/centres/centre-1/billing');
     });
 
+    it('rejects malformed non-UUID invoiceId with 400 before touching the database', async () => {
+        constructInvoiceWebhookEvent.mockReturnValue(
+            makeSessionEvent({
+                metadata: {
+                    source: 'portal_invoice_payment',
+                    invoiceId: 'not-a-uuid',
+                    invoiceNumber: 'INV-BAD',
+                },
+            })
+        );
+
+        const { POST } = await import('./route');
+        const req = new NextRequest('http://localhost/api/webhooks/stripe-invoice', {
+            method: 'POST',
+            body: '{}',
+            headers: { 'stripe-signature': 'sig' },
+        });
+        const res = await POST(req);
+        expect(res.status).toBe(400);
+        expect(invoicesFindFirst).not.toHaveBeenCalled();
+        expect(dbInsertValues).not.toHaveBeenCalled();
+    });
+
+    it('skips zero-amount checkout sessions without recording a £0.00 verified payment', async () => {
+        constructInvoiceWebhookEvent.mockReturnValue(makeSessionEvent({ amount_total: 0 }));
+
+        const { POST } = await import('./route');
+        const req = new NextRequest('http://localhost/api/webhooks/stripe-invoice', {
+            method: 'POST',
+            body: '{}',
+            headers: { 'stripe-signature': 'sig' },
+        });
+        const res = await POST(req);
+        const json = await res.json();
+
+        expect(res.status).toBe(200);
+        expect(json).toEqual({ ok: true, skipped: true, reason: 'zero_amount' });
+        expect(dbInsertValues).not.toHaveBeenCalled();
+    });
+
     it('skips the insert and does not touch the invoice or revalidate on a redelivered webhook', async () => {
         constructInvoiceWebhookEvent.mockReturnValue(makeSessionEvent());
-        paymentsFindFirst.mockResolvedValue({ id: 'existing-payment-1' }); // already recorded
+        paymentsFindFirst.mockResolvedValue({ id: 'existing-payment-1' });
 
         const { POST } = await import('./route');
         const req = new NextRequest('http://localhost/api/webhooks/stripe-invoice', {
@@ -145,11 +189,56 @@ describe('POST /api/webhooks/stripe-invoice — idempotency & cache revalidation
         expect(revalidatePath).not.toHaveBeenCalled();
     });
 
+    it('treats concurrent Postgres 23505 unique constraint conflict on idempotencyKey as duplicate', async () => {
+        constructInvoiceWebhookEvent.mockReturnValue(makeSessionEvent());
+        paymentsFindFirst.mockResolvedValue(undefined);
+        dbInsertValues.mockRejectedValueOnce(Object.assign(new Error('duplicate key value'), { code: '23505' }));
+
+        const { POST } = await import('./route');
+        const req = new NextRequest('http://localhost/api/webhooks/stripe-invoice', {
+            method: 'POST',
+            body: '{}',
+            headers: { 'stripe-signature': 'sig' },
+        });
+        const res = await POST(req);
+        const json = await res.json();
+
+        expect(res.status).toBe(200);
+        expect(json).toEqual({ ok: true, duplicate: true });
+        expect(revalidatePath).not.toHaveBeenCalled();
+    });
+
+    it('sets partially_paid (ignoring reversed payments) when verified total is below invoice amount', async () => {
+        constructInvoiceWebhookEvent.mockReturnValue(makeSessionEvent({ amount_total: 3000 }));
+        paymentsFindFirst.mockResolvedValue(undefined);
+        invoicesFindFirst.mockResolvedValue({
+            id: VALID_INVOICE_ID,
+            status: 'sent',
+            amount: '100.00',
+            parentId: 'parent-1',
+            centreId: 'centre-1',
+        });
+        paymentsFindMany.mockResolvedValue([
+            { amount: '70.00', status: 'verified', reversedAt: new Date('2026-11-01T00:00:00Z'), transactionReference: 'rev-1' },
+            { amount: '20.00', status: 'verified', reversedAt: null, transactionReference: 'prev-1' },
+        ]);
+
+        const { POST } = await import('./route');
+        const req = new NextRequest('http://localhost/api/webhooks/stripe-invoice', {
+            method: 'POST',
+            body: '{}',
+            headers: { 'stripe-signature': 'sig' },
+        });
+        const res = await POST(req);
+        expect(res.status).toBe(200);
+        expect(dbUpdateSet).toHaveBeenCalledWith(expect.objectContaining({ status: 'partially_paid' }));
+    });
+
     it('skips payment and does not revalidate if invoice is in draft status', async () => {
         constructInvoiceWebhookEvent.mockReturnValue(makeSessionEvent());
         paymentsFindFirst.mockResolvedValue(undefined);
         invoicesFindFirst.mockResolvedValue({
-            id: 'invoice-1',
+            id: VALID_INVOICE_ID,
             status: 'draft',
             amount: '50.00',
             parentId: 'parent-1',
@@ -174,7 +263,7 @@ describe('POST /api/webhooks/stripe-invoice — idempotency & cache revalidation
         constructInvoiceWebhookEvent.mockReturnValue(makeSessionEvent());
         paymentsFindFirst.mockResolvedValue(undefined);
         invoicesFindFirst.mockResolvedValue({
-            id: 'invoice-1',
+            id: VALID_INVOICE_ID,
             status: 'void',
             amount: '50.00',
             parentId: 'parent-1',
@@ -198,7 +287,7 @@ describe('POST /api/webhooks/stripe-invoice — idempotency & cache revalidation
     it('returns 404 if invoice is not found in database', async () => {
         constructInvoiceWebhookEvent.mockReturnValue(makeSessionEvent());
         paymentsFindFirst.mockResolvedValue(undefined);
-        invoicesFindFirst.mockResolvedValue(undefined); // not found
+        invoicesFindFirst.mockResolvedValue(undefined);
 
         const { POST } = await import('./route');
         const req = new NextRequest('http://localhost/api/webhooks/stripe-invoice', {
@@ -231,7 +320,6 @@ describe('POST /api/webhooks/stripe-invoice — idempotency & cache revalidation
         const res = await POST(req);
         const json = await res.json();
 
-        // Must still succeed and record payment!
         expect(res.status).toBe(200);
         expect(json).toEqual({ ok: true });
         expect(dbInsertValues).toHaveBeenCalledTimes(1);
