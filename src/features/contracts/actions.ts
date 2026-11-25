@@ -59,7 +59,7 @@ export async function sendContract(raw: { configId: string }): Promise<Result> {
         const childIds = config.children.map(c => c.childId);
         const childRows = childIds.length ? await db.select({ id: children.id, firstName: children.firstName, lastName: children.lastName })
             .from(children).where(and(inArray(children.id, childIds), eq(children.organisationId, orgId), eq(children.parentId, config.parentId), eq(children.centreId, config.centreId), isNull(children.deletedAt))) : [];
-        const [centre] = await db.select({ name: centres.name, address: centres.address, billingPhone: centres.billingPhone, ofstedId: centres.ofstedId, signatureUrl: centres.signatureUrl })
+        const [centre] = await db.select({ name: centres.name, address: centres.address, billingPhone: centres.billingPhone, ofstedId: centres.ofstedId, managerName: centres.managerName, signatureUrl: centres.signatureUrl })
             .from(centres).where(and(eq(centres.id, config.centreId), eq(centres.organisationId, orgId)));
         if (!centre) throw new Error('Billing config not found');
         const [setting] = await db.select().from(contractCentreSettings).where(and(eq(contractCentreSettings.centreId, config.centreId), eq(contractCentreSettings.organisationId, orgId)));

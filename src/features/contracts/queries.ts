@@ -39,7 +39,7 @@ export async function fetchContractStatuses(
 export async function fetchCentreContractDetails(organisationId: string, centreIds: string[]): Promise<Record<string, CentreContractDetails>> {
     if (centreIds.length === 0) return {};
     const [centreRows, settingRows] = await Promise.all([
-        db.select({ id: centres.id, name: centres.name, address: centres.address, billingPhone: centres.billingPhone, ofstedId: centres.ofstedId })
+        db.select({ id: centres.id, name: centres.name, address: centres.address, billingPhone: centres.billingPhone, ofstedId: centres.ofstedId, managerName: centres.managerName })
             .from(centres).where(and(eq(centres.organisationId, organisationId), inArray(centres.id, centreIds))),
         db.select().from(contractCentreSettings).where(and(eq(contractCentreSettings.organisationId, organisationId), inArray(contractCentreSettings.centreId, centreIds))),
     ]);

@@ -16,6 +16,13 @@ const parent = { firstName: 'Ada', lastName: 'Okafor', email: 'ada@example.test'
 const config = { serviceType: 'childcare', status: 'active', agreedMonthlyPence: 24000, billingAnchorDate: '2026-12-01' };
 
 describe('tokens', () => {
+    it('falls back to the centre manager as signatory', () => {
+        const r = resolveCentreDetails({ setting: null, centre: { ...DAGENHAM_CENTRE, managerName: 'Jane Smith' } });
+        expect(r.missing).toEqual([]);
+        expect(r.provider?.signatoryName).toBe('Jane Smith');
+        expect(r.provider?.signatoryRole).toBe('Manager');
+    });
+
     it('stores only a hash, never the token, and is well formed', () => {
         const t = generateContractToken();
         expect(isWellFormedToken(t)).toBe(true);

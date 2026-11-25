@@ -2,7 +2,7 @@ import type { ContractProvider } from './template';
 
 export interface CentreDetailsInput {
     setting?: { providerName?: string | null; address?: string | null; phone?: string | null; website?: string | null; ofstedRegNo?: string | null; signatoryName?: string | null; signatoryRole?: string | null } | null;
-    centre: { name: string; address?: string | null; billingPhone?: string | null; ofstedId?: string | null };
+    centre: { name: string; address?: string | null; billingPhone?: string | null; ofstedId?: string | null; managerName?: string | null };
 }
 
 export const REQUIRED_CENTRE_FIELDS = [
@@ -26,8 +26,8 @@ export function resolveCentreDetails({ setting, centre }: CentreDetailsInput): {
         phone: clean(setting?.phone) || clean(centre.billingPhone),
         website: clean(setting?.website),
         ofstedRegNo: clean(setting?.ofstedRegNo) || clean(centre.ofstedId),
-        signatoryName: clean(setting?.signatoryName),
-        signatoryRole: clean(setting?.signatoryRole),
+        signatoryName: clean(setting?.signatoryName) || clean(centre.managerName),
+        signatoryRole: clean(setting?.signatoryRole) || (clean(setting?.signatoryName) || !clean(centre.managerName) ? '' : 'Manager'),
     };
     const missing = REQUIRED_CENTRE_FIELDS.filter(([key]) => !draft[key]).map(([, label]) => label);
     if (missing.length) return { provider: null, missing, draft };
