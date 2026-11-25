@@ -26,41 +26,50 @@ interface ParentPageProps {
 
 export default async function ParentProfilePage({ params, searchParams }: ParentPageProps) {
     const { id } = await params;
-    const openBilling=(await searchParams)?.billing==='setup';
-    // Same role rule as the Parents list and the rest of the People module —
-    // see project-notes/milestone-3b-parents-audit.md §4. Previously this
-    // page only checked for a session, so any authenticated org member
-    // (including TUTOR) could view a family's contact details and ledger.
+    const openBilling = (await searchParams)?.billing === 'setup';
     const { session } = await requireAuth({ roles: ['ORG_OWNER', 'MANAGER', 'FRONT_DESK'] });
     const organisationId = (session.user as any).organisationId;
     const userRole = (session.user as any).role as string | undefined;
 
     if (!isValidUuid(id)) return notFound();
 
-    const rawAccessibleCentres = await getUserAccessibleCentres(session.user.id);
-    const accessibleCentres = (rawAccessibleCentres ?? []).filter((c: { id: string }) => isValidUuid(c?.id));
-    const accessibleCentreIds = accessibleCentres.map(c => c.id);
-
-    if (userRole !== 'ORG_OWNER' && accessibleCentreIds.length === 0) {
-        return notFound();
-    }
-
-    // 1. Fetch Parent & Active Children
-    const parent = await db.query.parents.findFirst({
-        where: and(
-            eq(parents.id, id),
-            eq(parents.organisationId, organisationId),
-            isNull(parents.deletedAt)
-        ),
-        with: {
-            children: {
-                where: (c, { isNull: isN }) => isN(c.deletedAt),
-                with: {
-                    centre: true,
+    const fetchParent = () =>
+        db.query.parents.findFirst({
+            where: and(
+                eq(parents.id, id),
+                eq(parents.organisationId, organisationId),
+                isNull(parents.deletedAt)
+            ),
+            with: {
+                children: {
+                    where: (c, { isNull: isN }) => isN(c.deletedAt),
+                    with: {
+                        centre: true,
+                    },
                 },
             },
+        });
+
+    // Stage 1: Resolve accessible centres & primary parent record (preserving zero-centre short-circuit for non-owners)
+    let rawAccessibleCentres: Awaited<ReturnType<typeof getUserAccessibleCentres>>;
+    let parent: Awaited<ReturnType<typeof fetchParent>>;
+
+    if (userRole === 'ORG_OWNER') {
+        [rawAccessibleCentres, parent] = await Promise.all([
+            getUserAccessibleCentres(session.user.id),
+            fetchParent(),
+        ]);
+    } else {
+        rawAccessibleCentres = await getUserAccessibleCentres(session.user.id);
+        const nonOwnerCentres = (rawAccessibleCentres ?? []).filter((c: { id: string }) => isValidUuid(c?.id));
+        if (nonOwnerCentres.length === 0) {
+            return notFound();
         }
-    });
+        parent = await fetchParent();
+    }
+
+    const accessibleCentres = (rawAccessibleCentres ?? []).filter((c: { id: string }) => isValidUuid(c?.id));
+    const accessibleCentreIds = accessibleCentres.map(c => c.id);
 
     if (!parent || (parent as any).deletedAt) return notFound();
 
@@ -78,10 +87,11 @@ export default async function ParentProfilePage({ params, searchParams }: Parent
         ? activeChildren
         : activeChildren.filter(c => !c.centreId || accessibleCentreIds.includes(c.centreId));
 
-    const canManageBilling=['ORG_OWNER','MANAGER'].includes(userRole ?? '');
+    const canManageBilling = ['ORG_OWNER', 'MANAGER'].includes(userRole ?? '');
     const activeFamilyChildIds = visibleChildren.map(c => c.id).filter(isValidUuid);
-    let childStatusMap: Map<string, { confirmedEnrolment: boolean; lifecycleStatus: string }> | null = null;
-    if (canManageBilling && activeFamilyChildIds.length > 0) {
+
+    const fetchChildStatusMap = async (): Promise<Map<string, { confirmedEnrolment: boolean; lifecycleStatus: string }> | null> => {
+        if (!canManageBilling || activeFamilyChildIds.length === 0) return null;
         try {
             const statusRows = await db.select({
                 id: children.id,
@@ -94,7 +104,7 @@ export default async function ParentProfilePage({ params, searchParams }: Parent
                     eq(children.organisationId, organisationId),
                     isNull(children.deletedAt),
                 ));
-            childStatusMap = new Map(statusRows.map(r => [r.id, { confirmedEnrolment: Boolean(r.confirmedEnrolment), lifecycleStatus: r.lifecycleStatus || 'active' }]));
+            return new Map(statusRows.map(r => [r.id, { confirmedEnrolment: Boolean(r.confirmedEnrolment), lifecycleStatus: r.lifecycleStatus || 'active' }]));
         } catch {
             try {
                 const fallbackRows = await db.select({
@@ -107,47 +117,82 @@ export default async function ParentProfilePage({ params, searchParams }: Parent
                         eq(children.organisationId, organisationId),
                         isNull(children.deletedAt),
                     ));
-                childStatusMap = new Map(fallbackRows.map(r => [r.id, { confirmedEnrolment: Boolean(r.confirmedEnrolment), lifecycleStatus: 'active' }]));
+                return new Map(fallbackRows.map(r => [r.id, { confirmedEnrolment: Boolean(r.confirmedEnrolment), lifecycleStatus: 'active' }]));
             } catch (err) {
                 logger.error('[parent] Confirmed enrolment lookup failed:', err);
+                return null;
             }
         }
-    }
-    const plans=canManageBilling&&accessibleCentreIds.length>0?await db.query.billingConfigs.findMany({where:and(eq(billingConfigs.parentId,id),eq(billingConfigs.organisationId,organisationId),inArray(billingConfigs.centreId,accessibleCentreIds)),with:{children:{with:{child:true}}}}):[];
-    const billingGroups:ParentBillingGroup[]=canManageBilling?accessibleCentres.map(centre=>{
-      const siblings=visibleChildren.filter(c=>c.centreId===centre.id).map(c=>({id:c.id,firstName:c.firstName,lastName:c.lastName,...(childStatusMap?.has(c.id)?childStatusMap.get(c.id):{})}));
-      const config=plans.find(p=>p.centreId===centre.id);
-      return {centreId:centre.id,centreName:centre.name,siblings,config:config?{id:config.id,parentId:config.parentId,centreId:config.centreId,agreedMonthlyPence:config.agreedMonthlyPence,billingAnchorDate:config.billingAnchorDate,billingEndDate:config.billingEndDate??null,invoiceLeadDays:config.invoiceLeadDays,paymentDayOfMonth:config.paymentDayOfMonth,leadTimeUnit:config.leadTimeUnit,leadTimeValue:config.leadTimeValue,status:config.status,notes:config.notes,coveredChildren:config.children.filter(c=>c.child&&!c.child.deletedAt&&c.child.organisationId===organisationId&&c.child.parentId===id&&c.child.centreId===centre.id).map(c=>({childId:c.child.id,childName:c.child.firstName+' '+c.child.lastName}))}:null};
-    }).filter(g=>g.siblings.length||g.config):[];
+    };
 
-    // 2. Fetch Family Invoices (Consolidated Ledger)
-    const familyInvoices = await db.query.invoices.findMany({
-        where: and(
-            eq(invoices.parentId, id),
-            eq(invoices.organisationId, organisationId)
-        ),
-        orderBy: [desc(invoices.createdAt)],
-        with: {
-            payments: true,
-            centre: true,
-            child: true
-        }
-    });
+    // Stage 2: Fetch child enrolment status, billing plans, and family invoices concurrently
+    const [childStatusMap, plans, familyInvoices] = await Promise.all([
+        fetchChildStatusMap(),
+        canManageBilling && accessibleCentreIds.length > 0
+            ? db.query.billingConfigs.findMany({
+                  where: and(
+                      eq(billingConfigs.parentId, id),
+                      eq(billingConfigs.organisationId, organisationId),
+                      inArray(billingConfigs.centreId, accessibleCentreIds)
+                  ),
+                  with: { children: { with: { child: true } } },
+              })
+            : Promise.resolve([]),
+        db.query.invoices.findMany({
+            where: and(
+                eq(invoices.parentId, id),
+                eq(invoices.organisationId, organisationId)
+            ),
+            orderBy: [desc(invoices.createdAt)],
+            with: {
+                payments: true,
+                centre: true,
+                child: true,
+            },
+        }),
+    ]);
+
+    const billingGroups: ParentBillingGroup[] = canManageBilling ? accessibleCentres.map(centre => {
+        const siblings = visibleChildren
+            .filter(c => c.centreId === centre.id)
+            .map(c => ({ id: c.id, firstName: c.firstName, lastName: c.lastName, ...(childStatusMap?.has(c.id) ? childStatusMap.get(c.id) : {}) }));
+        const config = plans.find(p => p.centreId === centre.id);
+        return {
+            centreId: centre.id,
+            centreName: centre.name,
+            siblings,
+            config: config ? {
+                id: config.id,
+                parentId: config.parentId,
+                centreId: config.centreId,
+                agreedMonthlyPence: config.agreedMonthlyPence,
+                billingAnchorDate: config.billingAnchorDate,
+                billingEndDate: config.billingEndDate ?? null,
+                invoiceLeadDays: config.invoiceLeadDays,
+                paymentDayOfMonth: config.paymentDayOfMonth,
+                leadTimeUnit: config.leadTimeUnit,
+                leadTimeValue: config.leadTimeValue,
+                status: config.status,
+                notes: config.notes,
+                coveredChildren: config.children
+                    .filter(c => c.child && !c.child.deletedAt && c.child.organisationId === organisationId && c.child.parentId === id && c.child.centreId === centre.id)
+                    .map(c => ({ childId: c.child.id, childName: c.child.firstName + ' ' + c.child.lastName })),
+            } : null,
+        };
+    }).filter(g => g.siblings.length || g.config) : [];
 
     // Supplemental read-only history must not hide the existing ledger on failure.
-    let activityRecords: Awaited<ReturnType<typeof getFamilyActivityRecords>> = {bookings:[],registrations:[],lifecycle:[],contacts:[],audit:[]};
+    let activityRecords: Awaited<ReturnType<typeof getFamilyActivityRecords>> = { bookings: [], registrations: [], lifecycle: [], contacts: [], audit: [] };
     let activityUnavailable = false;
     try {
-        activityRecords = await getFamilyActivityRecords(organisationId, id, activeFamilyChildIds, familyInvoices.map(invoice=>invoice.id).filter(isValidUuid));
+        activityRecords = await getFamilyActivityRecords(organisationId, id, activeFamilyChildIds, familyInvoices.map(invoice => invoice.id).filter(isValidUuid));
     } catch (error) {
         activityUnavailable = true;
         logger.error('[parent] Supplemental family activity unavailable', error);
     }
-    const activity = buildFamilyActivity({children:visibleChildren,invoices:familyInvoices,...activityRecords});
+    const activity = buildFamilyActivity({ children: visibleChildren, invoices: familyInvoices, ...activityRecords });
 
-    // 3. Calculate Ledger Stats
-    // Void and draft invoices are excluded from billing liabilities.
-    // Only verified payments on non-void invoices count toward paid totals (reversals/failed excluded).
+    // Calculate Ledger Stats
     const billableInvoices = familyInvoices.filter(inv => inv.status !== 'void' && inv.status !== 'draft');
     const totalOwed = billableInvoices.reduce((sum, inv) => sum + Number(inv.amount), 0);
     const totalPaid = billableInvoices.reduce((sum, inv) => {

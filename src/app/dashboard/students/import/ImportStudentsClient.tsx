@@ -76,13 +76,13 @@ function StepIndicator({ current }: { current: number }) {
           <div key={label} className="flex items-center">
             <div className={cn(
               'flex items-center gap-2 px-3 py-1.5 rounded-sm text-xs font-medium transition-colors',
-              active ? 'bg-accent text-white' :
+              active ? 'bg-accent text-on-accent' :
               done   ? 'bg-success-soft text-emerald-700 dark:text-emerald-400' :
                        'text-text-muted'
             )}>
               {done
                 ? <CheckCircle2 className="w-3.5 h-3.5" />
-                : <span className={cn('w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-semibold', active ? 'bg-white/20' : 'bg-page text-text-muted')}>{num}</span>
+                : <span className={cn('w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-semibold', active ? 'bg-on-accent/20' : 'bg-page text-text-muted')}>{num}</span>
               }
               {label}
             </div>
@@ -215,7 +215,7 @@ export default function ImportStudentsClient({ centres }: { centres: Centre[] })
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-md bg-accent-soft">
             <div className="flex items-start gap-3">
               <div className="w-8 h-8 rounded-sm bg-accent flex items-center justify-center flex-shrink-0 mt-0.5">
-                <FileSpreadsheet className="w-4 h-4 text-white" />
+                <FileSpreadsheet className="w-4 h-4 text-on-accent" />
               </div>
               <div>
                 <h3 className="text-card-heading text-text">Download Template</h3>
@@ -257,7 +257,7 @@ export default function ImportStudentsClient({ centres }: { centres: Centre[] })
             <p className="text-small-body text-text-muted max-w-xs mb-6 leading-relaxed">
               Drag and drop your spreadsheet here, or click to browse. Max size 5MB.
             </p>
-            <label className="inline-flex items-center gap-2 px-5 py-2.5 bg-accent hover:bg-accent-hover text-white text-small-body font-medium rounded-sm cursor-pointer transition-colors">
+            <label className="inline-flex items-center gap-2 px-5 py-2.5 bg-accent hover:bg-accent-hover text-on-accent text-small-body font-medium rounded-sm cursor-pointer transition-colors">
               <Upload className="w-4 h-4" />
               Browse Files
               <input type="file" accept=".csv" onChange={handleFileChange} className="hidden" />

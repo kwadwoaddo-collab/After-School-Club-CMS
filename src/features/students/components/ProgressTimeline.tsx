@@ -107,7 +107,7 @@ export default function ProgressTimeline({ notes, currentUserId, currentUserRole
                         className={cn(
                             'px-2.5 py-1 rounded-sm text-xs font-medium transition-colors',
                             filter === opt
-                                ? 'bg-accent text-white'
+                                ? 'bg-accent text-on-accent'
                                 : 'bg-page text-text-secondary border border-border-subtle hover:border-border'
                         )}
                     >

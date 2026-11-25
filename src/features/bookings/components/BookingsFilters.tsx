@@ -151,7 +151,7 @@ export default function BookingsFilters({ centres, resultsCount = 0, statusCount
                             }}
                             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors whitespace-nowrap border ${
                                 isActive
-                                    ? 'bg-accent text-white border-accent'
+                                    ? 'bg-accent text-on-accent border-accent'
                                     : 'bg-surface text-text-secondary border-border hover:text-text hover:bg-page'
                             }`}
                         >
@@ -159,7 +159,7 @@ export default function BookingsFilters({ centres, resultsCount = 0, statusCount
                             <span
                                 className={`px-1.5 py-0.5 rounded-full text-[11px] tabular-nums ${
                                     isActive
-                                        ? 'bg-white/20 text-white'
+                                        ? 'bg-on-accent/20 text-on-accent'
                                         : 'bg-page text-text-muted'
                                 }`}
                             >

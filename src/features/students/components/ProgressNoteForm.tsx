@@ -24,9 +24,9 @@ const CHIP_IDLE: Record<string, string> = {
 };
 const CHIP_ACTIVE: Record<string, string> = {
     neutral: 'bg-text text-page',
-    accent:  'bg-accent text-white',
+    accent:  'bg-accent text-on-accent',
     warning: 'bg-amber-600 text-white',
-    danger:  'bg-danger text-white',
+    danger:  'bg-danger text-on-danger',
     success: 'bg-emerald-600 text-white',
 };
 

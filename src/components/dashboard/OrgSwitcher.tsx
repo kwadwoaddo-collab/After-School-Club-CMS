@@ -31,7 +31,7 @@ export default function OrgSwitcher({ currentOrgId, currentOrgName, userOrgs, co
             <div className={`flex items-center gap-2 mb-5 overflow-hidden ${collapsed ? 'justify-center px-0' : 'px-1'}`}>
                 <span
                     title={collapsed ? currentOrgName : undefined}
-                    className="flex size-7 shrink-0 items-center justify-center rounded-md bg-accent text-xs font-semibold text-white"
+                    className="flex size-7 shrink-0 items-center justify-center rounded-md bg-accent text-xs font-semibold text-on-accent"
                 >
                     {currentOrgName.slice(0, 2).toUpperCase()}
                 </span>
@@ -69,7 +69,7 @@ export default function OrgSwitcher({ currentOrgId, currentOrgName, userOrgs, co
                 aria-haspopup="listbox"
                 aria-expanded={open}
             >
-                <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-accent text-xs font-semibold text-white">
+                <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-accent text-xs font-semibold text-on-accent">
                     {switching ? <Loader2 className="size-4 animate-spin" /> : currentOrgName.slice(0, 2).toUpperCase()}
                 </span>
                 {!collapsed && (

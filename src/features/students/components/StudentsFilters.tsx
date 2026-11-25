@@ -195,7 +195,7 @@ export default function StudentsFilters({ centres, resultsCount = 0 }: StudentsF
                                 onClick={toggleAllYears}
                                 className="w-full flex items-center gap-2 px-2 py-1.5 text-sm hover:bg-page rounded-sm text-left text-text"
                             >
-                                <span className={`w-4 h-4 rounded-sm border flex items-center justify-center flex-shrink-0 ${selectedYears.length === yearOptions.length ? 'bg-accent border-accent text-white' : 'border-border'}`}>
+                                <span className={`w-4 h-4 rounded-sm border flex items-center justify-center flex-shrink-0 ${selectedYears.length === yearOptions.length ? 'bg-accent border-accent text-on-accent' : 'border-border'}`}>
                                     {selectedYears.length === yearOptions.length && <Check className="w-3 h-3" />}
                                 </span>
                                 Select all
@@ -207,7 +207,7 @@ export default function StudentsFilters({ centres, resultsCount = 0 }: StudentsF
                                     onClick={() => toggleYear(opt.value)}
                                     className="w-full flex items-center gap-2 px-2 py-1.5 text-sm hover:bg-page rounded-sm text-left text-text"
                                 >
-                                    <span className={`w-4 h-4 rounded-sm border flex items-center justify-center flex-shrink-0 ${selectedYears.includes(opt.value) ? 'bg-accent border-accent text-white' : 'border-border'}`}>
+                                    <span className={`w-4 h-4 rounded-sm border flex items-center justify-center flex-shrink-0 ${selectedYears.includes(opt.value) ? 'bg-accent border-accent text-on-accent' : 'border-border'}`}>
                                         {selectedYears.includes(opt.value) && <Check className="w-3 h-3" />}
                                     </span>
                                     {opt.label}
