@@ -120,11 +120,11 @@ function PortalLoginForm() {
                 )}
             </div>
             <div className="bg-[var(--if-surface)] px-8 py-4 border-t border-[var(--if-border-subtle)] flex items-center justify-between gap-4 text-xs text-[var(--if-text-muted)]">
-                <Link href="/" className={`hover:text-[var(--if-text)] transition-colors ${focusRing}`}>
+                <Link href="/" className={`inline-flex items-center min-h-6 min-w-6 py-1 hover:text-[var(--if-text)] transition-colors ${focusRing}`}>
                     ← Back to Home
                 </Link>
                 <span>
-                    Not a parent? <Link href="/staff-login" className={`text-[var(--if-accent)] font-medium hover:underline ${focusRing}`}>Staff Login</Link>
+                    Not a parent? <Link href="/staff-login" className={`inline-flex items-center min-h-6 min-w-6 py-1 text-[var(--if-accent)] font-medium hover:underline ${focusRing}`}>Staff Login</Link>
                 </span>
             </div>
         </div>
@@ -133,7 +133,7 @@ function PortalLoginForm() {
 
 export default function PortalLoginPage() {
     return (
-        <main className="min-h-screen bg-[var(--if-page)] text-[var(--if-text)] flex flex-col items-center justify-center p-4">
+        <main id="main-content" className="min-h-screen bg-[var(--if-page)] text-[var(--if-text)] flex flex-col items-center justify-center p-4">
             <Suspense fallback={
                 <div className="w-full max-w-md bg-[var(--if-surface-elevated)] border border-[var(--if-border-subtle)] rounded-[14px] shadow-xl p-8 text-center">
                     <div className="animate-pulse flex flex-col items-center">

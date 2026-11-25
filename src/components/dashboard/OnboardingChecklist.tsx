@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/Button';
 interface ChecklistStep {
     id: string;
     label: string;
+    ctaLabel?: string;
     description: string;
     href: string;
     done: boolean;
@@ -31,6 +32,16 @@ const STEP_ICONS: Record<string, React.ElementType> = {
     'registration-terms': FileText,
     'share-form': Share2,
     'first-booking': CalendarDays,
+};
+
+const STEP_CTA_LABELS: Record<string, string> = {
+    'org-info': 'Open organisation settings',
+    'first-centre': 'Add a centre',
+    'invite-staff': 'Invite a staff member',
+    'set-subdomain': 'Configure subdomain',
+    'registration-terms': 'Update registration terms',
+    'share-form': 'Open registration form',
+    'first-booking': 'Create a booking',
 };
 
 /**
@@ -134,6 +145,7 @@ export default function OnboardingChecklist({ steps, completedCount }: Onboardin
                 {steps.map(step => {
                     const Icon = STEP_ICONS[step.id] || Circle;
                     const isExpanded = expandedId === step.id;
+                    const ctaText = step.ctaLabel || STEP_CTA_LABELS[step.id] || step.label;
 
                     if (step.done) {
                         return (
@@ -174,8 +186,8 @@ export default function OnboardingChecklist({ steps, completedCount }: Onboardin
                                     <p className="text-xs text-text-secondary mb-2.5 leading-relaxed">{step.description}</p>
                                     <Button asChild size="sm" id={`step-cta-${step.id}`}>
                                         <Link href={step.href}>
-                                            Go to {step.label.split(' ').slice(0, 3).join(' ')}
-                                            <ChevronRight className="size-3.5" />
+                                            {ctaText}
+                                            <ChevronRight className="size-3.5" aria-hidden="true" />
                                         </Link>
                                     </Button>
                                 </div>

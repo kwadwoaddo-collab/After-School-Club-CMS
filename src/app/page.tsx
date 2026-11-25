@@ -162,6 +162,13 @@ export default function Home() {
 
     return (
         <div className="landing-page">
+            <a
+                href="#main-content"
+                className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[100] focus:px-4 focus:py-2.5 focus:rounded-md focus:bg-[var(--if-accent)] focus:text-[var(--if-on-accent)] focus:text-sm focus:font-semibold focus:shadow-lg focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-[var(--if-accent)]"
+            >
+                Skip to main content
+            </a>
+
             {/* Sticky Navbar */}
             <nav className={`landing-navbar ${isScrolled ? 'scrolled' : ''}`} aria-label="Main">
                 <div className="flex justify-between items-center max-w-7xl mx-auto">
@@ -181,7 +188,7 @@ export default function Home() {
                 </div>
             </nav>
 
-            <main>
+            <main id="main-content" tabIndex={-1}>
                 {/* Hero Section */}
                 <section className="landing-section text-center" style={{ paddingTop: '6rem' }}>
                     <div className="max-w-4xl mx-auto">

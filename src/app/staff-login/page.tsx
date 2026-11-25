@@ -55,7 +55,7 @@ export default function StaffLoginPage() {
 
     if (step === 'sent') {
         return (
-            <main className="min-h-screen bg-[var(--if-page)] text-[var(--if-text)] flex items-center justify-center p-4 overflow-x-hidden">
+            <main id="main-content" className="min-h-screen bg-[var(--if-page)] text-[var(--if-text)] flex items-center justify-center p-4 overflow-x-hidden">
                 <div className="max-w-md w-full bg-[var(--if-surface-elevated)] rounded-[14px] p-6 sm:p-8 border border-[var(--if-border-subtle)] text-center">
                     <div className="flex justify-center mb-6"><BrandLockup /></div>
                     <div className="w-16 h-16 bg-[var(--if-accent-soft)] rounded-2xl flex items-center justify-center mx-auto mb-6 text-[var(--if-accent)]">
@@ -82,7 +82,7 @@ export default function StaffLoginPage() {
     }
 
     return (
-        <main className="min-h-screen bg-[var(--if-page)] text-[var(--if-text)] flex items-center justify-center p-4 overflow-x-hidden">
+        <main id="main-content" className="min-h-screen bg-[var(--if-page)] text-[var(--if-text)] flex items-center justify-center p-4 overflow-x-hidden">
             <div className="max-w-md w-full">
                 <div className="bg-[var(--if-surface-elevated)] rounded-[14px] p-6 sm:p-8 border border-[var(--if-border-subtle)]">
                     <div className="text-center mb-8">
