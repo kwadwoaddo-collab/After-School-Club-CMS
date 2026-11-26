@@ -20,6 +20,8 @@ import {
     Plus,
 } from 'lucide-react';
 import Link from 'next/link';
+import { MessageCircle } from 'lucide-react';
+import { buildParentGreetingWhatsAppUrl } from '@/lib/whatsapp';
 import dynamic from 'next/dynamic';
 import { cn } from '@/components/ui/utils';
 import { useToast } from '@/components/ui/ToastProvider';
@@ -264,9 +266,34 @@ export default function ParentProfileClient({ parent, invoices, stats, isOwner, 
                                         </div>
                                         <div className="flex items-start gap-3 py-3 border-b border-border-subtle">
                                             <Phone className="w-4 h-4 text-text-muted mt-0.5 flex-shrink-0" />
-                                            <div className="min-w-0">
+                                            <div className="min-w-0 flex-1">
                                                 <p className="text-label text-text-muted">Phone</p>
-                                                <p className="text-small-body font-medium text-text mt-0.5">{parent.phone || 'Not provided'}</p>
+                                                <div className="flex flex-wrap items-center gap-3 mt-0.5">
+                                                    {parent.phone ? (
+                                                        <a href={`tel:${parent.phone}`} className="text-small-body font-medium text-text hover:text-accent hover:underline">
+                                                            {parent.phone}
+                                                        </a>
+                                                    ) : (
+                                                        <p className="text-small-body font-medium text-text">Not provided</p>
+                                                    )}
+                                                    {(() => {
+                                                        const waUrl = buildParentGreetingWhatsAppUrl({
+                                                            phone: parent.phone,
+                                                            parentFirstName: parent.firstName,
+                                                        });
+                                                        return waUrl ? (
+                                                            <a
+                                                                href={waUrl}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-sm bg-emerald-500/10 border border-emerald-500/25 text-xs font-semibold text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20 transition-colors"
+                                                            >
+                                                                <MessageCircle className="w-3.5 h-3.5" aria-hidden="true" />
+                                                                Send WhatsApp
+                                                            </a>
+                                                        ) : null;
+                                                    })()}
+                                                </div>
                                             </div>
                                         </div>
                                         <div className="flex items-start gap-3 py-3">

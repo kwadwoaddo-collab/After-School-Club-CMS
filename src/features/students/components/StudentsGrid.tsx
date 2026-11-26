@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { followUpBucket, FOLLOW_UP_LABELS } from '../follow-up-queue';
-import { AlertTriangle, Shield, Mail, Phone, Calendar } from 'lucide-react';
+import { AlertTriangle, Shield, Mail, MessageCircle, Phone, Calendar } from 'lucide-react';
+import { buildParentGreetingWhatsAppUrl } from '@/lib/whatsapp';
 import { Badge } from '@/components/ui/Badge';
 import { formatShortDate, type StudentRow } from './StudentsTable';
 
@@ -113,13 +114,32 @@ export default function StudentsGrid({ students, followUpMode = false, today = '
                                 </a>
                             )}
                             {student.parentPhone && (
-                                <a
-                                    href={`tel:${student.parentPhone}`}
-                                    className="relative z-10 text-metadata flex items-center gap-1.5 truncate hover:text-accent hover:underline"
-                                >
-                                    <Phone className="w-3 h-3 flex-shrink-0 text-text-muted" />
-                                    {student.parentPhone}
-                                </a>
+                                <div className="flex items-center justify-between gap-2">
+                                    <a
+                                        href={`tel:${student.parentPhone}`}
+                                        className="relative z-10 text-metadata flex items-center gap-1.5 truncate hover:text-accent hover:underline"
+                                    >
+                                        <Phone className="w-3 h-3 flex-shrink-0 text-text-muted" />
+                                        {student.parentPhone}
+                                    </a>
+                                    {(() => {
+                                        const waUrl = buildParentGreetingWhatsAppUrl({
+                                            phone: student.parentPhone,
+                                            parentFirstName: student.parentFirstName,
+                                        });
+                                        return waUrl ? (
+                                            <a
+                                                href={waUrl}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="relative z-10 inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400 hover:underline flex-shrink-0"
+                                            >
+                                                <MessageCircle className="w-3 h-3" />
+                                                WhatsApp
+                                            </a>
+                                        ) : null;
+                                    })()}
+                                </div>
                             )}
                         </div>
 

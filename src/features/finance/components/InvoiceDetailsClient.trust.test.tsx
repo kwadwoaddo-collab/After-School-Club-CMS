@@ -3,7 +3,7 @@ import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 const mocks = vi.hoisted(() => ({ issue:vi.fn(), resend:vi.fn(), refresh:vi.fn(), toast:vi.fn() }));
-vi.mock('../actions', () => ({ issueDraftInvoice:mocks.issue, resendInvoiceEmail:mocks.resend, deleteInvoice:vi.fn(), voidInvoice:vi.fn(), updateInvoiceDate:vi.fn(), updateInvoiceNotes:vi.fn(), updateDraftInvoice:vi.fn(), discardDraftInvoice:vi.fn() }));
+vi.mock('../actions', () => ({ issueDraftInvoice:mocks.issue, resendInvoiceEmail:mocks.resend, deleteInvoice:vi.fn(), voidInvoice:vi.fn(), updateInvoiceDate:vi.fn(), updateInvoiceNotes:vi.fn(), updateDraftInvoice:vi.fn(), discardDraftInvoice:vi.fn(), updateInvoiceServiceType:vi.fn(), recordInvoiceWhatsAppHandoff:vi.fn().mockResolvedValue({ success: true }) }));
 vi.mock('next/navigation', () => ({ useRouter:()=>({refresh:mocks.refresh,push:vi.fn()}) }));
 vi.mock('next/link', () => ({ default:({children,...props}:React.PropsWithChildren<React.AnchorHTMLAttributes<HTMLAnchorElement>>)=><a {...props}>{children}</a> }));
 vi.mock('@/components/ui/ToastProvider',()=>({useToast:()=>({toast:mocks.toast})}));

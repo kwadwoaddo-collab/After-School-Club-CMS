@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import { Mail, Phone, Baby } from 'lucide-react';
+import { Mail, MessageCircle, Phone, Baby } from 'lucide-react';
+import { buildParentGreetingWhatsAppUrl } from '@/lib/whatsapp';
 import type { ParentRow } from './ParentsTable';
 
 /* ------------------------------------------------------------------ */
@@ -25,6 +26,10 @@ export default function ParentsGrid({ parents }: ParentsGridProps) {
             {parents.map((parent) => {
                 const fullName = `${parent.firstName} ${parent.lastName}`;
                 const initials = getInitials(parent.firstName, parent.lastName);
+                const whatsappUrl = buildParentGreetingWhatsAppUrl({
+                    phone: parent.phone,
+                    parentFirstName: parent.firstName,
+                });
 
                 return (
                     <div
@@ -67,10 +72,26 @@ export default function ParentsGrid({ parents }: ParentsGridProps) {
                                     </p>
                                 )}
                                 {parent.phone && (
-                                    <p className="text-metadata flex items-center gap-1.5 truncate">
-                                        <Phone className="w-3 h-3 flex-shrink-0 text-text-muted" />
-                                        {parent.phone}
-                                    </p>
+                                    <div className="text-metadata flex items-center justify-between gap-2">
+                                        <a
+                                            href={`tel:${parent.phone}`}
+                                            className="relative z-10 flex items-center gap-1.5 truncate hover:text-accent hover:underline"
+                                        >
+                                            <Phone className="w-3 h-3 flex-shrink-0 text-text-muted" />
+                                            {parent.phone}
+                                        </a>
+                                        {whatsappUrl && (
+                                            <a
+                                                href={whatsappUrl}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="relative z-10 inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400 hover:underline flex-shrink-0"
+                                            >
+                                                <MessageCircle className="w-3 h-3" />
+                                                WhatsApp
+                                            </a>
+                                        )}
+                                    </div>
                                 )}
                             </div>
                         )}

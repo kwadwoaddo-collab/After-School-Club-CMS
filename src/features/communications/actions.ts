@@ -7,7 +7,8 @@ import { requireTenantSession, TypedSession } from '@/lib/session';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
 import { revalidatePath } from 'next/cache';
-import { processBroadcastDeliveries } from './delivery';
+import { processBroadcastDeliveries, reconcileBroadcastStatus } from './delivery';
+import { normaliseWhatsAppPhone } from '@/lib/whatsapp';
 
 /**
  * Milestone 3H, C1-C4 & Wave 4B:
@@ -263,6 +264,7 @@ export async function getParentsForCentre(centreId: string, classId?: string) {
     firstName: parents.firstName,
     lastName: parents.lastName,
     email: parents.email,
+    phone: parents.phone,
     communicationsConsent: sql<boolean>`COALESCE(
       (
         SELECT ${bookings.communicationsConsent}
@@ -353,4 +355,285 @@ export async function getBroadcastDeliveryStats(broadcastId: string) {
     broadcast,
     deliveries,
   };
+}
+
+/**
+ * WhatsApp Phase 1 (£0-Forever Assisted Queue):
+ * Creates an audited WhatsApp broadcast queue strictly enforcing UK GDPR communicationsConsent,
+ * centre RBAC, soft-deleted parent exclusion, and E.164 phone normalisation, with zero DB schema migrations.
+ */
+export async function createWhatsAppBroadcast(data: {
+  centreId?: string;
+  audienceParentIds: string[];
+  subject: string;
+  message: string;
+}) {
+  const session = await requireTenantSession();
+  if (!session?.user?.organisationId) {
+    return { success: false, count: 0, sent: 0, failed: 0, error: 'Unauthorized' };
+  }
+  const organisationId = session.user.organisationId;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const userRole = (session.user as any).role;
+  if (!['ORG_OWNER', 'MANAGER'].includes(userRole)) {
+    return { success: false, count: 0, sent: 0, failed: 0, error: 'Unauthorized: only Owner/Manager may send broadcasts' };
+  }
+
+  let accessibleCentreIds: string[] | null = null;
+  if (userRole !== 'ORG_OWNER') {
+    accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
+    if (data.centreId && data.centreId !== 'all') {
+      if (!accessibleCentreIds.includes(data.centreId)) {
+        return { success: false, count: 0, sent: 0, failed: 0, error: 'Unauthorized: No access to this centre' };
+      }
+    } else if (!accessibleCentreIds || accessibleCentreIds.length === 0) {
+      return { success: false, count: 0, sent: 0, failed: 0, error: 'Unauthorized: No access to this centre' };
+    }
+  }
+
+  if (!data.audienceParentIds || data.audienceParentIds.length === 0) {
+    return {
+      success: false,
+      count: 0,
+      sent: 0,
+      failed: 0,
+      error: 'No eligible recipients with communications consent and valid phone number found',
+    };
+  }
+
+  const scopedCentreIdsForConsent =
+    data.centreId && data.centreId !== 'all'
+      ? [data.centreId]
+      : userRole !== 'ORG_OWNER' && accessibleCentreIds
+        ? accessibleCentreIds
+        : null;
+
+  const consentBookingFilter =
+    scopedCentreIdsForConsent && scopedCentreIdsForConsent.length > 0
+      ? sql`AND ${inArray(bookings.centreId, scopedCentreIdsForConsent)}`
+      : sql``;
+
+  const consentRows = await db.select({
+    id: parents.id,
+    firstName: parents.firstName,
+    lastName: parents.lastName,
+    phone: parents.phone,
+    communicationsConsent: sql<boolean>`COALESCE(
+      (
+        SELECT ${bookings.communicationsConsent}
+        FROM ${bookings}
+        WHERE ${bookings.parentId} = ${sql`parents.id`}
+        ${consentBookingFilter}
+        ORDER BY ${bookings.createdAt} DESC, ${bookings.id} DESC
+        LIMIT 1
+      ),
+      false
+    )`.mapWith(Boolean).as('communicationsConsent'),
+  })
+    .from(parents)
+    .where(and(
+      inArray(parents.id, data.audienceParentIds),
+      eq(parents.organisationId, organisationId),
+      isNull(parents.deletedAt),
+    ));
+
+  const seenPhones = new Set<string>();
+  const uniqueTargetParents: Array<{
+    id: string;
+    firstName: string | null;
+    lastName: string | null;
+    normalisedPhone: string;
+  }> = [];
+
+  for (const parent of consentRows) {
+    if (!parent.communicationsConsent) continue;
+    const parentWithMeta = parent as { deletedAt?: Date | null; centreId?: string };
+    if (parentWithMeta.deletedAt) continue;
+    if (scopedCentreIdsForConsent && parentWithMeta.centreId && !scopedCentreIdsForConsent.includes(parentWithMeta.centreId)) {
+      continue;
+    }
+    const normalisedPhone = normaliseWhatsAppPhone(parent.phone);
+    if (!normalisedPhone) continue;
+
+    if (!seenPhones.has(normalisedPhone)) {
+      seenPhones.add(normalisedPhone);
+      uniqueTargetParents.push({
+        id: parent.id,
+        firstName: parent.firstName || null,
+        lastName: parent.lastName || null,
+        normalisedPhone,
+      });
+    }
+  }
+
+  if (uniqueTargetParents.length === 0) {
+    return {
+      success: false,
+      count: 0,
+      sent: 0,
+      failed: 0,
+      error: 'No eligible recipients with communications consent and valid phone number found',
+    };
+  }
+
+  const txResult = await db.transaction(async (tx) => {
+    const [createdBroadcast] = await tx.insert(broadcasts).values({
+      organisationId,
+      centreId: data.centreId && data.centreId !== 'all' ? data.centreId : null,
+      subject: data.subject,
+      message: data.message,
+      recipientCount: uniqueTargetParents.length,
+      successCount: 0,
+      failureCount: 0,
+      status: 'WHATSAPP_QUEUE',
+    }).returning();
+
+    const deliveryRows = uniqueTargetParents.map((parent) => ({
+      organisationId,
+      broadcastId: createdBroadcast.id,
+      parentId: parent.id,
+      recipientEmail: `whatsapp:+${parent.normalisedPhone}`,
+      recipientName: [parent.firstName, parent.lastName].filter(Boolean).join(' ') || parent.firstName || null,
+      channel: 'whatsapp',
+      status: 'AWAITING_HANDOFF',
+    }));
+
+    const insertedDeliveries = await tx.insert(broadcastDeliveries).values(deliveryRows).returning();
+
+    await tx.insert(auditEvents).values({
+      organisationId,
+      userId: session.user.id,
+      eventType: 'broadcast.whatsapp_queued',
+      eventData: JSON.stringify({
+        broadcastId: createdBroadcast.id,
+        subject: data.subject,
+        recipientCount: uniqueTargetParents.length,
+        centreId: data.centreId && data.centreId !== 'all' ? data.centreId : null,
+        channel: 'whatsapp',
+      }),
+    });
+
+    return {
+      broadcast: createdBroadcast,
+      deliveries: Array.isArray(insertedDeliveries) && insertedDeliveries.length === deliveryRows.length
+        ? insertedDeliveries
+        : deliveryRows.map((d, idx) => ({
+            id: `wa-delivery-${idx}`,
+            parentId: d.parentId,
+            recipientEmail: d.recipientEmail,
+            recipientName: d.recipientName,
+            channel: d.channel,
+            status: d.status,
+            attemptCount: 0,
+            sentAt: null,
+            lastError: null,
+            createdAt: new Date(),
+          })),
+    };
+  });
+
+  revalidatePath('/dashboard/communications');
+
+  return {
+    success: true,
+    broadcastId: txResult.broadcast.id,
+    broadcast: txResult.broadcast,
+    deliveries: txResult.deliveries,
+    count: uniqueTargetParents.length,
+    sent: 0,
+    failed: 0,
+    status: 'WHATSAPP_QUEUE' as const,
+  };
+}
+
+/**
+ * Marks a single WhatsApp assisted queue delivery as handed off / opened in WhatsApp by staff,
+ * reconciles parent broadcast counts, and logs an immutable audit event.
+ */
+export async function markWhatsAppDeliverySent(deliveryId: string) {
+  const session = await requireTenantSession();
+  if (!session?.user?.organisationId) {
+    return { success: false, error: 'Unauthorized' };
+  }
+  const organisationId = session.user.organisationId;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const userRole = (session.user as any).role as string | undefined;
+  if (!userRole || !['ORG_OWNER', 'MANAGER'].includes(userRole)) {
+    return { success: false, error: 'Unauthorized: only Owner/Manager may send broadcasts' };
+  }
+
+  const [delivery] = await db
+    .select({
+      id: broadcastDeliveries.id,
+      broadcastId: broadcastDeliveries.broadcastId,
+      channel: broadcastDeliveries.channel,
+      status: broadcastDeliveries.status,
+      parentId: broadcastDeliveries.parentId,
+    })
+    .from(broadcastDeliveries)
+    .where(and(
+      eq(broadcastDeliveries.id, deliveryId),
+      eq(broadcastDeliveries.organisationId, organisationId),
+    ));
+
+  if (!delivery) {
+    return { success: false, error: 'Delivery record not found' };
+  }
+
+  if (delivery.channel !== 'whatsapp') {
+    return { success: false, error: 'Only WhatsApp queue deliveries can be marked manually' };
+  }
+
+  if (userRole !== 'ORG_OWNER') {
+    const [parentBroadcast] = await db
+      .select({ centreId: broadcasts.centreId })
+      .from(broadcasts)
+      .where(and(
+        eq(broadcasts.id, delivery.broadcastId),
+        eq(broadcasts.organisationId, organisationId),
+      ));
+    const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
+    if (!parentBroadcast?.centreId || !accessibleCentreIds.includes(parentBroadcast.centreId)) {
+      return { success: false, error: 'Unauthorized: No access to this centre' };
+    }
+  }
+
+  if (delivery.status !== 'SENT') {
+    await db
+      .update(broadcastDeliveries)
+      .set({
+        status: 'SENT',
+        sentAt: new Date(),
+        attemptCount: 1,
+        lastAttemptAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(and(
+        eq(broadcastDeliveries.id, deliveryId),
+        eq(broadcastDeliveries.organisationId, organisationId),
+      ));
+
+    await db.insert(auditEvents).values({
+      organisationId,
+      userId: session.user.id,
+      eventType: 'broadcast.whatsapp_handoff_opened',
+      eventData: JSON.stringify({
+        broadcastId: delivery.broadcastId,
+        deliveryId: delivery.id,
+        parentId: delivery.parentId,
+        channel: 'whatsapp',
+      }),
+    });
+
+    try {
+      await reconcileBroadcastStatus(delivery.broadcastId);
+    } catch (err) {
+      logger.warn('[Communications] WhatsApp status reconciliation warning', err);
+    }
+  }
+
+  revalidatePath('/dashboard/communications');
+  return { success: true, broadcastId: delivery.broadcastId };
 }

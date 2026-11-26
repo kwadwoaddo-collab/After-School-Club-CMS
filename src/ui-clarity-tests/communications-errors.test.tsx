@@ -3,7 +3,7 @@ import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import CommunicationsClient from '@/app/dashboard/communications/CommunicationsClient';
-const actions = vi.hoisted(() => ({ sendBroadcast: vi.fn(), getBroadcasts: vi.fn(), getParentsForCentre: vi.fn(), getClassesForCentre: vi.fn(), getBroadcastDeliveryStats: vi.fn() }));
+const actions = vi.hoisted(() => ({ sendBroadcast: vi.fn(), createWhatsAppBroadcast: vi.fn(), markWhatsAppDeliverySent: vi.fn(), getBroadcasts: vi.fn(), getParentsForCentre: vi.fn(), getClassesForCentre: vi.fn(), getBroadcastDeliveryStats: vi.fn() }));
 vi.mock('@/features/communications/actions', () => actions);
 vi.mock('next/link', () => ({ default: ({children, ...props}: React.PropsWithChildren<React.AnchorHTMLAttributes<HTMLAnchorElement>>) => <a {...props}>{children}</a> }));
 const broadcast = { id:'broadcast-1', subject:'Fixture update', message:'Fixture content', createdAt:'2026-10-26T10:00:00Z', status:'PARTIALLY_FAILED', recipientCount:3, successCount:2, failureCount:1 };

@@ -5,6 +5,8 @@ import { db } from '@/db';
 import { bookings } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import Link from 'next/link';
+import { MessageCircle } from 'lucide-react';
+import { buildParentGreetingWhatsAppUrl } from '@/lib/whatsapp';
 import { ChevronLeft, Calendar, Clock, MapPin, User, Mail, Phone, CheckCircle2, XCircle, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
 import { requiresAssessmentOutcome } from '@/features/bookings/assessment-outcome';
@@ -353,9 +355,29 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
                             <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-page border border-border-subtle"><Phone className="w-5 h-5 text-text-muted" /></div>
                             <div>
                                 <p className="text-label text-text-muted mb-1">Phone</p>
-                                <a href={`tel:${booking.parent.phone}`} className="text-small-body font-semibold text-text hover:text-accent transition-colors">
-                                    {booking.parent.phone}
-                                </a>
+                                <div className="flex flex-wrap items-center gap-3">
+                                    <a href={`tel:${booking.parent.phone}`} className="text-small-body font-semibold text-text hover:text-accent transition-colors">
+                                        {booking.parent.phone}
+                                    </a>
+                                    {(() => {
+                                        const waUrl = buildParentGreetingWhatsAppUrl({
+                                            phone: booking.parent.phone,
+                                            parentFirstName: booking.parent.firstName,
+                                            centreName: booking.centre?.name,
+                                        });
+                                        return waUrl ? (
+                                            <a
+                                                href={waUrl}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-sm bg-emerald-500/10 border border-emerald-500/25 text-xs font-semibold text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20 transition-colors"
+                                            >
+                                                <MessageCircle className="w-3.5 h-3.5" aria-hidden="true" />
+                                                WhatsApp
+                                            </a>
+                                        ) : null;
+                                    })()}
+                                </div>
                             </div>
                         </div>
                     )}
