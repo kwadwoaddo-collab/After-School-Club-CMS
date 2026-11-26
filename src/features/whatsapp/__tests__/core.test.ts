@@ -54,7 +54,7 @@ describe('templates', () => {
     it('receipt only for paid, reminder only for unpaid', () => {
         expect(TEMPLATE_ELIGIBLE_STATUSES.payment_receipt).toEqual(['paid']);
         expect(TEMPLATE_ELIGIBLE_STATUSES.payment_reminder).toEqual(['sent']);
-        expect(TEMPLATE_ELIGIBLE_STATUSES.invoice_issued).not.toContain('draft');
+        expect(TEMPLATE_ELIGIBLE_STATUSES.invoice_issued).toEqual(['sent']); // partially_paid excluded: amount would overstate what is due
     });
     it('recognises STOP-style replies only', () => {
         for (const t of ['STOP', ' stop ', 'Stop.', 'unsubscribe', 'Opt out']) expect(isOptOutText(t)).toBe(true);

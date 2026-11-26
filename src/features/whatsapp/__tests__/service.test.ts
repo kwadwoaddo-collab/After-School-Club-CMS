@@ -104,6 +104,17 @@ describe('sendInvoiceTemplate', () => {
         expect(await sendInvoiceTemplate({ ...input, kind: 'payment_receipt' })).toMatchObject({ success: false });
         expect(m.inserts).toHaveLength(0);
     });
+    it('refuses invoice_issued for a partially paid invoice', async () => {
+        m.selects.push([{ ...invoice, status: 'partially_paid' }]);
+        expect(await sendInvoiceTemplate(input)).toMatchObject({ success: false });
+        expect(m.inserts).toHaveLength(0);
+    });
+    it('soft-deleted parents are excluded in the query and reported as not found', async () => {
+        const src = (await import('node:fs')).readFileSync(new URL('../service.ts', import.meta.url), 'utf8');
+        expect(src).toMatch(/isNull\(parents\.deletedAt\)/);
+        m.selects.push([invoice], []);
+        expect(await sendInvoiceTemplate(input)).toEqual({ success: false, error: 'Parent not found' });
+    });
     it('rate limit stops the send before anything is logged', async () => {
         m.rate.mockResolvedValue({ success: false }); queue(); const f = fetchOk();
         expect(await sendInvoiceTemplate(input, { fetchImpl: f })).toMatchObject({ success: false });

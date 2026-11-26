@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 import { db } from '@/db';
 import { auditEvents, centres, invoices, organisations, parents, whatsappCentreConfigs, whatsappMessages } from '@/db/schema';
 import { logger } from '@/lib/logger';
@@ -42,7 +42,7 @@ export async function sendInvoiceTemplate(
     }
 
     const [parent] = await db.select({ id: parents.id, firstName: parents.firstName, phone: parents.phone })
-        .from(parents).where(and(eq(parents.id, invoice.parentId), eq(parents.organisationId, orgId)));
+        .from(parents).where(and(eq(parents.id, invoice.parentId), eq(parents.organisationId, orgId), isNull(parents.deletedAt)));
     if (!parent) return { success: false, error: 'Parent not found' };
 
     const [config] = await db.select({

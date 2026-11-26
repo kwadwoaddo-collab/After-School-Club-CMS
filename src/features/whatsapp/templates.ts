@@ -64,9 +64,9 @@ export function buildTemplatePayload(to: string, kind: WhatsAppTemplateKind, par
     };
 }
 
-/** Which invoice statuses each template may be sent for. Reminder is limited to wholly unpaid ('sent') invoices so the amount is exact. */
+/** Which invoice statuses each template may be sent for. Invoice-issued and reminder are limited to wholly unpaid ('sent') invoices so the amount quoted is exact. */
 export const TEMPLATE_ELIGIBLE_STATUSES: Record<WhatsAppTemplateKind, string[]> = {
-    invoice_issued: ['sent', 'partially_paid'],
+    invoice_issued: ['sent'],
     payment_reminder: ['sent'],
     payment_receipt: ['paid'],
 };

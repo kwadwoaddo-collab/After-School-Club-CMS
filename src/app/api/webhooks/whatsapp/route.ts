@@ -35,7 +35,8 @@ export async function POST(req: NextRequest) {
         const result = await processWhatsAppWebhook(payload as Parameters<typeof processWhatsAppWebhook>[0]);
         return NextResponse.json({ ok: true, ...result });
     } catch (err) {
-        logger.error('[whatsapp webhook] processing failed', err);
+        // Never log the error object: DB errors can carry query params (the STOP sender's digits).
+        logger.error('[whatsapp webhook] processing failed', { name: err instanceof Error ? err.name : 'unknown' });
         return NextResponse.json({ error: 'Processing failed' }, { status: 500 }); // Meta retries; processing is idempotent
     }
 }

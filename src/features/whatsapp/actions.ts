@@ -1,6 +1,6 @@
 'use server';
 import { z } from 'zod';
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, isNull } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { db } from '@/db';
 import { auditEvents, centres, invoices, parents, whatsappCentreConfigs, whatsappConsents, whatsappMessages } from '@/db/schema';
@@ -8,7 +8,7 @@ import { requireTenantSession } from '@/lib/session';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { normaliseWhatsAppPhone } from '@/lib/whatsapp';
 import { isWhatsAppApiEnabled } from './config';
-import { getLatestConsent } from './consent';
+import { getLatestConsent, getLatestConsentRecord } from './consent';
 import { sendInvoiceTemplate, type SendOutcome } from './service';
 
 const STAFF_ROLES = ['ORG_OWNER', 'MANAGER', 'FRONT_DESK'];
@@ -47,20 +47,26 @@ export async function sendInvoiceWhatsAppTemplate(input: { invoiceId: string; ki
     return res;
 }
 
-/** Records a parent's WhatsApp opt-in or opt-out (append-only history). */
+/**
+ * Records a parent's WhatsApp opt-in or opt-out (append-only history). Owner/Manager only.
+ * Consent is org-wide (parents have no centre). Overriding a parent's own STOP reply is recorded with a distinct source.
+ */
 export async function recordWhatsAppConsent(input: { parentId: string; status: 'opted_in' | 'opted_out'; source: (typeof CONSENT_SOURCES)[number] }) {
     const parsed = z.object({ parentId: z.string().uuid(), status: z.enum(['opted_in', 'opted_out']), source: z.enum(CONSENT_SOURCES) }).safeParse(input);
     if (!parsed.success) return { success: false as const, error: 'Invalid request' };
-    const a = await authorise(STAFF_ROLES);
+    const a = await authorise(ADMIN_ROLES);
     if ('error' in a) return { success: false as const, error: a.error };
 
     const [parent] = await db.select({ id: parents.id, phone: parents.phone }).from(parents)
-        .where(and(eq(parents.id, parsed.data.parentId), eq(parents.organisationId, a.orgId)));
+        .where(and(eq(parents.id, parsed.data.parentId), eq(parents.organisationId, a.orgId), isNull(parents.deletedAt)));
     if (!parent) return { success: false as const, error: 'Parent not found' };
     if (parsed.data.status === 'opted_in' && !normaliseWhatsAppPhone(parent.phone)) return { success: false as const, error: 'Parent has no valid WhatsApp number' };
 
-    await db.insert(whatsappConsents).values({ organisationId: a.orgId, parentId: parent.id, status: parsed.data.status, source: parsed.data.source, recordedBy: a.userId });
-    await db.insert(auditEvents).values({ organisationId: a.orgId, userId: a.userId, eventType: `whatsapp_${parsed.data.status}`, eventData: JSON.stringify({ parentId: parent.id, source: parsed.data.source }) });
+    const latest = await getLatestConsentRecord(a.orgId, parent.id);
+    const overridesStop = parsed.data.status === 'opted_in' && latest?.status === 'opted_out' && latest.source === 'whatsapp_stop_reply';
+    const source = overridesStop ? 'staff_override_of_stop' : parsed.data.source;
+    await db.insert(whatsappConsents).values({ organisationId: a.orgId, parentId: parent.id, status: parsed.data.status, source, recordedBy: a.userId });
+    await db.insert(auditEvents).values({ organisationId: a.orgId, userId: a.userId, eventType: `whatsapp_${parsed.data.status}`, eventData: JSON.stringify({ parentId: parent.id, source, overridesStop }) });
     return { success: true as const };
 }
 
