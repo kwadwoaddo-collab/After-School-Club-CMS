@@ -1,5 +1,5 @@
 # SprintScale CMS — Functional Manual: Invoices
-## Invoice Lifecycle, Monthly Runs, Duplicate Checks, PDF Generation & Voiding Controls
+## Invoice Lifecycle, Service Types (`Childcare` vs `Tuition`), Monthly Runs, PDF Generation & Voiding Controls
 
 ---
 
@@ -8,9 +8,9 @@
 The **Invoices Module** (`/dashboard/finance` and `/dashboard/finance/invoices/[id]`) is the billing document management center for your club organisation.
 
 It enables staff to:
-- Review all issued tuition and ad-hoc invoices in a central data grid.
+- Review all issued childcare, tuition, and ad-hoc invoices in a central data grid.
 - Execute automated or on-demand monthly invoice runs for active families.
-- Generate on-demand PDF invoices with club branding and bank details.
+- Generate on-demand PDF invoices and payment receipts tailored to each family's **Service type** (`Childcare` with Ofsted details, or `Tuition` without Ofsted details).
 - Update invoice issue dates and administrative notes.
 - Dispatch invoice notification emails to parents with direct links to the Parent Portal.
 - Void obsolete or cancelled invoices with permanent audit tracking.
@@ -26,6 +26,7 @@ Monthly agreed-fee invoices are prepared **1 calendar month in advance** of the 
 │                 1. AUTOMATED DAILY CRON RUN                 │
 │  • Endpoint: `/api/cron/billing` (Runs daily at 6am UTC)    │
 │  • Evaluates all active billing configs across the org      │
+│  • Snapshots the family's Service type (`childcare`/`tuition`)│
 │  • Prepares the next Assessment period 1 month in advance   │
 │  • Auto-generates `draft` invoice (no email sent)           │
 └─────────────────────────────────────────────────────────────┘
@@ -34,8 +35,8 @@ Monthly agreed-fee invoices are prepared **1 calendar month in advance** of the 
 │                 2. ON-DEMAND CONFIG RUN                     │
 │  • Triggered in CMS: `generateInvoiceFromConfig`            │
 │  • Staff select Assessment period and generate `draft`      │
-│  • Enforces same application pre-check as automated cron    │
-└─────────────────────────────────────────────────────────────┘
+│  • Snapshots the family's Service type at generation time   │
+└──────────────────────────────┴──────────────────────────────┘
                                ▲
 ┌──────────────────────────────┴──────────────────────────────┐
 │                 3. AD-HOC / ONE-OFF INVOICE                 │
@@ -44,6 +45,12 @@ Monthly agreed-fee invoices are prepared **1 calendar month in advance** of the 
 │  • Useful for registration fees, one-off trips, or uniform  │
 └─────────────────────────────────────────────────────────────┘
 ```
+
+### Service Type Snapshot (`Childcare` vs `Tuition`)
+Before generating a family invoice, ensure the family's **Service type** under **Parents → [Parent] → Manage billing cycle → Edit billing settings** is set accurately:
+- **Childcare *(default)*:** Invoices and payment receipts display **Childcare** service wording and print the centre's **Ofsted registration details**.
+- **Tuition:** Invoices and payment receipts display **Tuition** wording and **omit all Ofsted registration lines**.
+- **Locked Once Issued:** Each invoice stores a permanent snapshot of `serviceType` when created. Changing a family between **Childcare** and **Tuition** later affects **new** invoices only — already-issued invoices and receipts never change retroactively.
 
 ---
 
@@ -130,7 +137,7 @@ The invoice is generated with a unique reference number (e.g. `INV-A1B2C3`), ini
 1. Open the invoice details page: `/dashboard/finance/invoices/[id]`.
 2. In the top action bar, click **Preview** to view the invoice in a modal.
 3. Click **PDF** to download the formatted PDF document (`Invoice-INV-XXXXXX.pdf`).
-4. The PDF automatically includes your organisation name, centre address, bank sort code & account number, covered children, and payment instructions.
+4. The PDF automatically includes your organisation name, centre address, bank sort code & account number, covered children, payment instructions, and — for **Childcare** invoices only — the centre's Ofsted registration details (omitted automatically on **Tuition** invoices).
 
 ---
 
@@ -196,6 +203,7 @@ The invoice updates immediately, the changes appear on the live PDF, and an audi
 
 | Issue | Cause | Solution |
 |---|---|---|
+| **Tuition invoice or receipt shows Childcare wording / Ofsted details** | Family's **Service type** was left as **Childcare** when the invoice was generated (`invoices.serviceType` is snapshotted at creation). | Switch **Service type** to **Tuition** under `Parents → [Parent] → Manage billing cycle → Edit billing settings` for future invoices. To replace an already-generated invoice, an Owner can delete it (if zero payments exist) or void it and generate a new invoice. |
 | **Invoice run gives "Invoice already generated for period"** | Application pre-check in `billingRuns` prevented duplicate invoice creation. | Check the invoice history. The invoice for this billing period already exists in the system. |
 | **Manager cannot find Void or Delete buttons** | Voiding and deleting are restricted by design to the Organisation Owner. | Request the Organisation Owner to review and void or delete the invoice. |
 | **Parent cannot see newly created invoice** | Invoice was created under a different parent account or different organisation. | Verify parent account email matching on the invoice details screen. |

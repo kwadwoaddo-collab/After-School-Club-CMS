@@ -11,7 +11,7 @@ As a **Centre Manager**, you are responsible for day-to-day operational leadersh
 - **Centre Operations & Headcount:** Monitoring daily session capacity, active roll calls, and staff-to-child ratios.
 - **Student & Parent Onboarding:** Reviewing and approving inbound registrations and managing student medical/SEN records.
 - **Designated Safeguarding Lead (DSL):** Authoring and reviewing confidential child protection and safeguarding incident files.
-- **Finance & Invoicing (Assigned Centres):** Managing invoices, recording offline payments (cash/bank), reconciling childcare vouchers and Tax-Free Childcare, downloading payment receipts, and exporting financial CSVs.
+- **Finance & Invoicing (Assigned Centres):** Setting family billing plans and choosing the correct **Service type** (`Childcare` or `Tuition`), sending/archiving childcare service contracts, managing invoices, recording offline payments (cash/bank), reconciling childcare vouchers and Tax-Free Childcare, downloading payment receipts, and exporting financial CSVs.
 - **Team Supervision & Staffing (Assigned Centres):** Inviting team members, configuring centre access, and managing staff roles (upgrading to Front Desk or Manager) for your managed venues.
 - **Centre Billing & Operational Settings:** Configuring centre bank details, operating hours, registration terms, and discount rules.
 - **Session Credit Ledger Management:** Reviewing student absence balances and granting forgiveness credits for excused absences.
@@ -56,7 +56,7 @@ As a **Centre Manager**, you are responsible for day-to-day operational leadersh
 - **Attendance & Kiosk:** Take roll call, monitor arrivals/departures, and operate kiosk check-ins.
 - **Incidents & Safeguarding:** Log standard injuries and author confidential safeguarding disclosures.
 - **Session Credit Ledger:** Grant forgiveness credits for excused absences.
-- **Finance & Invoicing (Assigned Centres):** View invoices, generate batch or ad-hoc invoices, record offline payments (cash and bank transfer), download official payment receipts, reconcile vouchers / Tax-Free Childcare, resend invoice notifications, and export finance ledger CSVs.
+- **Finance & Invoicing (Assigned Centres):** Configure family monthly fees and select **Childcare** vs **Tuition** service types, send/revoke/archive childcare e-contracts, view invoices, generate batch or ad-hoc invoices, record offline payments (cash and bank transfer), download official payment receipts, reconcile vouchers / Tax-Free Childcare, resend invoice notifications, and export finance ledger CSVs.
 - **Staff Management (Assigned Centres):** Invite staff members with roles `Manager`, `Front Desk`, or `Tutor`, manage centre memberships for your assigned centres, and upgrade staff roles (e.g. promoting to Front Desk or Manager).
 - **Centre Billing & Bank Details:** Configure bank name, sort code, account number, and hourly tuition fees for your assigned centres.
 - **Operational Settings:** Manage Operating Hours & session slots, Registration Terms & Conditions, and Discount Rules.
@@ -139,13 +139,14 @@ As a **Centre Manager**, you are responsible for day-to-day operational leadersh
 
 ---
 
-### Procedure 5: Recording an Offline Payment & Generating a Receipt
-1. Navigate to: `Sidebar → Finance` (`/dashboard/finance`).
-2. Locate and open the invoice in your centre's ledger.
-3. Click **Record Payment**.
-4. Select payment method (`Cash` or `Bank Transfer`), enter the amount received, and input any reference note.
-5. Click **Save Payment**. The invoice status updates immediately.
-6. Click **Receipt Preview** and **Download Receipt PDF** to provide a payment confirmation receipt to the parent.
+### Procedure 5: Setting Up Family Billing (`Childcare` vs `Tuition`), Contracts & Offline Payments
+> [!IMPORTANT]
+> **Always Check Service Type Before Generating Any Invoice:**
+> Every family defaults to **Childcare**. Once an invoice or receipt is generated, its wording (`Childcare` with Ofsted details, or `Tuition` without Ofsted lines) is locked in permanently — so always confirm **Service type** under **Parents → Manage billing cycle** before preparing an invoice.
+
+1. **Choose Service Type & Save Plan:** Open `Sidebar → Parents → [Select Parent] → Manage billing cycle`, enter the monthly fee and covered children, choose **Childcare** (includes Ofsted details + enables the childcare service contract) or **Tuition** (Tuition wording, Ofsted lines removed), and click **Save billing cycle**.
+2. **Send Childcare Contract *(Childcare families only)*:** In the **Contract** section, click **Send contract** to email the parent a one-time signing link.
+3. **Record Offline Payment & Receipt:** Navigate to `Sidebar → Finance` (`/dashboard/finance`), open the invoice, click **Record Payment**, select `Cash` or `Bank Transfer`, enter the amount and reference, and click **Save Payment**. Click **Receipt Preview** / **Download Receipt PDF** to issue the receipt.
 
 ---
 
@@ -164,7 +165,7 @@ As a **Centre Manager**, you are responsible for day-to-day operational leadersh
 | Scenario | Immediate Manager Action | Escalation Route |
 |---|---|---|
 | **Critical Safeguarding Disclosure** | Ensure child's immediate physical safety; log confidential report in `/dashboard/incidents`. | Contact local authority Designated Officer (LADO) / Police, and notify Organisation Owner immediately. |
-| **Parent Disputing Monthly Bill** | Review attendance records and invoice details in `/dashboard/finance/invoices/[id]`. | If an invoice requires status voiding or ledger deletion (zero payments), escalate to Organisation Owner. |
+| **Parent Disputing Monthly Bill or Wrong Service Type on Issued Invoice** | Update **Service type** (`Childcare` / `Tuition`) or monthly fee under `Manage billing cycle` for future runs, and review `/dashboard/finance/invoices/[id]`. | If an already-issued invoice requires status voiding or ledger deletion (zero payments), escalate to Organisation Owner. |
 | **Cross-Centre Staff Transfer** | Review DBS and qualification records. You can directly invite staff or assign them to your centres. | Escalate to Organisation Owner if the staff member requires cross-centre access outside your management scope or promotion to Owner. |
 | **Annual School Year Rollover** | Review student rosters and attendance registers. | Annual rollover is executed organisation-wide by the Organisation Owner. |
 | **Venue Closure / Snow Day** | Log closure in Centre Hours; send urgent broadcast email to all affected parents. | Notify Organisation Owner of lost operational hours. |
