@@ -244,22 +244,28 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
     const remainingBalance = Number(invoice.amount) - totalPaid;
     const collectionState = evaluateInvoiceCollectionState(invoice, toLondonBusinessDate(), { strictPayments: false });
     const paidDate = collectionState.stage === 'paid' ? formatPaidDate(invoice.payments) : null;
-    const activeParentForContact = invoice.parent || (invoice.child && invoice.child.parent);
+    const rawParentForContact = invoice.parent || (invoice.child && invoice.child.parent);
+    const activeParentForContact =
+        rawParentForContact && !rawParentForContact.deletedAt ? rawParentForContact : null;
+    const isPaidForWhatsApp = collectionState.stage === 'paid' || invoice.status === 'paid';
+    const whatsAppAmountFormatted = isPaidForWhatsApp
+        ? Number(invoice.amount).toFixed(2)
+        : Math.max(0, remainingBalance).toFixed(2);
     const invoiceWhatsAppUrl =
-        invoice.status !== 'draft' && invoice.status !== 'void'
+        invoice.status !== 'draft' && invoice.status !== 'void' && activeParentForContact
             ? buildWhatsAppUrl(
-                  activeParentForContact?.phone,
+                  activeParentForContact.phone,
                   buildInvoiceWhatsAppMessage({
-                      parentFirstName: activeParentForContact?.firstName,
+                      parentFirstName: activeParentForContact.firstName,
                       invoiceNumber: invoice.invoiceNumber,
-                      amountFormatted: Number(invoice.amount).toFixed(2),
+                      amountFormatted: whatsAppAmountFormatted,
                       dueDateFormatted: invoice.dueDate ? format(new Date(invoice.dueDate), 'dd/MM/yyyy') : null,
                       periodFormatted:
                           invoice.billingPeriodStart && invoice.billingPeriodEnd
                               ? formatInvoicePeriod(invoice.billingPeriodStart, invoice.billingPeriodEnd)
                               : null,
                       serviceType: resolvedServiceType,
-                      isPaid: collectionState.stage === 'paid' || invoice.status === 'paid',
+                      isPaid: isPaidForWhatsApp,
                       organisationName,
                   })
               )

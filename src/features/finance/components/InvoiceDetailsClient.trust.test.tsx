@@ -2,8 +2,8 @@
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
-const mocks = vi.hoisted(() => ({ issue:vi.fn(), resend:vi.fn(), refresh:vi.fn(), toast:vi.fn() }));
-vi.mock('../actions', () => ({ issueDraftInvoice:mocks.issue, resendInvoiceEmail:mocks.resend, deleteInvoice:vi.fn(), voidInvoice:vi.fn(), updateInvoiceDate:vi.fn(), updateInvoiceNotes:vi.fn(), updateDraftInvoice:vi.fn(), discardDraftInvoice:vi.fn(), updateInvoiceServiceType:vi.fn(), recordInvoiceWhatsAppHandoff:vi.fn().mockResolvedValue({ success: true }) }));
+const mocks = vi.hoisted(() => ({ issue:vi.fn(), resend:vi.fn(), refresh:vi.fn(), toast:vi.fn(), handoff:vi.fn() }));
+vi.mock('../actions', () => ({ issueDraftInvoice:mocks.issue, resendInvoiceEmail:mocks.resend, deleteInvoice:vi.fn(), voidInvoice:vi.fn(), updateInvoiceDate:vi.fn(), updateInvoiceNotes:vi.fn(), updateDraftInvoice:vi.fn(), discardDraftInvoice:vi.fn(), updateInvoiceServiceType:vi.fn(), recordInvoiceWhatsAppHandoff:mocks.handoff }));
 vi.mock('next/navigation', () => ({ useRouter:()=>({refresh:mocks.refresh,push:vi.fn()}) }));
 vi.mock('next/link', () => ({ default:({children,...props}:React.PropsWithChildren<React.AnchorHTMLAttributes<HTMLAnchorElement>>)=><a {...props}>{children}</a> }));
 vi.mock('@/components/ui/ToastProvider',()=>({useToast:()=>({toast:mocks.toast})}));
@@ -15,12 +15,13 @@ vi.mock('./PDFPreviewModal',()=>({default:()=>null}));
 vi.mock('./ConfirmActionModal',()=>({default:()=>null}));
 vi.mock('./RecordPaymentModal',()=>({default:({billingContext,invoiceTotal}:{billingContext:{period:string};invoiceTotal:number})=><div role="dialog">{billingContext.period} total {invoiceTotal}</div>}));
 import InvoiceDetails from './InvoiceDetailsClient';
-const invoice = {id:'inv',invoiceNumber:'INV-TEST',amount:'1900',status:'draft',invoiceDate:'2026-10-16',dueDate:'2026-11-06',billingPeriodStart:'2026-11-06',billingPeriodEnd:'2026-12-05',parent:{id:'family',firstName:'Demo',lastName:'Family',email:'dummy@example.test'},centre:{name:'Dummy centre'},coveredChildrenJson:[{id:'child',name:'Sample Student'}],payments:[]};
+const invoice = {id:'inv',invoiceNumber:'INV-TEST',amount:'1900',status:'draft',invoiceDate:'2026-10-16',dueDate:'2026-11-06',billingPeriodStart:'2026-11-06',billingPeriodEnd:'2026-12-05',parent:{id:'family',firstName:'Demo',lastName:'Family',email:'dummy@example.test',phone:'07700900123'},centre:{name:'Dummy centre'},coveredChildrenJson:[{id:'child',name:'Sample Student'}],payments:[]};
 beforeEach(()=>{
  vi.clearAllMocks();
  Object.defineProperty(HTMLDialogElement.prototype,'showModal',{configurable:true,value:function(){this.setAttribute('open','');}});
  Object.defineProperty(HTMLDialogElement.prototype,'close',{configurable:true,value:function(){this.removeAttribute('open');}});
  mocks.issue.mockResolvedValue({success:true,alreadyIssued:false,emailStatus:{status:'not_requested',attemptedAt:''}});
+ mocks.handoff.mockResolvedValue({success:true});
 });
 afterEach(cleanup);
 describe('invoice review and truthful email status',()=>{
@@ -71,5 +72,38 @@ describe('invoice review and truthful email status',()=>{
   render(<InvoiceDetails invoice={{...invoice,status:'sent'}} organisationName="Dummy" userRole="ORG_OWNER"/>);
   fireEvent.click(screen.getByRole('button',{name:'Record Received Payment'}));
   expect(screen.getByRole('dialog').textContent).toContain('6 Nov – 5 Dec 2026 total 1900');
+ });
+ it('uses remaining balance on partially_paid invoices and suppresses WhatsApp for soft-deleted parents',()=>{
+  const { unmount } = render(
+   <InvoiceDetails
+    invoice={{
+     ...invoice,
+     amount:'180.00',
+     status:'partially_paid',
+     serviceType:'tuition',
+     payments:[{id:'p1',amount:'100.00',status:'verified',reversedAt:null,paidAt:'2026-11-10T10:00:00Z'}],
+    }}
+    organisationName="Sydenham After School Club"
+    userRole="MANAGER"
+   />
+  );
+  const waBtn = screen.getByRole('link',{name:/Send via WhatsApp/i}) as HTMLAnchorElement;
+  const decodedHref = decodeURIComponent(waBtn.href);
+  expect(decodedHref).toContain('Amount due: £80.00');
+  expect(decodedHref).not.toContain('Amount due: £180.00');
+  unmount();
+
+  render(
+   <InvoiceDetails
+    invoice={{
+     ...invoice,
+     status:'sent',
+     parent:{...invoice.parent,deletedAt:new Date('2026-11-20T00:00:00Z')},
+    }}
+    organisationName="Sydenham After School Club"
+    userRole="MANAGER"
+   />
+  );
+  expect(screen.queryByRole('link',{name:/Send via WhatsApp/i})).toBeNull();
  });
 });

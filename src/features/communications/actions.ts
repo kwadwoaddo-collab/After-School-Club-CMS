@@ -380,15 +380,29 @@ export async function createWhatsAppBroadcast(data: {
     return { success: false, count: 0, sent: 0, failed: 0, error: 'Unauthorized: only Owner/Manager may send broadcasts' };
   }
 
+  let resolvedCentreId: string | null = data.centreId && data.centreId !== 'all' ? data.centreId : null;
   let accessibleCentreIds: string[] | null = null;
   if (userRole !== 'ORG_OWNER') {
     accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
-    if (data.centreId && data.centreId !== 'all') {
-      if (!accessibleCentreIds.includes(data.centreId)) {
+    if (!accessibleCentreIds || accessibleCentreIds.length === 0) {
+      return { success: false, count: 0, sent: 0, failed: 0, error: 'Unauthorized: No access to this centre' };
+    }
+    if (resolvedCentreId) {
+      if (!accessibleCentreIds.includes(resolvedCentreId)) {
         return { success: false, count: 0, sent: 0, failed: 0, error: 'Unauthorized: No access to this centre' };
       }
-    } else if (!accessibleCentreIds || accessibleCentreIds.length === 0) {
-      return { success: false, count: 0, sent: 0, failed: 0, error: 'Unauthorized: No access to this centre' };
+    } else if (accessibleCentreIds.length === 1) {
+      // Single-centre Manager in Combined View ('all') deterministically maps to their assigned centre
+      resolvedCentreId = accessibleCentreIds[0];
+    } else {
+      // Multi-centre Manager in Combined View ('all') must pick a single centre so broadcasts.centre_id is non-null
+      return {
+        success: false,
+        count: 0,
+        sent: 0,
+        failed: 0,
+        error: 'Please select a specific centre before preparing a WhatsApp queue.',
+      };
     }
   }
 
@@ -403,8 +417,8 @@ export async function createWhatsAppBroadcast(data: {
   }
 
   const scopedCentreIdsForConsent =
-    data.centreId && data.centreId !== 'all'
-      ? [data.centreId]
+    resolvedCentreId
+      ? [resolvedCentreId]
       : userRole !== 'ORG_OWNER' && accessibleCentreIds
         ? accessibleCentreIds
         : null;
@@ -480,7 +494,7 @@ export async function createWhatsAppBroadcast(data: {
   const txResult = await db.transaction(async (tx) => {
     const [createdBroadcast] = await tx.insert(broadcasts).values({
       organisationId,
-      centreId: data.centreId && data.centreId !== 'all' ? data.centreId : null,
+      centreId: resolvedCentreId,
       subject: data.subject,
       message: data.message,
       recipientCount: uniqueTargetParents.length,
@@ -509,7 +523,7 @@ export async function createWhatsAppBroadcast(data: {
         broadcastId: createdBroadcast.id,
         subject: data.subject,
         recipientCount: uniqueTargetParents.length,
-        centreId: data.centreId && data.centreId !== 'all' ? data.centreId : null,
+        centreId: resolvedCentreId,
         channel: 'whatsapp',
       }),
     });

@@ -19,9 +19,11 @@ describe('src/lib/whatsapp — normaliseWhatsAppPhone & message builders', () =>
         expect(normaliseWhatsAppPhone('020 7946 0991')).toBe('442079460991');
     });
 
-    it('normalises 10-digit UK mobiles with spreadsheet-stripped leading zero (e.g. 7578550316)', () => {
+    it('normalises 10-digit UK mobiles with spreadsheet-stripped leading zero (e.g. 7578550316) while rejecting 10-digit 07 typos', () => {
         expect(normaliseWhatsAppPhone('7578550316')).toBe('447578550316');
         expect(normaliseWhatsAppPhone('7578 550 316')).toBe('447578550316');
+        expect(normaliseWhatsAppPhone('0770090012')).toBeNull();
+        expect(normaliseWhatsAppPhone('+44770090012')).toBeNull();
     });
 
     it('normalises valid international + and 00 numbers and rejects invalid strings', () => {
@@ -50,7 +52,7 @@ describe('src/lib/whatsapp — normaliseWhatsAppPhone & message builders', () =>
         const unpaidTuition = buildInvoiceWhatsAppMessage({
             parentFirstName: 'Nga',
             invoiceNumber: 'INV-PZRJ9Z',
-            amountFormatted: '180.00',
+            amountFormatted: '80.00',
             dueDateFormatted: '01/12/2026',
             periodFormatted: '1 Dec – 31 Dec 2026',
             serviceType: 'tuition',
@@ -59,7 +61,7 @@ describe('src/lib/whatsapp — normaliseWhatsAppPhone & message builders', () =>
         });
         expect(unpaidTuition).toContain('Tuition invoice INV-PZRJ9Z');
         expect(unpaidTuition).not.toContain('Childcare');
-        expect(unpaidTuition).toContain('£180.00');
+        expect(unpaidTuition).toContain('Amount due: £80.00');
         expect(unpaidTuition).toContain('/portal/billing');
 
         const paidTuition = buildInvoiceWhatsAppMessage({

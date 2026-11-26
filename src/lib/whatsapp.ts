@@ -53,8 +53,11 @@ export function normaliseWhatsAppPhone(raw: string | null | undefined): string |
     } else if (digitsOnly.startsWith('44') && (digitsOnly.length === 11 || digitsOnly.length === 12)) {
         // Already UK E.164 digits without + (e.g. 447700900123)
         e164Digits = digitsOnly;
-    } else if (/^0[1237]\d{8,9}$/.test(digitsOnly)) {
-        // Standard UK domestic mobile (07...) or geographic/VoIP (01..., 02..., 03...) of 10-11 digits
+    } else if (/^07\d{9}$/.test(digitsOnly)) {
+        // Standard 11-digit UK domestic mobile (07xxxxxxxxx)
+        e164Digits = `44${digitsOnly.slice(1)}`;
+    } else if (/^0[123]\d{8,9}$/.test(digitsOnly)) {
+        // Standard UK geographic/VoIP number (01..., 02..., 03...) of 10-11 digits
         e164Digits = `44${digitsOnly.slice(1)}`;
     } else if (/^7\d{9}$/.test(digitsOnly)) {
         // 10-digit UK mobile with leading zero stripped by CSV/spreadsheet import (e.g. 7578550316)
@@ -68,8 +71,11 @@ export function normaliseWhatsAppPhone(raw: string | null | undefined): string |
         return null;
     }
 
-    // UK +44 numbers must be 11 or 12 digits total (44 + 9 or 10 national significant digits)
+    // UK +44 numbers must be 11 or 12 digits total; UK +447 mobiles are strictly 12 digits
     if (e164Digits.startsWith('44') && e164Digits.length !== 11 && e164Digits.length !== 12) {
+        return null;
+    }
+    if (e164Digits.startsWith('447') && e164Digits.length !== 12) {
         return null;
     }
 

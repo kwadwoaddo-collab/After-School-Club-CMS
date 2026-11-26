@@ -660,5 +660,66 @@ describe('Communications Actions', () => {
         expect.objectContaining({ status: 'SENT' })
       );
     });
+
+    it('auto-resolves single-centre MANAGER on centreId="all" and rejects multi-centre MANAGER on centreId="all"', async () => {
+      (auth as any).mockResolvedValue(managerSession());
+
+      // Multi-centre manager in Combined View ("all") must pick a specific centre
+      getUserAccessibleCentreIdsMock.mockResolvedValueOnce(['centre-1', 'centre-2']);
+      const multiRes = await createWhatsAppBroadcast({
+        centreId: 'all',
+        audienceParentIds: ['p1'],
+        subject: 'Multi Centre',
+        message: 'Pick a centre',
+      });
+      expect(multiRes.success).toBe(false);
+      expect(multiRes.error).toBe('Please select a specific centre before preparing a WhatsApp queue.');
+
+      // Single-centre manager in Combined View ("all") auto-resolves to their assigned centre
+      getUserAccessibleCentreIdsMock.mockResolvedValueOnce(['centre-sydenham']);
+      (db.select as any).mockReturnValueOnce(
+        makeSelectChain([
+          { id: 'p1', firstName: 'Nga', lastName: 'Le', phone: '07700900123', communicationsConsent: true },
+        ])
+      );
+      const singleRes = await createWhatsAppBroadcast({
+        centreId: 'all',
+        audienceParentIds: ['p1'],
+        subject: 'Single Centre',
+        message: 'Resolved cleanly',
+      });
+      expect(singleRes.success).toBe(true);
+      expect(getCapturedBroadcast()?.centreId).toBe('centre-sydenham');
+    });
+
+    it('enforces centre RBAC for MANAGER on markWhatsAppDeliverySent', async () => {
+      (auth as any).mockResolvedValue(managerSession());
+
+      // Rejects when parent broadcast belongs to an unauthorised centre
+      (db.select as any)
+        .mockReturnValueOnce(
+          makeSelectChain([
+            { id: 'del-wa-1', broadcastId: 'b-other', channel: 'whatsapp', status: 'AWAITING_HANDOFF', parentId: 'p1' },
+          ])
+        )
+        .mockReturnValueOnce(makeSelectChain([{ centreId: 'centre-other' }]));
+      getUserAccessibleCentreIdsMock.mockResolvedValueOnce(['centre-sydenham']);
+
+      const denied = await markWhatsAppDeliverySent('del-wa-1');
+      expect(denied).toEqual({ success: false, error: 'Unauthorized: No access to this centre' });
+
+      // Allows when parent broadcast belongs to an accessible centre
+      (db.select as any)
+        .mockReturnValueOnce(
+          makeSelectChain([
+            { id: 'del-wa-2', broadcastId: 'b-own', channel: 'whatsapp', status: 'AWAITING_HANDOFF', parentId: 'p1' },
+          ])
+        )
+        .mockReturnValueOnce(makeSelectChain([{ centreId: 'centre-sydenham' }]));
+      getUserAccessibleCentreIdsMock.mockResolvedValueOnce(['centre-sydenham']);
+
+      const allowed = await markWhatsAppDeliverySent('del-wa-2');
+      expect(allowed).toEqual({ success: true, broadcastId: 'b-own' });
+    });
   });
 });

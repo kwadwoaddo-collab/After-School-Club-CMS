@@ -26,6 +26,7 @@ const sendMessages: Record<string, string> = {
     'Unauthorized': 'Your access could not be confirmed. Sign in again before sending.',
     'Unauthorized: only Owner/Manager may send broadcasts': 'Only an owner or manager can send broadcasts. Ask your manager for help.',
     'Unauthorized: No access to this centre': 'You do not have access to send for this centre. Ask your manager to check your centre access.',
+    'Please select a specific centre before preparing a WhatsApp queue.': 'Please select a specific centre from the sidebar before preparing a WhatsApp queue.',
     'No eligible recipients with communications consent and valid email address found': 'No parents in this selection have both permission to receive messages and a usable email address. Check the recipient selection and parent records.',
     'No eligible recipients with communications consent and valid phone number found': 'No parents in this selection have both permission to receive messages and a valid WhatsApp phone number. Check the recipient selection and parent phone numbers.',
 };
@@ -118,6 +119,7 @@ export default function CommunicationsClient({
     const broadcastDrawerRef = useRef<HTMLDivElement>(null);
     const [loadError, setLoadError] = useState(false);
     const [detailsError, setDetailsError] = useState(false);
+    const [handoffError, setHandoffError] = useState<string | null>(null);
     const [sendUnknown, setSendUnknown] = useState(false);
     const sendInFlight = useRef(false);
     const loadRequest = useRef(0);
@@ -166,6 +168,7 @@ export default function CommunicationsClient({
             setSelectedBroadcast(null);
             setSendResult(null);
             setSendUnknown(false);
+            setHandoffError(null);
             if (selectedClassId !== 'all') {
                 setSelectedClassId('all');
                 return;
@@ -187,6 +190,7 @@ export default function CommunicationsClient({
         const request = ++detailsRequest.current;
         setSelectedBroadcast(b);
         setDetailsError(false);
+        setHandoffError(null);
         setDeliveryDetails(null);
         setIsLoadingDetails(true);
         try {
@@ -244,6 +248,7 @@ export default function CommunicationsClient({
         sendInFlight.current = true;
         setIsSending(true);
         setSendResult(null);
+        setHandoffError(null);
         try {
             const result = await createWhatsAppBroadcast({
                 centreId,
@@ -293,21 +298,57 @@ export default function CommunicationsClient({
     };
 
     const handleMarkWhatsAppOpened = (deliveryId: string) => {
-        setDeliveryDetails((prev) => {
-            if (!prev) return prev;
-            const target = prev.deliveries.find((d) => d.id === deliveryId);
-            if (!target || target.status === 'SENT') return prev;
-            const updatedDeliveries = prev.deliveries.map((d) =>
-                d.id === deliveryId ? { ...d, status: 'SENT', sentAt: new Date() } : d
-            );
-            const nextSuccess = updatedDeliveries.filter((d) => d.status === 'SENT').length;
-            const nextStatus = nextSuccess >= (prev.broadcast.recipientCount || updatedDeliveries.length) ? 'COMPLETED' : prev.broadcast.status;
-            const updatedBroadcast = { ...prev.broadcast, successCount: nextSuccess, status: nextStatus };
-            setSelectedBroadcast((curr) => (curr && curr.id === updatedBroadcast.id ? updatedBroadcast : curr));
-            setBroadcasts((list) => list.map((b) => (b.id === updatedBroadcast.id ? updatedBroadcast : b)));
-            return { broadcast: updatedBroadcast, deliveries: updatedDeliveries };
-        });
-        void markWhatsAppDeliverySent(deliveryId).catch(() => {});
+        if (!deliveryDetails) return;
+        const target = deliveryDetails.deliveries.find((d) => d.id === deliveryId);
+        if (!target || target.status === 'SENT') return;
+
+        const previousDetails = deliveryDetails;
+        const previousBroadcast = deliveryDetails.broadcast;
+        setHandoffError(null);
+
+        const updatedDeliveries = deliveryDetails.deliveries.map((d) =>
+            d.id === deliveryId ? { ...d, status: 'SENT', sentAt: new Date() } : d
+        );
+        const nextSuccess = updatedDeliveries.filter((d) => d.status === 'SENT').length;
+        const nextStatus = nextSuccess >= (deliveryDetails.broadcast.recipientCount || updatedDeliveries.length)
+            ? 'COMPLETED'
+            : deliveryDetails.broadcast.status;
+        const updatedBroadcast = { ...deliveryDetails.broadcast, successCount: nextSuccess, status: nextStatus };
+
+        setDeliveryDetails({ broadcast: updatedBroadcast, deliveries: updatedDeliveries });
+        setSelectedBroadcast((curr) => (curr && curr.id === updatedBroadcast.id ? updatedBroadcast : curr));
+        setBroadcasts((list) => list.map((b) => (b.id === updatedBroadcast.id ? updatedBroadcast : b)));
+
+        const rollbackOptimisticHandoff = (errorMessage: string) => {
+            setHandoffError(errorMessage);
+            setDeliveryDetails((curr) => {
+                if (!curr || curr.broadcast.id !== previousBroadcast.id) return curr;
+                const revertedDeliveries = curr.deliveries.map((d) =>
+                    d.id === deliveryId ? target : d
+                );
+                const revertedSuccess = revertedDeliveries.filter((d) => d.status === 'SENT').length;
+                const revertedStatus = revertedSuccess >= (curr.broadcast.recipientCount || revertedDeliveries.length)
+                    ? 'COMPLETED'
+                    : previousBroadcast.status;
+                const revertedBroadcast = { ...curr.broadcast, successCount: revertedSuccess, status: revertedStatus };
+                setSelectedBroadcast((sel) => (sel && sel.id === revertedBroadcast.id ? revertedBroadcast : sel));
+                setBroadcasts((list) => list.map((b) => (b.id === revertedBroadcast.id ? revertedBroadcast : b)));
+                return { broadcast: revertedBroadcast, deliveries: revertedDeliveries };
+            });
+            void previousDetails;
+        };
+
+        void markWhatsAppDeliverySent(deliveryId)
+            .then((res) => {
+                if (!res?.success) {
+                    rollbackOptimisticHandoff(
+                        sendMessages[res?.error || ''] || 'Could not record WhatsApp handoff in the audit log. Please refresh and try again.'
+                    );
+                }
+            })
+            .catch(() => {
+                rollbackOptimisticHandoff('Could not record WhatsApp handoff in the audit log. Please refresh and try again.');
+            });
     };
 
     const handleSend = (e: React.FormEvent) => {
@@ -709,6 +750,12 @@ export default function CommunicationsClient({
                             {/* Recipient Deliveries Ledger */}
                             <div>
                                 <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Delivery Ledger</label>
+                                {handoffError && (
+                                    <div role="alert" className="mb-3 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive flex items-start gap-2">
+                                        <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" />
+                                        <span>{handoffError}</span>
+                                    </div>
+                                )}
                                 {isLoadingDetails ? (
                                     <div className="p-4 text-center text-xs text-muted-foreground">Loading delivery status...</div>
                                 ) : detailsError ? (
