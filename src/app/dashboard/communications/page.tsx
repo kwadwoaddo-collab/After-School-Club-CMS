@@ -9,6 +9,10 @@ import { resolveActiveCentreId } from '@/lib/centre-filter';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
 import { requireAuth } from '@/lib/require-auth';
+import { isWhatsAppApiEnabled } from '@/features/whatsapp/config';
+import { WhatsAppCentreConfigCard } from '@/features/whatsapp/components';
+import { whatsappCentreConfigs } from '@/db/schema';
+import { and } from 'drizzle-orm';
 
 /**
  * Milestone 3H, C8: this page previously had no role restriction at all —
@@ -76,6 +80,15 @@ export default async function CommunicationsPage(props: { searchParams?: Promise
         hasError = true;
     }
 
+    // Additive: per-centre WhatsApp Business number card, only with the API flag ON and a single centre selected.
+    let waConfig: { phoneNumberId: string; wabaId: string; displayPhone: string; enabled: boolean } | null = null;
+    if (isWhatsAppApiEnabled() && org && activeCentreId !== 'all') {
+        const [row] = await db.select().from(whatsappCentreConfigs)
+            .where(and(eq(whatsappCentreConfigs.centreId, activeCentreId), eq(whatsappCentreConfigs.organisationId, org.id))).limit(1)
+            .catch(() => []);
+        waConfig = { phoneNumberId: row?.phoneNumberId ?? '', wabaId: row?.wabaId ?? '', displayPhone: row?.displayPhone ?? '', enabled: row?.enabled ?? false };
+    }
+
     if (!org && !hasError) return redirect('/onboarding');
     if (!activeCentreId) activeCentreId = 'all';
 
@@ -103,6 +116,8 @@ export default async function CommunicationsPage(props: { searchParams?: Promise
                     <p>There was a problem loading all communications data. Some information may be missing or incomplete.</p>
                 </div>
             )}
+
+            {waConfig && <WhatsAppCentreConfigCard centreId={activeCentreId} initial={waConfig} />}
 
             {/* Content */}
             <CommunicationsClient centreId={activeCentreId} centreName={activeCentre?.name || null} initialData={initialData} />

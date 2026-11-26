@@ -6,6 +6,9 @@ import InvoiceDetailsClient from '@/features/finance/components/InvoiceDetailsCl
 import { db } from '@/db';
 import { organisations } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+import { getInvoiceWhatsAppInfo } from '@/features/whatsapp/actions';
+import { WhatsAppApiPanel } from '@/features/whatsapp/components';
+import { isWhatsAppApiEnabled } from '@/features/whatsapp/config';
 
 export default async function InvoicePage(props: { params: Promise<{ id: string }> }) {
     const params = await props.params;
@@ -41,6 +44,9 @@ export default async function InvoicePage(props: { params: Promise<{ id: string 
         return notFound();
     }
 
+    // Additive WhatsApp Business panel: only rendered when the API flag is ON (Phase 1 wa.me buttons are unaffected).
+    const waInfo = isWhatsAppApiEnabled() ? await getInvoiceWhatsAppInfo(id).catch(() => null) : null;
+
     return (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <InvoiceDetailsClient 
@@ -48,6 +54,11 @@ export default async function InvoicePage(props: { params: Promise<{ id: string 
                 organisationName={invoice.centre?.name || org?.name || 'CENTRE'}
                 userRole={userRole}
             />
+            {waInfo?.success && (
+                <div className="mt-6">
+                    <WhatsAppApiPanel invoiceId={id} parentId={invoice.parentId} invoiceStatus={invoice.status} apiAvailable={waInfo.apiAvailable} consent={waInfo.consent} messages={waInfo.messages} />
+                </div>
+            )}
         </div>
     );
 }
