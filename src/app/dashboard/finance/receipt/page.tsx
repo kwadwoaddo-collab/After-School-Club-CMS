@@ -5,13 +5,14 @@ import Link from 'next/link';
 import { ArrowLeft, Building2 } from 'lucide-react';
 import { db } from '@/db';
 import { eq, and, inArray, isNull } from 'drizzle-orm';
-import { children, organisations, payments } from '@/db/schema';
+import { billingConfigs, children, organisations, payments } from '@/db/schema';
 import { resolveActiveCentreId } from '@/lib/centre-filter';
 import { getUserAccessibleCentres, getVisibleChildIds } from '@/lib/permissions';
 import { isValidUuid } from '@/lib/uuid';
 import ReceiptGeneratorClient from '@/features/finance/components/ReceiptGeneratorClient';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { stableReceiptNumber } from '@/lib/finance/receipt-number';
+import { normaliseServiceType, type ServiceType } from '@/features/finance/service-type';
 
 export default async function ReceiptPage(props: { searchParams?: Promise<{ paymentId?: string; centre?: string }> } = {}) {
     const searchParams = (await props.searchParams) ?? {};
@@ -87,7 +88,7 @@ export default async function ReceiptPage(props: { searchParams?: Promise<{ paym
                 return [];
             }
 
-            return db.query.children.findMany({
+            const rawChildren = await db.query.children.findMany({
                 where: validVisibleChildIds === null
                     ? and(eq(children.organisationId, orgId), isNull(children.deletedAt))
                     : and(
@@ -100,6 +101,32 @@ export default async function ReceiptPage(props: { searchParams?: Promise<{ paym
                 },
                 orderBy: (children, { asc }) => [asc(children.firstName)],
             });
+
+            if (!rawChildren || rawChildren.length === 0) {
+                return [];
+            }
+
+            const familyConfigs = (await db.query.billingConfigs?.findMany?.({
+                where: eq(billingConfigs.organisationId, orgId),
+                columns: { parentId: true, centreId: true, serviceType: true },
+            })) ?? [];
+
+            const configServiceMap = new Map<string, ServiceType>();
+            for (const cfg of familyConfigs) {
+                const resolved = normaliseServiceType(cfg.serviceType);
+                configServiceMap.set(`${cfg.parentId}:${cfg.centreId}`, resolved);
+                if (!configServiceMap.has(`${cfg.parentId}:*`)) {
+                    configServiceMap.set(`${cfg.parentId}:*`, resolved);
+                }
+            }
+
+            return rawChildren.map((child) => ({
+                ...child,
+                serviceType:
+                    configServiceMap.get(`${child.parentId}:${child.centreId}`) ??
+                    configServiceMap.get(`${child.parentId}:*`) ??
+                    'childcare',
+            }));
         })(),
         validPaymentId
             ? db.query.payments.findFirst({
@@ -131,6 +158,7 @@ export default async function ReceiptPage(props: { searchParams?: Promise<{ paym
         centreName?: string | null;
         invoiceNumber?: string | null;
         description?: string | null;
+        serviceType?: ServiceType;
     } | null = null;
 
     if (validPaymentId) {
@@ -160,6 +188,7 @@ export default async function ReceiptPage(props: { searchParams?: Promise<{ paym
                 centreName: inv.centre?.name || null,
                 invoiceNumber: inv.invoiceNumber,
                 description: `Payment for Invoice ${inv.invoiceNumber}`,
+                serviceType: normaliseServiceType(inv.serviceType),
             };
         }
     }

@@ -552,3 +552,53 @@ describe('finance/actions — deleteInvoice safety rules (§11)', () => {
         expect(res.error).toMatch(/Issue the draft first/);
     });
 });
+
+describe('finance/actions — createInvoice inherits family billingConfigs.serviceType', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+    });
+
+    it('writes serviceType="tuition" onto manually created invoices when family billing cycle is tuition', async () => {
+        const { auth } = await import('@/lib/auth');
+        (auth as ReturnType<typeof vi.fn>).mockResolvedValue(OWNER_SESSION);
+        centresFindFirst.mockResolvedValue({ id: 'centre-sydenham', name: 'Sydenham' });
+        parentsFindFirst.mockResolvedValue({ id: 'parent-ethan', firstName: 'Le', email: 'le@example.com' });
+        billingConfigsFindFirst.mockResolvedValue({ id: 'cfg-ethan', status: 'active', serviceType: 'tuition' });
+        dbSelectWhere.mockResolvedValue([{ id: 'child-ethan', firstName: 'Ethan', lastName: 'Le' }]);
+
+        const insertedPayloads: any[] = [];
+        dbTransaction.mockImplementation(async (cb: any) => cb({
+            execute: vi.fn().mockResolvedValue(undefined),
+            select: () => ({ from: () => ({ where: () => Promise.resolve([{ id: 'child-ethan' }]) }) }),
+            insert: () => ({
+                values: (payload: any) => {
+                    insertedPayloads.push(payload);
+                    return {
+                        returning: () => Promise.resolve([{
+                            id: 'inv-ethan',
+                            invoiceNumber: 'INV-ETHAN1',
+                            amount: '160.00',
+                            serviceType: payload.serviceType,
+                            dueDate: new Date(),
+                        }]),
+                    };
+                },
+            }),
+        }));
+
+        const { createInvoice } = await import('./actions');
+        await createInvoice({
+            parentId: 'parent-ethan',
+            childIds: ['child-ethan'],
+            amount: '160.00',
+            invoiceDate: new Date('2026-11-26'),
+            dueDate: new Date('2026-12-03'),
+            centreId: 'centre-sydenham',
+        });
+
+        expect(insertedPayloads[0]).toMatchObject({
+            billingConfigId: 'cfg-ethan',
+            serviceType: 'tuition',
+        });
+    });
+});

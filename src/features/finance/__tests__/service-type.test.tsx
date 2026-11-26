@@ -1,6 +1,10 @@
+/* eslint-disable react/no-children-prop */
+import React from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, it, expect } from 'vitest';
 import { InvoiceTemplate } from '../components/InvoiceTemplate';
 import { ReceiptTemplate } from '../components/ReceiptTemplate';
+import ReceiptGeneratorClient from '../components/ReceiptGeneratorClient';
 import { normaliseServiceType, serviceTypeLabel, isServiceType } from '../service-type';
 
 function text(el: any): string {
@@ -62,5 +66,56 @@ describe('service type (Childcare / Tuition)', () => {
         expect(receipt).not.toMatch(/Ofsted|EY123/);
         expect(multi).not.toMatch(/Ofsted|EY123/);
         expect(single).not.toMatch(/Ofsted|EY123/);
+    });
+
+    it('quick printable ReceiptGeneratorClient hides Ofsted and shows Tuition when serviceType is tuition', () => {
+        const centres = [{ id: 'c-syd', name: 'Sydenham', ofstedId: 'EY123', billingPhone: '020 7946 0000' }];
+        const tuitionHtml = renderToStaticMarkup(
+            React.createElement(ReceiptGeneratorClient, {
+                organisation: { id: 'org-1', name: 'SprintScale Club', slug: 'sprintscale' },
+                centres,
+                children: [],
+                initialCentreId: 'c-syd',
+                initialPayment: {
+                    id: 'pay-1',
+                    amount: '160.00',
+                    method: 'bank_transfer',
+                    recordedAt: '2026-11-26',
+                    receiptNo: 'RCP-ETHAN',
+                    parentName: 'Parent Le',
+                    studentName: 'Ethan Le',
+                    centreId: 'c-syd',
+                    centreName: 'Sydenham',
+                    invoiceNumber: 'INV-ETHAN',
+                    serviceType: 'tuition',
+                },
+            })
+        );
+        expect(tuitionHtml).toContain('Type of Service');
+        expect(tuitionHtml).toContain('>Tuition<');
+        expect(tuitionHtml).not.toMatch(/Ofsted:|EY123/);
+
+        const childcareHtml = renderToStaticMarkup(
+            React.createElement(ReceiptGeneratorClient, {
+                organisation: { id: 'org-1', name: 'SprintScale Club', slug: 'sprintscale' },
+                centres,
+                children: [],
+                initialCentreId: 'c-syd',
+                initialPayment: {
+                    id: 'pay-2',
+                    amount: '160.00',
+                    method: 'bank_transfer',
+                    recordedAt: '2026-11-26',
+                    receiptNo: 'RCP-CC',
+                    parentName: 'Parent A',
+                    studentName: 'Child A',
+                    centreId: 'c-syd',
+                    centreName: 'Sydenham',
+                    invoiceNumber: 'INV-CC',
+                    serviceType: 'childcare',
+                },
+            })
+        );
+        expect(childcareHtml).toContain('Ofsted: EY123');
     });
 });

@@ -4,6 +4,7 @@
 
 import { useState, useEffect } from 'react';
 import { Printer, Check, Info, FileText, Coins, CreditCard, Landmark, Sparkles } from 'lucide-react';
+import { normaliseServiceType, serviceTypeLabel, type ServiceType } from '../service-type';
 
 interface Child {
     id: string;
@@ -11,6 +12,7 @@ interface Child {
     lastName: string;
     schoolYear: string;
     centreId?: string | null;
+    serviceType?: ServiceType | null;
     parent: {
         id: string;
         firstName: string;
@@ -44,6 +46,7 @@ interface InitialPayment {
     centreName?: string | null;
     invoiceNumber?: string | null;
     description?: string | null;
+    serviceType?: ServiceType | null;
 }
 
 interface Props {
@@ -114,6 +117,7 @@ export default function ReceiptGeneratorClient({ organisation, centres, children
         initialPayment?.method ? mapMethodLabel(initialPayment.method) : 'Cash'
     );
     const [selectedCentreId, setSelectedCentreId] = useState(initialPayment?.centreId || initialCentreId || centres[0]?.id || '');
+    const [serviceType, setServiceType] = useState<ServiceType>(normaliseServiceType(initialPayment?.serviceType));
     const [description, setDescription] = useState(
         initialPayment?.description ||
         (initialPayment?.invoiceNumber ? `Payment for Invoice ${initialPayment.invoiceNumber}` : 'Weekly Club Sessions')
@@ -143,6 +147,7 @@ export default function ReceiptGeneratorClient({ organisation, centres, children
             if (initialPayment.centreId) {
                 setSelectedCentreId(initialPayment.centreId);
             }
+            setServiceType(normaliseServiceType(initialPayment.serviceType));
             if (initialPayment.description) {
                 setDescription(initialPayment.description);
             } else if (initialPayment.invoiceNumber) {
@@ -170,6 +175,7 @@ export default function ReceiptGeneratorClient({ organisation, centres, children
             if (child.centreId) {
                 setSelectedCentreId(child.centreId);
             }
+            setServiceType(normaliseServiceType(child.serviceType));
         }
     };
 
@@ -179,6 +185,12 @@ export default function ReceiptGeneratorClient({ organisation, centres, children
         initialPayment?.centreName ||
         organisation.name ||
         'Main Centre';
+
+    const contactLineParts = [
+        serviceType !== 'tuition' && selectedCentre?.ofstedId ? `Ofsted: ${selectedCentre.ofstedId}` : null,
+        selectedCentre?.billingPhone ? `Tel: ${selectedCentre.billingPhone}` : null,
+        selectedCentre?.billingEmail || null,
+    ].filter(Boolean);
 
     const handlePrint = () => {
         window.print();
@@ -288,23 +300,39 @@ export default function ReceiptGeneratorClient({ organisation, centres, children
                                 <option value="Cash" className="bg-card">Cash</option>
                                 <option value="Card" className="bg-card">Debit/Credit Card</option>
                                 <option value="Bank Transfer" className="bg-card">Bank Transfer</option>
-                                <option value="Childcare Vouchers" className="bg-card">Childcare Vouchers</option>
+                                {serviceType !== 'tuition' && (
+                                    <option value="Childcare Vouchers" className="bg-card">Childcare Vouchers</option>
+                                )}
                             </select>
                         </div>
                     </div>
 
-                    {/* Centre Selector */}
-                    <div className="space-y-1.5">
-                        <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Club Centre</label>
-                        <select
-                            value={selectedCentreId}
-                            onChange={(e) => setSelectedCentreId(e.target.value)}
-                            className="w-full h-10 px-3 rounded-xl bg-secondary/40 border border-border text-foreground text-xs focus:outline-none focus:border-primary/40 transition-colors"
-                        >
-                            {centres.map(c => (
-                                <option key={c.id} value={c.id} className="bg-card">{c.name}</option>
-                            ))}
-                        </select>
+                    {/* Centre & Service Type Selectors */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                            <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Club Centre</label>
+                            <select
+                                value={selectedCentreId}
+                                onChange={(e) => setSelectedCentreId(e.target.value)}
+                                className="w-full h-10 px-3 rounded-xl bg-secondary/40 border border-border text-foreground text-xs focus:outline-none focus:border-primary/40 transition-colors"
+                            >
+                                {centres.map(c => (
+                                    <option key={c.id} value={c.id} className="bg-card">{c.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="space-y-1.5">
+                            <label htmlFor="receipt-service-type" className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Service Type</label>
+                            <select
+                                id="receipt-service-type"
+                                value={serviceType}
+                                onChange={(e) => setServiceType(normaliseServiceType(e.target.value))}
+                                className="w-full h-10 px-3 rounded-xl bg-secondary/40 border border-border text-foreground text-xs focus:outline-none focus:border-primary/40 transition-colors"
+                            >
+                                <option value="childcare" className="bg-card">Childcare</option>
+                                <option value="tuition" className="bg-card">Tuition</option>
+                            </select>
+                        </div>
                     </div>
 
                     {/* Description */}
@@ -378,13 +406,9 @@ export default function ReceiptGeneratorClient({ organisation, centres, children
                             {selectedCentre?.address && (
                                 <p className="text-[10px] text-slate-500 font-semibold mt-1 whitespace-pre-line">{selectedCentre.address}</p>
                             )}
-                            {(selectedCentre?.billingPhone || selectedCentre?.billingEmail || selectedCentre?.ofstedId) && (
+                            {contactLineParts.length > 0 && (
                                 <p className="text-[10px] text-slate-600 font-bold uppercase tracking-wider mt-1">
-                                    {[
-                                        selectedCentre?.ofstedId ? `Ofsted: ${selectedCentre.ofstedId}` : null,
-                                        selectedCentre?.billingPhone ? `Tel: ${selectedCentre.billingPhone}` : null,
-                                        selectedCentre?.billingEmail || null,
-                                    ].filter(Boolean).join(' · ')}
+                                    {contactLineParts.join(' · ')}
                                 </p>
                             )}
                         </div>
@@ -426,6 +450,10 @@ export default function ReceiptGeneratorClient({ organisation, centres, children
                                     <span className="text-xs font-bold text-slate-900">{studentName}</span>
                                 </div>
                             )}
+                            <div className="flex justify-between items-center py-2.5 border-t border-slate-50">
+                                <span className="text-xs text-slate-500 font-medium">Type of Service</span>
+                                <span className="text-xs font-bold text-slate-900">{serviceTypeLabel(serviceType)}</span>
+                            </div>
                             <div className="flex justify-between items-start py-2.5 border-t border-slate-50">
                                 <span className="text-xs text-slate-500 font-medium pt-0.5">Description / Memo</span>
                                 <span className="text-xs text-slate-700 font-semibold max-w-[280px] text-right leading-relaxed">{description || 'Weekly club tutoring session fees'}</span>

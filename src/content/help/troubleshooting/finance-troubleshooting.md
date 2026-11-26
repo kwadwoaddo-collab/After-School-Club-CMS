@@ -154,7 +154,8 @@
 
 ### 18. Wrong Service Type on Invoice {#18-wrong-service-type-on-invoice}
 - **What You May See:** A Tuition family's invoice or receipt displays **Childcare** wording and Ofsted registration lines (or a Childcare family's document says **Tuition** without Ofsted lines).
-- **Root Cause:** Every family defaults to **Childcare**, and `invoices.serviceType` is snapshotted onto each invoice at generation time so issued documents never change retroactively.
+- **Root Cause:** Every family defaults to **Childcare**. Unissued drafts automatically sync with the family's billing cycle service type, and issued/paid invoices snapshot `invoices.serviceType` so settled financial records never change retroactively.
 - **How to Resolve:**
-  1. Open `Sidebar → Parents → [Select Parent] → Manage billing cycle → Edit billing settings`, switch **Service type** to the right option (`Childcare` or `Tuition`), and click **Save billing cycle** so all future invoices use the right wording.
-  2. If an already-generated invoice needs replacing and has zero recorded payments, an Organisation Owner can click **Delete Invoice** (or **Void Invoice** if payments exist) and generate a fresh invoice.
+  1. Open `Sidebar → Parents → [Select Parent] → Manage billing cycle → Edit billing settings`, switch **Service type** to the right option (`Childcare` or `Tuition`), and click **Save billing cycle** so unissued drafts and all future invoices use the right wording.
+  2. If an invoice was **already issued** (`sent`) before the billing cycle was updated and has **zero active payments**, an Organisation Owner or authorised Centre Manager can open the invoice at `/dashboard/finance/invoices/[id]` and click **Switch to Tuition** (or **Switch to Childcare**) in the invoice header to update the invoice and receipt wording immediately.
+  3. Once a payment has been recorded against an invoice, the service type is locked; if it still needs replacing, an Organisation Owner must **Void Invoice** and issue a replacement.

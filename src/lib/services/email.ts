@@ -1296,6 +1296,7 @@ export class EmailService {
     dueDate: Date;
     billingPeriodStart?: Date | string | null;
     billingPeriodEnd?: Date | string | null;
+    serviceType?: 'childcare' | 'tuition' | string | null;
     centreName: string;
     portalUrl: string;
   }): Promise<EmailResult & { outcome?: 'not_sent' | 'unknown' }> {
@@ -1331,7 +1332,7 @@ export class EmailService {
       <div style="text-align:center;">
         <a href="${data.portalUrl}" style="display:inline-block;background:linear-gradient(135deg,#4F46E5,#7c3aed);color:#ffffff;font-size:16px;font-weight:700;text-decoration:none;padding:16px 40px;border-radius:12px;">View Invoice & Pay →</a>
       </div>
-      <p style="color:#94a3b8;font-size:13px;text-align:center;margin-top:28px;">You can log a Childcare Voucher reference via the Parent Portal.</p>
+      ${data.serviceType === 'tuition' ? '' : '<p style="color:#94a3b8;font-size:13px;text-align:center;margin-top:28px;">You can log a Childcare Voucher reference via the Parent Portal.</p>'}
     </div>
     <div style="background:#f9fafb;padding:20px 32px;text-align:center;border-top:1px solid #e5e7eb;">
       <p style="color:#9ca3af;font-size:12px;margin:0;">Powered by SprintScale · support@sprintscaleit.co.uk</p>
@@ -1632,17 +1633,18 @@ export class EmailService {
   async sendPaymentReceiptEmail(params: {
     parentEmail: string; parentName: string; invoiceNumber: string; amountPaid: number;
     organisationName: string; invoiceId: string; paymentId: string;
-    paymentDate?: string; childcarePeriod?: string; idempotencyKey?: string;
+    paymentDate?: string; childcarePeriod?: string; serviceType?: 'childcare' | 'tuition' | string | null; idempotencyKey?: string;
   }): Promise<EmailResult & { outcome?: 'not_sent' | 'unknown' }> {
     if (!resend) return { success: false, error: 'Email service not configured', outcome: 'not_sent' };
     const safe = (value: unknown) => String(value).replace(/[&<>"']/g, character => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[character]!));
     const rcp = stableReceiptNumber(params.paymentId);
+    const periodHeading = params.serviceType === 'tuition' ? 'Tuition period' : 'Childcare period';
     const htmlContent = `<h2>Payment Receipt — ${safe(params.organisationName)}</h2>
       <p>Dear ${safe(params.parentName)},</p>
       <p>Payment received: £${params.amountPaid.toFixed(2)} for invoice ${safe(params.invoiceNumber)}.</p>
       <p>Receipt No: ${rcp}</p>
       ${params.paymentDate ? `<p>Payment date: ${safe(params.paymentDate)}</p>` : ''}
-      ${params.childcarePeriod ? `<p>Childcare period: ${safe(params.childcarePeriod)}</p>` : ''}
+      ${params.childcarePeriod ? `<p>${periodHeading}: ${safe(params.childcarePeriod)}</p>` : ''}
       <p>This receipt confirms this payment. Any remaining balance is shown separately on the invoice.</p>`;
     try {
       const {data, error} = await resend.emails.send({

@@ -508,6 +508,7 @@ describe('billing/actions — per-family service type', () => {
         const result = await updateBillingConfig('config-1', { serviceType: 'tuition' });
         expect(result.success).toBe(true);
         expect(sets[0]).toMatchObject({ serviceType: 'tuition' });
+        expect(sets[1]).toMatchObject({ serviceType: 'tuition' });
         const audit = audits.find(a => a.eventType === 'billing_config_updated');
         expect(JSON.parse(audit.eventData).serviceType).toEqual({ from: 'childcare', to: 'tuition' });
     });

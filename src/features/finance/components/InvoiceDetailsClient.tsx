@@ -13,7 +13,8 @@ import dynamic from 'next/dynamic';
 
 const PDFPreviewModal = dynamic(() => import('./PDFPreviewModal'), { ssr: false });
 import ConfirmActionModal from './ConfirmActionModal';
-import { voidInvoice, updateInvoiceDate, updateInvoiceNotes, resendInvoiceEmail, issueDraftInvoice, updateDraftInvoice, discardDraftInvoice } from '../actions';
+import { voidInvoice, updateInvoiceDate, updateInvoiceNotes, resendInvoiceEmail, issueDraftInvoice, updateDraftInvoice, discardDraftInvoice, updateInvoiceServiceType } from '../actions';
+import { normaliseServiceType, serviceTypeLabel, type ServiceType } from '../service-type';
 import { canOfferRecordPayment, parseStoredDecimalToPence } from '../domain/payment-eligibility';
 import { formatInvoicePeriod, formatPaidDate } from '../domain/invoice-display';
 import {
@@ -57,6 +58,38 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
     const [isEditingDueDate, setIsEditingDueDate] = useState(false);
     const [newDueDateValue, setNewDueDateValue] = useState(invoice.dueDate ? new Date(invoice.dueDate).toISOString().split('T')[0] : '');
     const [isUpdatingDueDate, setIsUpdatingDueDate] = useState(false);
+    const [isUpdatingServiceType, setIsUpdatingServiceType] = useState(false);
+
+    const resolvedServiceType = normaliseServiceType(invoice.serviceType);
+    const hasActiveOrPendingPayment = Boolean(
+        invoice.payments?.some((p: any) => (p.status === 'verified' || p.status === 'pending') && !p.reversedAt)
+    );
+    const canSwitchServiceType =
+        (userRole === 'ORG_OWNER' || userRole === 'MANAGER') &&
+        (invoice.status === 'draft' || (invoice.status === 'sent' && !hasActiveOrPendingPayment));
+
+    const handleToggleServiceType = async () => {
+        const nextType: ServiceType = resolvedServiceType === 'tuition' ? 'childcare' : 'tuition';
+        setIsUpdatingServiceType(true);
+        try {
+            await updateInvoiceServiceType(invoice.id, nextType);
+            toast({
+                title: `Switched to ${serviceTypeLabel(nextType)}`,
+                message: `Invoice and receipt templates now use ${serviceTypeLabel(nextType)} wording.`,
+                variant: 'success',
+            });
+            router.refresh();
+        } catch (err) {
+            const message = err instanceof Error ? err.message : String(err);
+            toast({
+                title: 'Could not update service type',
+                message: message || 'Failed to update service type',
+                variant: 'error',
+            });
+        } finally {
+            setIsUpdatingServiceType(false);
+        }
+    };
 
     useEffect(() => { setEmailStatus(invoice.emailStatus || null); }, [invoice.emailStatus]);
 
@@ -425,6 +458,27 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                                             {invoice.centre.name}
                                         </span>
                                     )}
+                                    <span
+                                        data-testid="invoice-service-type-badge"
+                                        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${
+                                            resolvedServiceType === 'tuition'
+                                                ? 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-indigo-500/25'
+                                                : 'bg-secondary text-muted-foreground border-border'
+                                        }`}
+                                    >
+                                        {serviceTypeLabel(resolvedServiceType)} Services
+                                    </span>
+                                    {canSwitchServiceType && (
+                                        <button
+                                            type="button"
+                                            onClick={handleToggleServiceType}
+                                            disabled={isUpdatingServiceType}
+                                            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-secondary/80 hover:bg-secondary text-primary border border-primary/25 transition-colors disabled:opacity-50"
+                                        >
+                                            {isUpdatingServiceType && <Loader2 className="w-3 h-3 animate-spin" aria-hidden="true" />}
+                                            Switch to {resolvedServiceType === 'tuition' ? 'Childcare' : 'Tuition'}
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                             <div className="text-right flex flex-col items-end">
@@ -649,7 +703,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                                         ));
                                     })()}
                                     <div className="text-sm font-medium text-muted-foreground pt-1">{invoice.centre?.name}</div>
-                                    {invoice.centre?.ofstedId && (
+                                    {resolvedServiceType !== 'tuition' && invoice.centre?.ofstedId && (
                                         <div className="text-[10px] font-black uppercase tracking-widest text-primary/80 mt-2">
                                             Ofsted Reg No: {invoice.centre.ofstedId}
                                         </div>

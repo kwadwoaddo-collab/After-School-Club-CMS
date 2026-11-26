@@ -29,6 +29,7 @@ const mockDbQuery = {
     children: { findMany: vi.fn() },
     parents: { findFirst: vi.fn() },
     centres: { findFirst: vi.fn() },
+    billingConfigs: { findFirst: vi.fn() },
 };
 
 const mockTxSelect = vi.fn();
@@ -103,6 +104,7 @@ describe('Draft Invoice Lifecycle Actions (§18, B1, B2, B3)', () => {
         mockTxDelete.mockImplementation(() => makeTxDeleteChain());
         mockDbQuery.parents.findFirst.mockResolvedValue({ firstName: 'Sample', email: 'dummy@example.test' });
         mockDbQuery.centres.findFirst.mockResolvedValue({ name: 'Dummy centre' });
+        mockDbQuery.billingConfigs.findFirst.mockResolvedValue(null);
     });
 
     describe('issueDraftInvoice (B1)', () => {
@@ -302,6 +304,124 @@ describe('Draft Invoice Lifecycle Actions (§18, B1, B2, B3)', () => {
             expect(mockTxDelete).toHaveBeenCalled(); // deletes unissued draft invoice (Issue A)
             expect(mockTxUpdate).toHaveBeenCalled(); // sets billingRuns success=false and invoiceId=null
             expect(mockTxInsert).toHaveBeenCalled(); // logs audit event
+        });
+    });
+
+    describe('issueDraftInvoice + updateInvoiceServiceType serviceType guarantees', () => {
+        it('snapshots current family billingConfigs.serviceType="tuition" onto a pre-existing childcare draft at issuance', async () => {
+            const { requireTenantSession } = await import('@/lib/session');
+            (requireTenantSession as any).mockResolvedValue(OWNER_SESSION);
+
+            mockDbQuery.billingConfigs.findFirst.mockResolvedValue({ serviceType: 'tuition' });
+            mockTxSelect.mockReturnValue(makeTxSelectChain([{
+                id: 'inv-ethan',
+                organisationId: 'org-1',
+                centreId: 'centre-sydenham',
+                parentId: 'parent-ethan',
+                billingConfigId: 'cfg-ethan',
+                status: 'draft',
+                serviceType: 'childcare',
+                amount: '160.00',
+                dueDate: new Date('2026-12-01'),
+                invoiceNumber: 'INV-ETHAN1',
+            }]));
+
+            const updateChain = makeTxUpdateChain([{
+                id: 'inv-ethan',
+                status: 'sent',
+                serviceType: 'tuition',
+            }]);
+            mockTxUpdate.mockReturnValue(updateChain);
+
+            const { issueDraftInvoice } = await import('../actions');
+            const res = await issueDraftInvoice('inv-ethan');
+
+            expect(res.success).toBe(true);
+            expect(updateChain.set).toHaveBeenCalledWith(expect.objectContaining({
+                status: 'sent',
+                serviceType: 'tuition',
+            }));
+        });
+
+        it('allows ORG_OWNER or authorised MANAGER to switch serviceType on an unpaid sent invoice and audits', async () => {
+            const { requireTenantSession } = await import('@/lib/session');
+            (requireTenantSession as any).mockResolvedValue(MANAGER_SESSION);
+            getUserAccessibleCentreIds.mockResolvedValue(['centre-sydenham']);
+
+            let selectCall = 0;
+            mockTxSelect.mockImplementation(() => {
+                selectCall++;
+                if (selectCall === 1) {
+                    return makeTxSelectChain([{
+                        id: 'inv-sent-1',
+                        organisationId: 'org-1',
+                        centreId: 'centre-sydenham',
+                        parentId: 'parent-ethan',
+                        status: 'sent',
+                        serviceType: 'childcare',
+                        invoiceNumber: 'INV-ETHAN2',
+                    }]);
+                }
+                return makeTxSelectChain([{ count: 0 }]);
+            });
+
+            const updateChain = makeTxUpdateChain();
+            mockTxUpdate.mockReturnValue(updateChain);
+            const insertChain = makeTxInsertChain();
+            mockTxInsert.mockReturnValue(insertChain);
+
+            const { updateInvoiceServiceType } = await import('../actions');
+            const res = await updateInvoiceServiceType('inv-sent-1', 'tuition');
+
+            expect(res).toEqual({ success: true, serviceType: 'tuition', unchanged: false });
+            expect(updateChain.set).toHaveBeenCalledWith(expect.objectContaining({ serviceType: 'tuition' }));
+            expect(insertChain.values).toHaveBeenCalledWith(expect.objectContaining({
+                eventType: 'invoice_service_type_updated',
+            }));
+        });
+
+        it('blocks switching serviceType when active or pending payments exist or invoice is paid', async () => {
+            const { requireTenantSession } = await import('@/lib/session');
+            (requireTenantSession as any).mockResolvedValue(OWNER_SESSION);
+
+            let selectCall = 0;
+            mockTxSelect.mockImplementation(() => {
+                selectCall++;
+                if (selectCall === 1) {
+                    return makeTxSelectChain([{
+                        id: 'inv-pending-pay',
+                        organisationId: 'org-1',
+                        centreId: 'centre-1',
+                        status: 'sent',
+                        serviceType: 'childcare',
+                    }]);
+                }
+                return makeTxSelectChain([{ count: 1 }]);
+            });
+
+            const { updateInvoiceServiceType } = await import('../actions');
+            await expect(updateInvoiceServiceType('inv-pending-pay', 'tuition'))
+                .rejects.toThrow(/active or pending payments/);
+            expect(mockTxUpdate).not.toHaveBeenCalled();
+
+            mockTxSelect.mockImplementation(() => makeTxSelectChain([{
+                id: 'inv-paid',
+                organisationId: 'org-1',
+                centreId: 'centre-1',
+                status: 'paid',
+                serviceType: 'childcare',
+            }]));
+            await expect(updateInvoiceServiceType('inv-paid', 'tuition'))
+                .rejects.toThrow(/draft or unpaid issued invoices/);
+        });
+
+        it('rejects FRONT_DESK from changing invoice serviceType', async () => {
+            const { requireTenantSession } = await import('@/lib/session');
+            (requireTenantSession as any).mockResolvedValue(FRONT_DESK_SESSION);
+
+            const { updateInvoiceServiceType } = await import('../actions');
+            await expect(updateInvoiceServiceType('inv-1', 'tuition'))
+                .rejects.toThrow(/Only Managers and Owners/);
         });
     });
 });

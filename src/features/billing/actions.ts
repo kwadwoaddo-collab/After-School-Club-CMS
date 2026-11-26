@@ -296,6 +296,26 @@ export interface BillingConfigData {
  * Create a new family billing config.
  * Also links all childIds provided to this config.
  */
+async function syncUnissuedDraftInvoicesServiceType(
+    txOrDb: { update?: typeof db.update } | null | undefined,
+    params: {
+        organisationId: string;
+        centreId: string;
+        parentId: string;
+        serviceType: ServiceType;
+    },
+) {
+    if (!txOrDb || typeof txOrDb.update !== 'function') return;
+    await txOrDb.update(invoices)
+        .set({ serviceType: params.serviceType, updatedAt: new Date() })
+        .where(and(
+            eq(invoices.organisationId, params.organisationId),
+            eq(invoices.centreId, params.centreId),
+            eq(invoices.parentId, params.parentId),
+            eq(invoices.status, 'draft'),
+        ));
+}
+
 export async function createBillingConfig(data: BillingConfigData) {
     const { orgId, session } = await getOrgIdAndSession();
     await assertCentreAccess(session, data.centreId);
@@ -373,6 +393,13 @@ export async function createBillingConfig(data: BillingConfigData) {
             serviceType:        normaliseServiceType(data.serviceType),
             status:             'active',
         }).returning();
+
+        await syncUnissuedDraftInvoicesServiceType(tx, {
+            organisationId: orgId,
+            centreId: data.centreId,
+            parentId: data.parentId,
+            serviceType: normaliseServiceType(data.serviceType),
+        });
 
         // Link all specified children
         if (data.childIds.length > 0) {
@@ -483,6 +510,15 @@ export async function updateBillingConfig(
             eq(billingConfigs.id,             configId),
             eq(billingConfigs.organisationId, orgId),
         ));
+
+        if (data.serviceType !== undefined) {
+            await syncUnissuedDraftInvoicesServiceType(tx, {
+                organisationId: orgId,
+                centreId: existingConfig.centreId,
+                parentId: existingConfig.parentId,
+                serviceType: normaliseServiceType(data.serviceType),
+            });
+        }
 
         if (data.childIds !== undefined) {
             await tx.delete(billingConfigChildren).where(eq(billingConfigChildren.configId, configId));
@@ -940,8 +976,16 @@ async function generateInvoiceFromConfigInternal(input: GenerateInvoiceInput, el
             eq(billingRuns.periodStart,     input.periodStartStr),
         ),
     });
+    const configuredServiceType = normaliseServiceType(config.serviceType);
+
     if (existingRun?.success) {
         if (existingRun.invoiceId) {
+            await syncUnissuedDraftInvoicesServiceType(db, {
+                organisationId: orgId,
+                centreId: config.centreId,
+                parentId: config.parentId,
+                serviceType: configuredServiceType,
+            });
             return { success: true, invoiceId: existingRun.invoiceId, alreadyGenerated: true };
         }
         throw new Error(`Invoice already generated for period ${input.periodStartStr}`);
@@ -962,6 +1006,14 @@ async function generateInvoiceFromConfigInternal(input: GenerateInvoiceInput, el
     if (existingInvoice) {
         if (existingInvoice.billingPeriodStart && new Date(existingInvoice.billingPeriodStart).getTime() !== periodStartDate.getTime()) {
             throw new Error('The selected billing period overlaps an existing family invoice. Review coverage before creating another draft; no automatic proration or credit has been applied.');
+        }
+        if (existingInvoice.status === 'draft' && normaliseServiceType(existingInvoice.serviceType) !== configuredServiceType) {
+            await syncUnissuedDraftInvoicesServiceType(db, {
+                organisationId: orgId,
+                centreId: config.centreId,
+                parentId: config.parentId,
+                serviceType: configuredServiceType,
+            });
         }
         return { success: true, invoiceId: existingInvoice.id, alreadyGenerated: true };
     }
@@ -1025,6 +1077,8 @@ async function generateInvoiceFromConfigInternal(input: GenerateInvoiceInput, el
         await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${lockKey}))`);
         await lockEnrolmentForBilling(tx, coveredIds);
 
+        let resolvedServiceType = configuredServiceType;
+
         // A settings change while waiting for the lock must not admit an early draft.
         if (eligibleOnly) {
             const lockedConfig = await tx.query.billingConfigs.findFirst({
@@ -1032,6 +1086,7 @@ async function generateInvoiceFromConfigInternal(input: GenerateInvoiceInput, el
             });
             if (!lockedConfig || lockedConfig.status !== 'active') throw new Error('Billing config is not active');
             assertEligibleDraftWindow(lockedConfig, input);
+            resolvedServiceType = normaliseServiceType(lockedConfig.serviceType ?? config.serviceType);
         }
 
         // Re-check inside locked transaction: skip cycle
@@ -1054,6 +1109,12 @@ async function generateInvoiceFromConfigInternal(input: GenerateInvoiceInput, el
         });
         if (inTxRun?.success) {
             if (inTxRun.invoiceId) {
+                await syncUnissuedDraftInvoicesServiceType(tx, {
+                    organisationId: orgId,
+                    centreId: config.centreId,
+                    parentId: config.parentId,
+                    serviceType: resolvedServiceType,
+                });
                 return { id: inTxRun.invoiceId, alreadyGenerated: true };
             }
             throw new Error(`Invoice already generated for period ${input.periodStartStr}`);
@@ -1073,6 +1134,14 @@ async function generateInvoiceFromConfigInternal(input: GenerateInvoiceInput, el
         if (inTxInvoice) {
             if (inTxInvoice.billingPeriodStart && new Date(inTxInvoice.billingPeriodStart).getTime() !== periodStartDate.getTime()) {
                 throw new Error('The selected billing period overlaps an existing family invoice. Review coverage before creating another draft.');
+            }
+            if (inTxInvoice.status === 'draft' && normaliseServiceType(inTxInvoice.serviceType) !== resolvedServiceType) {
+                await syncUnissuedDraftInvoicesServiceType(tx, {
+                    organisationId: orgId,
+                    centreId: config.centreId,
+                    parentId: config.parentId,
+                    serviceType: resolvedServiceType,
+                });
             }
             return { id: inTxInvoice.id, alreadyGenerated: true };
         }
@@ -1099,7 +1168,7 @@ async function generateInvoiceFromConfigInternal(input: GenerateInvoiceInput, el
             billingConfigId:     config.id,
             billingPeriodLabel:  canonicalPeriodLabel,
             coveredChildrenJson: coveredChildren,
-            serviceType:         normaliseServiceType(config.serviceType),
+            serviceType:         resolvedServiceType,
         }).returning();
 
         // Record the run
