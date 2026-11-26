@@ -2,16 +2,33 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
-import { Send, Users, History, AlertCircle, Loader2, X, MessageSquare, CheckCircle, Clock } from 'lucide-react';
-import { sendBroadcast, getBroadcasts, getParentsForCentre, getClassesForCentre, getBroadcastDeliveryStats } from '@/features/communications/actions';
+import { Send, Users, History, AlertCircle, Loader2, X, MessageSquare, MessageCircle, CheckCircle, Clock, Copy, Check, ExternalLink, ShieldCheck } from 'lucide-react';
+import {
+    sendBroadcast,
+    createWhatsAppBroadcast,
+    markWhatsAppDeliverySent,
+    getBroadcasts,
+    getParentsForCentre,
+    getClassesForCentre,
+    getBroadcastDeliveryStats,
+} from '@/features/communications/actions';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { useDialogFocusTrap } from '@/components/ui/useDialogFocusTrap';
+import {
+    isWhatsAppCapablePhone,
+    buildWhatsAppUrl,
+    buildBroadcastWhatsAppMessage,
+    buildCommunityWhatsAppCopy,
+    formatWhatsAppRecipientDisplay,
+} from '@/lib/whatsapp';
 
 const sendMessages: Record<string, string> = {
     'Unauthorized': 'Your access could not be confirmed. Sign in again before sending.',
     'Unauthorized: only Owner/Manager may send broadcasts': 'Only an owner or manager can send broadcasts. Ask your manager for help.',
     'Unauthorized: No access to this centre': 'You do not have access to send for this centre. Ask your manager to check your centre access.',
+    'Please select a specific centre before preparing a WhatsApp queue.': 'Please select a specific centre from the sidebar before preparing a WhatsApp queue.',
     'No eligible recipients with communications consent and valid email address found': 'No parents in this selection have both permission to receive messages and a usable email address. Check the recipient selection and parent records.',
+    'No eligible recipients with communications consent and valid phone number found': 'No parents in this selection have both permission to receive messages and a valid WhatsApp phone number. Check the recipient selection and parent phone numbers.',
 };
 
 type Broadcast = Awaited<ReturnType<typeof getBroadcasts>>[number];
@@ -22,6 +39,12 @@ type DeliveryDetails = NonNullable<Awaited<ReturnType<typeof getBroadcastDeliver
 function getStatusBadge(b: Broadcast) {
     const status = b.status || (b.failureCount > 0 ? (b.successCount > 0 ? 'PARTIALLY_FAILED' : 'FAILED') : 'COMPLETED');
     switch (status) {
+        case 'WHATSAPP_QUEUE':
+            return (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                    <MessageCircle className="w-3 h-3" /> WhatsApp Queue
+                </span>
+            );
         case 'QUEUED':
             return (
                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
@@ -78,6 +101,8 @@ export default function CommunicationsClient({
 }) {
     const shouldConfirm = requireConfirmation ?? (typeof process === 'undefined' || !process.env.VITEST);
     const [activeTab, setActiveTab] = useState<'compose' | 'history'>('compose');
+    const [composeChannel, setComposeChannel] = useState<'email' | 'whatsapp'>('email');
+    const [copiedCommunity, setCopiedCommunity] = useState(false);
     const [broadcasts, setBroadcasts] = useState<Broadcast[]>(
         initialData ? [...initialData.broadcasts].reverse() : []
     );
@@ -94,6 +119,7 @@ export default function CommunicationsClient({
     const broadcastDrawerRef = useRef<HTMLDivElement>(null);
     const [loadError, setLoadError] = useState(false);
     const [detailsError, setDetailsError] = useState(false);
+    const [handoffError, setHandoffError] = useState<string | null>(null);
     const [sendUnknown, setSendUnknown] = useState(false);
     const sendInFlight = useRef(false);
     const loadRequest = useRef(0);
@@ -103,7 +129,7 @@ export default function CommunicationsClient({
     const [message, setMessage] = useState('');
     const [isSending, setIsSending] = useState(false);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
-    const [sendResult, setSendResult] = useState<{ success: boolean; count: number; sent: number; failed: number; status?: string; error?: string } | null>(null);
+    const [sendResult, setSendResult] = useState<{ success: boolean; count: number; sent: number; failed: number; status?: string; error?: string; channel?: 'email' | 'whatsapp' } | null>(null);
 
     useDialogFocusTrap(Boolean(selectedBroadcast), broadcastDrawerRef, () => setSelectedBroadcast(null));
 
@@ -142,6 +168,7 @@ export default function CommunicationsClient({
             setSelectedBroadcast(null);
             setSendResult(null);
             setSendUnknown(false);
+            setHandoffError(null);
             if (selectedClassId !== 'all') {
                 setSelectedClassId('all');
                 return;
@@ -163,6 +190,7 @@ export default function CommunicationsClient({
         const request = ++detailsRequest.current;
         setSelectedBroadcast(b);
         setDetailsError(false);
+        setHandoffError(null);
         setDeliveryDetails(null);
         setIsLoadingDetails(true);
         try {
@@ -194,7 +222,7 @@ export default function CommunicationsClient({
                 subject,
                 message
             });
-            setSendResult(result);
+            setSendResult({ ...result, channel: 'email' });
             if (!result.success && !Object.hasOwn(sendMessages, result.error || '')) setSendUnknown(true);
             if (result.success) {
                 setSubject('');
@@ -209,9 +237,128 @@ export default function CommunicationsClient({
         }
     };
 
+    const executeWhatsAppQueue = async () => {
+        if (!subject || !message || sendInFlight.current || sendUnknown || isLoading || loadError) return;
+
+        const audienceParentIds = parents
+            .filter(p => p.communicationsConsent && isWhatsAppCapablePhone((p as { phone?: string | null }).phone))
+            .map(p => p.id);
+        if (audienceParentIds.length === 0) return;
+
+        sendInFlight.current = true;
+        setIsSending(true);
+        setSendResult(null);
+        setHandoffError(null);
+        try {
+            const result = await createWhatsAppBroadcast({
+                centreId,
+                audienceParentIds,
+                subject,
+                message,
+            });
+            setSendResult({ ...result, channel: 'whatsapp' });
+            if (!result.success && !Object.hasOwn(sendMessages, result.error || '')) {
+                setSendUnknown(true);
+                return;
+            }
+            if (result.success && 'broadcast' in result && result.broadcast) {
+                setSubject('');
+                setMessage('');
+                setSelectedBroadcast(result.broadcast);
+                setDetailsError(false);
+                setIsLoadingDetails(false);
+                setDeliveryDetails({
+                    broadcast: result.broadcast,
+                    deliveries: result.deliveries || [],
+                });
+                void loadData();
+            }
+        } catch {
+            setSendUnknown(true);
+        } finally {
+            sendInFlight.current = false;
+            setIsSending(false);
+        }
+    };
+
+    const handleCopyCommunityAnnouncement = async () => {
+        if (!subject.trim() || !message.trim()) return;
+        const text = buildCommunityWhatsAppCopy({
+            subject,
+            message,
+            centreName,
+        });
+        try {
+            await navigator.clipboard.writeText(text);
+            setCopiedCommunity(true);
+            setTimeout(() => setCopiedCommunity(false), 2500);
+        } catch {
+            // Clipboard permission denied — ignore silently
+        }
+    };
+
+    const handleMarkWhatsAppOpened = (deliveryId: string) => {
+        if (!deliveryDetails) return;
+        const target = deliveryDetails.deliveries.find((d) => d.id === deliveryId);
+        if (!target || target.status === 'SENT') return;
+
+        const previousDetails = deliveryDetails;
+        const previousBroadcast = deliveryDetails.broadcast;
+        setHandoffError(null);
+
+        const updatedDeliveries = deliveryDetails.deliveries.map((d) =>
+            d.id === deliveryId ? { ...d, status: 'SENT', sentAt: new Date() } : d
+        );
+        const nextSuccess = updatedDeliveries.filter((d) => d.status === 'SENT').length;
+        const nextStatus = nextSuccess >= (deliveryDetails.broadcast.recipientCount || updatedDeliveries.length)
+            ? 'COMPLETED'
+            : deliveryDetails.broadcast.status;
+        const updatedBroadcast = { ...deliveryDetails.broadcast, successCount: nextSuccess, status: nextStatus };
+
+        setDeliveryDetails({ broadcast: updatedBroadcast, deliveries: updatedDeliveries });
+        setSelectedBroadcast((curr) => (curr && curr.id === updatedBroadcast.id ? updatedBroadcast : curr));
+        setBroadcasts((list) => list.map((b) => (b.id === updatedBroadcast.id ? updatedBroadcast : b)));
+
+        const rollbackOptimisticHandoff = (errorMessage: string) => {
+            setHandoffError(errorMessage);
+            setDeliveryDetails((curr) => {
+                if (!curr || curr.broadcast.id !== previousBroadcast.id) return curr;
+                const revertedDeliveries = curr.deliveries.map((d) =>
+                    d.id === deliveryId ? target : d
+                );
+                const revertedSuccess = revertedDeliveries.filter((d) => d.status === 'SENT').length;
+                const revertedStatus = revertedSuccess >= (curr.broadcast.recipientCount || revertedDeliveries.length)
+                    ? 'COMPLETED'
+                    : previousBroadcast.status;
+                const revertedBroadcast = { ...curr.broadcast, successCount: revertedSuccess, status: revertedStatus };
+                setSelectedBroadcast((sel) => (sel && sel.id === revertedBroadcast.id ? revertedBroadcast : sel));
+                setBroadcasts((list) => list.map((b) => (b.id === revertedBroadcast.id ? revertedBroadcast : b)));
+                return { broadcast: revertedBroadcast, deliveries: revertedDeliveries };
+            });
+            void previousDetails;
+        };
+
+        void markWhatsAppDeliverySent(deliveryId)
+            .then((res) => {
+                if (!res?.success) {
+                    rollbackOptimisticHandoff(
+                        sendMessages[res?.error || ''] || 'Could not record WhatsApp handoff in the audit log. Please refresh and try again.'
+                    );
+                }
+            })
+            .catch(() => {
+                rollbackOptimisticHandoff('Could not record WhatsApp handoff in the audit log. Please refresh and try again.');
+            });
+    };
+
     const handleSend = (e: React.FormEvent) => {
         e.preventDefault();
         if (!subject || !message || sendInFlight.current || sendUnknown || isLoading || loadError) return;
+
+        if (composeChannel === 'whatsapp') {
+            void executeWhatsAppQueue();
+            return;
+        }
 
         const audienceParentIds = parents.filter(p => p.communicationsConsent).map(p => p.id);
         if (audienceParentIds.length === 0) return;
@@ -223,7 +370,12 @@ export default function CommunicationsClient({
         }
     };
 
-    const consentedCount = parents.filter(p => p.communicationsConsent).length;
+    const consentedParents = parents.filter(p => p.communicationsConsent);
+    const consentedCount = consentedParents.length;
+    const whatsappParents = consentedParents.filter(p => isWhatsAppCapablePhone((p as { phone?: string | null }).phone));
+    const whatsappCount = whatsappParents.length;
+    const missingPhoneCount = consentedCount - whatsappCount;
+    const activeRecipientCount = composeChannel === 'whatsapp' ? whatsappCount : consentedCount;
 
     return (
         <div className="space-y-6">
@@ -273,24 +425,76 @@ export default function CommunicationsClient({
             {activeTab === 'compose' && (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div className="lg:col-span-2 bg-card border border-border rounded-3xl p-6 md:p-8 shadow-sm">
-                        <div className="flex flex-wrap items-center justify-between gap-2 mb-6">
-                            <h2 className="text-xl font-bold text-foreground">Compose Message</h2>
-                            {centreName && (
-                                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
-                                    Sending for: {centreName}
-                                </span>
-                            )}
+                        <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+                            <div>
+                                <h2 className="text-xl font-bold text-foreground">Compose Message</h2>
+                                <p className="text-xs text-muted-foreground mt-0.5">
+                                    Choose automated email or zero-cost WhatsApp assisted handoff
+                                </p>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2">
+                                {centreName && (
+                                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
+                                        Sending for: {centreName}
+                                    </span>
+                                )}
+                                <div className="inline-flex bg-secondary/60 p-1 rounded-xl gap-1" role="group" aria-label="Delivery channel">
+                                    <button
+                                        type="button"
+                                        aria-pressed={composeChannel === 'email'}
+                                        onClick={() => { setComposeChannel('email'); setSendResult(null); }}
+                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                                            composeChannel === 'email'
+                                                ? 'bg-card text-foreground shadow-sm'
+                                                : 'text-muted-foreground hover:text-foreground'
+                                        }`}
+                                    >
+                                        <Send className="w-3.5 h-3.5" aria-hidden="true" />
+                                        Email
+                                    </button>
+                                    <button
+                                        type="button"
+                                        aria-pressed={composeChannel === 'whatsapp'}
+                                        onClick={() => { setComposeChannel('whatsapp'); setSendResult(null); }}
+                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                                            composeChannel === 'whatsapp'
+                                                ? 'bg-emerald-700 text-white shadow-sm'
+                                                : 'text-muted-foreground hover:text-foreground'
+                                        }`}
+                                    >
+                                        <MessageCircle className="w-3.5 h-3.5" aria-hidden="true" />
+                                        WhatsApp (Free)
+                                    </button>
+                                </div>
+                            </div>
                         </div>
-                        
-                        {sendResult && sendResult.success && (
+
+                        {sendResult && sendResult.success && sendResult.channel !== 'whatsapp' && (
                             <div className="mb-6 p-4 rounded-xl bg-success/10 border border-success/20 text-success text-sm font-medium">
                                 Successfully queued message to {sendResult.count} parents. Delivery is being processed securely in the background.
+                            </div>
+                        )}
+                        {sendResult && sendResult.success && sendResult.channel === 'whatsapp' && (
+                            <div className="mb-6 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-800 dark:text-emerald-300 text-sm font-medium">
+                                Prepared WhatsApp queue for {sendResult.count} consented {sendResult.count === 1 ? 'parent' : 'parents'}. Open each chat in the Launch Queue drawer to send from your club WhatsApp at £0 cost.
                             </div>
                         )}
                         {sendResult && !sendResult.success && !sendUnknown && (
                             <div role="alert" className="mb-6 p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm font-medium flex items-center gap-2">
                                 <AlertCircle className="w-4 h-4 flex-shrink-0" />
                                 {sendMessages[sendResult.error || ''] || 'Check message history before sending again.'}
+                            </div>
+                        )}
+
+                        {composeChannel === 'whatsapp' && (
+                            <div className="mb-6 p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-start gap-3 text-xs text-foreground">
+                                <ShieldCheck className="w-4 h-4 text-emerald-700 dark:text-emerald-400 shrink-0 mt-0.5" aria-hidden="true" />
+                                <div>
+                                    <p className="font-bold text-emerald-800 dark:text-emerald-300">UK GDPR Privacy Tip — £0 Forever WhatsApp</p>
+                                    <p className="text-muted-foreground mt-0.5">
+                                        Use <strong>Copy for WhatsApp Community</strong> to paste into a WhatsApp Community Announcement group (where parent phone numbers remain hidden from other parents), or use <strong>Prepare 1-to-1 WhatsApp Queue</strong> for individual personalised chats.
+                                    </p>
+                                </div>
                             </div>
                         )}
 
@@ -319,15 +523,37 @@ export default function CommunicationsClient({
                                     required
                                 />
                             </div>
-                            <div className="flex justify-end pt-4 border-t border-border">
-                                <button
-                                    type="submit"
-                                    disabled={isSending || isLoading || loadError || sendUnknown || consentedCount === 0}
-                                    className="px-6 py-3 bg-primary text-primary-foreground font-bold rounded-xl hover:bg-primary/90 transition-all shadow-sm flex items-center gap-2 disabled:opacity-50"
-                                >
-                                    {isSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                                    Send Broadcast
-                                </button>
+                            <div className="flex flex-wrap items-center justify-end gap-3 pt-4 border-t border-border">
+                                {composeChannel === 'whatsapp' ? (
+                                    <>
+                                        <button
+                                            type="button"
+                                            disabled={!subject.trim() || !message.trim()}
+                                            onClick={() => void handleCopyCommunityAnnouncement()}
+                                            className="px-5 py-3 bg-secondary hover:bg-secondary/80 text-foreground font-bold rounded-xl transition-all flex items-center gap-2 disabled:opacity-50"
+                                        >
+                                            {copiedCommunity ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
+                                            {copiedCommunity ? 'Copied for Community!' : 'Copy for WhatsApp Community'}
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            disabled={isSending || isLoading || loadError || sendUnknown || whatsappCount === 0}
+                                            className="px-6 py-3 bg-emerald-700 text-white font-bold rounded-xl hover:bg-emerald-800 transition-all shadow-sm flex items-center gap-2 disabled:opacity-50"
+                                        >
+                                            {isSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <MessageCircle className="w-4 h-4" />}
+                                            Prepare 1-to-1 WhatsApp Queue
+                                        </button>
+                                    </>
+                                ) : (
+                                    <button
+                                        type="submit"
+                                        disabled={isSending || isLoading || loadError || sendUnknown || consentedCount === 0}
+                                        className="px-6 py-3 bg-primary text-primary-foreground font-bold rounded-xl hover:bg-primary/90 transition-all shadow-sm flex items-center gap-2 disabled:opacity-50"
+                                    >
+                                        {isSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                                        Send Broadcast
+                                    </button>
+                                )}
                             </div>
                         </form>
                     </div>
@@ -343,10 +569,10 @@ export default function CommunicationsClient({
                                     <p className="text-xs text-muted-foreground">Select target audience</p>
                                 </div>
                             </div>
-                            
+
                             <div className="mb-6">
                                 <label htmlFor="broadcast-target-class" className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Target Class</label>
-                                <select 
+                                <select
                                     id="broadcast-target-class"
                                     value={selectedClassId}
                                     onChange={(e) => setSelectedClassId(e.target.value)}
@@ -363,8 +589,17 @@ export default function CommunicationsClient({
 
                             <div className="p-4 bg-secondary/30 rounded-xl border border-border/50">
                                 <div className="text-3xl font-black text-foreground mb-1">
-                                    {isLoading || loadError ? '—' : consentedCount} <span className="text-sm font-semibold text-muted-foreground">recipients</span>
+                                    {isLoading || loadError ? '—' : activeRecipientCount}{' '}
+                                    <span className="text-sm font-semibold text-muted-foreground">
+                                        {composeChannel === 'whatsapp' ? 'WhatsApp recipients' : 'recipients'}
+                                    </span>
                                 </div>
+                                {composeChannel === 'whatsapp' && missingPhoneCount > 0 && (
+                                    <p className="text-xs text-muted-foreground flex gap-1.5 mt-3 pt-3 border-t border-border/50">
+                                        <AlertCircle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
+                                        <span>{missingPhoneCount} consented parent{missingPhoneCount > 1 ? 's' : ''} have no valid mobile number recorded.</span>
+                                    </p>
+                                )}
                                 {parents.length - consentedCount > 0 && (
                                     <p className="text-xs text-muted-foreground flex gap-1.5 mt-3 pt-3 border-t border-border/50">
                                         <AlertCircle className="w-3.5 h-3.5 text-warning shrink-0" />
@@ -439,7 +674,7 @@ export default function CommunicationsClient({
                 </div>
             )}
 
-            {/* Slide-out History Drawer */}
+            {/* Slide-out History / WhatsApp Launch Queue Drawer */}
             {selectedBroadcast && (
                 <div
                     className="fixed inset-0 z-50 flex justify-end"
@@ -447,17 +682,23 @@ export default function CommunicationsClient({
                     aria-modal="true"
                     aria-labelledby="broadcast-details-title"
                 >
-                    <div 
-                        className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" 
-                        onClick={() => setSelectedBroadcast(null)} 
+                    <div
+                        className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity"
+                        onClick={() => setSelectedBroadcast(null)}
                     />
                     <div ref={broadcastDrawerRef} tabIndex={-1} className="relative w-full max-w-lg bg-card shadow-2xl h-full flex flex-col animate-in slide-in-from-right duration-300 border-l border-border">
                         <div className="flex items-center justify-between p-6 border-b border-border">
                             <div>
-                                <h2 id="broadcast-details-title" className="text-lg font-bold text-foreground">Broadcast Details</h2>
-                                <p className="text-xs text-muted-foreground mt-0.5">Delivery audit and recipient ledger</p>
+                                <h2 id="broadcast-details-title" className="text-lg font-bold text-foreground">
+                                    {selectedBroadcast.status === 'WHATSAPP_QUEUE' ? 'WhatsApp Launch Queue' : 'Broadcast Details'}
+                                </h2>
+                                <p className="text-xs text-muted-foreground mt-0.5">
+                                    {selectedBroadcast.status === 'WHATSAPP_QUEUE'
+                                        ? 'Click Open in WhatsApp for each parent to send from your club device'
+                                        : 'Delivery audit and recipient ledger'}
+                                </p>
                             </div>
-                            <button 
+                            <button
                                 type="button"
                                 onClick={() => setSelectedBroadcast(null)}
                                 aria-label="Close broadcast details"
@@ -477,7 +718,7 @@ export default function CommunicationsClient({
                                     {getStatusBadge(selectedBroadcast)}
                                 </div>
                             </div>
-                            
+
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                                 <div className="bg-secondary/40 border border-border p-3 rounded-2xl text-center">
                                     <div className="text-xl font-black text-foreground">{selectedBroadcast.recipientCount}</div>
@@ -509,6 +750,12 @@ export default function CommunicationsClient({
                             {/* Recipient Deliveries Ledger */}
                             <div>
                                 <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Delivery Ledger</label>
+                                {handoffError && (
+                                    <div role="alert" className="mb-3 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive flex items-start gap-2">
+                                        <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" />
+                                        <span>{handoffError}</span>
+                                    </div>
+                                )}
                                 {isLoadingDetails ? (
                                     <div className="p-4 text-center text-xs text-muted-foreground">Loading delivery status...</div>
                                 ) : detailsError ? (
@@ -517,36 +764,76 @@ export default function CommunicationsClient({
                                         <button type="button" onClick={() => void handleSelectBroadcast(selectedBroadcast)} className="mt-2 min-h-10 font-semibold underline">Try loading delivery details again</button>
                                     </div>
                                 ) : deliveryDetails && deliveryDetails.deliveries.length > 0 ? (
-                                    <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
-                                        {deliveryDetails.deliveries.map((d) => (
-                                            <div key={d.id} className="p-3 bg-secondary/20 border border-border rounded-xl text-xs flex items-center justify-between">
-                                                <div className="truncate max-w-[220px]">
-                                                    {d.parentId ? (
-                                                        <Link
-                                                            href={`/dashboard/parents/${d.parentId}`}
-                                                            className="font-semibold text-foreground hover:text-primary hover:underline transition-colors block truncate"
-                                                        >
-                                                            {d.recipientName || 'Parent'}
-                                                        </Link>
-                                                    ) : (
-                                                        <div className="font-semibold text-foreground truncate">{d.recipientName || 'Parent'}</div>
-                                                    )}
-                                                    <div className="text-[11px] text-muted-foreground truncate">{d.recipientEmail}</div>
+                                    <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                                        {deliveryDetails.deliveries.map((d) => {
+                                            const isWhatsAppRow = d.channel === 'whatsapp' || String(d.recipientEmail || '').startsWith('whatsapp:');
+                                            const rawPhoneFromRecipient = String(d.recipientEmail || '').startsWith('whatsapp:')
+                                                ? String(d.recipientEmail).slice('whatsapp:'.length)
+                                                : null;
+                                            const firstNameOnly = d.recipientName ? d.recipientName.split(' ')[0] : null;
+                                            const rowWhatsAppUrl = isWhatsAppRow
+                                                ? buildWhatsAppUrl(
+                                                      rawPhoneFromRecipient,
+                                                      buildBroadcastWhatsAppMessage({
+                                                          firstName: firstNameOnly,
+                                                          subject: selectedBroadcast.subject,
+                                                          message: selectedBroadcast.message,
+                                                          centreName,
+                                                      })
+                                                  )
+                                                : null;
+
+                                            return (
+                                                <div key={d.id} className="p-3 bg-secondary/20 border border-border rounded-xl text-xs flex items-center justify-between gap-2">
+                                                    <div className="truncate max-w-[200px]">
+                                                        {d.parentId ? (
+                                                            <Link
+                                                                href={`/dashboard/parents/${d.parentId}`}
+                                                                className="font-semibold text-foreground hover:text-primary hover:underline transition-colors block truncate"
+                                                            >
+                                                                {d.recipientName || 'Parent'}
+                                                            </Link>
+                                                        ) : (
+                                                            <div className="font-semibold text-foreground truncate">{d.recipientName || 'Parent'}</div>
+                                                        )}
+                                                        <div className="text-[11px] text-muted-foreground truncate">
+                                                            {formatWhatsAppRecipientDisplay(d.recipientEmail)}
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-2 shrink-0">
+                                                        {rowWhatsAppUrl && (
+                                                            <a
+                                                                href={rowWhatsAppUrl}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                onClick={() => handleMarkWhatsAppOpened(d.id)}
+                                                                className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition-colors ${
+                                                                    d.status === 'SENT'
+                                                                        ? 'bg-secondary text-muted-foreground hover:text-foreground'
+                                                                        : 'bg-emerald-700 text-white hover:bg-emerald-800'
+                                                                }`}
+                                                            >
+                                                                <MessageCircle className="w-3 h-3" aria-hidden="true" />
+                                                                {d.status === 'SENT' ? 'Re-open' : 'Open in WhatsApp'}
+                                                                <ExternalLink className="w-2.5 h-2.5" aria-hidden="true" />
+                                                            </a>
+                                                        )}
+                                                        <div className="text-right">
+                                                            <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                                                                d.status === 'SENT' ? 'bg-success/10 text-success' :
+                                                                d.status === 'FAILED' ? 'bg-destructive/10 text-destructive' :
+                                                                'bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                                                            }`}>
+                                                                {d.status === 'AWAITING_HANDOFF' ? 'READY' : d.status}
+                                                            </span>
+                                                            {d.lastError && (
+                                                                <p className="mt-1 max-w-[200px] text-xs text-destructive">Delivery needs checking. Review the parent’s email address and ask your manager to check delivery before sending again.</p>
+                                                            )}
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                                <div className="text-right shrink-0">
-                                                    <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                                                        d.status === 'SENT' ? 'bg-success/10 text-success' :
-                                                        d.status === 'FAILED' ? 'bg-destructive/10 text-destructive' :
-                                                        'bg-amber-500/10 text-amber-600 dark:text-amber-400'
-                                                    }`}>
-                                                        {d.status}
-                                                    </span>
-                                                    {d.lastError && (
-                                                        <p className="mt-1 max-w-[200px] text-xs text-destructive">Delivery needs checking. Review the parent’s email address and ask your manager to check delivery before sending again.</p>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
                                 ) : (
                                     <div className="p-4 text-center text-xs text-muted-foreground border border-dashed border-border rounded-xl">

@@ -12,6 +12,8 @@ import {
     CheckCircle2, Banknote, Building2,
 } from 'lucide-react';
 import Link from 'next/link';
+import { MessageCircle } from 'lucide-react';
+import { buildParentGreetingWhatsAppUrl } from '@/lib/whatsapp';
 import { cn } from '@/components/ui/utils';
 import ProgressNoteForm from '@/features/students/components/ProgressNoteForm';
 import ProgressTimeline from '@/features/students/components/ProgressTimeline';
@@ -415,6 +417,27 @@ export default function StudentProfile({
                                             </span>
                                             <ChevronRight className="w-4 h-4 text-text-muted group-hover:text-accent transition-colors" />
                                         </a>
+                                        {(() => {
+                                            const waUrl = buildParentGreetingWhatsAppUrl({
+                                                phone: student.parent.phone,
+                                                parentFirstName: student.parent.firstName,
+                                                centreName: student.centreName,
+                                            });
+                                            return waUrl ? (
+                                                <a
+                                                    href={waUrl}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="flex items-center justify-between px-4 py-3 hover:bg-surface transition-colors group"
+                                                >
+                                                    <span className="flex items-center gap-2.5 text-small-body font-medium text-emerald-700 dark:text-emerald-400">
+                                                        <MessageCircle className="w-3.5 h-3.5" aria-hidden="true" />
+                                                        Message on WhatsApp
+                                                    </span>
+                                                    <ChevronRight className="w-4 h-4 text-text-muted group-hover:text-emerald-700 transition-colors" />
+                                                </a>
+                                            ) : null;
+                                        })()}
                                         <a
                                             href={`mailto:${student.parent.email}`}
                                             className="flex items-center justify-between px-4 py-3 hover:bg-surface transition-colors group"

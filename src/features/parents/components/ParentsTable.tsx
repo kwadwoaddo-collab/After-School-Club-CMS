@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import { AlertTriangle, Mail, Phone, Users, Search, ChevronRight } from 'lucide-react';
+import { AlertTriangle, Mail, MessageCircle, Phone, Users, Search, ChevronRight } from 'lucide-react';
+import { buildParentGreetingWhatsAppUrl } from '@/lib/whatsapp';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/Table';
 import { EmptyState } from '@/components/ui/EmptyState';
 import DeleteParentButton from '@/features/parents/components/DeleteParentButton';
@@ -81,6 +82,10 @@ export default function ParentsTable({ parents, error, hasActiveFilters }: Paren
                         {parents.map((parent) => {
                             const fullName = `${parent.firstName} ${parent.lastName}`;
                             const initials = getInitials(parent.firstName, parent.lastName);
+                            const whatsappUrl = buildParentGreetingWhatsAppUrl({
+                                phone: parent.phone,
+                                parentFirstName: parent.firstName,
+                            });
 
                             return (
                                 <TableRow key={parent.id} className="group">
@@ -103,6 +108,18 @@ export default function ParentsTable({ parents, error, hasActiveFilters }: Paren
                                                     title={parent.phone}
                                                 >
                                                     <Phone className="w-3.5 h-3.5" />
+                                                </a>
+                                            )}
+                                            {whatsappUrl && (
+                                                <a
+                                                    href={whatsappUrl}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    aria-label={`Message ${fullName} on WhatsApp`}
+                                                    className="p-1.5 hover:bg-page rounded-sm text-emerald-700 dark:text-emerald-400 hover:opacity-80 transition-opacity inline-flex items-center justify-center"
+                                                    title={`WhatsApp ${fullName}`}
+                                                >
+                                                    <MessageCircle className="w-3.5 h-3.5" />
                                                 </a>
                                             )}
                                             {parent.email && (

@@ -5,7 +5,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { format } from 'date-fns';
 import { formatDisplayTimeInTimezone, formatShortDateInTimezone, formatDateInTimezone } from '@/lib/datetime';
-import { MoreVertical, Eye, Calendar as CalendarIcon, X, Clock, MapPin, Trash2, CheckCircle, Loader2, AlertTriangle, Shield, BookOpen, GraduationCap, ChevronUp, ChevronDown, SearchX, Mail, Phone } from 'lucide-react';
+import { MoreVertical, Eye, Calendar as CalendarIcon, X, Clock, MapPin, Trash2, CheckCircle, Loader2, AlertTriangle, Shield, BookOpen, GraduationCap, ChevronUp, ChevronDown, SearchX, Mail, MessageCircle, Phone } from 'lucide-react';
+import { buildParentGreetingWhatsAppUrl } from '@/lib/whatsapp';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/ui/ToastProvider';
@@ -831,6 +832,26 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                                             <Phone className="w-4 h-4" aria-hidden="true" />
                                                         </a>
                                                     )}
+                                                    {(() => {
+                                                        const waUrl = buildParentGreetingWhatsAppUrl({
+                                                            phone: booking.parent.phone,
+                                                            parentFirstName: booking.parent.firstName,
+                                                            centreName: booking.centre?.name,
+                                                        });
+                                                        return waUrl ? (
+                                                            <a
+                                                                href={waUrl}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                aria-label={`Message ${booking.parent.firstName || 'parent'} on WhatsApp`}
+                                                                onClick={(e) => e.stopPropagation()}
+                                                                className="p-2 hover:bg-page rounded-sm text-emerald-700 dark:text-emerald-400 hover:opacity-80 transition-opacity"
+                                                                title={`WhatsApp ${booking.parent.firstName || 'parent'}`}
+                                                            >
+                                                                <MessageCircle className="w-4 h-4" aria-hidden="true" />
+                                                            </a>
+                                                        ) : null;
+                                                    })()}
                                                 </div>
                                             )}
                                             <div className="relative inline-block">

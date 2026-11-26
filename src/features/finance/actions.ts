@@ -577,7 +577,11 @@ export async function getInvoiceDetails(invoiceId: string) {
         ),
         with: {
             centre: true,
-            child: true,
+            child: {
+                with: {
+                    parent: true,
+                },
+            },
             parent: true,
             payments: {
                 orderBy: (payments, { desc }) => [desc(payments.recordedAt)]
@@ -1855,4 +1859,62 @@ export async function updateInvoiceServiceType(invoiceId: string, nextServiceTyp
         revalidatePath(`/dashboard/parents/${result.parentId}`);
     }
     return { success: true, serviceType: result.serviceType, unchanged: result.unchanged };
+}
+
+/**
+ * Records an immutable audit trail event when an authorised staff member opens a
+ * 1-click WhatsApp invoice/receipt handoff (wa.me) for a parent.
+ */
+export async function recordInvoiceWhatsAppHandoff(invoiceId: string) {
+    const session = await requireTenantSession();
+    if (!session?.user?.organisationId) {
+        return { success: false, error: 'Unauthorized' };
+    }
+    const orgId = session.user.organisationId;
+
+    const userRole = (session.user as any).role as string | undefined;
+    if (!userRole || !['ORG_OWNER', 'MANAGER', 'FRONT_DESK'].includes(userRole)) {
+        return { success: false, error: 'Forbidden' };
+    }
+
+    const invoice = await db.query.invoices.findFirst({
+        where: and(eq(invoices.id, invoiceId), eq(invoices.organisationId, orgId)),
+        columns: {
+            id: true,
+            centreId: true,
+            invoiceNumber: true,
+            status: true,
+            serviceType: true,
+        },
+    });
+
+    if (!invoice) {
+        return { success: false, error: 'Invoice not found' };
+    }
+
+    if (userRole !== 'ORG_OWNER') {
+        const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
+        if (!accessibleCentreIds.includes(invoice.centreId)) {
+            return { success: false, error: 'Unauthorized: No access to this centre' };
+        }
+    }
+
+    if (invoice.status === 'draft' || invoice.status === 'void') {
+        return { success: false, error: 'WhatsApp handoff is only available for issued or paid invoices' };
+    }
+
+    await db.insert(auditEvents).values({
+        organisationId: orgId,
+        userId: session.user.id,
+        eventType: 'invoice_whatsapp_handoff_opened',
+        eventData: JSON.stringify({
+            invoiceId: invoice.id,
+            invoiceNumber: invoice.invoiceNumber,
+            status: invoice.status,
+            serviceType: normaliseServiceType(invoice.serviceType),
+            channel: 'whatsapp',
+        }),
+    });
+
+    return { success: true };
 }

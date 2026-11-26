@@ -3,7 +3,7 @@ import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import CommunicationsClient from '@/app/dashboard/communications/CommunicationsClient';
-const actions = vi.hoisted(() => ({ sendBroadcast: vi.fn(), getBroadcasts: vi.fn(), getParentsForCentre: vi.fn(), getClassesForCentre: vi.fn(), getBroadcastDeliveryStats: vi.fn() }));
+const actions = vi.hoisted(() => ({ sendBroadcast: vi.fn(), createWhatsAppBroadcast: vi.fn(), markWhatsAppDeliverySent: vi.fn(), getBroadcasts: vi.fn(), getParentsForCentre: vi.fn(), getClassesForCentre: vi.fn(), getBroadcastDeliveryStats: vi.fn() }));
 vi.mock('@/features/communications/actions', () => actions);
 vi.mock('next/link', () => ({ default: ({children, ...props}: React.PropsWithChildren<React.AnchorHTMLAttributes<HTMLAnchorElement>>) => <a {...props}>{children}</a> }));
 const broadcast = { id:'broadcast-1', subject:'Fixture update', message:'Fixture content', createdAt:'2026-10-26T10:00:00Z', status:'PARTIALLY_FAILED', recipientCount:3, successCount:2, failureCount:1 };
@@ -11,7 +11,7 @@ const technical = 'Provider SMTP error Bearer secret@example.com stack trace';
 beforeEach(() => {
     vi.resetAllMocks();
     actions.getBroadcasts.mockResolvedValue([broadcast]);
-    actions.getParentsForCentre.mockResolvedValue([{ id:'parent-1', communicationsConsent:true },{id:'parent-2',communicationsConsent:false}]);
+    actions.getParentsForCentre.mockResolvedValue([{ id:'parent-1', phone:'07700900123', communicationsConsent:true },{id:'parent-2',communicationsConsent:false}]);
     actions.getClassesForCentre.mockResolvedValue([]);
     actions.getBroadcastDeliveryStats.mockResolvedValue({ deliveries:[{id:'delivery-1',parentId:'parent-1',recipientName:'Fixture parent',recipientEmail:'fixture@example.test',status:'FAILED',lastError:technical}] });
 });
@@ -80,5 +80,30 @@ describe('communications understandable errors', () => {
         await screen.findByText(/Successfully queued message to 1 parents/);
         expect((screen.getByPlaceholderText('Type your message here...') as HTMLTextAreaElement).value).toBe('');
         expect(screen.queryByText(/could not be confirmed/)).toBeNull();
+    });
+    it('rolls back optimistic WhatsApp SENT status and shows friendly alert if markWhatsAppDeliverySent fails', async () => {
+        const waBroadcast = { id:'wa-1', subject:'WA Reminder', message:'Club update', createdAt:'2026-11-26T10:00:00Z', status:'WHATSAPP_QUEUE', recipientCount:1, successCount:0, failureCount:0 };
+        actions.createWhatsAppBroadcast.mockResolvedValueOnce({
+            success: true,
+            broadcastId: 'wa-1',
+            broadcast: waBroadcast,
+            deliveries: [{ id: 'del-wa-1', parentId: 'parent-1', recipientName: 'Nga Le', recipientEmail: 'whatsapp:+447700900123', channel: 'whatsapp', status: 'AWAITING_HANDOFF', attemptCount: 0, sentAt: null, lastError: null, createdAt: '2026-11-26T10:00:00Z' }],
+            count: 1,
+            sent: 0,
+            failed: 0,
+            status: 'WHATSAPP_QUEUE',
+        });
+        actions.markWhatsAppDeliverySent.mockResolvedValueOnce({ success: false, error: 'Unauthorized: No access to this centre' });
+
+        await compose();
+        fireEvent.click(screen.getByRole('button', { name: /WhatsApp \(Free\)/i }));
+        fireEvent.click(screen.getByRole('button', { name: /Prepare 1-to-1 WhatsApp Queue/i }));
+
+        const openLink = await screen.findByRole('link', { name: /Open in WhatsApp/i });
+        fireEvent.click(openLink);
+
+        await screen.findByText(/You do not have access to send for this centre/i);
+        expect(screen.getByText('READY')).toBeTruthy();
+        expect(document.body.textContent).not.toContain('Unauthorized:');
     });
 });

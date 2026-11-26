@@ -3,7 +3,8 @@
 import Link from 'next/link';
 import { followUpBucket, FOLLOW_UP_LABELS } from '../follow-up-queue';
 import { useRouter } from 'next/navigation';
-import { ShieldAlert, Mail, Phone, Users, Plus, TrendingDown, AlertTriangle, Search } from 'lucide-react';
+import { ShieldAlert, Mail, MessageCircle, Phone, Users, Plus, TrendingDown, AlertTriangle, Search } from 'lucide-react';
+import { buildParentGreetingWhatsAppUrl } from '@/lib/whatsapp';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/Table';
 import { Badge } from '@/components/ui/Badge';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -228,6 +229,25 @@ export default function StudentsTable({ students, error, hasActiveFilters, follo
                             <Phone className="w-3.5 h-3.5" />
                           </a>
                         )}
+                        {(() => {
+                          const waUrl = buildParentGreetingWhatsAppUrl({
+                            phone: student.parentPhone,
+                            parentFirstName: student.parentFirstName,
+                          });
+                          return waUrl ? (
+                            <a
+                              href={waUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              aria-label={`Message ${student.parentFirstName} ${student.parentLastName} on WhatsApp`}
+                              className="p-1 hover:bg-page rounded-sm text-emerald-700 dark:text-emerald-400 hover:opacity-80 transition-opacity inline-flex items-center justify-center"
+                              title={`WhatsApp ${student.parentFirstName} ${student.parentLastName}`}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <MessageCircle className="w-3.5 h-3.5" />
+                            </a>
+                          ) : null;
+                        })()}
                       </div>
                     </div>
                   </TableCell>

@@ -3,7 +3,7 @@
 
 
 import { useState, useEffect, useTransition } from 'react';
-import { CreditCard, ArrowLeft, Download, Send, Clock, CheckCircle2, AlertCircle, AlertTriangle, CalendarClock, FileText, Trash2, Ban, Eye, Loader2, Edit2, Check, X as XIcon } from 'lucide-react';
+import { CreditCard, ArrowLeft, Download, Send, Clock, CheckCircle2, AlertCircle, AlertTriangle, CalendarClock, FileText, Trash2, Ban, Eye, Loader2, Edit2, Check, X as XIcon, MessageCircle, Phone } from 'lucide-react';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import RecordPaymentModal from './RecordPaymentModal';
@@ -13,7 +13,8 @@ import dynamic from 'next/dynamic';
 
 const PDFPreviewModal = dynamic(() => import('./PDFPreviewModal'), { ssr: false });
 import ConfirmActionModal from './ConfirmActionModal';
-import { voidInvoice, updateInvoiceDate, updateInvoiceNotes, resendInvoiceEmail, issueDraftInvoice, updateDraftInvoice, discardDraftInvoice, updateInvoiceServiceType } from '../actions';
+import { voidInvoice, updateInvoiceDate, updateInvoiceNotes, resendInvoiceEmail, issueDraftInvoice, updateDraftInvoice, discardDraftInvoice, updateInvoiceServiceType, recordInvoiceWhatsAppHandoff } from '../actions';
+import { buildWhatsAppUrl, buildInvoiceWhatsAppMessage } from '@/lib/whatsapp';
 import { normaliseServiceType, serviceTypeLabel, type ServiceType } from '../service-type';
 import { canOfferRecordPayment, parseStoredDecimalToPence } from '../domain/payment-eligibility';
 import { formatInvoicePeriod, formatPaidDate } from '../domain/invoice-display';
@@ -243,6 +244,32 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
     const remainingBalance = Number(invoice.amount) - totalPaid;
     const collectionState = evaluateInvoiceCollectionState(invoice, toLondonBusinessDate(), { strictPayments: false });
     const paidDate = collectionState.stage === 'paid' ? formatPaidDate(invoice.payments) : null;
+    const rawParentForContact = invoice.parent || (invoice.child && invoice.child.parent);
+    const activeParentForContact =
+        rawParentForContact && !rawParentForContact.deletedAt ? rawParentForContact : null;
+    const isPaidForWhatsApp = collectionState.stage === 'paid' || invoice.status === 'paid';
+    const whatsAppAmountFormatted = isPaidForWhatsApp
+        ? Number(invoice.amount).toFixed(2)
+        : Math.max(0, remainingBalance).toFixed(2);
+    const invoiceWhatsAppUrl =
+        invoice.status !== 'draft' && invoice.status !== 'void' && activeParentForContact
+            ? buildWhatsAppUrl(
+                  activeParentForContact.phone,
+                  buildInvoiceWhatsAppMessage({
+                      parentFirstName: activeParentForContact.firstName,
+                      invoiceNumber: invoice.invoiceNumber,
+                      amountFormatted: whatsAppAmountFormatted,
+                      dueDateFormatted: invoice.dueDate ? format(new Date(invoice.dueDate), 'dd/MM/yyyy') : null,
+                      periodFormatted:
+                          invoice.billingPeriodStart && invoice.billingPeriodEnd
+                              ? formatInvoicePeriod(invoice.billingPeriodStart, invoice.billingPeriodEnd)
+                              : null,
+                      serviceType: resolvedServiceType,
+                      isPaid: isPaidForWhatsApp,
+                      organisationName,
+                  })
+              )
+            : null;
 
     const renderCollectionIcon = (stage: InvoiceCollectionStage) => {
         switch (stage) {
@@ -401,6 +428,20 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                                     {isSendingEmail ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                                     {isSendingEmail ? 'Sending…' : 'Send invoice by email'}
                                 </button>
+                            )}
+                            {invoiceWhatsAppUrl && (
+                                <a
+                                    href={invoiceWhatsAppUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    onClick={() => {
+                                        void recordInvoiceWhatsAppHandoff(invoice.id).catch(() => {});
+                                    }}
+                                    className="flex items-center gap-2 px-5 py-2.5 bg-emerald-500/10 border border-emerald-500/25 rounded-xl text-sm font-bold text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/20 transition-all"
+                                >
+                                    <MessageCircle className="w-4 h-4" aria-hidden="true" />
+                                    {collectionState.stage === 'paid' || invoice.status === 'paid' ? 'Send receipt via WhatsApp' : 'Send via WhatsApp'}
+                                </a>
                             )}
                             {userRole === 'ORG_OWNER' && invoice.status !== 'void' && (
                                 <button
@@ -667,6 +708,28 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                                                     {activeParent?.email && (
                                                         <div className="text-sm font-medium text-muted-foreground pt-1">
                                                             {activeParent.email}
+                                                        </div>
+                                                    )}
+                                                    {activeParent?.phone && (
+                                                        <div className="flex flex-wrap items-center gap-3 text-sm font-medium text-muted-foreground pt-0.5">
+                                                            <a href={`tel:${activeParent.phone}`} className="inline-flex items-center gap-1.5 hover:text-foreground transition-colors">
+                                                                <Phone className="w-3.5 h-3.5" aria-hidden="true" />
+                                                                {activeParent.phone}
+                                                            </a>
+                                                            {invoiceWhatsAppUrl && (
+                                                                <a
+                                                                    href={invoiceWhatsAppUrl}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    onClick={() => {
+                                                                        void recordInvoiceWhatsAppHandoff(invoice.id).catch(() => {});
+                                                                    }}
+                                                                    className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 dark:text-emerald-300 hover:underline"
+                                                                >
+                                                                    <MessageCircle className="w-3.5 h-3.5" aria-hidden="true" />
+                                                                    WhatsApp
+                                                                </a>
+                                                            )}
                                                         </div>
                                                     )}
                                                 </>

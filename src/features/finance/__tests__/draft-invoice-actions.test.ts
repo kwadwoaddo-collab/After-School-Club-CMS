@@ -424,4 +424,76 @@ describe('Draft Invoice Lifecycle Actions (§18, B1, B2, B3)', () => {
                 .rejects.toThrow(/Only Managers and Owners/);
         });
     });
+
+    describe('recordInvoiceWhatsAppHandoff (WhatsApp Phase 1)', () => {
+        it('rejects TUTOR role, cross-centre staff, and draft/void invoices', async () => {
+            const { requireTenantSession } = await import('@/lib/session');
+            const { recordInvoiceWhatsAppHandoff } = await import('../actions');
+
+            // TUTOR forbidden
+            (requireTenantSession as any).mockResolvedValue({
+                user: { id: 'user-tutor', organisationId: 'org-1', role: 'TUTOR' },
+            });
+            expect(await recordInvoiceWhatsAppHandoff('inv-1')).toEqual({
+                success: false,
+                error: 'Forbidden',
+            });
+
+            // Cross-centre MANAGER rejected
+            (requireTenantSession as any).mockResolvedValue(MANAGER_SESSION);
+            mockDbQuery.invoices.findFirst.mockResolvedValueOnce({
+                id: 'inv-1',
+                centreId: 'centre-other',
+                invoiceNumber: 'INV-001',
+                status: 'sent',
+                serviceType: 'tuition',
+            });
+            getUserAccessibleCentreIds.mockResolvedValueOnce(['centre-sydenham']);
+            expect(await recordInvoiceWhatsAppHandoff('inv-1')).toEqual({
+                success: false,
+                error: 'Unauthorized: No access to this centre',
+            });
+
+            // Draft / void rejected
+            (requireTenantSession as any).mockResolvedValue(OWNER_SESSION);
+            mockDbQuery.invoices.findFirst.mockResolvedValueOnce({
+                id: 'inv-draft',
+                centreId: 'centre-sydenham',
+                invoiceNumber: 'INV-DRAFT',
+                status: 'draft',
+                serviceType: 'tuition',
+            });
+            expect(await recordInvoiceWhatsAppHandoff('inv-draft')).toEqual({
+                success: false,
+                error: 'WhatsApp handoff is only available for issued or paid invoices',
+            });
+        });
+
+        it('records invoice_whatsapp_handoff_opened audit event for authorised staff on issued/paid invoices', async () => {
+            const { requireTenantSession } = await import('@/lib/session');
+            const { recordInvoiceWhatsAppHandoff } = await import('../actions');
+
+            (requireTenantSession as any).mockResolvedValue(FRONT_DESK_SESSION);
+            mockDbQuery.invoices.findFirst.mockResolvedValueOnce({
+                id: 'inv-ethan',
+                centreId: 'centre-sydenham',
+                invoiceNumber: 'INV-PZRJ9Z',
+                status: 'sent',
+                serviceType: 'tuition',
+            });
+            getUserAccessibleCentreIds.mockResolvedValueOnce(['centre-sydenham']);
+            const insertChain = makeTxInsertChain();
+            mockTxInsert.mockReturnValueOnce(insertChain);
+
+            const res = await recordInvoiceWhatsAppHandoff('inv-ethan');
+            expect(res).toEqual({ success: true });
+            expect(insertChain.values).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    organisationId: 'org-1',
+                    userId: 'user-fd',
+                    eventType: 'invoice_whatsapp_handoff_opened',
+                })
+            );
+        });
+    });
 });

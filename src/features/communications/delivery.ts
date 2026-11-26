@@ -189,7 +189,8 @@ export async function claimDeliveries(options: {
     const candidateQuery = sql`
       SELECT id
       FROM ${broadcastDeliveries}
-      WHERE (
+      WHERE channel = 'email'
+      AND (
         (status = 'PENDING' AND (next_attempt_at IS NULL OR next_attempt_at <= NOW()))
         OR
         (status = 'PROCESSING' AND lease_expires_at < NOW())
@@ -234,7 +235,7 @@ export async function reconcileBroadcastStatus(broadcastId: string) {
     SELECT
       count(*) FILTER (WHERE status = 'SENT')::int as sent_count,
       count(*) FILTER (WHERE status = 'FAILED')::int as failed_count,
-      count(*) FILTER (WHERE status IN ('PENDING', 'PROCESSING'))::int as pending_count,
+      count(*) FILTER (WHERE status IN ('PENDING', 'PROCESSING', 'AWAITING_HANDOFF'))::int as pending_count,
       count(*)::int as total_count
     FROM ${broadcastDeliveries}
     WHERE broadcast_id = ${broadcastId}
@@ -292,13 +293,13 @@ export async function reconcileBroadcastStatus(broadcastId: string) {
       logger.info(`[BroadcastProcessor] Broadcast ${broadcastId} finalised with status: ${finalStatus}`);
     }
   } else {
-    // Intermediate progress update
+    // Intermediate progress update (preserve WHATSAPP_QUEUE status until all handoffs complete)
     await db
       .update(broadcasts)
       .set({
         successCount: sentCount,
         failureCount: failedCount,
-        status: 'PROCESSING',
+        status: sql`CASE WHEN ${broadcasts.status} = 'WHATSAPP_QUEUE' THEN 'WHATSAPP_QUEUE' ELSE 'PROCESSING' END`,
       })
       .where(sql`${broadcasts.id} = ${broadcastId} AND ${broadcasts.completedAt} IS NULL`);
   }
