@@ -3,6 +3,7 @@ import { auditEvents } from '@/db/schema';
 import { and, desc, eq, sql } from 'drizzle-orm';
 import { emailService } from '@/lib/services/email';
 import { logger } from '@/lib/logger';
+import type { ServiceType } from './service-type';
 
 export type InvoiceEmailStatus = {
     status: 'not_requested' | 'sending' | 'accepted' | 'failed' | 'no_address' | 'unknown';
@@ -33,6 +34,7 @@ export type SendAuditedInvoiceEmailInput = {
     invoiceNumber: string; amount: number; dueDate: Date;
     billingPeriodStart?: Date | string | null;
     billingPeriodEnd?: Date | string | null;
+    serviceType?: ServiceType | null;
     centreName: string; portalUrl: string;
 };
 

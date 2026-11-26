@@ -33,6 +33,7 @@ import {
     formatInvoicePeriod,
     formatPaidDate,
 } from '@/features/finance/domain/invoice-display';
+import { normaliseServiceType } from '@/features/finance/service-type';
 
 function resolveCoveredChildrenLabel(inv: any): string {
     if (Array.isArray(inv.coveredChildrenJson) && inv.coveredChildrenJson.length > 0) {
@@ -339,12 +340,18 @@ export default async function BillingDashboard(props: { searchParams: Promise<{ 
                                             {stripeEnabled && (
                                                 <StripePayButton invoiceId={inv.id} amountDue={remaining} />
                                             )}
-                                            <div className={stripeEnabled ? 'border-t border-border pt-3' : ''}>
-                                                <p className="text-xs text-muted-foreground font-semibold mb-2">
-                                                    {stripeEnabled ? 'Or pay by childcare voucher' : 'Pay by childcare voucher'}
+                                            {normaliseServiceType(inv.serviceType) !== 'tuition' ? (
+                                                <div className={stripeEnabled ? 'border-t border-border pt-3' : ''}>
+                                                    <p className="text-xs text-muted-foreground font-semibold mb-2">
+                                                        {stripeEnabled ? 'Or pay by childcare voucher' : 'Pay by childcare voucher'}
+                                                    </p>
+                                                    <VoucherPaymentForm invoiceId={inv.id} amountDue={remaining} />
+                                                </div>
+                                            ) : !stripeEnabled ? (
+                                                <p className="text-xs text-muted-foreground">
+                                                    Please arrange payment by bank transfer using reference <span className="font-mono font-semibold text-foreground">{inv.invoiceNumber}</span>.
                                                 </p>
-                                                <VoucherPaymentForm invoiceId={inv.id} amountDue={remaining} />
-                                            </div>
+                                            ) : null}
                                         </div>
                                     </div>
                                 );

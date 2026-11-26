@@ -10,6 +10,7 @@ import { requireTenantSession } from '@/lib/session';
 import { revalidatePath } from 'next/cache';
 import { nanoid } from 'nanoid';
 import { readInvoiceEmailStatus, sendAuditedInvoiceEmail, type InvoiceEmailStatus } from './invoice-email-status';
+import { isServiceType, normaliseServiceType, type ServiceType } from './service-type';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { notifyOwners } from '@/lib/db-notifications';
 import { financeEligibleChildSql, getFinanceEligibleChildIds, assertEligibleBillingCoverage, lockEnrolmentForBilling, billingServicePeriod, lockBillingConfiguration } from '@/lib/enrolment/finance-eligibility';
@@ -51,9 +52,11 @@ async function insertInvoiceAndLog(
         childName?: string;
         coveredChildrenJson?: any;
         billingConfigId?: string | null;
+        serviceType?: ServiceType | null;
     }
 ) {
     const invoiceNumber = `INV-${nanoid(6).toUpperCase()}`;
+    const resolvedServiceType = normaliseServiceType(params.serviceType);
     const [inv] = await tx.insert(invoices).values({
         organisationId: orgId,
         centreId: params.centreId,
@@ -69,6 +72,7 @@ async function insertInvoiceAndLog(
         notes: params.notes,
         coveredChildrenJson: params.coveredChildrenJson,
         billingConfigId: params.billingConfigId ?? null,
+        serviceType: resolvedServiceType,
     }).returning();
 
     await tx.insert(auditEvents).values({
@@ -285,10 +289,11 @@ export async function createInvoice(data: {
             eq(billingConfigs.centreId,       data.centreId),
             eq(billingConfigs.organisationId, orgId),
         ),
-        columns: { id: true, status: true },
+        columns: { id: true, status: true, serviceType: true },
     });
 
     const billingConfigId = existingConfig?.id || null;
+    const configuredServiceType = normaliseServiceType(existingConfig?.serviceType);
 
     // Execute database operations atomically in a transaction
     const newInvoice = await db.transaction(async (tx) => {
@@ -333,6 +338,7 @@ export async function createInvoice(data: {
             notes: data.notes || null,
             coveredChildrenJson: coveredChildren,
             billingConfigId,
+            serviceType: configuredServiceType,
         });
     });
 
@@ -498,6 +504,18 @@ export async function createAdHocInvoice(data: {
 
     if (!data.parentId) throw new Error('Create and confirm an existing enrolled student before creating an invoice for a new family');
 
+    const adHocFamilyConfig = typeof db.query.billingConfigs?.findFirst === 'function'
+        ? await db.query.billingConfigs.findFirst({
+            where: and(
+                eq(billingConfigs.parentId, data.parentId),
+                eq(billingConfigs.centreId, data.centreId),
+                eq(billingConfigs.organisationId, orgId),
+            ),
+            columns: { serviceType: true },
+        })
+        : null;
+    const adHocServiceType = normaliseServiceType(adHocFamilyConfig?.serviceType);
+
     return await db.transaction(async (tx) => {
         await lockEnrolmentForBilling(tx, [eligibleAdHocChildId!]);
         assertEligibleBillingCoverage([eligibleAdHocChildId!], await getFinanceEligibleChildIds(orgId, [eligibleAdHocChildId!], tx, { parentId: data.parentId!, centreId: data.centreId }, servicePeriod));
@@ -520,6 +538,7 @@ export async function createAdHocInvoice(data: {
             adhoc: true,
             childName: childLabel,
             coveredChildrenJson: coveredChildren,
+            serviceType: adHocServiceType,
         });
 
         revalidatePath('/dashboard/finance');
@@ -1404,6 +1423,7 @@ export async function resendInvoiceEmail(invoiceId: string): Promise<{ success: 
         parentFirstName: parentName, parentEmail, invoiceNumber: invoice.invoiceNumber,
         amount: Number(invoice.amount), dueDate: invoice.dueDate ?? new Date(),
         billingPeriodStart: invoice.billingPeriodStart, billingPeriodEnd: invoice.billingPeriodEnd,
+        serviceType: normaliseServiceType(invoice.serviceType),
         centreName, portalUrl,
     });
     revalidatePath(`/dashboard/finance/invoices/${invoiceId}`);
@@ -1498,8 +1518,33 @@ export async function issueDraftInvoice(invoiceId: string) {
             if (overlapping && overlapping.id !== invoice.id) throw new Error('This draft overlaps an existing family invoice. Review coverage before issuance; no automatic proration or credit has been applied.');
         }
 
+        let resolvedServiceType = normaliseServiceType(invoice.serviceType);
+        if (typeof tx.query?.billingConfigs?.findFirst === 'function') {
+            const activeFamilyConfig = invoice.billingConfigId
+                ? await tx.query.billingConfigs.findFirst({
+                    where: and(
+                        eq(billingConfigs.id, invoice.billingConfigId),
+                        eq(billingConfigs.organisationId, orgId),
+                    ),
+                    columns: { serviceType: true },
+                })
+                : invoice.parentId && invoice.centreId
+                    ? await tx.query.billingConfigs.findFirst({
+                        where: and(
+                            eq(billingConfigs.organisationId, orgId),
+                            eq(billingConfigs.centreId, invoice.centreId),
+                            eq(billingConfigs.parentId, invoice.parentId),
+                        ),
+                        columns: { serviceType: true },
+                    })
+                    : null;
+            if (activeFamilyConfig?.serviceType) {
+                resolvedServiceType = normaliseServiceType(activeFamilyConfig.serviceType);
+            }
+        }
+
         const [updated] = await tx.update(invoices)
-            .set({ status: 'sent', updatedAt: new Date() })
+            .set({ status: 'sent', serviceType: resolvedServiceType, updatedAt: new Date() })
             .where(eq(invoices.id, invoiceId))
             .returning();
 
@@ -1511,6 +1556,7 @@ export async function issueDraftInvoice(invoiceId: string) {
                 invoiceId,
                 invoiceNumber: invoice.invoiceNumber,
                 amount: invoice.amount,
+                serviceType: resolvedServiceType,
                 issuedBy: session.user.id,
             }),
         });
@@ -1714,4 +1760,99 @@ export async function discardDraftInvoice(invoiceId: string) {
         revalidatePath(`/dashboard/centres/${result.centreId}/billing`);
     }
     return { success: true };
+}
+
+/**
+ * Update the service type ('childcare' | 'tuition') on an uncollected invoice.
+ * Allowed only for ORG_OWNER or centre-authorised MANAGER while the invoice is
+ * 'draft' or unpaid 'sent' with zero verified/pending payments. Once a payment
+ * is recorded, the snapshotted service type is locked.
+ */
+export async function updateInvoiceServiceType(invoiceId: string, nextServiceType: ServiceType) {
+    const session = await requireTenantSession();
+    if (!session?.user?.organisationId) throw new Error('Unauthorized');
+    const orgId = session.user.organisationId;
+
+    const userRole = (session.user as any).role;
+    if (userRole !== 'ORG_OWNER' && userRole !== 'MANAGER') {
+        throw new Error('Unauthorized: Only Managers and Owners can update invoice service type');
+    }
+
+    if (!isServiceType(nextServiceType)) {
+        throw new Error('Choose Childcare or Tuition as the service type');
+    }
+
+    const result = await db.transaction(async (tx) => {
+        const [invoice] = await tx.select()
+            .from(invoices)
+            .where(and(eq(invoices.id, invoiceId), eq(invoices.organisationId, orgId)))
+            .for('update');
+
+        if (!invoice) throw new Error('Invoice not found');
+
+        if (userRole !== 'ORG_OWNER') {
+            const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
+            if (!accessibleCentreIds.includes(invoice.centreId)) {
+                throw new Error('Unauthorized: No access to this centre');
+            }
+        }
+
+        if (invoice.status !== 'draft' && invoice.status !== 'sent') {
+            throw new Error('Service type can only be changed on draft or unpaid issued invoices');
+        }
+
+        const activePaymentRows = await tx.select({ count: sql<number>`count(*)` })
+            .from(payments)
+            .where(and(
+                eq(payments.invoiceId, invoiceId),
+                inArray(payments.status, ['verified', 'pending']),
+                isNull(payments.reversedAt),
+            ));
+        if (Number(activePaymentRows[0]?.count ?? 0) > 0) {
+            throw new Error('Cannot change service type on an invoice with active or pending payments');
+        }
+
+        const previousServiceType = normaliseServiceType(invoice.serviceType);
+        if (previousServiceType === nextServiceType) {
+            return {
+                unchanged: true,
+                parentId: invoice.parentId,
+                centreId: invoice.centreId,
+                serviceType: nextServiceType,
+            };
+        }
+
+        await tx.update(invoices)
+            .set({ serviceType: nextServiceType, updatedAt: new Date() })
+            .where(and(eq(invoices.id, invoiceId), eq(invoices.organisationId, orgId)));
+
+        await tx.insert(auditEvents).values({
+            organisationId: orgId,
+            userId: session.user.id,
+            eventType: 'invoice_service_type_updated',
+            eventData: JSON.stringify({
+                invoiceId,
+                invoiceNumber: invoice.invoiceNumber,
+                status: invoice.status,
+                from: previousServiceType,
+                to: nextServiceType,
+            }),
+        });
+
+        return {
+            unchanged: false,
+            parentId: invoice.parentId,
+            centreId: invoice.centreId,
+            serviceType: nextServiceType,
+        };
+    });
+
+    revalidatePath(`/dashboard/finance/invoices/${invoiceId}`);
+    revalidatePath('/dashboard/finance');
+    revalidatePath('/dashboard/finance/invoices');
+    revalidatePath('/portal/billing');
+    if (result.parentId) {
+        revalidatePath(`/dashboard/parents/${result.parentId}`);
+    }
+    return { success: true, serviceType: result.serviceType, unchanged: result.unchanged };
 }

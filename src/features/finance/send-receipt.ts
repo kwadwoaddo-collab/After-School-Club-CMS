@@ -6,6 +6,7 @@ import { db } from '@/db';
 import { auditEvents, payments, invoices, parents, centres, orgMemberships, centreMemberships } from '@/db/schema';
 import { requireTenantSession } from '@/lib/session';
 import { emailService } from '@/lib/services/email';
+import { normaliseServiceType } from './service-type';
 
 const input = z.object({ paymentId: z.uuid(), requestId: z.uuid(), expectedRecipient: z.email().max(254) }).strict();
 export async function sendReceiptEmail(raw: z.infer<typeof input>) {
@@ -39,7 +40,7 @@ export async function sendReceiptEmail(raw: z.infer<typeof input>) {
             }
             const [centre] = await tx.select({ name: centres.name }).from(centres).where(and(eq(centres.id, invoice.centreId), eq(centres.organisationId, orgId)));
             await tx.insert(auditEvents).values({ organisationId: orgId, userId: actorId, eventType: 'receipt_email_status', eventData: JSON.stringify({ requestId: data.requestId, paymentId: payment.id, invoiceId: invoice.id, recipient: parent.email, status: 'sending', deliberate: true }) });
-            return { invoiceId: invoice.id, payload: { parentEmail: parent.email, parentName: parent.firstName, invoiceNumber: invoice.invoiceNumber, paymentId: payment.id, amountPaid: Number(payment.amount), organisationName: centre?.name || 'Our Centre', invoiceId: invoice.id, paymentDate: payment.recordedAt.toLocaleDateString('en-GB', { timeZone: 'Europe/London' }), childcarePeriod: invoice.billingPeriodStart && invoice.billingPeriodEnd ? `${invoice.billingPeriodStart.toLocaleDateString('en-GB', {timeZone:'UTC'})} to ${invoice.billingPeriodEnd.toLocaleDateString('en-GB', {timeZone:'UTC'})}` : undefined, idempotencyKey: `receipt:${orgId}:${data.requestId}` } };
+            return { invoiceId: invoice.id, payload: { parentEmail: parent.email, parentName: parent.firstName, invoiceNumber: invoice.invoiceNumber, paymentId: payment.id, amountPaid: Number(payment.amount), organisationName: centre?.name || 'Our Centre', invoiceId: invoice.id, paymentDate: payment.recordedAt.toLocaleDateString('en-GB', { timeZone: 'Europe/London' }), childcarePeriod: invoice.billingPeriodStart && invoice.billingPeriodEnd ? `${invoice.billingPeriodStart.toLocaleDateString('en-GB', {timeZone:'UTC'})} to ${invoice.billingPeriodEnd.toLocaleDateString('en-GB', {timeZone:'UTC'})}` : undefined, serviceType: normaliseServiceType(invoice.serviceType), idempotencyKey: `receipt:${orgId}:${data.requestId}` } };
         });
         if ('error' in claim) return { success: false, status: 'not_sent', error: claim.error };
         if ('priorStatus' in claim) return { success: claim.priorStatus === 'accepted', status: claim.priorStatus, error: claim.priorStatus === 'accepted' ? undefined : 'This sending request is already recorded. Check its outcome before making a new request.' };
