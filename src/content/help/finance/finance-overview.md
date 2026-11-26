@@ -1,5 +1,5 @@
 # SprintScale CMS — Functional Manual: Finance Overview
-## Architecture, Financial Data Model, Monetary Storage & Ledger Controls
+## Architecture, Financial Data Model, Service Types, Monetary Storage & Ledger Controls
 
 ---
 
@@ -10,8 +10,9 @@
 
 The **Finance Module** manages the internal commercial and billing lifecycle of your club organisation:
 
-- **Family-Level Agreed Fees:** Setting fixed recurring monthly tuition agreements for enrolled families.
-- **Automated & Manual Invoice Runs:** Generating monthly tuition invoices using deterministic billing periods and application-level duplicate checks.
+- **Family-Level Agreed Fees & Service Types:** Setting fixed recurring monthly agreements per family and selecting **Childcare** (default, with Ofsted details and e-contract support) or **Tuition** (Tuition wording, Ofsted lines omitted).
+- **Automated & Manual Invoice Runs:** Generating monthly invoices using deterministic billing periods, snapshotted service types, and application-level duplicate checks.
+- **Childcare Service Agreements (E-Contracts):** Sending one-time parent e-signing links, embedding centre signatory details, and archiving superseded contracts without ever deleting signed PDF evidence.
 - **Multi-Channel Payment Recording:** Logging cash, bank transfers, Tax-Free Childcare (TFC), childcare vouchers, and online card payments.
 - **Voucher & TFC Reconciliation Queue:** Reviewing and verifying or rejecting pending parent voucher submissions on a dedicated reconciliation screen.
 - **Financial Auditability & Receipts:** Logging payment timestamps, audit events, downloadable invoice PDFs, and CMS-generated payment record receipts.
@@ -26,14 +27,14 @@ SprintScale CMS is engineered around five fundamental financial rules:
 ┌─────────────────────────────────────────────────────────────┐
 │                 5 CORE FINANCIAL ARCHITECTURE RULES          │
 ├─────────────────────────────────────────────────────────────┤
-│  1. FAMILY-LEVEL BILLING: Fees are configured per parent    │
-│     account at a specific centre, covering 1+ children.     │
+│  1. FAMILY-LEVEL BILLING: Fees and service type (`Childcare`│
+│     or `Tuition`) are set per parent at a specific centre.  │
 │                                                             │
-│  2. FIXED AGREED TUITION: Monthly invoice amounts reflect   │
-│     the agreed tuition, not a raw count of attended hours.  │
+│  2. FIXED AGREED FEE: Monthly invoice amounts reflect the   │
+│     agreed monthly plan, not a raw count of attended hours. │
 │                                                             │
-│  3. NON-RETROACTIVE INVOICES: Updating an agreed fee applies│
-│     to future runs; it does not rewrite issued invoices.    │
+│  3. NON-RETROACTIVE INVOICES: Changing the fee or service   │
+│     type applies to new runs; issued documents never change.│
 │                                                             │
 │  4. SESSION CREDITS ≠ CASH: Session ledger absence credits  │
 │     track attendance allowances, not monetary bank refunds. │
@@ -49,9 +50,10 @@ SprintScale CMS is engineered around five fundamental financial rules:
 
 | Entity / Table | Primary Responsibility | Key Fields & Monetary Types | Ownership & Scoping |
 |---|---|---|---|
-| **`billingConfigs`** | Stores the agreed monthly fee and schedule for a family. | `agreedMonthlyPence` (Integer Pence), `billingAnchorDate` (String 'YYYY-MM-DD'), `invoiceLeadDays` (Integer), `status` (`active`, `paused`, `cancelled`). | Belongs to `parentId` at `centreId` within `organisationId`. |
+| **`billingConfigs`** | Stores the agreed monthly fee, schedule, and service type for a family. | `agreedMonthlyPence` (Integer Pence), `serviceType` (`'childcare'` default or `'tuition'`), `billingAnchorDate` (String 'YYYY-MM-DD'), `invoiceLeadDays` (Integer), `status` (`active`, `paused`, `cancelled`). | Belongs to `parentId` at `centreId` within `organisationId`. |
 | **`billingConfigChildren`** | Junction table mapping covered siblings to a billing config. | `configId`, `childId`. | Maps 1 billing config to multiple children. |
-| **`invoices`** | The issued billing document. | `amount` (String decimal, e.g. `'250.00'`), `status` (`draft`, `sent`, `partially_paid`, `paid`, `void`), `invoiceNumber` (`INV-XXXXXX`), `invoiceDate`, `dueDate`, `billingPeriodStart`, `billingPeriodEnd`, `coveredChildrenJson`. | Belongs to `parentId`, optionally `childId`, at `centreId` within `organisationId`. |
+| **`invoices`** | The issued billing document with locked-in service type snapshot. | `amount` (String decimal, e.g. `'250.00'`), `serviceType` (`'childcare'` or `'tuition'` snapshot), `status` (`draft`, `sent`, `partially_paid`, `paid`, `void`), `invoiceNumber` (`INV-XXXXXX`), `invoiceDate`, `dueDate`, `billingPeriodStart`, `billingPeriodEnd`, `coveredChildrenJson`. | Belongs to `parentId`, optionally `childId`, at `centreId` within `organisationId`. |
+| **`contracts` & `contractPdfs`** | One-time parent e-contracts and immutable signed PDFs for Childcare families. | `status` (`draft`, `sent`, `signed`, `expired`, `revoked`), `amountPence`, `childIds`, `snapshot`, `archivedAt` (archived, never deleted). | Linked to `parentId` and `centreId` (`ON DELETE RESTRICT`). |
 | **`payments`** | Individual financial transactions applied against an invoice. | `amount` (String decimal), `method` (`cash`, `bank_transfer`, `stripe`, `voucher`, `other`), `status` (`verified`, `pending`, `failed`), `transactionReference`, `recordedAt`. | Linked directly to `invoiceId`. |
 | **`billingRuns`** | Audit log tracking completed monthly invoice runs. | `billingConfigId`, `periodStart`, `periodEnd`, `invoiceId`, `amountPence`, `runBy`, `success`. | Supports application pre-checks to prevent duplicate runs for the same period. |
 | **`sessionCredits`** | Administrative attendance forgiveness balance. | `childId`, `sessionsAmount` (Integer), `notes`, `createdBy`. | Tracks attendance allowances; strictly separate from financial invoices. |
@@ -66,7 +68,8 @@ SprintScale enforces granular server-side permission gates for all financial act
 |---|---|---|---|---|---|---|
 | **Finance Dashboard (`/dashboard/finance`)** | ✅ All Centres | ✅ Assigned Centres | ❌ Blocked (Redirect) | ❌ Blocked | ❌ No Access | `src/app/dashboard/finance/page.tsx` |
 | **View Invoices / Details (`/dashboard/finance`)** | ✅ All Centres | ✅ Assigned Centres | ❌ Blocked on Finance UI (Profile View Only) | ❌ No Access | ❌ No Access | `getInvoiceDetails` |
-| **Create / Update Agreed Fee Config** | ✅ All Centres | ✅ Assigned Centres | ❌ Blocked (Read-Only on Family Profile) | ❌ No Access | ❌ No Access | `updateBillingConfig` |
+| **Create / Update Agreed Fee & Service Type** | ✅ All Centres | ✅ Assigned Centres | ❌ Blocked (Read-Only on Family Profile) | ❌ No Access | ❌ No Access | `updateBillingConfig` |
+| **Send / Revoke / Archive Childcare Contract** | ✅ All Centres | ✅ Assigned Centres | ❌ Blocked | ❌ No Access | ✍️ Signs via One-Time Link | `sendContract` / `archiveContract` |
 | **Generate Monthly Invoices (Run)** | ✅ All Centres | ✅ Assigned Centres | ❌ Blocked | ❌ No Access | ❌ No Access | `generateInvoiceFromConfig` |
 | **Record Offline Payment (Cash/Bank)** | ✅ Full Access | ✅ Assigned Centres | ❌ Blocked on Finance UI | ❌ No Access | ❌ No Access | `recordPayment` |
 | **Reconcile Voucher Submissions** | ✅ Full Access | ✅ Assigned Centres | ❌ Blocked on Finance UI | ❌ No Access | ❌ No Access | `verifyPayment` / `failPayment` |
@@ -77,7 +80,7 @@ SprintScale enforces granular server-side permission gates for all financial act
 
 > [!NOTE]
 > **Centre Scoping & Destructive Action Boundaries:**
-> - **Centre Scoping:** Centre Managers have broad day-to-day operational capabilities across Finance (viewing invoices, recording payments, reconciling vouchers, resending notifications, and exporting CSVs) strictly scoped to their authorised centre(s).
+> - **Centre Scoping:** Centre Managers have broad day-to-day operational capabilities across Finance (setting agreed fees and `Childcare` / `Tuition` service types, sending/archiving childcare contracts, viewing invoices, recording payments, reconciling vouchers, resending notifications, and exporting CSVs) strictly scoped to their authorised centre(s).
 > - **Voiding vs. Deleting:**
 >   - **Voiding (`voidInvoice`):** Administrative status transition setting `status = 'void'` and zeroing the parent portal balance. The invoice row, recorded payments, and audit history remain intact in the database for accounting integrity. Restricted strictly to Organisation Owners.
 >   - **Deleting (`deleteInvoice`):** Hard database deletion permanently purging the invoice record (`tx.delete(invoices)`). Restricted strictly to Organisation Owners, and allowed **only** if zero payments have been recorded (`invoice.payments.length === 0`). Invoices with payments cannot be deleted.
@@ -120,6 +123,6 @@ To maintain operational clarity:
 
 > [!IMPORTANT]
 > **Operational & Accounting Boundaries:**
-> - **Not General Ledger Bookkeeping:** SprintScale is a childcare club tuition invoicing and payment logging tool. It does not replace external double-entry accounting software (e.g. Xero, QuickBooks).
+> - **Not General Ledger Bookkeeping:** SprintScale is a childcare and tuition invoicing and payment logging tool. It does not replace external double-entry accounting software (e.g. Xero, QuickBooks).
 > - **Not an Automatic Bank Feed:** The CMS does not connect to banking open-APIs. Recording a bank transfer or TFC receipt reflects an administrative entry made by staff.
-> - **No Automatic Tax/VAT Reporting:** SprintScale issues standard club tuition invoices. VAT or corporate tax returns must be managed through your external accountant or bookkeeping software.
+> - **No Automatic Tax/VAT Reporting:** SprintScale issues standard club childcare and tuition invoices. VAT or corporate tax returns must be managed through your external accountant or bookkeeping software.

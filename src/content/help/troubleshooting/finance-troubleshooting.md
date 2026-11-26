@@ -2,7 +2,7 @@
 ## Milestone D4: Finance, Invoices, Agreed Fees, Payments & Reconciliation
 
 **Target Audience:** Front Desk Staff, Centre Managers, Organisation Owners  
-**Scope:** Practical resolution steps for operational errors during billing runs, invoice adjustments, payment logging, and voucher reconciliation.
+**Scope:** Practical resolution steps for operational errors during billing runs, service type selection, invoice adjustments, payment logging, and voucher reconciliation.
 
 ---
 
@@ -25,6 +25,7 @@
 15. [Invoice created under wrong centre or family account](#15-invoice-under-wrong-family)
 16. [Family is archived but still owes an outstanding balance](#16-archived-family-with-balance)
 17. [Staff entered wrong payment amount or method and need to correct it](#17-incorrect-payment-entry-correction)
+18. [Invoice or receipt shows Childcare / Ofsted details for a Tuition family (or vice versa)](#18-wrong-service-type-on-invoice)
 
 ---
 
@@ -148,3 +149,12 @@
 - **How to Resolve (Owner Action):**
   1. An Organisation Owner opens the invoice details page and clicks **Void Invoice** to cancel the inaccurate invoice (the invoice status updates to `void`, reducing the parent portal liability to £0.00 while preserving all records and audit events).
   2. Create a new invoice and record the correct payment amount (£15).
+
+---
+
+### 18. Wrong Service Type on Invoice {#18-wrong-service-type-on-invoice}
+- **What You May See:** A Tuition family's invoice or receipt displays **Childcare** wording and Ofsted registration lines (or a Childcare family's document says **Tuition** without Ofsted lines).
+- **Root Cause:** Every family defaults to **Childcare**, and `invoices.serviceType` is snapshotted onto each invoice at generation time so issued documents never change retroactively.
+- **How to Resolve:**
+  1. Open `Sidebar → Parents → [Select Parent] → Manage billing cycle → Edit billing settings`, switch **Service type** to the right option (`Childcare` or `Tuition`), and click **Save billing cycle** so all future invoices use the right wording.
+  2. If an already-generated invoice needs replacing and has zero recorded payments, an Organisation Owner can click **Delete Invoice** (or **Void Invoice** if payments exist) and generate a fresh invoice.
