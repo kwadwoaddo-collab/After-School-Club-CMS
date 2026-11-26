@@ -6,15 +6,63 @@ import { stableReceiptNumber } from '@/lib/finance/receipt-number';
 import { normaliseServiceType, serviceTypeLabel } from '@/features/finance/service-type';
 
 
+// Receipt-only overrides: larger type + a highlighted "key details" panel so the facts
+// parents need for claims evidence (service type, assessment period, Ofsted no, payment date)
+// stand out. The shared billingStylesBase is intentionally NOT changed so invoices are unaffected.
 const styles = StyleSheet.create({
     ...billingStylesBase,
+    page: { ...billingStylesBase.page, fontSize: 11, paddingBottom: 110 },
+    header: { ...billingStylesBase.header, marginBottom: 14, paddingBottom: 10 },
+    subtitle: { ...billingStylesBase.subtitle, fontSize: 11 },
+    title: { ...billingStylesBase.title, fontSize: 26 },
+    infoLabel: { ...billingStylesBase.infoLabel, width: 92, fontSize: 10 },
+    infoValue: { ...billingStylesBase.infoValue, width: 110, fontSize: 11 },
+    section: { ...billingStylesBase.section, marginBottom: 12 },
+    sectionTitle: { ...billingStylesBase.sectionTitle, fontSize: 11 },
+    table: { ...billingStylesBase.table, marginTop: 6, marginBottom: 10 },
+    tableHeader: { ...billingStylesBase.tableHeader, fontSize: 11, padding: 7 },
+    tableRow: { ...billingStylesBase.tableRow, fontSize: 12, padding: 7 },
+    totals: { ...billingStylesBase.totals, marginTop: 8 },
+    totalsBox: { ...billingStylesBase.totalsBox, width: 240 },
+    totalRow: { ...billingStylesBase.totalRow, fontSize: 12 },
+    grandTotal: { ...billingStylesBase.grandTotal, fontSize: 16 },
+    footer: { ...billingStylesBase.footer, minHeight: 80, fontSize: 9 },
     col1: { flex: 2 },
     col2: { flex: 1 },
     col3: { flex: 1, textAlign: 'right' },
+    keyPanel: {
+        backgroundColor: '#eff6ff',
+        borderWidth: 1.5,
+        borderColor: '#1e40af',
+        borderRadius: 6,
+        paddingVertical: 10,
+        paddingHorizontal: 14,
+        marginBottom: 14,
+    },
+    keyPanelTitle: {
+        fontSize: 10,
+        fontWeight: 'bold',
+        color: '#1e40af',
+        textTransform: 'uppercase',
+        letterSpacing: 1,
+        marginBottom: 8,
+    },
+    keyGrid: { flexDirection: 'row', flexWrap: 'wrap' },
+    keyCell: { width: '50%', marginBottom: 8, paddingRight: 8 },
+    keyLabel: {
+        fontSize: 9,
+        fontWeight: 'bold',
+        color: '#1e40af',
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+        marginBottom: 2,
+    },
+    keyValue: { fontSize: 15, fontWeight: 'bold', color: '#0f172a' },
+    keyNote: { fontSize: 9, color: '#475569', marginTop: 2 },
     managerInfo: {
-        marginTop: 25,
-        fontSize: 8,
-        color: '#64748b',
+        marginTop: 8,
+        fontSize: 10,
+        color: '#475569',
     }
 });
 
@@ -57,6 +105,11 @@ export const ReceiptTemplate = ({ invoice, organisationName }: ReceiptTemplatePr
         ? stableReceiptNumber(latestVerifiedPayment.id)
         : 'RCP-MANUAL';
 
+    const isChildcare = normaliseServiceType(invoice.serviceType) !== 'tuition';
+    const latestPaymentDate = sortedPayments.length > 0
+        ? safeFormatDate(sortedPayments[0].recordedAt, 'dd MMMM yyyy')
+        : '—';
+
     return (
         <Document title={`Receipt-${invoiceNumber}`}>
             <Page size="A4" style={styles.page}>
@@ -68,16 +121,9 @@ export const ReceiptTemplate = ({ invoice, organisationName }: ReceiptTemplatePr
                     <View>
                         <Text style={styles.subtitle}>Payment Confirmation</Text>
                         <Text style={styles.title}>RECEIPT</Text>
-                        <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#1e40af', marginTop: 2 }}>
+                        <Text style={{ fontSize: 13, fontWeight: 'bold', color: '#1e40af', marginTop: 2 }}>
                             {centre?.name || organisationName || 'CENTRE'}
                         </Text>
-                        {normaliseServiceType(invoice.serviceType) !== 'tuition' && (
-
-                            <Text style={{ fontSize: 8, color: '#64748b', marginTop: 3 }}>
-                                Ofsted Registration No: {centre?.ofstedId || '—'}
-                            </Text>
-
-                        )}
                     </View>
                     <View style={styles.invoiceInfo}>
                         <View style={styles.infoRow}>
@@ -91,6 +137,41 @@ export const ReceiptTemplate = ({ invoice, organisationName }: ReceiptTemplatePr
                         <View style={styles.infoRow}>
                             <Text style={styles.infoLabel}>RECEIPT DATE:</Text>
                             <Text style={styles.infoValue}>{safeFormatDate(new Date(), 'dd/MM/yyyy')}</Text>
+                        </View>
+                    </View>
+                </View>
+
+                {/* Key details — the facts needed for childcare / tuition claims evidence */}
+                <View style={styles.keyPanel}>
+                    <Text style={styles.keyPanelTitle}>Key Details</Text>
+                    <View style={styles.keyGrid}>
+                        <View style={styles.keyCell}>
+                            <Text style={styles.keyLabel}>Type of Service:</Text>
+                            <Text style={styles.keyValue}>{serviceTypeLabel(invoice.serviceType)}</Text>
+                        </View>
+                        <View style={styles.keyCell}>
+                            <Text style={styles.keyLabel}>Service Period:</Text>
+                            <Text style={styles.keyValue}>
+                                {billingPeriodStart && billingPeriodEnd
+                                    ? `${safeFormatDate(billingPeriodStart, 'dd/MM/yyyy')} – ${safeFormatDate(billingPeriodEnd, 'dd/MM/yyyy')}`
+                                    : billingPeriodStart
+                                        ? `From ${safeFormatDate(billingPeriodStart, 'dd/MM/yyyy')}`
+                                        : '—'}
+                            </Text>
+                            <Text style={styles.keyNote}>Assessment period covered by this payment</Text>
+                        </View>
+                        {isChildcare && (
+                            <View style={styles.keyCell}>
+                                <Text style={styles.keyLabel}>Ofsted Registration No:</Text>
+                                <Text style={styles.keyValue}>{centre?.ofstedId || '—'}</Text>
+                            </View>
+                        )}
+                        <View style={styles.keyCell}>
+                            <Text style={styles.keyLabel}>Date of Payment:</Text>
+                            <Text style={styles.keyValue}>{latestPaymentDate}</Text>
+                            {sortedPayments.length > 1 && (
+                                <Text style={styles.keyNote}>Latest of {sortedPayments.length} payments (all listed below)</Text>
+                            )}
                         </View>
                     </View>
                 </View>
@@ -122,16 +203,10 @@ export const ReceiptTemplate = ({ invoice, organisationName }: ReceiptTemplatePr
                                 {allChildNames.length > 1 ? `Child ${i + 1}: ` : 'Child: '}{name}
                             </Text>
                         ))}
-                        <Text>Type of Service: {serviceTypeLabel(invoice.serviceType)}</Text>
-                        {billingPeriodStart && billingPeriodEnd ? (
-                            <Text>Service Period: {safeFormatDate(billingPeriodStart, 'dd/MM/yyyy')} – {safeFormatDate(billingPeriodEnd, 'dd/MM/yyyy')}</Text>
-                        ) : billingPeriodStart ? (
-                            <Text>Service Period: From {safeFormatDate(billingPeriodStart, 'dd/MM/yyyy')}</Text>
-                        ) : null}
                         <Text>Original Invoice: {invoiceNumber}</Text>
                         <Text>Invoice Total: £{invoiceAmount.toFixed(2)}</Text>
                         <Text>Total Paid: £{totalPaid.toFixed(2)}</Text>
-                        <Text>Status: {totalPaid >= invoiceAmount ? 'FULLY PAID' : totalPaid > 0 ? 'PARTIALLY PAID' : (status ? status.toUpperCase() : 'UNPAID')}</Text>
+                        <Text style={{ fontWeight: 'bold', color: '#0f172a' }}>Status: {totalPaid >= invoiceAmount ? 'FULLY PAID' : totalPaid > 0 ? 'PARTIALLY PAID' : (status ? status.toUpperCase() : 'UNPAID')}</Text>
                     </View>
                 </View>
 
@@ -181,9 +256,9 @@ export const ReceiptTemplate = ({ invoice, organisationName }: ReceiptTemplatePr
                 {/* Footer */}
                 <View style={styles.footer}>
                     <View style={styles.footerLeft}>
-                        <Text style={{ fontWeight: 'bold', color: '#ffffff', fontSize: 9 }}>{centre?.name || organisationName || 'CENTRE'}</Text>
+                        <Text style={{ fontWeight: 'bold', color: '#ffffff', fontSize: 11 }}>{centre?.name || organisationName || 'CENTRE'}</Text>
                         {addressLines.map((line: string, i: number) => (
-                            <Text key={i} style={{ color: '#ffffff', fontSize: 7, marginTop: 1 }}>{line}</Text>
+                            <Text key={i} style={{ color: '#ffffff', fontSize: 9, marginTop: 1 }}>{line}</Text>
                         ))}
                     </View>
                     <View style={styles.footerRight}>
