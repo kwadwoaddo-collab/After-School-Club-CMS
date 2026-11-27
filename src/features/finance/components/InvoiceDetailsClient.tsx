@@ -15,6 +15,7 @@ const PDFPreviewModal = dynamic(() => import('./PDFPreviewModal'), { ssr: false 
 import ConfirmActionModal from './ConfirmActionModal';
 import { voidInvoice, updateInvoiceDate, updateInvoiceNotes, resendInvoiceEmail, issueDraftInvoice, updateDraftInvoice, discardDraftInvoice, updateInvoiceServiceType, recordInvoiceWhatsAppHandoff } from '../actions';
 import { buildWhatsAppUrl, buildInvoiceWhatsAppMessage } from '@/lib/whatsapp';
+import { WhatsAppCopyActions } from '@/components/whatsapp/WhatsAppCopyActions';
 import { normaliseServiceType, serviceTypeLabel, type ServiceType } from '../service-type';
 import { canOfferRecordPayment, parseStoredDecimalToPence } from '../domain/payment-eligibility';
 import { formatInvoicePeriod, formatPaidDate } from '../domain/invoice-display';
@@ -251,11 +252,9 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
     const whatsAppAmountFormatted = isPaidForWhatsApp
         ? Number(invoice.amount).toFixed(2)
         : Math.max(0, remainingBalance).toFixed(2);
-    const invoiceWhatsAppUrl =
+    const invoiceWhatsAppMessage =
         invoice.status !== 'draft' && invoice.status !== 'void' && activeParentForContact
-            ? buildWhatsAppUrl(
-                  activeParentForContact.phone,
-                  buildInvoiceWhatsAppMessage({
+            ? buildInvoiceWhatsAppMessage({
                       parentFirstName: activeParentForContact.firstName,
                       invoiceNumber: invoice.invoiceNumber,
                       amountFormatted: whatsAppAmountFormatted,
@@ -268,8 +267,14 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                       isPaid: isPaidForWhatsApp,
                       organisationName,
                   })
-              )
             : null;
+    const invoiceWhatsAppUrl =
+        invoiceWhatsAppMessage && activeParentForContact
+            ? buildWhatsAppUrl(activeParentForContact.phone, invoiceWhatsAppMessage)
+            : null;
+    const invoiceCopyRecipient = activeParentForContact
+        ? [activeParentForContact.firstName, activeParentForContact.lastName].filter(Boolean).join(' ')
+        : null;
 
     const renderCollectionIcon = (stage: InvoiceCollectionStage) => {
         switch (stage) {
@@ -430,6 +435,8 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                                 </button>
                             )}
                             {invoiceWhatsAppUrl && (
+                                <>
+                                <WhatsAppCopyActions phone={activeParentForContact?.phone} message={invoiceWhatsAppMessage} recipientName={invoiceCopyRecipient} variant="button" onMessageCopied={() => { void recordInvoiceWhatsAppHandoff(invoice.id).catch(() => {}); }} />
                                 <a
                                     href={invoiceWhatsAppUrl}
                                     target="_blank"
@@ -442,6 +449,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                                     <MessageCircle className="w-4 h-4" aria-hidden="true" />
                                     {collectionState.stage === 'paid' || invoice.status === 'paid' ? 'Send receipt via WhatsApp' : 'Send via WhatsApp'}
                                 </a>
+                                </>
                             )}
                             {userRole === 'ORG_OWNER' && invoice.status !== 'void' && (
                                 <button
@@ -717,6 +725,8 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                                                                 {activeParent.phone}
                                                             </a>
                                                             {invoiceWhatsAppUrl && (
+                                                                <>
+                                                                <WhatsAppCopyActions phone={activeParentForContact?.phone} message={invoiceWhatsAppMessage} recipientName={invoiceCopyRecipient} variant="text" onMessageCopied={() => { void recordInvoiceWhatsAppHandoff(invoice.id).catch(() => {}); }} />
                                                                 <a
                                                                     href={invoiceWhatsAppUrl}
                                                                     target="_blank"
@@ -729,6 +739,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                                                                     <MessageCircle className="w-3.5 h-3.5" aria-hidden="true" />
                                                                     WhatsApp
                                                                 </a>
+                                                                </>
                                                             )}
                                                         </div>
                                                     )}

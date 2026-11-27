@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { AlertTriangle, Mail, MessageCircle, Phone, Users, Search, ChevronRight } from 'lucide-react';
-import { buildParentGreetingWhatsAppUrl } from '@/lib/whatsapp';
+import { buildParentGreetingMessage, buildParentGreetingWhatsAppUrl } from '@/lib/whatsapp';
+import { WhatsAppCopyActions } from '@/components/whatsapp/WhatsAppCopyActions';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/Table';
 import { EmptyState } from '@/components/ui/EmptyState';
 import DeleteParentButton from '@/features/parents/components/DeleteParentButton';
@@ -111,6 +112,8 @@ export default function ParentsTable({ parents, error, hasActiveFilters }: Paren
                                                 </a>
                                             )}
                                             {whatsappUrl && (
+                                                <>
+                                                <WhatsAppCopyActions phone={parent.phone} message={buildParentGreetingMessage({ parentFirstName: parent.firstName })} recipientName={fullName} variant="icon" />
                                                 <a
                                                     href={whatsappUrl}
                                                     target="_blank"
@@ -121,6 +124,7 @@ export default function ParentsTable({ parents, error, hasActiveFilters }: Paren
                                                 >
                                                     <MessageCircle className="w-3.5 h-3.5" />
                                                 </a>
+                                                </>
                                             )}
                                             {parent.email && (
                                                 <a

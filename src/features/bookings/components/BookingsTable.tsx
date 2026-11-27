@@ -6,7 +6,8 @@ import { useState, useEffect, useRef } from 'react';
 import { format } from 'date-fns';
 import { formatDisplayTimeInTimezone, formatShortDateInTimezone, formatDateInTimezone } from '@/lib/datetime';
 import { MoreVertical, Eye, Calendar as CalendarIcon, X, Clock, MapPin, Trash2, CheckCircle, Loader2, AlertTriangle, Shield, BookOpen, GraduationCap, ChevronUp, ChevronDown, SearchX, Mail, MessageCircle, Phone } from 'lucide-react';
-import { buildParentGreetingWhatsAppUrl } from '@/lib/whatsapp';
+import { buildParentGreetingMessage, buildParentGreetingWhatsAppUrl } from '@/lib/whatsapp';
+import { WhatsAppCopyActions } from '@/components/whatsapp/WhatsAppCopyActions';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/ui/ToastProvider';
@@ -839,6 +840,8 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                                             centreName: booking.centre?.name,
                                                         });
                                                         return waUrl ? (
+                                                            <>
+                                                            <WhatsAppCopyActions phone={booking.parent.phone} message={buildParentGreetingMessage({ parentFirstName: booking.parent.firstName, centreName: booking.centre?.name })} recipientName={`${booking.parent.firstName || 'parent'} ${booking.parent.lastName || ''}`.trim()} variant="icon" />
                                                             <a
                                                                 href={waUrl}
                                                                 target="_blank"
@@ -850,6 +853,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                                             >
                                                                 <MessageCircle className="w-4 h-4" aria-hidden="true" />
                                                             </a>
+                                                            </>
                                                         ) : null;
                                                     })()}
                                                 </div>

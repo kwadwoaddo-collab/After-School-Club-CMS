@@ -6,7 +6,8 @@ import { bookings } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import Link from 'next/link';
 import { MessageCircle } from 'lucide-react';
-import { buildParentGreetingWhatsAppUrl } from '@/lib/whatsapp';
+import { buildParentGreetingMessage, buildParentGreetingWhatsAppUrl } from '@/lib/whatsapp';
+import { WhatsAppCopyActions } from '@/components/whatsapp/WhatsAppCopyActions';
 import { ChevronLeft, Calendar, Clock, MapPin, User, Mail, Phone, CheckCircle2, XCircle, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
 import { requiresAssessmentOutcome } from '@/features/bookings/assessment-outcome';
@@ -366,6 +367,8 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
                                             centreName: booking.centre?.name,
                                         });
                                         return waUrl ? (
+                                            <>
+                                            <WhatsAppCopyActions phone={booking.parent.phone} message={buildParentGreetingMessage({ parentFirstName: booking.parent.firstName, centreName: booking.centre?.name })} recipientName={`${booking.parent.firstName} ${booking.parent.lastName}`} variant="pill" />
                                             <a
                                                 href={waUrl}
                                                 target="_blank"
@@ -375,6 +378,7 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
                                                 <MessageCircle className="w-3.5 h-3.5" aria-hidden="true" />
                                                 WhatsApp
                                             </a>
+                                            </>
                                         ) : null;
                                     })()}
                                 </div>

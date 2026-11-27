@@ -21,7 +21,8 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { MessageCircle } from 'lucide-react';
-import { buildParentGreetingWhatsAppUrl } from '@/lib/whatsapp';
+import { buildParentGreetingMessage, buildParentGreetingWhatsAppUrl } from '@/lib/whatsapp';
+import { WhatsAppCopyActions } from '@/components/whatsapp/WhatsAppCopyActions';
 import dynamic from 'next/dynamic';
 import { cn } from '@/components/ui/utils';
 import { useToast } from '@/components/ui/ToastProvider';
@@ -282,6 +283,8 @@ export default function ParentProfileClient({ parent, invoices, stats, isOwner, 
                                                             parentFirstName: parent.firstName,
                                                         });
                                                         return waUrl ? (
+                                                            <>
+                                                            <WhatsAppCopyActions phone={parent.phone} message={buildParentGreetingMessage({ parentFirstName: parent.firstName })} recipientName={`${parent.firstName} ${parent.lastName}`} variant="pill" />
                                                             <a
                                                                 href={waUrl}
                                                                 target="_blank"
@@ -291,6 +294,7 @@ export default function ParentProfileClient({ parent, invoices, stats, isOwner, 
                                                                 <MessageCircle className="w-3.5 h-3.5" aria-hidden="true" />
                                                                 Send WhatsApp
                                                             </a>
+                                                            </>
                                                         ) : null;
                                                     })()}
                                                 </div>
