@@ -1627,3 +1627,51 @@ export const contractPdfs = pgTable('contract_pdfs', {
   sha256: varchar('sha256', { length: 64 }).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
+
+// ==================== WHATSAPP BUSINESS PLATFORM (Phase 2) ====================
+// Migration-owned (drizzle/0040_whatsapp_business_platform.sql). CHECKs and partial unique indexes live in the migration only.
+export const whatsappCentreConfigs = pgTable('whatsapp_centre_configs', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  organisationId: uuid('organisation_id').references(() => organisations.id, { onDelete: 'cascade' }).notNull(),
+  centreId: uuid('centre_id').references(() => centres.id, { onDelete: 'cascade' }).notNull().unique(),
+  phoneNumberId: varchar('phone_number_id', { length: 64 }),
+  wabaId: varchar('waba_id', { length: 64 }),
+  displayPhone: varchar('display_phone', { length: 30 }),
+  status: varchar('status', { length: 20 }).$type<'pending' | 'active' | 'disabled'>().notNull().default('pending'),
+  enabled: boolean('enabled').notNull().default(false),
+  updatedBy: uuid('updated_by').references(() => users.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const whatsappConsents = pgTable('whatsapp_consents', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  organisationId: uuid('organisation_id').references(() => organisations.id, { onDelete: 'cascade' }).notNull(),
+  parentId: uuid('parent_id').references(() => parents.id, { onDelete: 'cascade' }).notNull(),
+  status: varchar('status', { length: 12 }).$type<'opted_in' | 'opted_out'>().notNull(),
+  source: varchar('source', { length: 40 }).notNull(),
+  recordedBy: uuid('recorded_by').references(() => users.id, { onDelete: 'set null' }),
+  recordedAt: timestamp('recorded_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const whatsappMessages = pgTable('whatsapp_messages', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  organisationId: uuid('organisation_id').references(() => organisations.id, { onDelete: 'cascade' }).notNull(),
+  centreId: uuid('centre_id').references(() => centres.id, { onDelete: 'cascade' }).notNull(),
+  parentId: uuid('parent_id').references(() => parents.id, { onDelete: 'cascade' }).notNull(),
+  invoiceId: uuid('invoice_id').references(() => invoices.id, { onDelete: 'set null' }),
+  templateName: varchar('template_name', { length: 80 }).notNull(),
+  templateLanguage: varchar('template_language', { length: 10 }).notNull(),
+  idempotencyKey: varchar('idempotency_key', { length: 120 }).notNull().unique(),
+  wamid: varchar('wamid', { length: 255 }),
+  status: varchar('status', { length: 12 }).$type<'queued' | 'dry_run' | 'sent' | 'delivered' | 'read' | 'failed'>().notNull().default('queued'),
+  errorCode: varchar('error_code', { length: 20 }),
+  errorMessage: varchar('error_message', { length: 300 }),
+  dryRun: boolean('dry_run').notNull().default(false),
+  createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  sentAt: timestamp('sent_at', { withTimezone: true }),
+  deliveredAt: timestamp('delivered_at', { withTimezone: true }),
+  readAt: timestamp('read_at', { withTimezone: true }),
+  failedAt: timestamp('failed_at', { withTimezone: true }),
+});
