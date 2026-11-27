@@ -120,20 +120,38 @@ export function formatWhatsAppRecipientDisplay(recipientValue: string | null | u
 /**
  * Builds a polite, GDPR-safe 1-click greeting link for parent/student/booking contact rows.
  */
+export function buildParentGreetingMessage(params: {
+    parentFirstName?: string | null;
+    centreName?: string | null;
+}): string | undefined {
+    const firstName = params.parentFirstName?.trim();
+    const centre = params.centreName?.trim();
+    return firstName
+        ? centre
+            ? `Hi ${firstName}, this is ${centre}. `
+            : `Hi ${firstName}, `
+        : undefined;
+}
+
 export function buildParentGreetingWhatsAppUrl(params: {
     phone?: string | null;
     parentFirstName?: string | null;
     centreName?: string | null;
 }): string | null {
-    const firstName = params.parentFirstName?.trim();
-    const centre = params.centreName?.trim();
-    const greeting = firstName
-        ? centre
-            ? `Hi ${firstName}, this is ${centre}. `
-            : `Hi ${firstName}, `
-        : undefined;
+    return buildWhatsAppUrl(params.phone, buildParentGreetingMessage(params));
+}
 
-    return buildWhatsAppUrl(params.phone, greeting);
+/**
+ * Formats a stored phone number for copy/paste into WhatsApp search or the phone contacts:
+ * UK mobiles as `+44 7xxx xxxxxx`, anything else as `+<digits>`. Returns `null` when the number is not valid.
+ */
+export function formatPhoneForCopy(raw: string | null | undefined): string | null {
+    const digits = normaliseWhatsAppPhone(raw);
+    if (!digits) return null;
+    if (/^447\d{9}$/.test(digits)) {
+        return `+44 ${digits.slice(2, 6)} ${digits.slice(6)}`;
+    }
+    return `+${digits}`;
 }
 
 /**

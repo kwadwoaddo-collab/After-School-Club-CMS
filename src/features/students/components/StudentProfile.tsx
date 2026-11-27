@@ -13,7 +13,8 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { MessageCircle } from 'lucide-react';
-import { buildParentGreetingWhatsAppUrl } from '@/lib/whatsapp';
+import { buildParentGreetingMessage, buildParentGreetingWhatsAppUrl } from '@/lib/whatsapp';
+import { WhatsAppCopyActions } from '@/components/whatsapp/WhatsAppCopyActions';
 import { cn } from '@/components/ui/utils';
 import ProgressNoteForm from '@/features/students/components/ProgressNoteForm';
 import ProgressTimeline from '@/features/students/components/ProgressTimeline';
@@ -424,6 +425,10 @@ export default function StudentProfile({
                                                 centreName: student.centreName,
                                             });
                                             return waUrl ? (
+                                                <>
+                                                <div className="px-4 py-2.5">
+                                                    <WhatsAppCopyActions phone={student.parent.phone} message={buildParentGreetingMessage({ parentFirstName: student.parent.firstName, centreName: student.centreName })} recipientName={`${student.parent.firstName} ${student.parent.lastName}`} variant="pill" />
+                                                </div>
                                                 <a
                                                     href={waUrl}
                                                     target="_blank"
@@ -436,6 +441,7 @@ export default function StudentProfile({
                                                     </span>
                                                     <ChevronRight className="w-4 h-4 text-text-muted group-hover:text-emerald-700 transition-colors" />
                                                 </a>
+                                                </>
                                             ) : null;
                                         })()}
                                         <a

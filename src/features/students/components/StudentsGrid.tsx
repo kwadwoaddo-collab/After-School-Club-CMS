@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import { followUpBucket, FOLLOW_UP_LABELS } from '../follow-up-queue';
 import { AlertTriangle, Shield, Mail, MessageCircle, Phone, Calendar } from 'lucide-react';
-import { buildParentGreetingWhatsAppUrl } from '@/lib/whatsapp';
+import { buildParentGreetingMessage, buildParentGreetingWhatsAppUrl } from '@/lib/whatsapp';
+import { WhatsAppCopyActions } from '@/components/whatsapp/WhatsAppCopyActions';
 import { Badge } from '@/components/ui/Badge';
 import { formatShortDate, type StudentRow } from './StudentsTable';
 
@@ -128,6 +129,8 @@ export default function StudentsGrid({ students, followUpMode = false, today = '
                                             parentFirstName: student.parentFirstName,
                                         });
                                         return waUrl ? (
+                                            <>
+                                            <WhatsAppCopyActions phone={student.parentPhone} message={buildParentGreetingMessage({ parentFirstName: student.parentFirstName })} recipientName={`${student.parentFirstName} ${student.parentLastName}`} variant="text" className="relative z-10" />
                                             <a
                                                 href={waUrl}
                                                 target="_blank"
@@ -137,6 +140,7 @@ export default function StudentsGrid({ students, followUpMode = false, today = '
                                                 <MessageCircle className="w-3 h-3" />
                                                 WhatsApp
                                             </a>
+                                            </>
                                         ) : null;
                                     })()}
                                 </div>

@@ -21,6 +21,8 @@ import {
     buildCommunityWhatsAppCopy,
     formatWhatsAppRecipientDisplay,
 } from '@/lib/whatsapp';
+import { copyTextToClipboard } from '@/lib/clipboard';
+import { WhatsAppCopyActions } from '@/components/whatsapp/WhatsAppCopyActions';
 
 const sendMessages: Record<string, string> = {
     'Unauthorized': 'Your access could not be confirmed. Sign in again before sending.',
@@ -103,6 +105,7 @@ export default function CommunicationsClient({
     const [activeTab, setActiveTab] = useState<'compose' | 'history'>('compose');
     const [composeChannel, setComposeChannel] = useState<'email' | 'whatsapp'>('email');
     const [copiedCommunity, setCopiedCommunity] = useState(false);
+    const [copyCommunityFailed, setCopyCommunityFailed] = useState(false);
     const [broadcasts, setBroadcasts] = useState<Broadcast[]>(
         initialData ? [...initialData.broadcasts].reverse() : []
     );
@@ -288,12 +291,14 @@ export default function CommunicationsClient({
             message,
             centreName,
         });
-        try {
-            await navigator.clipboard.writeText(text);
+        const ok = await copyTextToClipboard(text);
+        if (ok) {
+            setCopyCommunityFailed(false);
             setCopiedCommunity(true);
             setTimeout(() => setCopiedCommunity(false), 2500);
-        } catch {
-            // Clipboard permission denied — ignore silently
+        } else {
+            setCopiedCommunity(false);
+            setCopyCommunityFailed(true);
         }
     };
 
@@ -535,6 +540,14 @@ export default function CommunicationsClient({
                                             {copiedCommunity ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
                                             {copiedCommunity ? 'Copied for Community!' : 'Copy for WhatsApp Community'}
                                         </button>
+                                        <span className="sr-only" aria-live="polite">
+                                            {copiedCommunity ? 'Announcement copied for WhatsApp Community' : ''}
+                                        </span>
+                                        {copyCommunityFailed && (
+                                            <p role="alert" className="w-full text-right text-xs font-medium text-destructive">
+                                                Couldn&apos;t copy automatically. Select the subject and message above and copy them manually (Ctrl/Cmd+C).
+                                            </p>
+                                        )}
                                         <button
                                             type="submit"
                                             disabled={isSending || isLoading || loadError || sendUnknown || whatsappCount === 0}
@@ -694,7 +707,7 @@ export default function CommunicationsClient({
                                 </h2>
                                 <p className="text-xs text-muted-foreground mt-0.5">
                                     {selectedBroadcast.status === 'WHATSAPP_QUEUE'
-                                        ? 'Click Open in WhatsApp for each parent to send from your club device'
+                                        ? 'Copy each message and paste it into WhatsApp Web, or use Open in WhatsApp (this can reload an open WhatsApp Web tab). Only Open in WhatsApp marks a parent as handled.'
                                         : 'Delivery audit and recipient ledger'}
                                 </p>
                             </div>
@@ -771,20 +784,20 @@ export default function CommunicationsClient({
                                                 ? String(d.recipientEmail).slice('whatsapp:'.length)
                                                 : null;
                                             const firstNameOnly = d.recipientName ? d.recipientName.split(' ')[0] : null;
-                                            const rowWhatsAppUrl = isWhatsAppRow
-                                                ? buildWhatsAppUrl(
-                                                      rawPhoneFromRecipient,
-                                                      buildBroadcastWhatsAppMessage({
-                                                          firstName: firstNameOnly,
-                                                          subject: selectedBroadcast.subject,
-                                                          message: selectedBroadcast.message,
-                                                          centreName,
-                                                      })
-                                                  )
+                                            const rowWhatsAppMessage = isWhatsAppRow
+                                                ? buildBroadcastWhatsAppMessage({
+                                                      firstName: firstNameOnly,
+                                                      subject: selectedBroadcast.subject,
+                                                      message: selectedBroadcast.message,
+                                                      centreName,
+                                                  })
+                                                : null;
+                                            const rowWhatsAppUrl = rowWhatsAppMessage
+                                                ? buildWhatsAppUrl(rawPhoneFromRecipient, rowWhatsAppMessage)
                                                 : null;
 
                                             return (
-                                                <div key={d.id} className="p-3 bg-secondary/20 border border-border rounded-xl text-xs flex items-center justify-between gap-2">
+                                                <div key={d.id} className="p-3 bg-secondary/20 border border-border rounded-xl text-xs flex flex-wrap items-center justify-between gap-2">
                                                     <div className="truncate max-w-[200px]">
                                                         {d.parentId ? (
                                                             <Link
@@ -800,8 +813,11 @@ export default function CommunicationsClient({
                                                             {formatWhatsAppRecipientDisplay(d.recipientEmail)}
                                                         </div>
                                                     </div>
-                                                    <div className="flex items-center gap-2 shrink-0">
+                                                    <div className="flex flex-wrap items-center gap-2">
                                                         {rowWhatsAppUrl && (
+                                                            <>
+                                                            {/* Copy never marks the delivery as sent; only opening the chat does (existing behaviour). */}
+<WhatsAppCopyActions phone={rawPhoneFromRecipient} message={rowWhatsAppMessage} recipientName={d.recipientName} variant="pill" />
                                                             <a
                                                                 href={rowWhatsAppUrl}
                                                                 target="_blank"
@@ -817,6 +833,7 @@ export default function CommunicationsClient({
                                                                 {d.status === 'SENT' ? 'Re-open' : 'Open in WhatsApp'}
                                                                 <ExternalLink className="w-2.5 h-2.5" aria-hidden="true" />
                                                             </a>
+                                                            </>
                                                         )}
                                                         <div className="text-right">
                                                             <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${

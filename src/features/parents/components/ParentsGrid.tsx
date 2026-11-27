@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Mail, MessageCircle, Phone, Baby } from 'lucide-react';
-import { buildParentGreetingWhatsAppUrl } from '@/lib/whatsapp';
+import { buildParentGreetingMessage, buildParentGreetingWhatsAppUrl } from '@/lib/whatsapp';
+import { WhatsAppCopyActions } from '@/components/whatsapp/WhatsAppCopyActions';
 import type { ParentRow } from './ParentsTable';
 
 /* ------------------------------------------------------------------ */
@@ -81,6 +82,8 @@ export default function ParentsGrid({ parents }: ParentsGridProps) {
                                             {parent.phone}
                                         </a>
                                         {whatsappUrl && (
+                                            <>
+                                            <WhatsAppCopyActions phone={parent.phone} message={buildParentGreetingMessage({ parentFirstName: parent.firstName })} recipientName={fullName} variant="text" className="relative z-10" />
                                             <a
                                                 href={whatsappUrl}
                                                 target="_blank"
@@ -90,6 +93,7 @@ export default function ParentsGrid({ parents }: ParentsGridProps) {
                                                 <MessageCircle className="w-3 h-3" />
                                                 WhatsApp
                                             </a>
+                                            </>
                                         )}
                                     </div>
                                 )}

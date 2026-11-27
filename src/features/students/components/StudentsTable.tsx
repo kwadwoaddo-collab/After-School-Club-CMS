@@ -4,7 +4,8 @@ import Link from 'next/link';
 import { followUpBucket, FOLLOW_UP_LABELS } from '../follow-up-queue';
 import { useRouter } from 'next/navigation';
 import { ShieldAlert, Mail, MessageCircle, Phone, Users, Plus, TrendingDown, AlertTriangle, Search } from 'lucide-react';
-import { buildParentGreetingWhatsAppUrl } from '@/lib/whatsapp';
+import { buildParentGreetingMessage, buildParentGreetingWhatsAppUrl } from '@/lib/whatsapp';
+import { WhatsAppCopyActions } from '@/components/whatsapp/WhatsAppCopyActions';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/Table';
 import { Badge } from '@/components/ui/Badge';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -235,6 +236,8 @@ export default function StudentsTable({ students, error, hasActiveFilters, follo
                             parentFirstName: student.parentFirstName,
                           });
                           return waUrl ? (
+                            <>
+                            <WhatsAppCopyActions phone={student.parentPhone} message={buildParentGreetingMessage({ parentFirstName: student.parentFirstName })} recipientName={`${student.parentFirstName} ${student.parentLastName}`} variant="icon" />
                             <a
                               href={waUrl}
                               target="_blank"
@@ -246,6 +249,7 @@ export default function StudentsTable({ students, error, hasActiveFilters, follo
                             >
                               <MessageCircle className="w-3.5 h-3.5" />
                             </a>
+                            </>
                           ) : null;
                         })()}
                       </div>
