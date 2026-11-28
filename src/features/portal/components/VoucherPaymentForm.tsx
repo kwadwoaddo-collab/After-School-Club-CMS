@@ -31,7 +31,7 @@ export function VoucherPaymentForm({ invoiceId, amountDue }: { invoiceId: string
 
     return (
         <form onSubmit={handleSubmit} className="flex flex-col gap-2">
-            <label htmlFor={inputId} className="text-xs text-on-surface-variant">
+            <label htmlFor={inputId} className="text-xs text-text-muted font-medium">
                 Log Childcare Voucher Payment
             </label>
             <input
@@ -41,12 +41,12 @@ export function VoucherPaymentForm({ invoiceId, amountDue }: { invoiceId: string
                 value={reference}
                 onChange={(e) => setReference(e.target.value)}
                 required
-                className="w-full bg-card border border-border rounded-lg p-2.5 text-sm text-foreground placeholder:text-on-surface-variant focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus:border-primary/50 transition-colors"
+                className="w-full min-h-[44px] bg-surface border border-border rounded-lg px-3 py-2.5 text-sm text-text placeholder:text-text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus:border-accent transition-colors"
             />
             <button
                 type="submit"
                 disabled={isSubmitting || !reference.trim()}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-primary/10 text-primary border border-primary/20 rounded-lg text-sm font-bold hover:bg-primary hover:text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-colors disabled:opacity-50"
+                className="w-full min-h-[44px] flex items-center justify-center gap-2 px-4 py-2.5 bg-accent/10 text-accent border border-accent/20 rounded-lg text-sm font-bold hover:bg-accent hover:text-on-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent transition-colors disabled:opacity-50 cursor-pointer"
             >
                 <CreditCard className="w-4 h-4" aria-hidden="true" />
                 {isSubmitting ? 'Submitting...' : 'Log Payment'}

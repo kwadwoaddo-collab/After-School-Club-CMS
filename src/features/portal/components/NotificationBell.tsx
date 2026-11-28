@@ -70,7 +70,7 @@ export default function NotificationBell({ notifications, unreadCount }: Props) 
         onClick={() => setIsOpen(v => !v)}
         aria-expanded={isOpen}
         aria-haspopup="dialog"
-        className="relative min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl hover:bg-secondary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        className="relative min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl hover:bg-secondary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
       >
         <Bell className="w-5 h-5 text-muted-foreground" aria-hidden="true" />
@@ -102,7 +102,7 @@ export default function NotificationBell({ notifications, unreadCount }: Props) 
                     type="button"
                     onClick={handleMarkAllRead}
                     disabled={isPending}
-                    className="min-h-6 px-2 rounded-md text-xs text-primary font-semibold inline-flex items-center gap-1 hover:text-primary/80 hover:bg-secondary/60 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    className="min-h-6 px-2 rounded-md text-xs text-primary font-semibold inline-flex items-center gap-1 hover:text-primary/80 hover:bg-secondary/60 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                   >
                     <CheckCheck className="w-3.5 h-3.5" aria-hidden="true" /> Mark all read
                   </button>
@@ -111,7 +111,7 @@ export default function NotificationBell({ notifications, unreadCount }: Props) 
                   type="button"
                   onClick={() => setIsOpen(false)}
                   aria-label="Close notifications"
-                  className="min-h-9 min-w-9 flex items-center justify-center p-1 rounded-lg hover:bg-secondary text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  className="min-h-11 min-w-11 flex items-center justify-center p-1 rounded-lg hover:bg-secondary text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                 >
                   <X className="w-4 h-4" aria-hidden="true" />
                 </button>
@@ -131,7 +131,7 @@ export default function NotificationBell({ notifications, unreadCount }: Props) 
                     const rowClassName = cn(
                       'flex items-start gap-3 px-4 py-3 transition-colors',
                       !n.readAt ? 'bg-primary/5' : 'hover:bg-secondary/40',
-                      isSafeInternalHref(n.href) && 'hover:bg-secondary/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary'
+                      isSafeInternalHref(n.href) && 'hover:bg-secondary/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent'
                     );
                     const content = (
                       <>

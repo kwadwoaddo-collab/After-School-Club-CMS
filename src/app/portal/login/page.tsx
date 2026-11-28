@@ -111,8 +111,8 @@ function PortalLoginForm() {
                         </button>
                     </form>
                 ) : (
-                    <div className="bg-[var(--if-success-soft)] border border-[var(--if-success)]/30 p-6 rounded-xl animate-fadeIn">
-                        <h2 className="text-lg font-semibold text-[var(--if-success)] mb-2">Check your email!</h2>
+                    <div className="bg-[var(--if-success-soft,#f0fdf4)] border border-[var(--if-success,#166534)]/30 p-6 rounded-xl animate-fadeIn">
+                        <h2 className="text-lg font-semibold text-[var(--if-success,#166534)] mb-2">Check your email!</h2>
                         <p className="text-[var(--if-text-secondary)] text-sm mb-4">
                             We&apos;ve sent a secure login link to <strong>{email}</strong>.
                         </p>
@@ -150,9 +150,7 @@ function PortalLoginForm() {
 
 export default function PortalLoginPage() {
     return (
-        <>
-            <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[100] focus:px-4 focus:py-2.5 focus:rounded-md focus:bg-[var(--if-accent)] focus:text-[var(--if-on-accent)] focus:text-sm focus:font-semibold focus:shadow-lg">Skip to main content</a>
-            <main id="main-content" tabIndex={-1} className="min-h-screen bg-[var(--if-page)] text-[var(--if-text)] flex flex-col items-center justify-center p-4">
+        <main id="main-content" tabIndex={-1} className="min-h-screen bg-[var(--if-page)] text-[var(--if-text)] flex flex-col items-center justify-center p-4">
             <Suspense fallback={
                 <div className="w-full max-w-md bg-[var(--if-surface-elevated)] border border-[var(--if-border-subtle)] rounded-[14px] shadow-xl p-8 text-center">
                     <div className="animate-pulse flex flex-col items-center">
@@ -165,6 +163,5 @@ export default function PortalLoginPage() {
                 <PortalLoginForm />
             </Suspense>
         </main>
-        </>
     );
 }
