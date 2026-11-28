@@ -11,7 +11,7 @@ const linkClass = `text-[var(--if-accent)] hover:text-[var(--if-accent-hover)] u
 function BrandLockup() {
     return (
         <Link href="/" className={`inline-flex items-center gap-2.5 min-h-[44px] w-fit text-[var(--if-text)] ${focusRing}`} aria-label="After-School Club CMS · by SprintScale IT">
-            <span className="w-9 h-9 rounded-lg bg-[#0F5F5C] text-white inline-flex items-center justify-center font-bold text-lg" aria-hidden="true">S</span>
+            <span className="w-9 h-9 rounded-lg bg-[var(--if-accent)] text-[var(--if-on-accent)] inline-flex items-center justify-center font-bold text-lg" aria-hidden="true">S</span>
             <span className="flex flex-col leading-tight text-left">
                 <span className="font-bold text-sm">After-School Club CMS</span>
                 <span className="text-xs text-[var(--if-text-muted)]">by SprintScale IT</span>
@@ -47,6 +47,7 @@ export default function ForgotPasswordPage() {
 
     return (
         <div className="min-h-screen grid md:grid-cols-2 bg-[var(--if-page)] text-[var(--if-text)] overflow-x-hidden">
+            <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[100] focus:px-4 focus:py-2.5 focus:rounded-md focus:bg-[var(--if-accent)] focus:text-[var(--if-on-accent)] focus:text-sm focus:font-semibold focus:shadow-lg">Skip to main content</a>
             {/* Left Side */}
             <div className="hidden md:flex flex-col justify-between p-12 relative overflow-hidden bg-[var(--if-surface)] border-r border-[var(--if-border-subtle)]">
                 <Link href="/" className={`flex items-center gap-2 min-h-[44px] w-fit text-[var(--if-text-secondary)] hover:text-[var(--if-text)] transition-colors mb-8 ${focusRing}`}>
@@ -58,10 +59,10 @@ export default function ForgotPasswordPage() {
 
                 <div className="flex-1 flex flex-col justify-center">
                     <BrandLockup />
-                    <h1 className="text-4xl lg:text-5xl font-bold mt-10 mb-6">
+                    <h2 className="text-4xl lg:text-5xl font-bold mt-10 mb-6">
                         Get back <br />
                         <span className="text-[var(--if-accent)]">into your account</span>
-                    </h1>
+                    </h2>
                     <p className="text-lg mb-8 text-[var(--if-text-secondary)]">
                         If you signed up with Google, just click <strong className="text-[var(--if-text)]">&quot;Sign in with Google&quot;</strong> — no password needed.
                     </p>
@@ -85,7 +86,7 @@ export default function ForgotPasswordPage() {
                 </div>
                 <div className="max-w-md w-full">
                     <div className="text-center mb-8">
-                        <h2 className="text-3xl font-bold mb-2">Forgot Password?</h2>
+                        <h1 className="text-3xl font-bold mb-2">Reset your password</h1>
                         <p className="text-sm text-[var(--if-text-secondary)]">
                             No problem — choose how you signed in originally
                         </p>
@@ -180,7 +181,7 @@ export default function ForgotPasswordPage() {
                                     <button
                                         type="submit"
                                         disabled={loading || !email.trim()}
-                                        className={`w-full min-h-[44px] py-3 rounded-lg bg-[#0F5F5C] text-white font-semibold hover:bg-[#0C4A47] focus-visible:bg-[#0C4A47] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${focusRing}`}
+                                        className={`w-full min-h-[44px] py-3 rounded-lg bg-[var(--if-accent)] text-[var(--if-on-accent)] font-semibold hover:bg-[var(--if-accent-hover)] focus-visible:bg-[var(--if-accent-hover)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${focusRing}`}
                                     >
                                         {loading ? (
                                             <>

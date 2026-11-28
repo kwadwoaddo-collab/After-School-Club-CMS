@@ -90,7 +90,7 @@ export default function MobileBottomNav({ userRole = 'TUTOR' }: MobileNavProps) 
                                 <span className={`absolute -top-0.5 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-accent rounded-full ${isPendingTarget ? 'animate-pulse' : ''}`} />
                             )}
                             <item.icon className={`w-5 h-5 ${highlighted ? 'text-accent' : 'text-text-muted'}`} />
-                            <span className={`text-[10px] font-semibold ${highlighted ? 'text-accent' : ''}`}>
+                            <span className={`text-[11px] sm:text-xs leading-tight truncate max-w-[64px] font-semibold ${highlighted ? 'text-accent' : ''}`}>
                                 {item.name}
                             </span>
                         </Link>

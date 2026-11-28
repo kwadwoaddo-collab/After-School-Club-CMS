@@ -452,8 +452,8 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                         <Bell className="size-4" />
                         {unreadCount > 0 && (
                             <span className="absolute top-2 right-2 flex h-2.5 w-2.5">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75" />
-                                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500 border border-header" />
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-danger opacity-75" />
+                                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-danger border border-header" />
                             </span>
                         )}
                     </button>
@@ -475,7 +475,7 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                                     )}
                                 </div>
                                 {unreadCount > 0 && (
-                                    <span className="text-xs font-bold bg-red-500/15 text-red-500 px-2 py-0.5 rounded-full border border-red-500/20">
+                                    <span className="text-xs font-bold bg-danger-soft text-danger px-2 py-0.5 rounded-full border border-danger/20">
                                         {unreadCount} new
                                     </span>
                                 )}

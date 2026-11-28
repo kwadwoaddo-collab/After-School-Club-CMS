@@ -313,11 +313,7 @@ select:user-invalid {
   box-shadow: 0 0 0 3px rgba(255, 69, 58, 0.2);
 }
 
-input:user-valid:not(:placeholder-shown),
-textarea:user-valid:not(:placeholder-shown),
-select:user-valid {
-  border-color: #30d158; /* Apple System Green */
-}
+/* user-valid border override removed per STD-01 / VC-03 */
 
 /* Content Visibility for Data Grids (Performance Optimization) */
 .data-grid-optimized {
@@ -843,7 +839,7 @@ body:not(.landing-page-active) :is(.hover\:bg-white\/10):hover {
 /* Ensure all interactive elements have focus-visible ring by default */
 @layer base {
   button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
-    @apply outline-none ring-2 ring-primary ring-offset-2 ring-offset-background;
+    @apply outline-none ring-2 ring-accent ring-offset-2 ring-offset-background;
   }
 }
 
@@ -862,6 +858,7 @@ body:not(.landing-page-active) :is(.hover\:bg-white\/10):hover {
   --color-page: var(--if-page);
   --color-surface: var(--if-surface);
   --color-surface-elevated: var(--if-surface-elevated);
+  --color-surface-alt: var(--if-surface-alt);
   --color-text: var(--if-text);
   --color-text-secondary: var(--if-text-secondary);
   --color-text-muted: var(--if-text-muted);
@@ -870,12 +867,18 @@ body:not(.landing-page-active) :is(.hover\:bg-white\/10):hover {
   --color-accent-hover: var(--if-accent-hover);
   --color-accent-soft: var(--if-accent-soft);
   --color-on-accent: var(--if-on-accent);
+  --color-accent-foreground: var(--if-on-accent);
   --color-success-soft: var(--if-success-soft);
   --color-warning-soft: var(--if-warning-soft);
   --color-info-soft: var(--if-info-soft);
   --color-danger: var(--if-danger);
   --color-danger-soft: var(--if-danger-soft);
   --color-on-danger: var(--if-on-danger);
+  --color-success: var(--if-success);
+  --color-on-success: var(--if-on-success);
+  --color-info: var(--if-info);
+  --color-border-strong: var(--if-border-strong);
+  --color-ring: var(--if-accent);
 }
 
 :root {
@@ -885,6 +888,7 @@ body:not(.landing-page-active) :is(.hover\:bg-white\/10):hover {
   --if-page: #FAF9F7;
   --if-surface: #FFFFFF;
   --if-surface-elevated: #FFFFFF;
+  --if-surface-alt: #F3F1EC;
   --if-text: #1C1B1A;
   --if-text-secondary: #57534E;
   --if-text-muted: #6B6560;
@@ -899,6 +903,10 @@ body:not(.landing-page-active) :is(.hover\:bg-white\/10):hover {
   --if-danger: #B3261E;
   --if-danger-soft: #FCEAE9;
   --if-on-danger: #FFFFFF; /* 6.30:1 on #B3261E */
+  --if-success: #166534; /* 7.13:1 on #FFFFFF */
+  --if-on-success: #FFFFFF;
+  --if-info: #0066CC; /* 5.57:1 on #FFFFFF */
+  --if-border-strong: #C8C3B8; /* WCAG 1.4.11 >= 3.0:1 */
   --shadow-popover: 0 4px 16px rgba(28, 27, 26, 0.10), 0 1px 4px rgba(28, 27, 26, 0.06);
 }
 
@@ -911,6 +919,7 @@ body:not(.landing-page-active) :is(.hover\:bg-white\/10):hover {
     --if-page: #141413;
     --if-surface: #1C1B1A;
     --if-surface-elevated: #232221;
+    --if-surface-alt: #252422;
     --if-text: #F2F0ED;
     --if-text-secondary: #C7C2BC;
     --if-text-muted: #948E87;
@@ -925,6 +934,10 @@ body:not(.landing-page-active) :is(.hover\:bg-white\/10):hover {
     --if-danger: #F87171;
     --if-danger-soft: rgba(179, 38, 30, 0.20);
     --if-on-danger: #141413; /* 6.90:1 on #F87171 */
+    --if-success: #4ADE80; /* 10.8:1 on #1C1B1A */
+    --if-on-success: #0E1716;
+    --if-info: #38BDF8; /* 8.7:1 on #1C1B1A */
+    --if-border-strong: #3E3B38;
     --shadow-popover: 0 4px 16px rgba(0, 0, 0, 0.35), 0 1px 4px rgba(0, 0, 0, 0.25);
   }
 }
@@ -933,6 +946,7 @@ body:not(.landing-page-active) :is(.hover\:bg-white\/10):hover {
   --if-page: #141413;
   --if-surface: #1C1B1A;
   --if-surface-elevated: #232221;
+  --if-surface-alt: #252422;
   --if-text: #F2F0ED;
   --if-text-secondary: #C7C2BC;
   --if-text-muted: #948E87;
@@ -947,6 +961,10 @@ body:not(.landing-page-active) :is(.hover\:bg-white\/10):hover {
   --if-danger: #F87171;
   --if-danger-soft: rgba(179, 38, 30, 0.20);
   --if-on-danger: #141413; /* 6.90:1 on #F87171 */
+  --if-success: #4ADE80; /* 10.8:1 on #1C1B1A */
+  --if-on-success: #0E1716;
+  --if-info: #38BDF8; /* 8.7:1 on #1C1B1A */
+  --if-border-strong: #3E3B38;
   --shadow-popover: 0 4px 16px rgba(0, 0, 0, 0.35), 0 1px 4px rgba(0, 0, 0, 0.25);
 }
 
@@ -954,6 +972,7 @@ body:not(.landing-page-active) :is(.hover\:bg-white\/10):hover {
   --if-page: #FAF9F7;
   --if-surface: #FFFFFF;
   --if-surface-elevated: #FFFFFF;
+  --if-surface-alt: #F3F1EC;
   --if-text: #1C1B1A;
   --if-text-secondary: #57534E;
   --if-text-muted: #6B6560;
@@ -968,6 +987,10 @@ body:not(.landing-page-active) :is(.hover\:bg-white\/10):hover {
   --if-danger: #B3261E;
   --if-danger-soft: #FCEAE9;
   --if-on-danger: #FFFFFF;
+  --if-success: #166534; /* 7.13:1 on #FFFFFF */
+  --if-on-success: #FFFFFF;
+  --if-info: #0066CC; /* 5.57:1 on #FFFFFF */
+  --if-border-strong: #C8C3B8;
   --shadow-popover: 0 4px 16px rgba(28, 27, 26, 0.10), 0 1px 4px rgba(28, 27, 26, 0.06);
 }
 

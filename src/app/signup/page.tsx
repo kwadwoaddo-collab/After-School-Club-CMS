@@ -11,13 +11,13 @@ const focusRing =
 const inputClass =
   'w-full px-4 py-3 min-h-[44px] bg-[var(--if-surface)] text-[var(--if-text)] border border-[var(--if-text-muted)] rounded-lg placeholder:text-[var(--if-text-muted)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--if-accent)] focus:border-[var(--if-accent)]';
 const labelClass = 'block text-sm font-medium text-[var(--if-text-secondary)] mb-2';
-const primaryBtnClass = `w-full min-h-[44px] py-3 px-4 bg-[#0F5F5C] text-white font-bold rounded-lg hover:bg-[#0C4A47] focus-visible:bg-[#0C4A47] transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${focusRing}`;
+const primaryBtnClass = `w-full min-h-[44px] py-3 px-4 bg-[var(--if-accent)] text-[var(--if-on-accent)] font-bold rounded-lg hover:bg-[var(--if-accent-hover)] focus-visible:bg-[var(--if-accent-hover)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${focusRing}`;
 const linkClass = `text-[var(--if-accent)] hover:text-[var(--if-accent-hover)] underline underline-offset-2 ${focusRing}`;
 
 function BrandLockup() {
   return (
     <Link href="/" className={`inline-flex items-center gap-2.5 min-h-[44px] w-fit text-[var(--if-text)] ${focusRing}`} aria-label="After-School Club CMS · by SprintScale IT">
-      <span className="w-9 h-9 rounded-lg bg-[#0F5F5C] text-white inline-flex items-center justify-center font-bold text-lg" aria-hidden="true">S</span>
+      <span className="w-9 h-9 rounded-lg bg-[var(--if-accent)] text-[var(--if-on-accent)] inline-flex items-center justify-center font-bold text-lg" aria-hidden="true">S</span>
       <span className="flex flex-col leading-tight text-left">
         <span className="font-bold text-sm">After-School Club CMS</span>
         <span className="text-xs text-[var(--if-text-muted)]">by SprintScale IT</span>
@@ -101,6 +101,7 @@ export default function SignupPage() {
 
   return (
     <div className="min-h-screen grid md:grid-cols-2 bg-[var(--if-page)] text-[var(--if-text)] overflow-x-hidden">
+            <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[100] focus:px-4 focus:py-2.5 focus:rounded-md focus:bg-[var(--if-accent)] focus:text-[var(--if-on-accent)] focus:text-sm focus:font-semibold focus:shadow-lg">Skip to main content</a>
       {/* Left Side - Product Content */}
       <div className="hidden md:flex flex-col justify-between p-12 relative overflow-hidden bg-[var(--if-surface)] border-r border-[var(--if-border-subtle)]">
         <Link href="/" className={`flex items-center gap-2 min-h-[44px] w-fit text-[var(--if-text-secondary)] hover:text-[var(--if-text)] transition-colors mb-8 ${focusRing}`}>
@@ -399,7 +400,7 @@ export default function SignupPage() {
                       formData.password !== formData.confirmPassword ||
                       !formData.acceptedTerms
                     }
-                    className={`flex-1 min-h-[44px] py-3 px-4 bg-[#0F5F5C] text-white font-bold rounded-lg hover:bg-[#0C4A47] focus-visible:bg-[#0C4A47] transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${focusRing}`}
+                    className={`flex-1 min-h-[44px] py-3 px-4 bg-[var(--if-accent)] text-[var(--if-on-accent)] font-bold rounded-lg hover:bg-[var(--if-accent-hover)] focus-visible:bg-[var(--if-accent-hover)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${focusRing}`}
                   >
                     {loading ? 'Creating account...' : 'Create Account'}
                   </button>

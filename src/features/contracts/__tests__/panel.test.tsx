@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 
 const m = vi.hoisted(() => ({ archive: vi.fn().mockResolvedValue({ success: true, message: 'ok' }) }));
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
@@ -32,10 +32,12 @@ describe('ContractPanel', () => {
         expect(container.querySelector('a[href="/api/contracts/a1/pdf"]')).not.toBeNull();
     });
     it('archives after confirmation and has no delete control', () => {
-        vi.spyOn(window, 'confirm').mockReturnValue(true);
         render(<ContractPanel configId="cfg" centreId="c" data={{ status: view(), details }} />);
         expect(screen.queryByRole('button', { name: /delete/i })).toBeNull();
         fireEvent.click(screen.getByRole('button', { name: 'Archive contract' }));
+        const dialog = screen.getByRole('dialog');
+        const modalConfirm = within(dialog).getByRole('button', { name: 'Archive contract' });
+        fireEvent.click(modalConfirm);
         expect(m.archive).toHaveBeenCalledWith({ contractId: 's1' });
     });
     it('still lists contracts when the billing plan is gone, and cannot send', () => {

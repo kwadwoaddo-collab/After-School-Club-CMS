@@ -56,7 +56,6 @@ export function AttendanceRadial({ percentage, size = 'md', children, className,
                     strokeDasharray={circumference}
                     style={{ 
                         strokeDashoffset: offset,
-                        filter: percentage > 0 ? `drop-shadow(0 0 3px currentColor)` : 'none'
                     }}
                     strokeLinecap="round"
                     className={cn(
