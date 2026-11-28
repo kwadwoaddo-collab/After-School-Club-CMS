@@ -926,7 +926,7 @@ body:not(.landing-page-active) :is(.hover\:bg-white\/10):hover {
     --if-border-subtle: #2C2B29;
     --if-accent: #2FA39D;
     --if-accent-hover: #45B5AF;
-    --if-accent-soft: rgba(47, 163, 157, 0.16);
+    --if-accent-soft: rgba(47, 163, 157, 0.12);
     --if-on-accent: #0E1716; /* 6.83:1 on #2FA39D */
     --if-success-soft: rgba(48, 209, 88, 0.16);
     --if-warning-soft: rgba(255, 159, 10, 0.18);
@@ -953,7 +953,7 @@ body:not(.landing-page-active) :is(.hover\:bg-white\/10):hover {
   --if-border-subtle: #2C2B29;
   --if-accent: #2FA39D;
   --if-accent-hover: #45B5AF;
-  --if-accent-soft: rgba(47, 163, 157, 0.16);
+  --if-accent-soft: rgba(47, 163, 157, 0.12);
   --if-on-accent: #0E1716; /* 6.83:1 on #2FA39D */
   --if-success-soft: rgba(48, 209, 88, 0.16);
   --if-warning-soft: rgba(255, 159, 10, 0.18);

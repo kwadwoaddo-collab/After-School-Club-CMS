@@ -16,8 +16,8 @@ function PublicErrorCard({ title, description, backHref, backLabel }: {
 }) {
   return (
     <div className="min-h-screen bg-surface flex items-center justify-center px-4">
-      <div className="bg-card border border-outline-variant/20 rounded-3xl shadow-xl p-8 text-center max-w-md">
-        <div className="w-14 h-14 rounded-2xl bg-error/10 border border-error/20 flex items-center justify-center mx-auto mb-4">
+      <div className="bg-card border border-outline-variant/20 rounded-xl shadow-sm p-8 text-center max-w-md">
+        <div className="w-14 h-14 rounded-xl bg-error/10 border border-error/20 flex items-center justify-center mx-auto mb-4">
           <MapPin className="w-7 h-7 text-error" />
         </div>
         <h1 className="text-2xl font-bold text-on-surface mb-2">{title}</h1>
@@ -25,7 +25,7 @@ function PublicErrorCard({ title, description, backHref, backLabel }: {
         {backHref && backLabel && (
           <a
             href={backHref}
-            className="inline-block text-sm font-semibold px-6 py-2.5 rounded-xl border border-outline-variant/20 text-on-surface hover:bg-surface-dim transition-colors"
+            className="inline-flex items-center justify-center min-h-11 text-sm font-semibold px-6 py-2.5 rounded-lg border border-outline-variant/20 text-on-surface hover:bg-surface-dim transition-colors"
           >
             {backLabel}
           </a>
@@ -111,7 +111,7 @@ export default async function BookingPage({
     // Intentionally deferred: rescheduling prefill via the staff-dashboard route
   }
 
-  const brandColor = org.brandColor || '#4F46E5';
+  const brandColor = org.brandColor || '#0F766E';
 
   return (
     <div
@@ -122,7 +122,7 @@ export default async function BookingPage({
         {/* V-2 fix: replaced legacy bg-card/text-foreground/border-border with CMS tokens.
             The card uses a welcoming public presentation, not the internal dashboard layout. */}
         <div
-          className="bg-card text-on-surface rounded-3xl shadow-xl border border-outline-variant/20 overflow-hidden"
+          className="bg-card text-on-surface rounded-xl shadow-sm border border-outline-variant/20 overflow-hidden"
           style={{ borderTopColor: brandColor, borderTopWidth: '4px' }}
         >
           <div className="px-4 sm:px-8 pt-8 pb-4">

@@ -17,6 +17,7 @@ import {
     MapPin,
     Landmark,
     Calendar,
+    Lightbulb,
 } from 'lucide-react';
 import { VoucherPaymentForm } from '@/features/portal/components/VoucherPaymentForm';
 import StripePayButton from '@/features/portal/components/StripePayButton';
@@ -364,7 +365,7 @@ export default async function BillingDashboard(props: { searchParams: Promise<{ 
                                                     <details className="mt-3 bg-surface-alt/70 border border-border rounded-xl p-3 text-xs text-text-muted group">
                                                         <summary className="font-semibold text-text cursor-pointer select-none flex items-center justify-between list-none">
                                                             <span className="flex items-center gap-1.5">
-                                                                <span className="text-accent" aria-hidden="true">💡</span>
+                                                                <Lightbulb className="w-3.5 h-3.5 text-accent shrink-0" aria-hidden="true" />
                                                                 <span>Paying by Tax-Free Childcare?</span>
                                                             </span>
                                                             <span className="text-text-muted group-open:rotate-180 transition-transform font-mono text-[10px]">▼</span>
