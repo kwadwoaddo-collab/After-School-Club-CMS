@@ -535,9 +535,9 @@ export default function CommunicationsClient({
                                             type="button"
                                             disabled={!subject.trim() || !message.trim()}
                                             onClick={() => void handleCopyCommunityAnnouncement()}
-                                            className="px-5 py-3 bg-secondary hover:bg-secondary/80 text-foreground font-bold rounded-xl transition-all flex items-center gap-2 disabled:opacity-50"
+                                            className="px-5 py-3 bg-secondary hover:bg-secondary/80 border border-border text-foreground font-bold rounded-xl transition-all flex items-center gap-2 disabled:opacity-50"
                                         >
-                                            {copiedCommunity ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
+                                            {copiedCommunity ? <Check className="w-4 h-4 text-accent" /> : <Copy className="w-4 h-4" />}
                                             {copiedCommunity ? 'Copied for Community!' : 'Copy for WhatsApp Community'}
                                         </button>
                                         <span className="sr-only" aria-live="polite">
@@ -551,7 +551,7 @@ export default function CommunicationsClient({
                                         <button
                                             type="submit"
                                             disabled={isSending || isLoading || loadError || sendUnknown || whatsappCount === 0}
-                                            className="px-6 py-3 bg-emerald-700 text-white font-bold rounded-xl hover:bg-emerald-800 transition-all shadow-sm flex items-center gap-2 disabled:opacity-50"
+                                            className="px-6 py-3 bg-accent text-on-accent font-bold rounded-xl hover:opacity-90 transition-all shadow-sm flex items-center gap-2 disabled:opacity-50"
                                         >
                                             {isSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <MessageCircle className="w-4 h-4" />}
                                             Prepare 1-to-1 WhatsApp Queue
@@ -826,13 +826,24 @@ export default function CommunicationsClient({
                                                                 className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition-colors ${
                                                                     d.status === 'SENT'
                                                                         ? 'bg-secondary text-muted-foreground hover:text-foreground'
-                                                                        : 'bg-emerald-700 text-white hover:bg-emerald-800'
+                                                                        : 'bg-accent text-on-accent hover:opacity-90'
                                                                 }`}
                                                             >
                                                                 <MessageCircle className="w-3 h-3" aria-hidden="true" />
                                                                 {d.status === 'SENT' ? 'Re-open' : 'Open in WhatsApp'}
                                                                 <ExternalLink className="w-2.5 h-2.5" aria-hidden="true" />
                                                             </a>
+                                                            {d.status !== "SENT" && (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleMarkWhatsAppOpened(d.id)}
+                                                                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-border text-[11px] font-semibold text-text-muted hover:text-text hover:bg-surface-alt transition-colors"
+                                                                    title="Mark sent without opening link"
+                                                                >
+                                                                    <Check className="w-3 h-3 text-accent" aria-hidden="true" />
+                                                                    <span>Mark sent</span>
+                                                                </button>
+                                                            )}
                                                             </>
                                                         )}
                                                         <div className="text-right">
@@ -844,7 +855,7 @@ export default function CommunicationsClient({
                                                                 {d.status === 'AWAITING_HANDOFF' ? 'READY' : d.status}
                                                             </span>
                                                             {d.lastError && (
-                                                                <p className="mt-1 max-w-[200px] text-xs text-destructive">Delivery needs checking. Review the parent’s email address and ask your manager to check delivery before sending again.</p>
+                                                                <p className="mt-1 max-w-[200px] text-xs text-destructive">Delivery needs checking. {isWhatsAppRow ? "Review the parent’s phone number and ask your manager to check delivery before sending again." : "Review the parent’s email address and ask your manager to check delivery before sending again."}</p>
                                                             )}
                                                         </div>
                                                     </div>

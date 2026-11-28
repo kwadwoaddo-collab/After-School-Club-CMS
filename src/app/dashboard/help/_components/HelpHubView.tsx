@@ -39,6 +39,7 @@ interface HelpHubViewProps {
   totalGuideCount: number;
   recommendedPath?: HelpLearningPathMetadata | null;
   totalPathCount?: number;
+  totalVideoCount?: number;
 }
 
 const CATEGORY_ICONS: Record<HelpCategory, React.ElementType> = {
@@ -60,6 +61,7 @@ export default function HelpHubView({
   totalGuideCount,
   recommendedPath,
   totalPathCount = 5,
+  totalVideoCount = 52,
 }: HelpHubViewProps) {
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
 
@@ -87,7 +89,7 @@ export default function HelpHubView({
             </span>
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-surface-elevated text-text-secondary border border-border">
               <Video className="size-3.5" aria-hidden="true" />
-              52 Training Videos
+              {totalVideoCount} Training Videos
             </span>
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
               <Compass className="size-3.5" aria-hidden="true" />
@@ -106,7 +108,7 @@ export default function HelpHubView({
 
       <section
         aria-label="Welcome and Training Overview"
-        className="rounded-xl border border-border bg-gradient-to-br from-surface via-surface to-page p-6 sm:p-8 shadow-sm"
+        className="rounded-xl border border-border bg-surface hover:border-accent/40 p-6 sm:p-8 shadow-sm transition-colors"
       >
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-center">
           <div className="lg:col-span-2 space-y-3">

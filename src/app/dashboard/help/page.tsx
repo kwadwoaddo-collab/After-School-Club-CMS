@@ -11,6 +11,7 @@ import {
 } from '@/lib/help/get-help-content';
 
 import { CMS_STAFF_ROLES, HelpStaffRole, STAFF_ROLE_LABELS } from '@/lib/help/types';
+import { HELP_VIDEOS } from '@/lib/help/help-manifest';
 import HelpHubView from './_components/HelpHubView';
 
 export const metadata: Metadata = {
@@ -78,6 +79,7 @@ export default async function HelpPage() {
       totalGuideCount={allGuides.length}
       recommendedPath={recommendedPath}
       totalPathCount={allLearningPaths.length}
+      totalVideoCount={HELP_VIDEOS.length}
     />
   );
 }

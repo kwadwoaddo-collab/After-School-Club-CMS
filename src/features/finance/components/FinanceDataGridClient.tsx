@@ -290,7 +290,7 @@ export default function FinanceDataGridClient({ invoices = [], totalCount = 0, p
             {/* KPI Stat Cards Summary */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* Stat Card 1: Total Invoiced */}
-                <div className="bg-card/80 backdrop-blur-md border border-border/60 rounded-3xl p-5 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between group">
+                <div className="bg-card/80 backdrop-blur-md border border-border/60 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between group">
                     <div className="flex items-center justify-between">
                         <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Invoiced (Page)</span>
                         <div className="w-9 h-9 rounded-2xl bg-primary/10 text-primary flex items-center justify-center transition-colors duration-200">
@@ -306,7 +306,7 @@ export default function FinanceDataGridClient({ invoices = [], totalCount = 0, p
                 </div>
 
                 {/* Stat Card 2: Total Collected */}
-                <div className="bg-card/80 backdrop-blur-md border border-border/60 rounded-3xl p-5 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between group">
+                <div className="bg-card/80 backdrop-blur-md border border-border/60 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between group">
                     <div className="flex items-center justify-between">
                         <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Collected (Page)</span>
                         <div className="w-9 h-9 rounded-2xl bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 flex items-center justify-center transition-colors duration-200">
@@ -322,7 +322,7 @@ export default function FinanceDataGridClient({ invoices = [], totalCount = 0, p
                 </div>
 
                 {/* Stat Card 3: Outstanding */}
-                <div className="bg-card/80 backdrop-blur-md border border-border/60 rounded-3xl p-5 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between group">
+                <div className="bg-card/80 backdrop-blur-md border border-border/60 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between group">
                     <div className="flex items-center justify-between">
                         <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Outstanding (Page)</span>
                         <div className="w-9 h-9 rounded-2xl bg-amber-500/10 text-amber-800 dark:text-amber-200 flex items-center justify-center transition-colors duration-200">
@@ -340,7 +340,7 @@ export default function FinanceDataGridClient({ invoices = [], totalCount = 0, p
                 </div>
 
                 {/* Stat Card 4: Overdue Count */}
-                <div className="bg-card/80 backdrop-blur-md border border-border/60 rounded-3xl p-5 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between group">
+                <div className="bg-card/80 backdrop-blur-md border border-border/60 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between group">
                     <div className="flex items-center justify-between">
                         <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Overdue (Page)</span>
                         <div className="w-9 h-9 rounded-2xl bg-rose-500/10 text-rose-700 dark:text-rose-300 flex items-center justify-center transition-colors duration-200">
@@ -358,7 +358,7 @@ export default function FinanceDataGridClient({ invoices = [], totalCount = 0, p
 
             <h2 id="invoice-list" className="scroll-mt-24 text-xl font-bold text-foreground">Invoice list</h2>
             {/* Segmented Toolbar */}
-            <div className="flex flex-col sm:flex-row justify-between items-center bg-card/80 backdrop-blur-md p-3.5 rounded-3xl border border-border/60 shadow-sm gap-4">
+            <div className="flex flex-col sm:flex-row justify-between items-center bg-card/80 backdrop-blur-md p-3.5 rounded-2xl border border-border/60 shadow-sm gap-4">
                 <div className="flex flex-wrap bg-secondary/50 p-1.5 rounded-2xl w-full sm:w-auto border border-border/40 gap-1">
                     {STATUS_FILTER_OPTIONS.map((opt) => (
                         <button
@@ -415,7 +415,7 @@ export default function FinanceDataGridClient({ invoices = [], totalCount = 0, p
             </div>
 
             {/* Data Grid Table */}
-            <div className="bg-card/90 backdrop-blur-md border border-border/60 rounded-3xl overflow-hidden shadow-sm transition-all duration-300">
+            <div className="bg-card/90 backdrop-blur-md border border-border/60 rounded-2xl overflow-hidden shadow-sm transition-all duration-300">
                 <p className="px-4 py-2 text-xs text-muted-foreground border-b border-border">Each row is one invoice. Billing period is the service covered; Created is when the record was made. Scroll for actions.</p>
                 <div role="region" aria-label="Invoices table, scroll for more columns" tabIndex={0} className="overflow-x-auto focus-visible:outline-2 focus-visible:outline-primary">
                     <table className="w-full min-w-[760px] text-left border-collapse">
