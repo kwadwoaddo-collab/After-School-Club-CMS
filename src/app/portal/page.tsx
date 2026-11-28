@@ -189,7 +189,7 @@ export default async function PortalDashboard() {
                         ) : hasInPeriod ? (
                             <Link
                                 href="/portal/billing"
-                                className="inline-flex items-center justify-center bg-primary hover:bg-primary/90 text-accent-foreground rounded-xl px-4 py-2.5 text-sm font-bold transition-colors shrink-0"
+                                className="inline-flex items-center justify-center bg-accent hover:opacity-90 text-on-accent rounded-xl px-4 py-2.5 text-sm font-bold transition-colors shrink-0"
                             >
                                 View &amp; Pay
                             </Link>

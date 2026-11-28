@@ -92,9 +92,9 @@ export default async function ParentReceiptPage(props: { params: Promise<{ id: s
             : '—';
 
     return (
-        <div className="min-h-screen bg-page text-text pb-16">
+        <div className="min-h-screen bg-page text-text pb-16 print:bg-white print:text-slate-900 print:pb-0">
             {/* Screen Header / Back Bar */}
-            <header className="bg-surface border-b border-border sticky top-0 z-20 no-print">
+            <header className="bg-surface border-b border-border sticky top-0 z-20 print:hidden">
                 <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
                         <Link
@@ -115,7 +115,7 @@ export default async function ParentReceiptPage(props: { params: Promise<{ id: s
 
             <main id="main-content" tabIndex={-1} className="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-6">
                 {/* Receipt Card Shell */}
-                <div className="bg-surface border border-border rounded-2xl sm:rounded-3xl p-6 sm:p-10 shadow-sm space-y-8 print:border-none print:shadow-none print:p-0">
+                <div className="bg-surface border border-border rounded-2xl sm:rounded-3xl p-6 sm:p-10 shadow-sm space-y-8 print:border-none print:shadow-none print:p-0 print:bg-white print:text-slate-900 [&_*]:print:text-slate-900 [&_*]:print:border-slate-300">
                     {/* Top Identity & Status */}
                     <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-6 pb-6 border-b border-border">
                         <div>

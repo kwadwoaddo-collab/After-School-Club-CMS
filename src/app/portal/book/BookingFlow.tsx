@@ -591,7 +591,7 @@ export function BookingFlow({ registeredChildren: childList, centres, reschedule
                         </div>
                     )}
 
-                    <div className="flex justify-between mt-6">
+                    <div className="flex justify-between items-center mt-6 sticky bottom-0 z-10 bg-surface/95 backdrop-blur-sm border-t border-border py-3 -mx-4 px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] sm:static sm:bg-transparent sm:border-0 sm:p-0 sm:mx-0 sm:pb-0">
                         <button
                             type="button"
                             onClick={() => handleSetStep(1)}
@@ -653,7 +653,7 @@ export function BookingFlow({ registeredChildren: childList, centres, reschedule
                         </div>
                     )}
 
-                    <div className="flex justify-between">
+                    <div className="flex justify-between items-center mt-6 sticky bottom-0 z-10 bg-surface/95 backdrop-blur-sm border-t border-border py-3 -mx-4 px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] sm:static sm:bg-transparent sm:border-0 sm:p-0 sm:mx-0 sm:pb-0">
                         <button
                             type="button"
                             onClick={() => handleSetStep(2)}
