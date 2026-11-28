@@ -923,7 +923,7 @@ export function KioskClock() {
     return (
         <div
             suppressHydrationWarning
-            className="text-text font-bold text-4xl tabular-nums tracking-tight"
+            className="hidden sm:block text-text font-bold text-2xl lg:text-4xl tabular-nums tracking-tight"
         >
             {format(now, 'HH:mm')}
         </div>
@@ -1113,10 +1113,10 @@ export default function KioskRegister({ slots, date, dateStr, centreName, centre
         });
 
     return (
-        <div className="flex flex-col h-[calc(100dvh-7.5rem-env(safe-area-inset-bottom,0px))] lg:h-[calc(100dvh-3.5rem)] bg-page -mx-4 sm:-mx-6 -mt-6 lg:-my-6 lg:-mx-8 overflow-hidden">
+        <div className="flex flex-col h-[calc(100dvh-7.5rem-env(safe-area-inset-bottom,0px))] lg:h-[calc(100dvh-3.5rem)] bg-page -mx-4 sm:-mx-8 -mt-4 sm:-mt-8 -mb-20 lg:-my-8 overflow-hidden">
 
             {/* ── TOP BAR ─────────────────────────────────────────────────── */}
-            <div className="flex items-center justify-between px-6 py-4 bg-surface border-b border-border-subtle flex-shrink-0">
+            <div className="flex items-center justify-between flex-wrap gap-2 px-4 sm:px-6 py-3 sm:py-4 bg-surface border-b border-border-subtle flex-shrink-0">
                 <div>
                     <div className="flex items-center gap-2.5 flex-wrap">
                         <h1 className="text-text font-bold text-lg leading-tight tracking-tight">Daily Register</h1>
@@ -1138,7 +1138,6 @@ export default function KioskRegister({ slots, date, dateStr, centreName, centre
                             size="icon"
                             onClick={() => setMobileMenuOpen(v => !v)}
                             aria-label="Register options"
-                            aria-haspopup="menu"
                             aria-expanded={mobileMenuOpen}
                             className="min-h-11 min-w-11"
                         >
@@ -1146,13 +1145,11 @@ export default function KioskRegister({ slots, date, dateStr, centreName, centre
                         </Button>
                         {mobileMenuOpen && (
                             <div
-                                role="menu"
                                 aria-label="Register options"
                                 className="absolute right-0 top-full mt-1.5 w-48 bg-surface-elevated border border-border rounded-md shadow-[var(--shadow-popover)] z-50 p-1"
                             >
                                 <button
                                     type="button"
-                                    role="menuitem"
                                     onClick={() => {
                                         setMobileMenuOpen(false);
                                         lastRefreshAtRef.current = Date.now();
@@ -1165,7 +1162,6 @@ export default function KioskRegister({ slots, date, dateStr, centreName, centre
                                 </button>
                                 <button
                                     type="button"
-                                    role="menuitem"
                                     onClick={() => {
                                         setMobileMenuOpen(false);
                                         setLarge(v => !v);
@@ -1239,14 +1235,14 @@ export default function KioskRegister({ slots, date, dateStr, centreName, centre
                     { label: 'Unmarked', value: unmarkedCount, color: unmarkedCount > 0 ? 'text-amber-700 dark:text-amber-400' : 'text-text-muted' },
                 ].map((stat, i) => (
                     <div key={stat.label} className={`flex-1 py-3 text-center ${i > 0 ? 'border-l border-border-subtle' : ''}`}>
-                        <p className={`text-xl font-bold ${stat.color}`}>{stat.value}</p>
+                        <p className={`text-xl font-bold tabular-nums ${stat.color}`}>{stat.value}</p>
                         <p className="text-[10px] text-text-muted font-semibold uppercase tracking-widest">{stat.label}</p>
                     </div>
                 ))}
                 <div className="flex-1 py-3 px-4 border-l border-border-subtle">
                     <div className="flex items-center justify-between mb-1">
                         <p className="text-[10px] text-text-muted font-semibold uppercase tracking-widest">Done</p>
-                        <p className="text-xs font-bold text-text">{progressPct}%</p>
+                        <p className="text-xs font-bold tabular-nums text-text">{progressPct}%</p>
                     </div>
                     <div className="h-1.5 bg-border-subtle rounded-full">
                         <div

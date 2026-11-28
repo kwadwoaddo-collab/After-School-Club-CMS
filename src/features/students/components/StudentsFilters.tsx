@@ -301,7 +301,7 @@ export default function StudentsFilters({ centres, resultsCount = 0 }: StudentsF
             (selectedYears.length > 0 ? 1 : 0) +
             (status !== 'all' ? 1 : 0) +
             (status === 'follow-ups' && followUp !== 'all' ? 1 : 0);
-        return <span className="text-label text-text-muted">Active (${count}):</span>;
+        return <span className="text-label text-text-muted">Active ({count}):</span>;
     })()}
                     {searchParams.get('search') && (
                         <Badge variant="info">&quot;{searchParams.get('search')}&quot; ({resultsCount} results)</Badge>

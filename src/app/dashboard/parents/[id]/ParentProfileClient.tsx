@@ -180,7 +180,7 @@ export default function ParentProfileClient({ parent, invoices, stats, isOwner, 
 
                                 {isEditingContact ? (
                                     <div className="space-y-3">
-                                        <div className="grid grid-cols-2 gap-3">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                             <div>
                                                 <label className="text-label text-text-muted block mb-1">First name</label>
                                                 <input
@@ -200,7 +200,7 @@ export default function ParentProfileClient({ parent, invoices, stats, isOwner, 
                                                 />
                                             </div>
                                         </div>
-                                        <div className="grid grid-cols-2 gap-3">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                             <div>
                                                 <label className="text-label text-text-muted block mb-1">Email</label>
                                                 <input
@@ -230,7 +230,7 @@ export default function ParentProfileClient({ parent, invoices, stats, isOwner, 
                                                 className="w-full h-9 px-3 bg-surface border border-border rounded-sm text-small-body font-medium text-text placeholder:text-text-muted focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent transition-colors"
                                             />
                                         </div>
-                                        <div className="grid grid-cols-2 gap-3">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                             <div>
                                                 <label className="text-label text-text-muted block mb-1">City</label>
                                                 <input

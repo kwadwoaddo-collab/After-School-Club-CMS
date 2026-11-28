@@ -125,7 +125,8 @@ export default function StudentLifecyclePanel({
             )}
             {canChangeStatus && status !== 'stopped' && (
                 <Button
-                    variant="destructive"
+                    variant="outline"
+                    className="border-danger/40 text-danger hover:bg-danger-soft sm:ml-auto"
                     onClick={() => {
                         setStopDate(today);
                         setStopPreset('');
