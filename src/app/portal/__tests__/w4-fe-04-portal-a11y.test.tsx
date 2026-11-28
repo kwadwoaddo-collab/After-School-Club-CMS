@@ -96,7 +96,7 @@ describe('Wave 4 FE-04 — Parent Portal & Public UX/WCAG 2.2 AA', () => {
         expect(dialog.className).toContain('fixed inset-x-4 top-16');
 
         const closeBtn = screen.getByRole('button', { name: 'Close notifications' });
-        expect(closeBtn.className).toContain('min-h-9 min-w-9');
+        expect(closeBtn.className).toContain('min-h-11 min-w-11');
 
         const billingLink = screen.getByRole('link', { name: /New Invoice Ready/i });
         expect(billingLink.getAttribute('href')).toBe('/portal/billing');
