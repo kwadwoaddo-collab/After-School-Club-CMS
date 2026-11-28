@@ -30,6 +30,7 @@ export function formatShortDate(dateStr?: string | null): string {
 }
 
 export interface StudentRow {
+  serviceType?: 'childcare' | 'tuition' | string | null;
   enrolmentStatus?: string;
   lifecycleStatus?: string;
   lifecycleEffectiveDate?: string | null;
@@ -163,6 +164,11 @@ export default function StudentsTable({ students, error, hasActiveFilters, follo
                           >
                             {student.firstName} {student.lastName}
                           </Link>
+                          {student.serviceType && (
+                            <Badge variant="default">
+                              {student.serviceType === 'tuition' ? 'Tuition' : student.serviceType === 'childcare' ? 'Childcare' : student.serviceType}
+                            </Badge>
+                          )}
                           {student.isRegistered && (
                             <span
                               className="w-1.5 h-1.5 rounded-full bg-success flex-shrink-0"
@@ -188,7 +194,7 @@ export default function StudentsTable({ students, error, hasActiveFilters, follo
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell className="text-text-secondary">
+                  <TableCell className="text-text-secondary tabular-nums">
                     {followUpMode ? (student.lastContactAt ? new Date(student.lastContactAt).toLocaleDateString('en-GB', { timeZone: 'Europe/London' }) : 'Not recorded') : student.dateOfBirth ? new Date(student.dateOfBirth).toLocaleDateString('en-GB') : '—'}
                   </TableCell>
                   <TableCell>
@@ -213,8 +219,9 @@ export default function StudentsTable({ students, error, hasActiveFilters, follo
                         {student.parentEmail && (
                           <a
                             href={`mailto:${student.parentEmail}`}
-                            className="p-1 hover:bg-page rounded-sm text-text-muted hover:text-text transition-colors inline-flex items-center justify-center"
+                            className="p-1 min-h-6 min-w-6 hover:bg-page rounded-sm text-text-muted hover:text-text transition-colors inline-flex items-center justify-center"
                             title={student.parentEmail}
+                            aria-label={`Email ${student.parentFirstName} ${student.parentLastName} at ${student.parentEmail}`}
                             onClick={(e) => e.stopPropagation()}
                           >
                             <Mail className="w-3.5 h-3.5" />
@@ -223,8 +230,9 @@ export default function StudentsTable({ students, error, hasActiveFilters, follo
                         {student.parentPhone && (
                           <a
                             href={`tel:${student.parentPhone}`}
-                            className="p-1 hover:bg-page rounded-sm text-text-muted hover:text-text transition-colors inline-flex items-center justify-center"
+                            className="p-1 min-h-6 min-w-6 hover:bg-page rounded-sm text-text-muted hover:text-text transition-colors inline-flex items-center justify-center"
                             title={student.parentPhone}
+                            aria-label={`Call ${student.parentFirstName} ${student.parentLastName} at ${student.parentPhone}`}
                             onClick={(e) => e.stopPropagation()}
                           >
                             <Phone className="w-3.5 h-3.5" />
@@ -243,7 +251,7 @@ export default function StudentsTable({ students, error, hasActiveFilters, follo
                               target="_blank"
                               rel="noopener noreferrer"
                               aria-label={`Message ${student.parentFirstName} ${student.parentLastName} on WhatsApp`}
-                              className="p-1 hover:bg-page rounded-sm text-emerald-700 dark:text-emerald-400 hover:opacity-80 transition-opacity inline-flex items-center justify-center"
+                              className="p-1 min-h-6 min-w-6 hover:bg-page rounded-sm text-emerald-700 dark:text-emerald-400 hover:opacity-80 transition-opacity inline-flex items-center justify-center"
                               title={`WhatsApp ${student.parentFirstName} ${student.parentLastName}`}
                               onClick={(e) => e.stopPropagation()}
                             >
@@ -255,12 +263,12 @@ export default function StudentsTable({ students, error, hasActiveFilters, follo
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell align="center" className="text-text-secondary">
+                  <TableCell align="center" className="text-text-secondary tabular-nums">
                     {student.bookingCount}
                   </TableCell>
                   <TableCell>
                     {student.nextAssessment ? (
-                      <span className="text-text-secondary">
+                      <span className="text-text-secondary tabular-nums">
                         {new Date(student.nextAssessment).toLocaleDateString('en-GB', {
                           day: 'numeric',
                           month: 'short',

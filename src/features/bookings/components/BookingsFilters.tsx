@@ -78,8 +78,7 @@ export default function BookingsFilters({ centres, resultsCount = 0, statusCount
         fromDate ||
         toDate ||
         searchParams.get('today') ||
-        (searchParams.get('outcome') && searchParams.get('outcome') !== 'all') ||
-        selectedCentreId !== 'all'
+        (searchParams.get('outcome') && searchParams.get('outcome') !== 'all')
     );
 
     const handleClearFilters = () => {
@@ -87,9 +86,11 @@ export default function BookingsFilters({ centres, resultsCount = 0, statusCount
         setStatus('all');
         setFromDate('');
         setToDate('');
-        setSelectedCentreId('all');
+        const clearHref = selectedCentreId && selectedCentreId !== 'all'
+            ? `/dashboard/bookings?centre=${encodeURIComponent(selectedCentreId)}`
+            : '/dashboard/bookings';
         startTransition(() => {
-            router.push('/dashboard/bookings');
+            router.push(clearHref);
         });
     };
 
@@ -104,7 +105,7 @@ export default function BookingsFilters({ centres, resultsCount = 0, statusCount
             const value = searchParams.get(key);
             if (value) params.set(key, value);
         }
-        if (selectedCentreId !== 'all') params.set('centre', selectedCentreId);
+        if (selectedCentreId && selectedCentreId !== 'all') params.set('centre', selectedCentreId);
         const outcome = overrides?.newOutcome !== undefined ? overrides.newOutcome : searchParams.get('outcome');
         if (outcome && outcome !== 'all') params.set('outcome', outcome);
 

@@ -9,7 +9,7 @@ import { queueOfflineAction, getUnsyncedActions, markActionSynced } from '@/lib/
 import {
     CheckCircle2, XCircle, Clock,
     Loader2, ChevronLeft, ChevronRight, LayoutGrid, LayoutList, Users,
-    Maximize2, Minimize2, RefreshCw, Stethoscope, Edit2, Sparkles, Search, Building2,
+    Maximize2, Minimize2, RefreshCw, MoreVertical, Stethoscope, Edit2, Sparkles, Search, Building2,
     ShieldCheck, X, UserCheck
 } from 'lucide-react';
 import Link from 'next/link';
@@ -937,6 +937,9 @@ export default function KioskRegister({ slots, date, dateStr, centreName, centre
     const { setSelectedCentreId } = useCentreFilter();
     const [slotIdx, setSlotIdx] = useState(0);
     const [isFullscreen, setIsFullscreen] = useState(false);
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const kioskMenuRef = useRef<HTMLDivElement>(null);
+
     const lastRefreshAtRef = useRef<number>(0);
     const [large, setLarge] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
@@ -1022,6 +1025,24 @@ export default function KioskRegister({ slots, date, dateStr, centreName, centre
         return () => window.removeEventListener('online', handleOnline);
     }, [router, toast, resolvedDateStr, activeSlot, slots]);
 
+    useEffect(() => {
+        if (!mobileMenuOpen) return;
+        const handleClickOutside = (e: MouseEvent) => {
+            if (kioskMenuRef.current && !kioskMenuRef.current.contains(e.target as Node)) {
+                setMobileMenuOpen(false);
+            }
+        };
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === "Escape") setMobileMenuOpen(false);
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        document.addEventListener("keydown", handleKeyDown);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+            document.removeEventListener("keydown", handleKeyDown);
+        };
+    }, [mobileMenuOpen]);
+
     // Sync fullscreen state with browser events (e.g. Esc key)
     useEffect(() => {
         const handleFullscreenChange = () => {
@@ -1092,7 +1113,7 @@ export default function KioskRegister({ slots, date, dateStr, centreName, centre
         });
 
     return (
-        <div className="flex flex-col h-[calc(100vh-64px)] bg-page -mx-4 sm:-mx-6 lg:-mx-8 -my-6 overflow-hidden">
+        <div className="flex flex-col h-[calc(100dvh-7.5rem-env(safe-area-inset-bottom,0px))] lg:h-[calc(100dvh-3.5rem)] bg-page -mx-4 sm:-mx-6 -mt-6 lg:-my-6 lg:-mx-8 overflow-hidden">
 
             {/* ── TOP BAR ─────────────────────────────────────────────────── */}
             <div className="flex items-center justify-between px-6 py-4 bg-surface border-b border-border-subtle flex-shrink-0">
@@ -1110,13 +1131,83 @@ export default function KioskRegister({ slots, date, dateStr, centreName, centre
                 <KioskClock />
 
                 <div className="flex items-center gap-2">
-                    <Button variant="outline" size="icon" onClick={() => { lastRefreshAtRef.current = Date.now(); router.refresh(); }} aria-label="Refresh register" title="Refresh">
+                    {/* Mobile overflow menu for Refresh & Density */}
+                    <div className="relative sm:hidden" ref={kioskMenuRef}>
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => setMobileMenuOpen(v => !v)}
+                            aria-label="Register options"
+                            aria-haspopup="menu"
+                            aria-expanded={mobileMenuOpen}
+                            className="min-h-11 min-w-11"
+                        >
+                            <MoreVertical className="w-4 h-4" />
+                        </Button>
+                        {mobileMenuOpen && (
+                            <div
+                                role="menu"
+                                aria-label="Register options"
+                                className="absolute right-0 top-full mt-1.5 w-48 bg-surface-elevated border border-border rounded-md shadow-[var(--shadow-popover)] z-50 p-1"
+                            >
+                                <button
+                                    type="button"
+                                    role="menuitem"
+                                    onClick={() => {
+                                        setMobileMenuOpen(false);
+                                        lastRefreshAtRef.current = Date.now();
+                                        router.refresh();
+                                    }}
+                                    className="w-full min-h-11 flex items-center gap-2.5 px-3 py-2 text-sm text-text hover:bg-page rounded-sm text-left transition-colors"
+                                >
+                                    <RefreshCw className="w-4 h-4 text-text-muted" />
+                                    <span>Refresh register</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    role="menuitem"
+                                    onClick={() => {
+                                        setMobileMenuOpen(false);
+                                        setLarge(v => !v);
+                                    }}
+                                    className="w-full min-h-11 flex items-center gap-2.5 px-3 py-2 text-sm text-text hover:bg-page rounded-sm text-left transition-colors"
+                                >
+                                    {large ? <LayoutList className="w-4 h-4 text-text-muted" /> : <LayoutGrid className="w-4 h-4 text-text-muted" />}
+                                    <span>{large ? 'Compact view' : 'Comfortable view'}</span>
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Desktop direct action buttons */}
+                    <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => { lastRefreshAtRef.current = Date.now(); router.refresh(); }}
+                        aria-label="Refresh register"
+                        title="Refresh"
+                        className="hidden sm:inline-flex min-h-11 min-w-11 sm:min-h-9 sm:min-w-9"
+                    >
                         <RefreshCw className="w-4 h-4" />
                     </Button>
-                    <Button variant="outline" size="icon" onClick={() => setLarge(v => !v)} aria-label="Toggle card density" title="Toggle size">
+                    <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setLarge(v => !v)}
+                        aria-label="Toggle card density"
+                        title="Toggle size"
+                        className="hidden sm:inline-flex min-h-11 min-w-11 sm:min-h-9 sm:min-w-9"
+                    >
                         {large ? <LayoutGrid className="w-4 h-4" /> : <LayoutList className="w-4 h-4" />}
                     </Button>
-                    <Button variant="outline" size="icon" onClick={toggleFullscreen} aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'} title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}>
+                    <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={toggleFullscreen}
+                        aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+                        title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+                        className="min-h-11 min-w-11 sm:min-h-9 sm:min-w-9"
+                    >
                         {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
                     </Button>
                     {centres.length > 1 && (

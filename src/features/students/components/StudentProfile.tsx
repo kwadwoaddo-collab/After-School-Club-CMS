@@ -326,7 +326,7 @@ export default function StudentProfile({
                                     {student.schoolYear}
                                 </Badge>
                             )}
-                            <span className="text-metadata flex items-center gap-1.5">
+                            <span className="text-metadata flex items-center gap-1.5 tabular-nums">
                                 <Calendar className="w-3.5 h-3.5" />
                                 {student.dateOfBirth ? new Date(student.dateOfBirth).toLocaleDateString('en-GB') : 'DoB not recorded'}
                             </span>
@@ -343,13 +343,13 @@ export default function StudentProfile({
                     <div className="flex sm:flex-col gap-2 sm:min-w-[150px]">
                         <div className="flex-1 sm:flex-none flex items-center justify-between gap-3 px-3 py-2 rounded-sm border border-border-subtle bg-page">
                             <span className="text-metadata">Monthly fee</span>
-                            <span className={cn('text-small-body font-semibold', billingConfig && billingConfig.agreedMonthlyPence < 0 ? 'text-danger' : 'text-text')}>
+                            <span className={cn('text-small-body font-semibold tabular-nums', billingConfig && billingConfig.agreedMonthlyPence < 0 ? 'text-danger' : 'text-text')}>
                                 {billingConfig ? `£${(billingConfig.agreedMonthlyPence / 100).toFixed(2)}/mo` : '£0.00'}
                             </span>
                         </div>
                         <div className="flex-1 sm:flex-none flex items-center justify-between gap-3 px-3 py-2 rounded-sm border border-border-subtle bg-page">
                             <span className="text-metadata">Attendance rate</span>
-                            <span className={cn('text-small-body font-semibold', attendanceRate < 80 && attendanceBreakdown.total > 0 ? 'text-warning' : 'text-text')}>
+                            <span className={cn('text-small-body font-semibold tabular-nums', attendanceRate < 80 && attendanceBreakdown.total > 0 ? 'text-warning' : 'text-text')}>
                                 {attendanceBreakdown.total > 0 ? `${attendanceRate}%` : 'N/A'}
                             </span>
                         </div>
@@ -412,8 +412,8 @@ export default function StudentProfile({
                                             href={`tel:${student.parent.phone}`}
                                             className="flex items-center justify-between px-4 py-3 hover:bg-surface transition-colors group"
                                         >
-                                            <span className="flex items-center gap-2.5 text-small-body font-medium text-text">
-                                                <Phone className="w-3.5 h-3.5 text-text-muted" />
+                                            <span className="flex items-center gap-2.5 text-small-body font-medium text-text tabular-nums min-w-0 break-all">
+                                                <Phone className="w-3.5 h-3.5 text-text-muted flex-shrink-0" />
                                                 {student.parent.phone || 'No phone recorded'}
                                             </span>
                                             <ChevronRight className="w-4 h-4 text-text-muted group-hover:text-accent transition-colors" />
@@ -1029,7 +1029,7 @@ export default function StudentProfile({
                                 </div>
                                 <div className="text-right">
                                     <p className="text-label text-text-muted">Monthly rate</p>
-                                    <p className="text-small-body font-medium text-text mt-0.5">
+                                    <p className="text-small-body font-medium text-text mt-0.5 tabular-nums">
                                         £{(Number(billingConfig.agreedMonthlyPence ?? 0) / 100).toFixed(2)}
                                     </p>
                                 </div>

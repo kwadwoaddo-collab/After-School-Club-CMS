@@ -187,11 +187,16 @@ export default async function AttendancePage(props: {
 
     const enrichAttendee = (att: any) => {
         const childRecord = childById.get(att.childId);
+        const parentRecord = childRecord?.parent;
         const allergies = Array.isArray(childRecord?.allergies)
             ? childRecord.allergies.map((a: string) => a?.trim()).filter(Boolean)
             : [];
         return {
             ...att,
+            parentFirstName: att.parentFirstName ?? parentRecord?.firstName ?? "",
+            parentLastName: att.parentLastName ?? parentRecord?.lastName ?? "",
+            parentPhone: att.parentPhone ?? parentRecord?.phone ?? null,
+            parentDeletedAt: parentRecord?.deletedAt ? new Date(parentRecord.deletedAt).toISOString() : (att.parentDeletedAt ?? null),
             flagHomework: Boolean(childRecord?.flagHomework ?? att.flagHomework),
             flagBehaviour: Boolean(childRecord?.flagBehaviour ?? att.flagBehaviour),
             flagNote: childRecord?.flagNote ?? att.flagNote ?? null,
@@ -332,7 +337,7 @@ export default async function AttendancePage(props: {
                                     <div className="scale-[0.8]">{stat.icon}</div>
                                 </div>
                             </div>
-                            <p className={`text-xl sm:text-2xl font-semibold leading-none tracking-tight ${stat.color}`}>{stat.value}</p>
+                            <p className={`text-xl sm:text-2xl font-semibold leading-none tracking-tight tabular-nums ${stat.color}`}>{stat.value}</p>
                         </div>
                     </Card>
                 ))}
@@ -370,6 +375,7 @@ export default async function AttendancePage(props: {
                 slots={sortedSlots as any}
                 centreId={activeCentreId}
                 dateStr={targetStr}
+                centreName={activeCentreName ?? 'After School Club'}
                 canViewProfiles={session.user.role !== 'TUTOR'}
                 allStudents={activeOrPausedChildrenAtCentre.map(c => ({
                     id: c.id,
@@ -381,6 +387,7 @@ export default async function AttendancePage(props: {
                     parentLastName: c.parent?.lastName ?? '',
                     parentEmail: c.parent?.email ?? '',
                     parentPhone: c.parent?.phone ?? '',
+                    parentDeletedAt: c.parent?.deletedAt ? new Date(c.parent.deletedAt).toISOString() : null,
                 }))}
             />
         </div>

@@ -247,6 +247,7 @@ export default async function StudentsPage(props: {
         const studentsListQuery = db
             .select({
                 id: children.id,
+                centreId: children.centreId,
                 firstName: children.firstName,
                 lastName: children.lastName,
                 dateOfBirth: children.dateOfBirth,
@@ -288,6 +289,14 @@ export default async function StudentsPage(props: {
         const LOW_ATTENDANCE_THRESHOLD = 75;
         const MIN_SESSIONS_FOR_ALERT = 3;
 
+        const centreServiceTypeById = new Map<string, 'childcare' | 'tuition'>();
+        for (const c of accessibleCentres) {
+            const centreWithService = c as { id: string; serviceType?: 'childcare' | 'tuition' | null };
+            if (centreWithService.id && centreWithService.serviceType) {
+                centreServiceTypeById.set(centreWithService.id, centreWithService.serviceType);
+            }
+        }
+
         enrichedStudents = studentsList.map((student) => {
             const pastCount = Number(student.pastCount || 0);
             const presentCount = Number(student.presentCount || 0);
@@ -296,6 +305,7 @@ export default async function StudentsPage(props: {
 
             return {
                 id: student.id,
+                serviceType: (student.centreId && centreServiceTypeById.get(student.centreId)) || 'childcare',
                 firstName: student.firstName,
                 lastName: student.lastName,
                 dateOfBirth: student.dateOfBirth ? student.dateOfBirth.toISOString() : null,
@@ -372,7 +382,7 @@ export default async function StudentsPage(props: {
                             <Users className="w-4 h-4" />
                         </span>
                         <div>
-                            <p className="text-financial-total text-text">{stats?.totalCount || 0}</p>
+                            <p className="text-financial-total text-text tabular-nums">{stats?.totalCount || 0}</p>
                             <p className="text-metadata">Total students</p>
                         </div>
                     </div>
@@ -384,7 +394,7 @@ export default async function StudentsPage(props: {
                             <GraduationCap className="w-4 h-4" />
                         </span>
                         <div>
-                            <p className="text-financial-total text-text">{stats?.registeredCount || 0}</p>
+                            <p className="text-financial-total text-text tabular-nums">{stats?.registeredCount || 0}</p>
                             <p className="text-metadata">Registered</p>
                         </div>
                     </div>
@@ -396,7 +406,7 @@ export default async function StudentsPage(props: {
                             <Sparkles className="w-4 h-4" />
                         </span>
                         <div>
-                            <p className="text-financial-total text-text">{stats?.leadCount || 0}</p>
+                            <p className="text-financial-total text-text tabular-nums">{stats?.leadCount || 0}</p>
                             <p className="text-metadata">Leads</p>
                         </div>
                     </div>
@@ -408,7 +418,7 @@ export default async function StudentsPage(props: {
                             <AlertTriangle className="w-4 h-4" />
                         </span>
                         <div>
-                            <p className="text-financial-total text-text">{stats?.medicalAlertCount || 0}</p>
+                            <p className="text-financial-total text-text tabular-nums">{stats?.medicalAlertCount || 0}</p>
                             <p className="text-metadata">Medical alerts</p>
                         </div>
                     </div>
@@ -421,7 +431,7 @@ export default async function StudentsPage(props: {
                                 <TrendingDown className="w-4 h-4" />
                             </span>
                             <div>
-                                <p className={`text-financial-total ${(stats?.lowAttendanceCount || 0) > 0 ? 'text-warning' : 'text-text'}`}>{stats?.lowAttendanceCount || 0}</p>
+                                <p className={`text-financial-total tabular-nums ${(stats?.lowAttendanceCount || 0) > 0 ? 'text-warning' : 'text-text'}`}>{stats?.lowAttendanceCount || 0}</p>
                                 <p className="text-metadata">Low attendance</p>
                             </div>
                         </div>
