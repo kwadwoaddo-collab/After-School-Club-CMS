@@ -183,10 +183,10 @@ export default function RecordPaymentModal({
                             required
                             value={formData.amount}
                             onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                            className="w-full bg-secondary/40 border border-border rounded-2xl px-5 py-4 text-3xl font-black text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50 transition-all"
+                            className="w-full bg-secondary/40 border border-border rounded-2xl px-5 py-4 text-3xl font-black text-foreground tabular-nums focus:outline-none focus:ring-2 focus:ring-accent/50 transition-all"
                         />
-                        {invoiceTotal !== undefined && <p className="text-xs text-muted-foreground font-medium">Invoice Total: £{invoiceTotal.toFixed(2)}</p>}
-                        <p className="text-xs text-muted-foreground font-medium">Remaining Balance: £{remainingBalance.toFixed(2)}</p>
+                        {invoiceTotal !== undefined && <p className="text-xs text-muted-foreground font-medium tabular-nums">Invoice Total: £{invoiceTotal.toFixed(2)}</p>}
+                        <p className="text-xs text-muted-foreground font-medium tabular-nums">Remaining Balance: £{remainingBalance.toFixed(2)}</p>
                     </div>
 
                     {/* Method Selection */}
@@ -262,7 +262,7 @@ export default function RecordPaymentModal({
                     <button
                         onClick={handleSubmit}
                         disabled={isSubmitting || !formData.amount}
-                        className="px-8 py-3 bg-primary rounded-2xl text-sm font-bold text-accent-foreground hover:bg-primary/90 transition-all shadow-lg shadow-primary/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                        className="px-8 py-3 bg-accent rounded-2xl text-sm font-bold text-on-accent hover:opacity-90 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                     >
                         {isSubmitting ? <><Loader2 className="w-4 h-4 animate-spin" /> Recording...</> : 'Record Payment'}
                     </button>

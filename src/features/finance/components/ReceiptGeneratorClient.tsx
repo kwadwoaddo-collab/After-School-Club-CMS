@@ -3,7 +3,7 @@ import { WhatsAppCopyActions } from '@/components/whatsapp/WhatsAppCopyActions';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Printer, Check, Info, FileText, Coins, CreditCard, Landmark, Sparkles } from 'lucide-react';
 import { normaliseServiceType, serviceTypeLabel, type ServiceType } from '../service-type';
 
@@ -20,6 +20,7 @@ interface Child {
         lastName: string;
         email: string;
         phone: string | null;
+        deletedAt?: string | Date | null;
     };
 }
 
@@ -163,7 +164,7 @@ export default function ReceiptGeneratorClient({ organisation, centres, children
 
     // Handle student selection
     
-    const handleStudentChange = (childId: string) => {
+    const handleStudentChange = useCallback((childId: string) => {
         setSelectedChildId(childId);
         if (childId === '') {
             setStudentName('');
@@ -171,7 +172,7 @@ export default function ReceiptGeneratorClient({ organisation, centres, children
             return;
         }
 
-        const child = children.find(c => c.id === childId) as Child;
+        const child = children.find(c => c.id === childId) as Child | undefined;
         if (child) {
             setStudentName(`${child.firstName} ${child.lastName}`);
             setParentName(`${child.parent.firstName} ${child.parent.lastName}`);
@@ -180,13 +181,16 @@ export default function ReceiptGeneratorClient({ organisation, centres, children
             }
             setServiceType(normaliseServiceType(child.serviceType));
         }
-    };
+    }, [children]);
+
+    const initialisedChildRef = useRef(false);
 
     useEffect(() => {
-        if (!initialPayment && initialChildId) {
+        if (!initialPayment && initialChildId && !initialisedChildRef.current) {
+            initialisedChildRef.current = true;
             handleStudentChange(initialChildId);
         }
-    }, [initialChildId]);
+    }, [initialPayment, initialChildId, handleStudentChange]);
 
     const selectedCentre = centres.find(c => c.id === selectedCentreId);
     const selectedCentreName =
@@ -223,8 +227,9 @@ export default function ReceiptGeneratorClient({ organisation, centres, children
                     {/* Receipt Number & Date */}
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1.5">
-                            <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Receipt No</label>
+                            <label htmlFor="receipt-no" className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Receipt No</label>
                             <input
+                                id="receipt-no"
                                 type="text"
                                 value={receiptNo}
                                 onChange={(e) => setReceiptNo(e.target.value.toUpperCase())}
@@ -232,8 +237,9 @@ export default function ReceiptGeneratorClient({ organisation, centres, children
                             />
                         </div>
                         <div className="space-y-1.5">
-                            <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Payment Date</label>
+                            <label htmlFor="receipt-date" className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Payment Date</label>
                             <input
+                                id="receipt-date"
                                 type="date"
                                 value={date}
                                 onChange={(e) => setDate(e.target.value)}
@@ -244,8 +250,9 @@ export default function ReceiptGeneratorClient({ organisation, centres, children
 
                     {/* Student Selector */}
                     <div className="space-y-1.5">
-                        <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Select Student (Optional)</label>
+                        <label htmlFor="receipt-student-select" className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Select Student (Optional)</label>
                         <select
+                            id="receipt-student-select"
                             value={selectedChildId}
                             onChange={(e) => handleStudentChange(e.target.value)}
                             className="w-full h-11 px-3 rounded-xl bg-secondary/40 border border-border text-foreground text-base sm:text-sm focus:outline-none focus:border-accent transition-colors"
@@ -390,7 +397,7 @@ export default function ReceiptGeneratorClient({ organisation, centres, children
                             const pPhone = selectedChild?.parent?.phone;
                             const pFirst = parentName.trim().split(' ')[0] || selectedChild?.parent?.firstName || 'Parent';
                             const msg = `Hi ${pFirst}, your payment receipt (${receiptNo || 'RCP-PAID'}) for £${Number(amount || 0).toFixed(2)} from ${selectedCentreName} is ready. Thank you for your payment!`;
-                            return pPhone ? (
+                            return Boolean(pPhone) && !selectedChild?.parent?.deletedAt ? (
                                 <WhatsAppCopyActions
                                     phone={pPhone}
                                     message={msg}
