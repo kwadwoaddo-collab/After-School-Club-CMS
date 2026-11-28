@@ -32,7 +32,7 @@ export function ContractDocument({ values }: { values: ContractValues }) {
                 <h2 className="text-base font-bold text-text">Agreement</h2>
                 <p className="font-semibold text-text">Provider Signature:</p>
                 {values.signatureImage
-                    ? <img src={values.signatureImage} alt={`Signature of ${provider.signatoryName}`} className="h-12 object-contain object-left" />
+                    ? <img src={values.signatureImage} alt={`Signature of ${provider.signatoryName}`} className="h-12 object-contain object-left bg-white rounded px-2 py-1" />
                     : <p className="font-serif italic text-lg text-text">{provider.signatoryName}</p>}
                 <p className="text-text-secondary">{provider.signatoryName}{provider.signatoryRole ? `, ${provider.signatoryRole}` : ''} for {provider.providerName}</p>
                 <p className="text-text-muted text-sm">Date: {values.providerSignedDate}</p>

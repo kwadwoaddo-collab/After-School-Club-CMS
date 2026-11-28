@@ -102,7 +102,6 @@ export default function SignupPage() {
   return (
     <div className="min-h-screen grid md:grid-cols-2 bg-[var(--if-page)] text-[var(--if-text)] overflow-x-hidden">
             <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[100] focus:px-4 focus:py-2.5 focus:rounded-md focus:bg-[var(--if-accent)] focus:text-[var(--if-on-accent)] focus:text-sm focus:font-semibold focus:shadow-lg">Skip to main content</a>
-            <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[100] focus:px-4 focus:py-2.5 focus:rounded-md focus:bg-[var(--if-accent)] focus:text-[var(--if-on-accent)] focus:text-sm focus:font-semibold focus:shadow-lg">Skip to main content</a>
       {/* Left Side - Product Content */}
       <div className="hidden md:flex flex-col justify-between p-12 relative overflow-hidden bg-[var(--if-surface)] border-r border-[var(--if-border-subtle)]">
         <Link href="/" className={`flex items-center gap-2 min-h-[44px] w-fit text-[var(--if-text-secondary)] hover:text-[var(--if-text)] transition-colors mb-8 ${focusRing}`}>

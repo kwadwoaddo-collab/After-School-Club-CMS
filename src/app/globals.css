@@ -858,6 +858,7 @@ body:not(.landing-page-active) :is(.hover\:bg-white\/10):hover {
   --color-page: var(--if-page);
   --color-surface: var(--if-surface);
   --color-surface-elevated: var(--if-surface-elevated);
+  --color-surface-alt: var(--if-surface-alt);
   --color-text: var(--if-text);
   --color-text-secondary: var(--if-text-secondary);
   --color-text-muted: var(--if-text-muted);
@@ -866,6 +867,7 @@ body:not(.landing-page-active) :is(.hover\:bg-white\/10):hover {
   --color-accent-hover: var(--if-accent-hover);
   --color-accent-soft: var(--if-accent-soft);
   --color-on-accent: var(--if-on-accent);
+  --color-accent-foreground: var(--if-on-accent);
   --color-success-soft: var(--if-success-soft);
   --color-warning-soft: var(--if-warning-soft);
   --color-info-soft: var(--if-info-soft);
@@ -886,6 +888,7 @@ body:not(.landing-page-active) :is(.hover\:bg-white\/10):hover {
   --if-page: #FAF9F7;
   --if-surface: #FFFFFF;
   --if-surface-elevated: #FFFFFF;
+  --if-surface-alt: #F3F1EC;
   --if-text: #1C1B1A;
   --if-text-secondary: #57534E;
   --if-text-muted: #6B6560;
@@ -916,6 +919,7 @@ body:not(.landing-page-active) :is(.hover\:bg-white\/10):hover {
     --if-page: #141413;
     --if-surface: #1C1B1A;
     --if-surface-elevated: #232221;
+    --if-surface-alt: #252422;
     --if-text: #F2F0ED;
     --if-text-secondary: #C7C2BC;
     --if-text-muted: #948E87;
@@ -942,6 +946,7 @@ body:not(.landing-page-active) :is(.hover\:bg-white\/10):hover {
   --if-page: #141413;
   --if-surface: #1C1B1A;
   --if-surface-elevated: #232221;
+  --if-surface-alt: #252422;
   --if-text: #F2F0ED;
   --if-text-secondary: #C7C2BC;
   --if-text-muted: #948E87;
@@ -967,6 +972,7 @@ body:not(.landing-page-active) :is(.hover\:bg-white\/10):hover {
   --if-page: #FAF9F7;
   --if-surface: #FFFFFF;
   --if-surface-elevated: #FFFFFF;
+  --if-surface-alt: #F3F1EC;
   --if-text: #1C1B1A;
   --if-text-secondary: #57534E;
   --if-text-muted: #6B6560;
