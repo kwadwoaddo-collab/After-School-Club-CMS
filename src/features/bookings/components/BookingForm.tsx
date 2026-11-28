@@ -962,32 +962,33 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                             <div>
                                 <label className="block text-sm font-medium text-foreground/80 mb-2">Session Type</label>
                                 <div className="grid grid-cols-2 gap-4">
-                                    {[
-                                        { value: 'in_person', label: 'In-Person', icon: Building2, desc: `At ${centreName}`, disabled: false },
+                                    {([
+                                        { value: 'in_person', label: 'In-Person', desc: `At ${centreName}`, disabled: false },
                                         // Task 3: Online is disabled — greyed out and not selectable
-                                        { value: 'online', label: 'Online', icon: Laptop, desc: 'Coming Soon', disabled: true },
-                                    ].map((opt) => {
-                                        const Icon = opt.icon;
-                                        return (
-                                            <label
-                                                key={opt.value}
-                                                className={`p-4 border-2 rounded-lg text-center transition-all ${
-                                                    opt.disabled
-                                                        ? 'border-border bg-secondary/40 opacity-50 pointer-events-none cursor-not-allowed'
-                                                        : modality === opt.value
-                                                            ? 'brand-border bg-card shadow-md cursor-pointer'
-                                                            : 'border-border hover:border-border cursor-pointer'
-                                                }`}
-                                            >
-                                                <input type="radio" {...register('appointment.modality')} value={opt.value} disabled={opt.disabled} className="sr-only" />
-                                                <div className={`text-lg font-medium inline-flex items-center justify-center ${opt.disabled ? 'text-muted-foreground' : modality === opt.value ? 'brand-text' : 'text-foreground'}`}>
-                                                    <Icon className="w-4 h-4 inline-block mr-1.5 -mt-0.5" aria-hidden="true" />
-                                                    {opt.label}
-                                                </div>
-                                                <div className="text-sm text-muted-foreground">{opt.desc}</div>
-                                            </label>
-                                        );
-                                    })}
+                                        { value: 'online', label: 'Online', desc: 'Coming Soon', disabled: true },
+                                    ] as const).map((opt) => (
+                                        <label
+                                            key={opt.value}
+                                            className={`p-4 border-2 rounded-lg text-center transition-all ${
+                                                opt.disabled
+                                                    ? 'border-border bg-secondary/40 opacity-50 pointer-events-none cursor-not-allowed'
+                                                    : modality === opt.value
+                                                        ? 'brand-border bg-card shadow-md cursor-pointer'
+                                                        : 'border-border hover:border-border cursor-pointer'
+                                            }`}
+                                        >
+                                            <input type="radio" {...register('appointment.modality')} value={opt.value} disabled={opt.disabled} className="sr-only" />
+                                            <div className={`text-lg font-medium inline-flex items-center justify-center ${opt.disabled ? 'text-muted-foreground' : modality === opt.value ? 'brand-text' : 'text-foreground'}`}>
+                                                {opt.value === 'in_person' ? (
+                                                    <Building2 className="w-4 h-4 inline-block mr-1.5 -mt-0.5" aria-hidden="true" />
+                                                ) : (
+                                                    <Laptop className="w-4 h-4 inline-block mr-1.5 -mt-0.5" aria-hidden="true" />
+                                                )}
+                                                {opt.label}
+                                            </div>
+                                            <div className="text-sm text-muted-foreground">{opt.desc}</div>
+                                        </label>
+                                    ))}
                                 </div>
                             </div>
 
