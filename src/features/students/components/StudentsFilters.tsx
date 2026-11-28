@@ -67,7 +67,7 @@ export default function StudentsFilters({ centres, resultsCount = 0 }: StudentsF
         searchParams.get('search') ||
         (searchParams.get('year') && searchParams.get('year') !== 'all') ||
         (searchParams.get('status') && searchParams.get('status') !== 'all') ||
-        selectedCentreId !== 'all'
+        (searchParams.get('followUp') && searchParams.get('followUp') !== 'all')
     );
 
     const handleClearFilters = () => {
@@ -79,9 +79,11 @@ export default function StudentsFilters({ centres, resultsCount = 0 }: StudentsF
         setSelectedYears([]);
         setStatus('all');
         setFollowUp('all');
-        setSelectedCentreId('all');
+        const clearHref = selectedCentreId && selectedCentreId !== 'all'
+            ? `/dashboard/students?centre=${encodeURIComponent(selectedCentreId)}`
+            : '/dashboard/students';
         startTransition(() => {
-            router.push('/dashboard/students');
+            router.push(clearHref);
         });
     };
 
@@ -107,7 +109,7 @@ export default function StudentsFilters({ centres, resultsCount = 0 }: StudentsF
             if (nextFollowUp !== 'all') params.set('followUp', nextFollowUp);
         }
 
-        if (selectedCentreId !== 'all') params.set('centre', selectedCentreId);
+        if (selectedCentreId && selectedCentreId !== 'all') params.set('centre', selectedCentreId);
 
         const queryString = params.toString();
         startTransition(() => {
@@ -185,7 +187,7 @@ export default function StudentsFilters({ centres, resultsCount = 0 }: StudentsF
                         onChange={(e) => handleSearchChange(e.target.value)}
                         placeholder="Search by student, parent, email…"
                         aria-label="Search students"
-                        className="w-full h-9 pl-9 pr-9 rounded-sm text-sm text-text placeholder:text-text-muted focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent transition-colors border border-border bg-surface"
+                        className="w-full h-10 min-h-11 sm:min-h-10 pl-9 pr-9 rounded-md text-sm text-text placeholder:text-text-muted focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent transition-colors border border-border bg-surface"
                     />
                     {search && (
                         <button
@@ -204,7 +206,7 @@ export default function StudentsFilters({ centres, resultsCount = 0 }: StudentsF
                     <button
                         type="button"
                         onClick={() => setIsYearDropdownOpen(!isYearDropdownOpen)}
-                        className="h-9 flex items-center justify-between gap-2 px-3 rounded-sm text-sm text-text focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent transition-colors border border-border bg-surface min-w-[170px]"
+                        className="h-10 min-h-11 sm:min-h-10 flex items-center justify-between gap-2 px-3 rounded-md text-sm text-text focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent transition-colors border border-border bg-surface min-w-[170px]"
                         aria-haspopup="listbox"
                         aria-expanded={isYearDropdownOpen}
                     >
@@ -256,11 +258,23 @@ export default function StudentsFilters({ centres, resultsCount = 0 }: StudentsF
                             applyFilters({ newStatus: val });
                         }}
                         aria-label="Filter by status"
-                        className="h-9 pl-3 pr-8 rounded-sm text-sm text-text focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent transition-colors appearance-none cursor-pointer border border-border bg-surface"
+                        className="h-10 min-h-11 sm:min-h-10 pl-3 pr-8 rounded-md text-sm text-text focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent transition-colors appearance-none cursor-pointer border border-border bg-surface"
                     >
-                        {statusOptions.map((opt) => (
-                            <option key={opt.value} value={opt.value}>{opt.label}</option>
-                        ))}
+                        <option value="all">All statuses</option>
+                        <optgroup label="Enrolment Status">
+                            <option value="active">Active</option>
+                            <option value="paused">Paused</option>
+                            <option value="stopped">Stopped</option>
+                        </optgroup>
+                        <optgroup label="Operational & Follow-up">
+                            <option value="follow-ups">Follow-ups (paused / stopped)</option>
+                            <option value="billing-review">Restart billing review</option>
+                        </optgroup>
+                        <optgroup label="Pipeline & Attendance">
+                            <option value="registered">Registered</option>
+                            <option value="unregistered">Leads / unregistered</option>
+                            <option value="low-attendance">Low attendance (&lt;70%)</option>
+                        </optgroup>
                     </select>
                     <Filter className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-muted pointer-events-none" />
                 </div>
@@ -282,7 +296,13 @@ export default function StudentsFilters({ centres, resultsCount = 0 }: StudentsF
             {/* Active filter summary */}
             {hasActiveFilters && (
                 <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-label text-text-muted">Active:</span>
+                    {(() => {
+        const count = (searchParams.get('search') ? 1 : 0) +
+            (selectedYears.length > 0 ? 1 : 0) +
+            (status !== 'all' ? 1 : 0) +
+            (status === 'follow-ups' && followUp !== 'all' ? 1 : 0);
+        return <span className="text-label text-text-muted">Active ({count}):</span>;
+    })()}
                     {searchParams.get('search') && (
                         <Badge variant="info">&quot;{searchParams.get('search')}&quot; ({resultsCount} results)</Badge>
                     )}

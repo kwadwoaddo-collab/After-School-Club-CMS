@@ -44,6 +44,11 @@ export default function StudentsGrid({ students, followUpMode = false, today = '
                                     >
                                         {student.firstName} {student.lastName}
                                     </Link>
+                                    {student.serviceType && (
+                                        <Badge variant="default">
+                                            {student.serviceType === 'tuition' ? 'Tuition' : student.serviceType === 'childcare' ? 'Childcare' : student.serviceType}
+                                        </Badge>
+                                    )}
                                     {student.isRegistered && (
                                         <span className="w-1.5 h-1.5 rounded-full bg-success flex-shrink-0" title="Registered" />
                                     )}
@@ -108,19 +113,19 @@ export default function StudentsGrid({ students, followUpMode = false, today = '
                             {student.parentEmail && (
                                 <a
                                     href={`mailto:${student.parentEmail}`}
-                                    className="relative z-10 text-metadata flex items-center gap-1.5 truncate hover:text-accent hover:underline"
+                                    className="relative z-10 text-xs flex items-center gap-1.5 truncate hover:text-accent hover:underline"
                                 >
                                     <Mail className="w-3 h-3 flex-shrink-0 text-text-muted" />
                                     {student.parentEmail}
                                 </a>
                             )}
                             {student.parentPhone && (
-                                <div className="flex items-center justify-between gap-2">
+                                <div className="space-y-1">
                                     <a
                                         href={`tel:${student.parentPhone}`}
-                                        className="relative z-10 text-metadata flex items-center gap-1.5 truncate hover:text-accent hover:underline"
+                                        className="relative z-10 text-xs tabular-nums flex items-center gap-1.5 hover:text-accent hover:underline"
                                     >
-                                        <Phone className="w-3 h-3 flex-shrink-0 text-text-muted" />
+                                        <Phone className="w-3.5 h-3.5 flex-shrink-0 text-text-muted" />
                                         {student.parentPhone}
                                     </a>
                                     {(() => {
@@ -129,18 +134,19 @@ export default function StudentsGrid({ students, followUpMode = false, today = '
                                             parentFirstName: student.parentFirstName,
                                         });
                                         return waUrl ? (
-                                            <>
-                                            <WhatsAppCopyActions phone={student.parentPhone} message={buildParentGreetingMessage({ parentFirstName: student.parentFirstName })} recipientName={`${student.parentFirstName} ${student.parentLastName}`} variant="text" className="relative z-10" />
+                                            <div className="flex items-center gap-2 flex-wrap pt-0.5">
+                                            <WhatsAppCopyActions phone={student.parentPhone} message={buildParentGreetingMessage({ parentFirstName: student.parentFirstName })} recipientName={`${student.parentFirstName} ${student.parentLastName}`} variant="text" className="relative z-10 min-h-6" />
                                             <a
                                                 href={waUrl}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="relative z-10 inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400 hover:underline flex-shrink-0"
+                                                aria-label={`Message ${student.parentFirstName} ${student.parentLastName} on WhatsApp`}
+                                                className="relative z-10 inline-flex items-center gap-1 min-h-6 text-xs font-semibold text-emerald-700 dark:text-emerald-400 hover:underline flex-shrink-0"
                                             >
-                                                <MessageCircle className="w-3 h-3" />
+                                                <MessageCircle className="w-3.5 h-3.5" />
                                                 WhatsApp
                                             </a>
-                                            </>
+                                            </div>
                                         ) : null;
                                     })()}
                                 </div>
@@ -148,13 +154,13 @@ export default function StudentsGrid({ students, followUpMode = false, today = '
                         </div>
 
                         <div className="mt-3 pt-3 border-t border-border-subtle flex items-center justify-between">
-                            <span className="text-metadata flex items-center gap-1.5">
-                                <Calendar className="w-3 h-3 text-text-muted" />
+                            <span className="text-xs text-text-secondary flex items-center gap-1.5 tabular-nums">
+                                <Calendar className="w-3.5 h-3.5 text-text-muted" />
                                 {student.bookingCount} booking{student.bookingCount !== 1 ? 's' : ''}
                             </span>
                             {student.bookingCount > 0 && (
                                 <span
-                                    className={`text-metadata font-semibold ${
+                                    className={`text-xs font-semibold tabular-nums ${
                                         student.attendanceRate >= 80
                                             ? 'text-success'
                                             : student.attendanceRate >= 50

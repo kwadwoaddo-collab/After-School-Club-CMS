@@ -27,10 +27,10 @@ export default function ParentsGrid({ parents }: ParentsGridProps) {
             {parents.map((parent) => {
                 const fullName = `${parent.firstName} ${parent.lastName}`;
                 const initials = getInitials(parent.firstName, parent.lastName);
-                const whatsappUrl = buildParentGreetingWhatsAppUrl({
+                const whatsappUrl = !parent.deletedAt ? buildParentGreetingWhatsAppUrl({
                     phone: parent.phone,
                     parentFirstName: parent.firstName,
-                });
+                }) : null;
 
                 return (
                     <div
@@ -49,51 +49,52 @@ export default function ParentsGrid({ parents }: ParentsGridProps) {
                                     {fullName}
                                 </Link>
                                 <div className="flex items-center gap-2 mt-1 flex-wrap">
-                                    <span className="text-metadata flex items-center gap-1.5">
-                                        <Baby className="w-3 h-3 text-text-muted" />
+                                    <span className="text-xs text-text-secondary flex items-center gap-1.5 tabular-nums">
+                                        <Baby className="w-3.5 h-3.5 text-text-muted" />
                                         {parent.childCount} {parent.childCount === 1 ? 'child' : 'children'}
                                     </span>
                                 </div>
                             </div>
                             {parent.outstanding > 0 ? (
-                                <span className="text-small-body font-semibold text-danger flex-shrink-0">
+                                <span className="text-small-body font-semibold text-danger flex-shrink-0 tabular-nums">
                                     £{parent.outstanding.toFixed(2)}
                                 </span>
                             ) : (
-                                <span className="text-metadata flex-shrink-0">£0.00</span>
+                                <span className="text-xs text-text-secondary flex-shrink-0 tabular-nums">£0.00</span>
                             )}
                         </div>
 
                         {(parent.email || parent.phone) && (
                             <div className="mt-3 pt-3 border-t border-border-subtle space-y-1">
                                 {parent.email && (
-                                    <p className="text-metadata flex items-center gap-1.5 truncate">
-                                        <Mail className="w-3 h-3 flex-shrink-0 text-text-muted" />
+                                    <p className="text-xs flex items-center gap-1.5 truncate">
+                                        <Mail className="w-3.5 h-3.5 flex-shrink-0 text-text-muted" />
                                         {parent.email}
                                     </p>
                                 )}
                                 {parent.phone && (
-                                    <div className="text-metadata flex items-center justify-between gap-2">
+                                    <div className="space-y-1">
                                         <a
                                             href={`tel:${parent.phone}`}
-                                            className="relative z-10 flex items-center gap-1.5 truncate hover:text-accent hover:underline"
+                                            className="relative z-10 text-xs tabular-nums flex items-center gap-1.5 hover:text-accent hover:underline"
                                         >
-                                            <Phone className="w-3 h-3 flex-shrink-0 text-text-muted" />
+                                            <Phone className="w-3.5 h-3.5 flex-shrink-0 text-text-muted" />
                                             {parent.phone}
                                         </a>
                                         {whatsappUrl && (
-                                            <>
-                                            <WhatsAppCopyActions phone={parent.phone} message={buildParentGreetingMessage({ parentFirstName: parent.firstName })} recipientName={fullName} variant="text" className="relative z-10" />
+                                            <div className="flex items-center gap-2 flex-wrap pt-0.5">
+                                            <WhatsAppCopyActions phone={parent.phone} message={buildParentGreetingMessage({ parentFirstName: parent.firstName })} recipientName={fullName} variant="text" className="relative z-10 min-h-6" />
                                             <a
                                                 href={whatsappUrl}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="relative z-10 inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400 hover:underline flex-shrink-0"
+                                                aria-label={`Message ${fullName} on WhatsApp`}
+                                                className="relative z-10 inline-flex items-center gap-1 min-h-6 text-xs font-semibold text-emerald-700 dark:text-emerald-400 hover:underline flex-shrink-0"
                                             >
-                                                <MessageCircle className="w-3 h-3" />
+                                                <MessageCircle className="w-3.5 h-3.5" />
                                                 WhatsApp
                                             </a>
-                                            </>
+                                            </div>
                                         )}
                                     </div>
                                 )}

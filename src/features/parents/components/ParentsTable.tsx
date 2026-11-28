@@ -16,6 +16,7 @@ export interface ParentRow {
     childCount: number;
     childrenList: Array<{ id: string; first_name: string; last_name: string }>;
     outstanding: number;
+    deletedAt?: string | null;
 }
 
 interface ParentsTableProps {
@@ -83,10 +84,10 @@ export default function ParentsTable({ parents, error, hasActiveFilters }: Paren
                         {parents.map((parent) => {
                             const fullName = `${parent.firstName} ${parent.lastName}`;
                             const initials = getInitials(parent.firstName, parent.lastName);
-                            const whatsappUrl = buildParentGreetingWhatsAppUrl({
+                            const whatsappUrl = !parent.deletedAt ? buildParentGreetingWhatsAppUrl({
                                 phone: parent.phone,
                                 parentFirstName: parent.firstName,
-                            });
+                            }) : null;
 
                             return (
                                 <TableRow key={parent.id} className="group">
@@ -105,8 +106,9 @@ export default function ParentsTable({ parents, error, hasActiveFilters }: Paren
                                             {parent.phone && (
                                                 <a
                                                     href={`tel:${parent.phone}`}
-                                                    className="p-1.5 hover:bg-page rounded-sm text-text-muted hover:text-text transition-colors inline-flex items-center justify-center"
+                                                    className="p-1 min-h-6 min-w-6 hover:bg-page rounded-sm text-text-muted hover:text-text transition-colors inline-flex items-center justify-center"
                                                     title={parent.phone}
+                                                    aria-label={`Call ${fullName} at ${parent.phone}`}
                                                 >
                                                     <Phone className="w-3.5 h-3.5" />
                                                 </a>
@@ -119,7 +121,7 @@ export default function ParentsTable({ parents, error, hasActiveFilters }: Paren
                                                     target="_blank"
                                                     rel="noopener noreferrer"
                                                     aria-label={`Message ${fullName} on WhatsApp`}
-                                                    className="p-1.5 hover:bg-page rounded-sm text-emerald-700 dark:text-emerald-400 hover:opacity-80 transition-opacity inline-flex items-center justify-center"
+                                                    className="p-1 min-h-6 min-w-6 hover:bg-page rounded-sm text-emerald-700 dark:text-emerald-400 hover:opacity-80 transition-opacity inline-flex items-center justify-center"
                                                     title={`WhatsApp ${fullName}`}
                                                 >
                                                     <MessageCircle className="w-3.5 h-3.5" />
@@ -129,8 +131,9 @@ export default function ParentsTable({ parents, error, hasActiveFilters }: Paren
                                             {parent.email && (
                                                 <a
                                                     href={`mailto:${parent.email}`}
-                                                    className="p-1.5 hover:bg-page rounded-sm text-text-muted hover:text-text transition-colors inline-flex items-center justify-center"
+                                                    className="p-1 min-h-6 min-w-6 hover:bg-page rounded-sm text-text-muted hover:text-text transition-colors inline-flex items-center justify-center"
                                                     title={parent.email}
+                                                    aria-label={`Email ${fullName} at ${parent.email}`}
                                                 >
                                                     <Mail className="w-3.5 h-3.5" />
                                                 </a>
@@ -158,7 +161,7 @@ export default function ParentsTable({ parents, error, hasActiveFilters }: Paren
                                             <span className="text-text-muted">No children</span>
                                         )}
                                     </TableCell>
-                                    <TableCell align="right">
+                                    <TableCell align="right" className="tabular-nums">
                                         {parent.outstanding > 0 ? (
                                             <span className="font-medium text-danger">£{parent.outstanding.toFixed(2)}</span>
                                         ) : (
@@ -170,8 +173,9 @@ export default function ParentsTable({ parents, error, hasActiveFilters }: Paren
                                             <DeleteParentButton parentId={parent.id} parentName={fullName} childCount={parent.childCount} />
                                             <Link
                                                 href={`/dashboard/parents/${parent.id}`}
-                                                className="p-1.5 text-text-muted hover:text-accent hover:bg-page rounded-sm transition-colors inline-flex items-center justify-center"
+                                                className="p-1 min-h-6 min-w-6 text-text-muted hover:text-accent hover:bg-page rounded-sm transition-colors inline-flex items-center justify-center"
                                                 title={`View ${fullName}`}
+                                                aria-label={`View details for ${fullName}`}
                                             >
                                                 <ChevronRight className="w-4 h-4" />
                                             </Link>

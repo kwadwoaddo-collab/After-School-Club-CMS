@@ -180,7 +180,7 @@ export default function ParentProfileClient({ parent, invoices, stats, isOwner, 
 
                                 {isEditingContact ? (
                                     <div className="space-y-3">
-                                        <div className="grid grid-cols-2 gap-3">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                             <div>
                                                 <label className="text-label text-text-muted block mb-1">First name</label>
                                                 <input
@@ -200,7 +200,7 @@ export default function ParentProfileClient({ parent, invoices, stats, isOwner, 
                                                 />
                                             </div>
                                         </div>
-                                        <div className="grid grid-cols-2 gap-3">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                             <div>
                                                 <label className="text-label text-text-muted block mb-1">Email</label>
                                                 <input
@@ -230,7 +230,7 @@ export default function ParentProfileClient({ parent, invoices, stats, isOwner, 
                                                 className="w-full h-9 px-3 bg-surface border border-border rounded-sm text-small-body font-medium text-text placeholder:text-text-muted focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent transition-colors"
                                             />
                                         </div>
-                                        <div className="grid grid-cols-2 gap-3">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                             <div>
                                                 <label className="text-label text-text-muted block mb-1">City</label>
                                                 <input
@@ -269,9 +269,9 @@ export default function ParentProfileClient({ parent, invoices, stats, isOwner, 
                                             <Phone className="w-4 h-4 text-text-muted mt-0.5 flex-shrink-0" />
                                             <div className="min-w-0 flex-1">
                                                 <p className="text-label text-text-muted">Phone</p>
-                                                <div className="flex flex-wrap items-center gap-3 mt-0.5">
+                                                <div className="mt-0.5 space-y-2">
                                                     {parent.phone ? (
-                                                        <a href={`tel:${parent.phone}`} className="text-small-body font-medium text-text hover:text-accent hover:underline">
+                                                        <a href={`tel:${parent.phone}`} className="text-small-body font-medium text-text hover:text-accent hover:underline tabular-nums block break-all">
                                                             {parent.phone}
                                                         </a>
                                                     ) : (
@@ -283,7 +283,7 @@ export default function ParentProfileClient({ parent, invoices, stats, isOwner, 
                                                             parentFirstName: parent.firstName,
                                                         });
                                                         return waUrl ? (
-                                                            <>
+                                                            <div className="flex flex-wrap items-center gap-2">
                                                             <WhatsAppCopyActions phone={parent.phone} message={buildParentGreetingMessage({ parentFirstName: parent.firstName })} recipientName={`${parent.firstName} ${parent.lastName}`} variant="pill" />
                                                             <a
                                                                 href={waUrl}
@@ -294,7 +294,7 @@ export default function ParentProfileClient({ parent, invoices, stats, isOwner, 
                                                                 <MessageCircle className="w-3.5 h-3.5" aria-hidden="true" />
                                                                 Send WhatsApp
                                                             </a>
-                                                            </>
+                                                            </div>
                                                         ) : null;
                                                     })()}
                                                 </div>
@@ -371,7 +371,7 @@ export default function ParentProfileClient({ parent, invoices, stats, isOwner, 
                             <div className="space-y-4">
                                 <SubPanel className="text-center">
                                     <p className="text-label text-text-muted mb-2">Current balance</p>
-                                    <p className={cn('text-page-title', stats.outstanding > 0 ? 'text-danger' : 'text-success')}>
+                                    <p className={cn('text-page-title tabular-nums', stats.outstanding > 0 ? 'text-danger' : 'text-success')}>
                                         £{stats.outstanding.toFixed(2)}
                                     </p>
                                     <p className="text-metadata mt-1 mb-4">Outstanding amount</p>
@@ -387,11 +387,11 @@ export default function ParentProfileClient({ parent, invoices, stats, isOwner, 
                                 <SubPanel className="space-y-0">
                                     <div className="flex items-center justify-between py-2 border-b border-border-subtle">
                                         <span className="text-metadata">Total invoiced</span>
-                                        <span className="text-small-body font-medium text-text">£{stats.totalOwed.toFixed(2)}</span>
+                                        <span className="text-small-body font-medium text-text tabular-nums">£{stats.totalOwed.toFixed(2)}</span>
                                     </div>
                                     <div className="flex items-center justify-between py-2">
                                         <span className="text-metadata">Total paid</span>
-                                        <span className="text-small-body font-medium text-success">£{stats.totalPaid.toFixed(2)}</span>
+                                        <span className="text-small-body font-medium text-success tabular-nums">£{stats.totalPaid.toFixed(2)}</span>
                                     </div>
                                 </SubPanel>
                             </div>
@@ -408,14 +408,14 @@ export default function ParentProfileClient({ parent, invoices, stats, isOwner, 
                             <SubPanel className="flex items-center justify-between">
                                 <div>
                                     <p className="text-label text-text-muted">Total family billing</p>
-                                    <p className="text-financial-total text-text mt-0.5">£{stats.totalOwed.toFixed(2)}</p>
+                                    <p className="text-financial-total text-text mt-0.5 tabular-nums">£{stats.totalOwed.toFixed(2)}</p>
                                 </div>
                                 <CreditCard className="w-6 h-6 text-text-muted" />
                             </SubPanel>
                             <SubPanel className="flex items-center justify-between">
                                 <div>
                                     <p className="text-label text-text-muted">Paid to date</p>
-                                    <p className="text-financial-total text-success mt-0.5">£{stats.totalPaid.toFixed(2)}</p>
+                                    <p className="text-financial-total text-success mt-0.5 tabular-nums">£{stats.totalPaid.toFixed(2)}</p>
                                 </div>
                                 <History className="w-6 h-6 text-success" />
                             </SubPanel>
@@ -425,7 +425,7 @@ export default function ParentProfileClient({ parent, invoices, stats, isOwner, 
                             )}>
                                 <div>
                                     <p className={cn('text-label', stats.outstanding > 0 ? 'text-danger' : 'text-success')}>Amount due</p>
-                                    <p className={cn('text-financial-total mt-0.5', stats.outstanding > 0 ? 'text-danger' : 'text-success')}>£{stats.outstanding.toFixed(2)}</p>
+                                    <p className={cn('text-financial-total mt-0.5 tabular-nums', stats.outstanding > 0 ? 'text-danger' : 'text-success')}>£{stats.outstanding.toFixed(2)}</p>
                                 </div>
                                 <AlertCircle className={cn('w-6 h-6', stats.outstanding > 0 ? 'text-danger' : 'text-success')} />
                             </div>

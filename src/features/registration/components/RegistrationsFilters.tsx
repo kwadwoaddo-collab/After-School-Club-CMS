@@ -30,8 +30,7 @@ export default function RegistrationsFilters({ centres, resultsCount = 0 }: Regi
     // Computed from local state, not URL — avoids desync during debounce window
     const hasActiveFilters = !!(
         search ||
-        (status && status !== 'all') ||
-        selectedCentreId !== 'all'
+        (status && status !== 'all')
     );
 
     const buildUrl = useCallback(
@@ -49,7 +48,7 @@ export default function RegistrationsFilters({ centres, resultsCount = 0 }: Regi
             if (st !== 'all') params.set('status', st);
 
             const c = overrides?.newCentre !== undefined ? overrides.newCentre : selectedCentreId;
-            if (c !== 'all') params.set('centre', c);
+            if (c && c !== 'all') params.set('centre', c);
 
             const qs = params.toString();
             return `/dashboard/registrations${qs ? `?${qs}` : ''}`;
@@ -61,9 +60,11 @@ export default function RegistrationsFilters({ centres, resultsCount = 0 }: Regi
         if (debounceRef.current) clearTimeout(debounceRef.current);
         setSearch('');
         setStatus('all');
-        setSelectedCentreId('all');
+        const clearHref = selectedCentreId && selectedCentreId !== 'all'
+            ? `/dashboard/registrations?centre=${encodeURIComponent(selectedCentreId)}`
+            : '/dashboard/registrations';
         startTransition(() => {
-            router.push('/dashboard/registrations');
+            router.push(clearHref);
         });
     };
 
@@ -110,7 +111,7 @@ export default function RegistrationsFilters({ centres, resultsCount = 0 }: Regi
                         onChange={(e) => handleSearchChange(e.target.value)}
                         placeholder="Search registrations…"
                         aria-label="Search registrations"
-                        className="w-full pl-8 pr-3 py-2 rounded-xl text-sm text-foreground placeholder:text-muted-foreground/50 focus:ring-1 focus:ring-primary/30 transition-all outline-none border bg-secondary/50 border-border"
+                        className="w-full h-10 min-h-11 sm:min-h-10 pl-8 pr-3 rounded-md text-sm text-text placeholder:text-text-muted focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent transition-colors border border-border bg-surface"
                     />
                 </div>
 
@@ -120,7 +121,7 @@ export default function RegistrationsFilters({ centres, resultsCount = 0 }: Regi
                         value={status}
                         onChange={(e) => handleStatusChange(e.target.value)}
                         aria-label="Filter by status"
-                        className="w-full pl-4 pr-8 py-2 rounded-xl text-sm font-medium text-foreground focus:ring-1 focus:ring-primary/40 transition-all outline-none appearance-none cursor-pointer text-left border bg-secondary/50 border-border"
+                        className="w-full h-10 min-h-11 sm:min-h-10 pl-3 pr-8 rounded-md text-sm font-medium text-text focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent transition-colors appearance-none cursor-pointer text-left border border-border bg-surface"
                     >
                         {statusOptions.map((opt) => (
                             <option key={opt.value} value={opt.value}>{opt.label}</option>

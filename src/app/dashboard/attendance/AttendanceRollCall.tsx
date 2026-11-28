@@ -8,7 +8,8 @@ import { markAttendeeAttendance, registerWalkInChild, registerExistingChildWalkI
 import { updateAttendanceTimelog } from '@/features/attendance/actions';
 import {
     CheckCircle2, AlertCircle, Loader2, Plus, Search, X,
-    Users, Sparkles, UserCheck, LogOut, BookOpen, AlertTriangle, BookMarked, Stethoscope
+    Users, Sparkles, UserCheck, LogOut, BookOpen, AlertTriangle, BookMarked, Stethoscope,
+    Thermometer, Plane, ClipboardList
 } from 'lucide-react';
 import { useToast } from '@/components/ui/ToastProvider';
 import { Button } from '@/components/ui/Button';
@@ -17,6 +18,8 @@ import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { useDialogFocusTrap } from '@/components/ui/useDialogFocusTrap';
 import { CANONICAL_SCHOOL_YEARS, formatSchoolYearLabel } from '@/lib/school-year';
+import { WhatsAppCopyActions } from '@/components/whatsapp/WhatsAppCopyActions';
+import { buildParentGreetingMessage } from '@/lib/whatsapp';
 
 
 type AttendanceStatus = 'present' | 'absent' | 'late' | 'no_show' | 'excused' | null;
@@ -50,6 +53,7 @@ interface Attendee {
     parentLastName: string;
     parentPhone: string | null;
     parentEmail: string | null;
+    parentDeletedAt?: string | null;
     attendanceStatus: AttendanceStatus;
     attendanceNote: string | null;
     lateMinutes: number | null;
@@ -81,6 +85,7 @@ interface Props {
     slots: CompiledSlot[];
     centreId: string;
     dateStr: string;
+    centreName?: string;
     canViewProfiles?: boolean;
     allStudents?: {
         id: string;
@@ -109,10 +114,10 @@ function lateMinutesFrom(checkIn: string, slot: string): number | null {
 
 // ─── Absence reason grid ──────────────────────────────────────────────────────
 const ABSENCE_REASONS = [
-    { key: 'illness',  emoji: '🤒', label: 'Illness' },
-    { key: 'holiday',  emoji: '✈️', label: 'Holiday' },
-    { key: 'family',   emoji: '👪', label: 'Family'  },
-    { key: 'other',    emoji: '📋', label: 'Other'   },
+    { key: 'illness',  label: 'Illness', icon: Thermometer },
+    { key: 'holiday',  label: 'Holiday', icon: Plane },
+    { key: 'family',   label: 'Family', icon: Users },
+    { key: 'other',    label: 'Other', icon: ClipboardList },
 ] as const;
 
 // ─── AttendeeCard ─────────────────────────────────────────────────────────────
@@ -121,6 +126,7 @@ export function AttendeeCard({
     dateStr,
     sessionTime,
     centreId,
+    centreName,
     canViewProfiles = true,
     onToast,
     onStatusChange,
@@ -129,6 +135,7 @@ export function AttendeeCard({
     dateStr: string;
     sessionTime: string;
     centreId: string;
+    centreName?: string;
     canViewProfiles?: boolean;
     onToast: ReturnType<typeof useToast>['toast'];
     onStatusChange?: (id: string, patch: { checkedIn?: boolean; checkedOut?: boolean; absent?: boolean }) => void;
@@ -322,6 +329,18 @@ export function AttendeeCard({
                             ) : (
                                 <span>{attendee.parentFirstName} {attendee.parentLastName}</span>
                             )}
+                            {attendee.parentPhone && !attendee.parentDeletedAt && (
+                                <WhatsAppCopyActions
+                                    phone={attendee.parentPhone}
+                                    message={buildParentGreetingMessage({
+                                        parentFirstName: attendee.parentFirstName,
+                                        centreName,
+                                    })}
+                                    recipientName={`${attendee.parentFirstName} ${attendee.parentLastName}`.trim()}
+                                    variant="icon"
+                                    className="ml-1"
+                                />
+                            )}
                             {attendee.parentPhone ? <span>· {attendee.parentPhone}</span> : null}
                         </div>
                     </div>
@@ -346,7 +365,7 @@ export function AttendeeCard({
                                         variant={isIn ? 'secondary' : 'outline'}
                                         onClick={handleCheckIn}
                                         disabled={isPending || isIn}
-                                        className={isIn ? 'text-emerald-700 dark:text-emerald-400 border-emerald-500/30' : ''}
+                                        className={`min-h-11 sm:min-h-8 ${isIn ? 'text-emerald-700 dark:text-emerald-400 border-emerald-500/30' : ''}`}
                                     >
                                         {isIn ? 'In' : 'Check In'}
                                     </Button>
@@ -369,20 +388,38 @@ export function AttendeeCard({
                                         variant={isOut ? 'secondary' : 'outline'}
                                         onClick={handleCheckOut}
                                         disabled={isPending || isOut || !isIn}
-                                        className={isOut ? 'text-accent border-accent/30' : ''}
+                                        className={`min-h-11 sm:min-h-8 ${isOut ? 'text-accent border-accent/30' : ''}`}
                                     >
                                         {isOut ? 'Out' : 'Check Out'}
                                     </Button>
                                     {isOut && (
-                                        <input
-                                            type="time"
-                                            aria-label={`Check-out time for ${attendee.firstName} ${attendee.lastName}`}
-                                            value={checkOut}
-                                            onChange={e => setCheckOut(e.target.value)}
-                                            onBlur={e => saveTimeBlur('out', e.target.value)}
-                                            disabled={!isOut || isPending}
-                                            className="h-11 sm:h-8 w-28 sm:w-24 px-2 text-xs rounded-sm border border-border bg-surface text-text focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent"
-                                        />
+                                        <>
+                                            <input
+                                                type="time"
+                                                aria-label={`Check-out time for ${attendee.firstName} ${attendee.lastName}`}
+                                                value={checkOut}
+                                                onChange={e => setCheckOut(e.target.value)}
+                                                onBlur={e => saveTimeBlur('out', e.target.value)}
+                                                disabled={!isOut || isPending}
+                                                className="h-11 sm:h-8 w-28 sm:w-24 px-2 text-xs rounded-sm border border-border bg-surface text-text tabular-nums focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent"
+                                            />
+                                            <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                onClick={() => {
+                                                    persist({ ...confirmed.current, checkOut: '' });
+                                                    onToast({
+                                                        title: 'Check-out undone',
+                                                        message: `${attendee.firstName} check-out cleared.`,
+                                                        variant: 'info'
+                                                    });
+                                                }}
+                                                disabled={isPending}
+                                                className="min-h-11 sm:min-h-8 text-xs text-text-muted hover:text-text px-2"
+                                            >
+                                                Undo check-out
+                                            </Button>
+                                        </>
                                     )}
                                 </div>
 
@@ -393,12 +430,15 @@ export function AttendeeCard({
                                         </Button>
                                         {showAbsenceSheet && (
                                             <div className="absolute top-full right-0 mt-1 w-48 bg-surface border border-border rounded-md shadow-[var(--shadow-popover)] z-10 p-2 grid grid-cols-2 gap-1">
-                                                {ABSENCE_REASONS.map(r => (
-                                                    <button key={r.key} onClick={() => handleMarkAbsent(r.key)} className="flex flex-col items-center py-2 rounded-sm hover:bg-danger-soft border border-transparent hover:border-danger/20">
-                                                        <span className="text-lg mb-1">{r.emoji}</span>
-                                                        <span className="text-[10px] font-semibold text-text">{r.label}</span>
-                                                    </button>
-                                                ))}
+                                                {ABSENCE_REASONS.map(r => {
+                                                    const Icon = r.icon;
+                                                    return (
+                                                        <button key={r.key} type="button" onClick={() => handleMarkAbsent(r.key)} className="flex flex-col items-center py-2 px-1 rounded-sm hover:bg-danger-soft border border-transparent hover:border-danger/20 transition-colors">
+                                                            <Icon className="w-4 h-4 mb-1 text-danger" />
+                                                            <span className="text-[10px] font-semibold text-text">{r.label}</span>
+                                                        </button>
+                                                    );
+                                                })}
                                             </div>
                                         )}
                                     </div>
@@ -536,8 +576,25 @@ export function AttendeeCard({
                             )}
                         </div>
 
-                        <div className="flex justify-end pt-2 border-t border-border-subtle">
-                            <Button size="sm" variant="outline" onClick={() => setShowMedicalModal(false)}>
+                        <div className="flex items-center justify-between pt-2 border-t border-border-subtle gap-2">
+                            {isIn && !isOut && (
+                                <Button
+                                    size="sm"
+                                    onClick={() => {
+                                        handleCheckOut();
+                                        setShowMedicalModal(false);
+                                        onToast({
+                                            title: 'Checked out',
+                                            message: `${attendee.firstName} confirmed collected and checked out.`,
+                                            variant: 'success',
+                                        });
+                                    }}
+                                    className="bg-accent text-on-accent min-h-11 sm:min-h-9"
+                                >
+                                    Confirm Pickup &amp; Check Out
+                                </Button>
+                            )}
+                            <Button size="sm" variant="outline" onClick={() => setShowMedicalModal(false)} className="min-h-11 sm:min-h-9">
                                 Close
                             </Button>
                         </div>
@@ -564,7 +621,7 @@ function SlotProgressBar({ marked, total }: { marked: number; total: number }) {
 // ─── Live status tracker ──────────────────────────────────────────────────────
 type AttendeeStatus = { checkedIn: boolean; checkedOut: boolean; absent: boolean };
 
-export default function AttendanceRollCall({ slots, centreId, dateStr, canViewProfiles = true, allStudents = [] }: Props) {
+export default function AttendanceRollCall({ slots, centreId, dateStr, centreName, canViewProfiles = true, allStudents = [] }: Props) {
     const router = useRouter();
     const { toast } = useToast();
     const [searchQuery, setSearchQuery] = useState('');
@@ -951,6 +1008,7 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, canViewPr
                                                     dateStr={dateStr}
                                                     sessionTime={slot.time}
                                                     centreId={centreId}
+                                                    centreName={centreName}
                                                     canViewProfiles={canViewProfiles}
                                                     onToast={toast}
                                                     onStatusChange={updateMarkedStatus}
@@ -987,6 +1045,7 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, canViewPr
                                                     dateStr={dateStr}
                                                     sessionTime={slot.time}
                                                     centreId={centreId}
+                                                    centreName={centreName}
                                                     canViewProfiles={canViewProfiles}
                                                     onToast={toast}
                                                     onStatusChange={updateMarkedStatus}

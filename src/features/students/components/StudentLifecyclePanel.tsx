@@ -116,9 +116,17 @@ export default function StudentLifecyclePanel({
         <p className="text-sm text-muted-foreground">Last contact: {contacts[0] ? new Date(contacts[0].contactedAt).toLocaleDateString('en-GB', { timeZone: 'Europe/London' }) : 'Not yet recorded'}. Contact logging records a conversation you have already had; it sends no message.</p>
         {nextContactDate && <p className="text-sm text-foreground">Next call / follow-up: {nextContactDate}{nextContactDate <= today ? ' · Due' : ''}</p>}
         <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={() => { setMode(mode === 'contact' ? null : 'contact'); setError(''); }}>Log contacted / next call</Button>
+            {canChangeStatus && confirmed && <Button variant="outline" onClick={() => { setMode(mode === 'status' ? null : 'status'); setError(''); }}>Change enrolment status</Button>}
+            {canChangeStatus && status === 'stopped' && (
+                <Button variant="default" disabled={busy} onClick={handleQuickReactivate}>
+                    {busy ? 'Reactivating…' : 'Reactivate student'}
+                </Button>
+            )}
             {canChangeStatus && status !== 'stopped' && (
                 <Button
-                    variant="destructive"
+                    variant="outline"
+                    className="border-danger/40 text-danger hover:bg-danger-soft sm:ml-auto"
                     onClick={() => {
                         setStopDate(today);
                         setStopPreset('');
@@ -130,13 +138,6 @@ export default function StudentLifecyclePanel({
                     Stop student
                 </Button>
             )}
-            {canChangeStatus && status === 'stopped' && (
-                <Button variant="default" disabled={busy} onClick={handleQuickReactivate}>
-                    {busy ? 'Reactivating…' : 'Reactivate student'}
-                </Button>
-            )}
-            {canChangeStatus && confirmed && <Button variant="outline" onClick={() => { setMode(mode === 'status' ? null : 'status'); setError(''); }}>Change enrolment status</Button>}
-            <Button variant="outline" onClick={() => { setMode(mode === 'contact' ? null : 'contact'); setError(''); }}>Log contacted / next call</Button>
             <Button variant="ghost" asChild><Link href="/dashboard/students?status=follow-ups">View follow-ups</Link></Button>
         </div>
         {mode === 'stop' && (
@@ -240,6 +241,31 @@ export default function StudentLifecyclePanel({
             <div className="flex flex-wrap gap-2"><Button type="submit" disabled={busy}>{busy ? 'Saving…' : mode === 'status' ? 'Save status' : 'Record contact'}</Button><Button type="button" variant="ghost" disabled={busy} onClick={() => setMode(null)}>Cancel</Button></div>
         </form>}
         {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
-        <details><summary className="cursor-pointer text-sm text-foreground">Status and contact history ({events.length + contacts.length})</summary><ul className="mt-3 space-y-2 text-sm text-muted-foreground break-words">{events.map(event => <li key={event.id}>{event.effectiveDate} · {event.status} · {event.reason} · Recorded {new Date(event.createdAt).toLocaleString('en-GB', { timeZone: 'Europe/London' })}</li>)}{contacts.map(contact => <li key={contact.id}>{new Date(contact.contactedAt).toLocaleDateString('en-GB', { timeZone: 'Europe/London' })} · {contact.notes}{contact.nextContactDate ? ` · Next call ${contact.nextContactDate}` : ''}</li>)}</ul></details>
+        <details className="mt-4 border-t border-border pt-4">
+            <summary className="cursor-pointer text-sm font-medium text-foreground hover:text-accent transition-colors">
+                Status and contact history ({events.length + contacts.length})
+            </summary>
+            <ul className="mt-3 space-y-2.5 text-sm text-muted-foreground break-words">
+                {events.map(event => (
+                    <li key={event.id} className="flex items-center gap-2 flex-wrap">
+                        <span className="tabular-nums font-medium text-foreground">{event.effectiveDate}</span>
+                        <Badge variant={event.status === 'active' ? 'success' : event.status === 'stopped' ? 'default' : 'warning'}>
+                            {event.status === 'active' ? 'Active' : event.status === 'stopped' ? 'Stopped' : 'Paused'}
+                        </Badge>
+                        <span>{event.reason}</span>
+                        <span className="text-xs text-muted-foreground tabular-nums">· Recorded {new Date(event.createdAt).toLocaleString('en-GB', { timeZone: 'Europe/London' })}</span>
+                    </li>
+                ))}
+                {contacts.map(contact => (
+                    <li key={contact.id} className="flex items-center gap-2 flex-wrap">
+                        <span className="tabular-nums font-medium text-foreground">{new Date(contact.contactedAt).toLocaleDateString('en-GB', { timeZone: 'Europe/London' })}</span>
+                        <span>{contact.notes}</span>
+                        {contact.nextContactDate && (
+                            <span className="text-xs text-foreground tabular-nums">· Next call {contact.nextContactDate}</span>
+                        )}
+                    </li>
+                ))}
+            </ul>
+        </details>
     </section>;
 }
