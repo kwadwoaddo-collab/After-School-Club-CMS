@@ -10,7 +10,7 @@ const inputClass =
   'w-full px-4 py-3 min-h-[44px] rounded-xl bg-[var(--if-surface)] border border-[var(--if-text-muted)] text-[var(--if-text)] placeholder:text-[var(--if-text-muted)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--if-accent)] focus:border-[var(--if-accent)] font-medium';
 const labelClass = 'block text-xs font-bold text-[var(--if-text-secondary)] mb-2 uppercase tracking-wider';
 const primaryBtnClass =
-  'w-full min-h-[44px] py-3 rounded-xl bg-[#0F5F5C] text-white font-bold hover:bg-[#0C4A47] focus-visible:bg-[#0C4A47] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--if-accent)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2';
+  'w-full min-h-[44px] py-3 rounded-xl bg-[var(--if-accent)] text-[var(--if-on-accent)] font-bold hover:bg-[var(--if-accent-hover)] focus-visible:bg-[var(--if-accent-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--if-accent)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2';
 const linkClass =
   'text-[var(--if-accent)] hover:text-[var(--if-accent-hover)] font-semibold underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--if-accent)]';
 const errorBoxClass =
@@ -444,7 +444,7 @@ function LoginForm() {
 function BrandLockup() {
   return (
     <Link href="/" className="inline-flex items-center gap-2.5 min-h-[44px] w-fit text-[var(--if-text)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--if-accent)]" aria-label="After-School Club CMS · by SprintScale IT">
-      <span className="w-9 h-9 rounded-lg bg-[#0F5F5C] text-white inline-flex items-center justify-center font-bold text-lg" aria-hidden="true">S</span>
+      <span className="w-9 h-9 rounded-lg bg-[var(--if-accent)] text-[var(--if-on-accent)] inline-flex items-center justify-center font-bold text-lg" aria-hidden="true">S</span>
       <span className="flex flex-col leading-tight">
         <span className="font-bold text-sm">After-School Club CMS</span>
         <span className="text-xs text-[var(--if-text-muted)]">by SprintScale IT</span>
@@ -463,6 +463,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen grid md:grid-cols-2 relative overflow-x-hidden bg-[var(--if-page)] text-[var(--if-text)]">
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[100] focus:px-4 focus:py-2.5 focus:rounded-md focus:bg-[var(--if-accent)] focus:text-[var(--if-on-accent)] focus:text-sm focus:font-semibold focus:shadow-lg">Skip to main content</a>
 
       {/* Left Side */}
       <div className="hidden md:flex flex-col justify-between p-12 relative overflow-hidden bg-[var(--if-surface)] border-r border-[var(--if-border-subtle)]">

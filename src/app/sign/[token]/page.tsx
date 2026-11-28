@@ -22,7 +22,11 @@ const MESSAGES = {
 } as const;
 
 function Shell({ children }: { children: React.ReactNode }) {
-    return <main id="main" className="mx-auto min-h-screen max-w-3xl space-y-6 bg-gray-50 px-4 py-8 text-gray-900">{children}</main>;
+    return (
+        <main id="main-content" className="mx-auto min-h-screen max-w-3xl space-y-6 bg-page px-4 py-8 text-text">
+            {children}
+        </main>
+    );
 }
 
 export default async function SignPage({ params }: { params: Promise<{ token: string }> }) {
@@ -33,10 +37,25 @@ export default async function SignPage({ params }: { params: Promise<{ token: st
     const result = limit.success ? await lookupContractForSigning(token) : null;
     if (!result || result.state !== 'valid') {
         const [title, body] = MESSAGES[result ? (result.state as keyof typeof MESSAGES) : 'limited'];
-        return <Shell><div role="status" className="rounded-lg border border-gray-400 bg-white p-6"><h1 className="text-xl font-bold">{title}</h1><p className="mt-2">{body}</p></div></Shell>;
+        return (
+            <Shell>
+                <div role="status" className="rounded-2xl border border-border bg-surface p-6 shadow-sm">
+                    <h1 className="text-xl font-bold text-text">{title}</h1>
+                    <p className="mt-2 text-text-muted">{body}</p>
+                </div>
+            </Shell>
+        );
     }
     return (
         <Shell>
+            <div className="sm:hidden flex justify-end">
+                <a
+                    href="#sign-form"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-elevated border border-border text-xs font-semibold text-accent shadow-sm hover:bg-page transition-colors"
+                >
+                    Jump to signature ↓
+                </a>
+            </div>
             <ContractDocument values={result.view.values} />
             <SignForm token={token} todayLabel={formatContractDate(new Date())} />
         </Shell>

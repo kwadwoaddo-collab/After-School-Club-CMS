@@ -165,13 +165,13 @@ export function KpiGrid({
                   )}
                 </p>
 
-                <h3 className="text-financial-total text-text mt-1">{formatNumber(stat.value ?? 0)}</h3>
+                <h3 className="text-financial-total text-text mt-1 tabular-nums">{formatNumber(stat.value ?? 0)}</h3>
                 <p className="mt-1 text-xs text-text-muted">{stat.label === 'Joining confirmations' ? 'All dates' : 'Selected dashboard period'}</p>
               </div>
 
               <div className="relative z-10 pt-3 mt-3 border-t border-border-subtle text-xs text-text-muted">
                 {stat.subtext}
-                <span className="mt-1 block text-primary">View matching records →</span>
+                <span className="mt-1 block text-accent font-medium">View matching records →</span>
               </div>
             </div>
           </Card>

@@ -13,7 +13,7 @@ const inputBase =
 function BrandLockup() {
     return (
         <Link href="/" className={`inline-flex items-center gap-2.5 min-h-[44px] w-fit text-[var(--if-text)] ${focusRing}`} aria-label="After-School Club CMS · by SprintScale IT">
-            <span className="w-9 h-9 rounded-lg bg-[#0F5F5C] text-white inline-flex items-center justify-center font-bold text-lg" aria-hidden="true">S</span>
+            <span className="w-9 h-9 rounded-lg bg-[var(--if-accent)] text-[var(--if-on-accent)] inline-flex items-center justify-center font-bold text-lg" aria-hidden="true">S</span>
             <span className="flex flex-col leading-tight text-left">
                 <span className="font-bold text-sm">After-School Club CMS</span>
                 <span className="text-xs text-[var(--if-text-muted)]">by SprintScale IT</span>
@@ -196,7 +196,7 @@ function ResetPasswordForm() {
                         <button
                             type="submit"
                             disabled={loading || !newPassword || !confirmPassword}
-                            className={`w-full min-h-[44px] py-3 rounded-lg bg-[#0F5F5C] text-white font-semibold hover:bg-[#0C4A47] focus-visible:bg-[#0C4A47] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${focusRing}`}
+                            className={`w-full min-h-[44px] py-3 rounded-lg bg-[var(--if-accent)] text-[var(--if-on-accent)] font-semibold hover:bg-[var(--if-accent-hover)] focus-visible:bg-[var(--if-accent-hover)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${focusRing}`}
                         >
                             {loading ? (
                                 <>
@@ -226,6 +226,8 @@ function ResetPasswordForm() {
 export default function ResetPasswordPage() {
     return (
         <div className="min-h-screen grid md:grid-cols-2 bg-[var(--if-page)] text-[var(--if-text)] overflow-x-hidden">
+            <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[100] focus:px-4 focus:py-2.5 focus:rounded-md focus:bg-[var(--if-accent)] focus:text-[var(--if-on-accent)] focus:text-sm focus:font-semibold focus:shadow-lg">Skip to main content</a>
+            <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[100] focus:px-4 focus:py-2.5 focus:rounded-md focus:bg-[var(--if-accent)] focus:text-[var(--if-on-accent)] focus:text-sm focus:font-semibold focus:shadow-lg">Skip to main content</a>
             {/* Left Side */}
             <div className="hidden md:flex flex-col justify-between p-12 relative overflow-hidden bg-[var(--if-surface)] border-r border-[var(--if-border-subtle)]">
                 <Link href="/" className={`flex items-center gap-2 min-h-[44px] w-fit text-[var(--if-text-secondary)] hover:text-[var(--if-text)] transition-colors mb-8 ${focusRing}`}>
@@ -250,7 +252,7 @@ export default function ResetPasswordPage() {
             </div>
 
             {/* Right Side */}
-            <div className="flex flex-col items-center justify-center p-5 sm:p-8 min-w-0">
+            <main id="main-content" tabIndex={-1} className="flex flex-col items-center justify-center p-5 sm:p-8 min-w-0">
                 <div className="md:hidden w-full flex justify-between items-center mb-6">
                     <BrandLockup />
                     <Link href="/" className={`min-h-[44px] inline-flex items-center text-sm text-[var(--if-text-secondary)] hover:text-[var(--if-text)] ${focusRing}`}>Home</Link>
@@ -260,7 +262,7 @@ export default function ResetPasswordPage() {
                         <ResetPasswordForm />
                     </Suspense>
                 </div>
-            </div>
+            </main>
         </div>
     );
 }
