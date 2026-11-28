@@ -325,6 +325,7 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
 
             {/* Hamburger — mobile only */}
             <button
+                type="button"
                 suppressHydrationWarning
                 className="lg:hidden rounded-md hover:bg-page text-text-muted transition-colors flex-shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center"
                 onClick={() => setCollapsed(false)}
@@ -353,6 +354,11 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                                 suppressHydrationWarning
                                 ref={searchInputRef}
                                 type="text"
+                                role="combobox"
+                                aria-autocomplete="list"
+                                aria-expanded={showSearchResults && searchQuery.trim().length >= 2}
+                                aria-controls="header-search-results"
+                                aria-activedescendant={activeSearchIdx >= 0 && searchResults[activeSearchIdx] ? `header-search-opt-${activeSearchIdx}` : undefined}
                                 value={searchQuery}
                                 onChange={(e) => {
                                     setSearchQuery(e.target.value);
@@ -380,10 +386,15 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
 
                         {/* Search Results Dropdown */}
                         {showSearchResults && searchQuery.trim().length >= 2 && (
-                            <div className="absolute top-full left-0 right-0 mt-2 bg-surface-elevated rounded-md shadow-[var(--shadow-popover)] border border-border overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                            <div
+                                id="header-search-results"
+                                role="listbox"
+                                aria-label="Search results"
+                                className="absolute top-full left-0 right-0 mt-2 bg-surface-elevated rounded-md shadow-[var(--shadow-popover)] border border-border overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200"
+                            >
                                 {searchResults.length === 0 && !isSearching ? (
                                     <div className="p-6 text-center">
-                                        <p className="text-2xl mb-2">🔍</p>
+                                        <Search className="size-6 mx-auto mb-2 text-text-muted" aria-hidden="true" />
                                         <p className="text-sm text-text-muted">No results for &ldquo;<span className="text-text font-semibold">{searchQuery}</span>&rdquo;</p>
                                     </div>
                                 ) : (
@@ -393,6 +404,9 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                                             // accessibility — was a non-interactive div with onClick.
                                             <button
                                                 key={`${result.type}-${result.id}`}
+                                                id={`header-search-opt-${idx}`}
+                                                role="option"
+                                                aria-selected={idx === activeSearchIdx}
                                                 type="button"
                                                 onMouseEnter={() => setActiveSearchIdx(idx)}
                                                 onClick={() => {
@@ -429,9 +443,10 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                 )}
                 {/* Theme Toggle */}
                 <button
+                    type="button"
                     suppressHydrationWarning
                     onClick={toggleTheme}
-                    className="keep-shape size-9 rounded-md hover:bg-page text-text-muted hover:text-text transition-colors flex items-center justify-center flex-shrink-0"
+                    className="keep-shape size-11 sm:size-9 rounded-md hover:bg-page text-text-muted hover:text-text transition-colors flex items-center justify-center flex-shrink-0"
                     aria-label={`Toggle theme (currently ${theme})`}
                 >
                     {theme === 'system' && <Cloud className="size-4" />}
@@ -442,17 +457,17 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                 {/* Notifications */}
                 <div className="relative" ref={notificationRef}>
                     <button
+                        type="button"
                         suppressHydrationWarning
                         onClick={() => setShowNotifications(!showNotifications)}
                         aria-expanded={showNotifications}
                         aria-controls="notifications-menu"
-                        className="keep-shape size-9 rounded-md hover:bg-page text-text-muted hover:text-text relative transition-colors flex items-center justify-center flex-shrink-0"
+                        className="keep-shape size-11 sm:size-9 rounded-md hover:bg-page text-text-muted hover:text-text relative transition-colors flex items-center justify-center flex-shrink-0"
                         aria-label="Notifications"
                     >
                         <Bell className="size-4" />
                         {unreadCount > 0 && (
                             <span className="absolute top-2 right-2 flex h-2.5 w-2.5">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-danger opacity-75" />
                                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-danger border border-header" />
                             </span>
                         )}
@@ -488,7 +503,7 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                                     </div>
                                 ) : notifications.length === 0 ? (
                                     <div className="p-8 text-center">
-                                        <div className="text-3xl mb-3">🔔</div>
+                                        <Bell className="size-7 mx-auto mb-3 text-text-muted" aria-hidden="true" />
                                         <p className="font-semibold text-text mb-1">All caught up!</p>
                                         <p className="text-sm text-text-muted">No notifications yet</p>
                                     </div>
@@ -524,9 +539,10 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                             </div>
                             <div className="p-3 border-t border-border bg-page">
                                 <button
+                                    type="button"
                                     suppressHydrationWarning
                                     onClick={handleMarkAllAsRead}
-                                    className="text-xs font-semibold text-accent hover:text-accent/80 w-full text-center transition-colors"
+                                    className="text-xs font-semibold text-accent hover:text-accent/80 w-full min-h-11 sm:min-h-9 flex items-center justify-center text-center transition-colors"
                                 >
                                     Mark all as read
                                 </button>
@@ -541,12 +557,13 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                 {/* User Profile Dropdown */}
                 <div className="relative" ref={userMenuRef}>
                     <button
+                        type="button"
                         suppressHydrationWarning
                         onClick={() => setShowUserMenu(!showUserMenu)}
                         aria-expanded={showUserMenu}
                         aria-haspopup="menu"
                         aria-controls="user-profile-menu"
-                        className="keep-shape flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-page transition-colors group"
+                        className="keep-shape flex items-center gap-2 px-2 py-1.5 min-h-11 sm:min-h-9 rounded-md hover:bg-page transition-colors group"
                         aria-label="User menu"
                     >
                         <div className="text-right hidden sm:block min-w-0">

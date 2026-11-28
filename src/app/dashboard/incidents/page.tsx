@@ -11,6 +11,7 @@ import { resolveActiveCentreId } from '@/lib/centre-filter';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { isValidUuid } from '@/lib/uuid';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { logger } from '@/lib/logger';
 
 export default async function IncidentsPage(props: { searchParams?: Promise<{ centre?: string }> } = {}) {
@@ -76,21 +77,17 @@ export default async function IncidentsPage(props: { searchParams?: Promise<{ ce
     return (
         <div className="space-y-8 animate-in fade-in duration-700">
             {/* Page Header */}
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-                <div>
-                    {centreName && (
-                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-accent/10 border border-accent/20 text-accent text-xs font-bold mb-2">
-                            <Building2 className="w-3.5 h-3.5" />
-                            <span>{centreName}{activeCentre?.ofstedId ? ` · Ofsted ${activeCentre.ofstedId}` : ''}</span>
-                        </div>
-                    )}
-                    <h1 className="text-2xl sm:text-3xl font-black text-text tracking-tight">
-                        Incident &amp; Accident Records
-                    </h1>
-                    <p className="text-text-muted font-medium mt-1">
-                        Log and manage safeguarding, medical, and accident reports.
-                    </p>
-                </div>
+            <div className="space-y-3">
+                {centreName && (
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-accent-soft border border-accent/20 text-accent text-xs font-semibold">
+                        <Building2 className="w-3.5 h-3.5" />
+                        <span>{centreName}{activeCentre?.ofstedId ? ` · Ofsted ${activeCentre.ofstedId}` : ''}</span>
+                    </div>
+                )}
+                <PageHeader
+                    title="Incident & Accident Records"
+                    description="Log and manage safeguarding, medical, and accident reports."
+                />
             </div>
 
             {hasError && (

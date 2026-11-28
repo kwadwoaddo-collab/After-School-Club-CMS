@@ -54,12 +54,12 @@ export default function RegistrationTermsForm({ initialTerms, orgSlug }: { initi
  
             <div className="flex items-start justify-between mb-8 flex-wrap gap-4">
                 <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-2xl bg-secondary border border-border flex items-center justify-center">
-                        <FileText className="w-6 h-6 text-primary" />
+                    <div className="w-12 h-12 rounded-xl bg-accent-soft border border-border flex items-center justify-center">
+                        <FileText className="w-6 h-6 text-accent" />
                     </div>
                     <div>
-                        <h1 className="text-2xl font-bold text-foreground">Registration Terms &amp; Conditions</h1>
-                        <p className="text-muted-foreground text-sm mt-1">Displayed on your public student registration form</p>
+                        <h1 className="text-2xl font-bold text-text">Registration Terms &amp; Conditions</h1>
+                        <p className="text-text-muted text-sm mt-1">Displayed on your public student registration form</p>
                     </div>
                 </div>
                 {orgSlug && (
@@ -67,7 +67,7 @@ export default function RegistrationTermsForm({ initialTerms, orgSlug }: { initi
                         href={`/register/${orgSlug}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 min-h-[44px] px-4 py-2 bg-secondary hover:bg-secondary/80 border border-border text-foreground rounded-2xl transition-all text-sm hover:scale-[1.01] active:scale-[0.99]"
+                        className="inline-flex items-center gap-2 min-h-11 sm:min-h-10 px-4 py-2 bg-secondary hover:bg-secondary/80 border border-border text-text rounded-md transition-colors text-sm"
                     >
                         <ExternalLink className="w-4 h-4" /> Preview form
                     </a>
@@ -76,11 +76,11 @@ export default function RegistrationTermsForm({ initialTerms, orgSlug }: { initi
  
             <div className="space-y-5">
                     {/* Info banner */}
-                    <div className="bg-primary/10 border border-primary/20 rounded-2xl p-4 flex gap-3">
-                        <FileText className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                    <div className="bg-accent-soft border border-accent/20 rounded-xl p-4 flex gap-3">
+                        <FileText className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
                         <div>
-                            <p className="text-primary font-bold text-sm">Tip</p>
-                            <p className="text-muted-foreground text-sm mt-0.5">
+                            <p className="text-accent font-semibold text-sm">Tip</p>
+                            <p className="text-text-muted text-sm mt-0.5">
                                 Parents will see these T&Cs on Step 6 of the registration form before they submit.
                                 Write clear policies covering fees, absence, notice period, and conduct.
                             </p>
@@ -89,7 +89,7 @@ export default function RegistrationTermsForm({ initialTerms, orgSlug }: { initi
  
                     {/* Textarea */}
                     <div>
-                        <label htmlFor="registration-terms" className="block text-sm font-bold text-foreground mb-2">
+                        <label htmlFor="registration-terms" className="block text-sm font-bold text-text mb-2">
                             Terms &amp; Conditions Text
                         </label>
                         <textarea
@@ -98,14 +98,14 @@ export default function RegistrationTermsForm({ initialTerms, orgSlug }: { initi
                             onChange={e => setTerms(e.target.value)}
                             placeholder={`e.g.\n\nFEES\nAll fees are due 1 month in advance. Late payment may result in loss of place.\n\nABSENCE\nFees are not refunded for absent sessions unless 48 hours notice is given.\n\nNOTICE PERIOD\nOne month's written notice is required to withdraw your child from the programme.`}
                             rows={20}
-                            className="w-full px-4 py-3 rounded-2xl bg-secondary/60 border border-border text-foreground placeholder-[#8c909f]/40 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm font-mono resize-none leading-relaxed transition-all"
+                            className="w-full px-4 py-3 rounded-md bg-secondary/60 border border-border text-text placeholder-[#8c909f]/40 focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent text-sm font-mono resize-none leading-relaxed transition-all"
                         />
-                        <p className="text-muted-foreground text-xs mt-2 text-right">{terms.length} characters</p>
+                        <p className="text-text-muted text-xs mt-2 text-right">{terms.length} characters</p>
                     </div>
  
                     {/* Save / error */}
                     {error && (
-                        <div role="alert" className="p-3 bg-destructive/10 border border-destructive/20 rounded-2xl text-destructive font-bold text-sm">{error}</div>
+                        <div role="alert" className="p-3 bg-destructive/10 border border-destructive/20 rounded-xl text-destructive font-semibold text-sm">{error}</div>
                     )}
  
                     <div className="flex items-center justify-between">
@@ -122,7 +122,7 @@ export default function RegistrationTermsForm({ initialTerms, orgSlug }: { initi
                             type="button"
                             onClick={handleSave}
                             disabled={saving}
-                            className="inline-flex items-center gap-2 min-h-[44px] px-6 py-3 bg-primary text-primary-foreground text-sm font-bold rounded-2xl hover:bg-primary/90 hover:scale-[1.01] active:scale-[0.99] transition-all shadow-lg shadow-primary/30 disabled:opacity-50 disabled:bg-secondary"
+                            className="inline-flex items-center gap-2 min-h-11 sm:min-h-10 px-5 py-2.5 bg-accent text-on-accent text-sm font-semibold rounded-md hover:bg-accent-hover transition-colors shadow-xs disabled:opacity-50 disabled:bg-secondary"
                         >
                             <Save className="w-4 h-4" />
                             {saving ? 'Saving…' : 'Save Terms'}

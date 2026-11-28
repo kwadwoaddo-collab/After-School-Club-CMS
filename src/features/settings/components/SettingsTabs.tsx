@@ -74,10 +74,34 @@ export default function SettingsTabs({ org, centres, baseUrl, isOwner = true }: 
         router.push(`?${newParams.toString()}`);
     };
 
+    const handleKeyDown = (e: React.KeyboardEvent, index: number) => {
+        let nextIndex = -1;
+        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+            e.preventDefault();
+            nextIndex = (index + 1) % tabs.length;
+        } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+            e.preventDefault();
+            nextIndex = (index - 1 + tabs.length) % tabs.length;
+        } else if (e.key === 'Home') {
+            e.preventDefault();
+            nextIndex = 0;
+        } else if (e.key === 'End') {
+            e.preventDefault();
+            nextIndex = tabs.length - 1;
+        }
+        if (nextIndex >= 0) {
+            const nextTab = tabs[nextIndex];
+            handleTabChange(nextTab.id as TabType);
+            const nextEl = document.getElementById(`settings-tab-${nextTab.id}`);
+            nextEl?.focus();
+        }
+    };
+
+
     const allTabs = [
         { id: 'general', label: 'General Info', icon: Building2, description: 'Organisation name & contact info' },
         { id: 'hours', label: 'Operating Hours', icon: Clock, description: 'Hours & session slots' },
-        { id: 'branding', label: 'Branding & Theme', icon: Palette, description: 'Brand color & logotype' },
+        { id: 'branding', label: 'Branding & Theme', icon: Palette, description: 'Brand colour & logotype' },
         { id: 'finance', label: 'Finance & Pricing', icon: Wallet, description: 'Standard & assisted rates' },
         { id: 'registration', label: 'Registration Form', icon: FileText, description: 'Registration form T&Cs' },
         { id: 'discounts', label: 'Discount Rules', icon: Tag, description: 'Sibling & custom discount rules' },
@@ -97,24 +121,35 @@ export default function SettingsTabs({ org, centres, baseUrl, isOwner = true }: 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
             {/* Sidebar Navigation */}
-            <div className="lg:col-span-1 flex flex-col gap-2">
-                {tabs.map((tab) => {
+            <div
+                role="tablist"
+                aria-label="Workspace settings sections"
+                className="lg:col-span-1 flex lg:flex-col gap-1.5 overflow-x-auto pb-2 lg:pb-0 -mx-1 px-1"
+            >
+                {tabs.map((tab, index) => {
                     const Icon = tab.icon;
                     const isActive = activeTab === tab.id;
                     return (
                         <button
                             key={tab.id}
-                            onClick={() => handleTabChange(tab.id)}
-                            className={`w-full flex items-start gap-3 p-4 rounded-2xl border text-left transition-all duration-200 ${
+                            id={`settings-tab-${tab.id}`}
+                            role="tab"
+                            type="button"
+                            aria-selected={isActive}
+                            aria-controls={`settings-panel-${tab.id}`}
+                            tabIndex={isActive ? 0 : -1}
+                            onKeyDown={(e) => handleKeyDown(e, index)}
+                            onClick={() => handleTabChange(tab.id as TabType)}
+                            className={`min-h-11 shrink-0 flex items-center lg:items-start gap-2.5 lg:gap-3 px-3.5 py-2.5 lg:p-3 rounded-lg border text-left transition-colors whitespace-nowrap lg:whitespace-normal ${
                                 isActive
-                                    ? 'bg-primary/10 border-primary/30 text-primary font-extrabold shadow-md shadow-primary/5'
-                                    : 'bg-transparent border-transparent text-muted-foreground hover:text-foreground hover:bg-secondary/60 hover:border-border/50'
+                                    ? 'bg-accent-soft border-accent/30 text-accent font-semibold'
+                                    : 'bg-transparent border-transparent text-text-secondary hover:text-text hover:bg-surface'
                             }`}
                         >
-                            <Icon className={`w-5 h-5 flex-shrink-0 mt-0.5 ${isActive ? 'text-primary' : 'text-muted-foreground'}`} />
+                            <Icon className={`w-4 h-4 lg:w-5 lg:h-5 flex-shrink-0 lg:mt-0.5 ${isActive ? 'text-accent' : 'text-text-muted'}`} />
                             <div className="min-w-0">
-                                <p className="text-xs font-bold uppercase tracking-wider leading-none mb-1">{tab.label}</p>
-                                <p className="text-[10px] text-muted-foreground leading-tight truncate">{tab.description}</p>
+                                <p className="text-xs sm:text-sm font-semibold leading-tight">{tab.label}</p>
+                                <p className="hidden lg:block text-xs text-text-muted font-normal mt-0.5 truncate">{tab.description}</p>
                             </div>
                         </button>
                     );
@@ -123,12 +158,17 @@ export default function SettingsTabs({ org, centres, baseUrl, isOwner = true }: 
 
             {/* Main Content Pane */}
             <div className="lg:col-span-3 min-h-[500px]">
-                <div className="bg-card border border-border shadow-sm rounded-3xl p-6 sm:p-8 shadow-xl">
+                <div
+                    id={`settings-panel-${activeTab}`}
+                    role="tabpanel"
+                    aria-labelledby={`settings-tab-${activeTab}`}
+                    className="bg-surface border border-border rounded-xl p-5 sm:p-6 shadow-xs"
+                >
                     {activeTab === 'general' && (
                         <div className="space-y-8 animate-in fade-in duration-300">
                             <div>
-                                <h2 className="text-xl font-bold text-foreground tracking-tight">Organisation Profile</h2>
-                                <p className="text-sm text-muted-foreground mt-1">Configure your organisation details and workspace details.</p>
+                                <h2 className="text-xl font-bold text-text tracking-tight">Organisation Profile</h2>
+                                <p className="text-sm text-text-muted mt-1">Configure your organisation details and workspace details.</p>
                             </div>
                             <OrganisationInfoForm org={org} baseUrl={baseUrl} isOwner={isOwner} />
                         </div>
@@ -143,8 +183,8 @@ export default function SettingsTabs({ org, centres, baseUrl, isOwner = true }: 
                     {activeTab === 'branding' && isOwner && (
                         <div className="space-y-6 animate-in fade-in duration-300">
                             <div>
-                                <h2 className="text-xl font-bold text-foreground tracking-tight">Branding &amp; Visual Design</h2>
-                                <p className="text-sm text-muted-foreground mt-1">Customize visual styles for parent facing registration &amp; booking pages.</p>
+                                <h2 className="text-xl font-bold text-text tracking-tight">Branding &amp; Visual Design</h2>
+                                <p className="text-sm text-text-muted mt-1">Customize visual styles for parent facing registration &amp; booking pages.</p>
                             </div>
                             <BrandingForm initialColor={org.brandColor || '#136dec'} logoUrl={org.logoUrl} />
                         </div>
@@ -153,8 +193,8 @@ export default function SettingsTabs({ org, centres, baseUrl, isOwner = true }: 
                     {activeTab === 'finance' && (
                         <div className="space-y-6 animate-in fade-in duration-300">
                             <div>
-                                <h2 className="text-xl font-bold text-foreground tracking-tight">Finance &amp; Pricing Rules</h2>
-                                <p className="text-sm text-muted-foreground mt-1">Manage standard pricing rules and assisted session values.</p>
+                                <h2 className="text-xl font-bold text-text tracking-tight">Finance &amp; Pricing Rules</h2>
+                                <p className="text-sm text-text-muted mt-1">Manage standard pricing rules and assisted session values.</p>
                             </div>
                             <FinancePricingForm centres={formattedCentres} />
                         </div>
@@ -176,30 +216,31 @@ export default function SettingsTabs({ org, centres, baseUrl, isOwner = true }: 
                         <div className="space-y-8 animate-in fade-in duration-300">
                             <div>
                                 <h2 className="text-xl font-bold text-red-500 tracking-tight">Danger Zone</h2>
-                                <p className="text-sm text-muted-foreground mt-1">Data management and irreversible actions.</p>
+                                <p className="text-sm text-text-muted mt-1">Data management and irreversible actions.</p>
                             </div>
                             
                             <div className="pt-2 space-y-4">
-                                <div className="flex items-center gap-2 text-foreground">
+                                <div className="flex items-center gap-2 text-text">
                                     <ShieldCheck className="w-5 h-5 text-success" />
                                     <h3 className="font-bold text-sm uppercase tracking-wider">Privacy &amp; Compliance</h3>
                                 </div>
-                                <p className="text-xs text-muted-foreground">Export all stored records for GDPR portability requests.</p>
+                                <p className="text-xs text-text-muted">Export all stored records for GDPR portability requests.</p>
                                 <GdprExportButton />
                             </div>
 
-                            <div className="pt-6 border-t border-border/50 space-y-4">
-                                <div className="flex items-center gap-2 text-foreground">
-                                    <GraduationCap className="w-5 h-5 text-primary" />
+                            <div className="pt-6 border-t border-border space-y-4">
+                                <div className="flex items-center gap-2 text-text">
+                                    <GraduationCap className="w-5 h-5 text-accent" />
                                     <h3 className="font-bold text-sm uppercase tracking-wider">Academic Year Rollover</h3>
                                 </div>
-                                <p className="text-xs text-muted-foreground leading-relaxed">
+                                <p className="text-xs text-text-muted leading-relaxed">
                                     Increment the school year for all active students in your organisation by +1 (e.g. Year 1 ➔ Year 2, Nursery ➔ Reception, Year 13 ➔ Graduated). This happens automatically on September 1st, but you can manually trigger it here.
                                 </p>
                                 <button
+                                    type="button"
                                     onClick={() => setIsRollModalOpen(true)}
                                     disabled={isRolling}
-                                    className="flex items-center gap-2 px-4 py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-600 border border-red-500/20 rounded-xl text-xs font-bold transition-all disabled:opacity-50 active:scale-95 duration-100 cursor-pointer"
+                                    className="flex items-center gap-2 px-4 py-2.5 min-h-11 sm:min-h-9 bg-red-500/10 hover:bg-red-500/20 text-red-600 border border-red-500/20 rounded-md text-xs font-bold transition-all disabled:opacity-50 active:scale-95 duration-100 cursor-pointer"
                                 >
                                     {isRolling ? (
                                         <>

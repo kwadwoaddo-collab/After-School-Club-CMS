@@ -9,6 +9,7 @@ import { getUserAccessibleCentres } from '@/lib/permissions';
 import { isValidUuid } from '@/lib/uuid';
 import FilterableInvoiceHistorySection from '@/features/finance/components/FilterableInvoiceHistorySection';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { PageHeader } from '@/components/ui/PageHeader';
 import Link from 'next/link';
 import { ArrowLeft, Building2 } from 'lucide-react';
 
@@ -68,20 +69,18 @@ export default async function InvoicesListPage(props: { searchParams?: Promise<{
     return (
         <div className="space-y-8 animate-in fade-in duration-700">
             {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <Link
-                        href={backHref}
-                        className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors font-bold group mb-2"
-                    >
-                        <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-                        Back to Ledger
-                    </Link>
-                    <h1 className="text-3xl font-black text-foreground tracking-tight">Full Invoice History</h1>
-                    <p className="text-muted-foreground font-medium mt-1">
-                        A complete record of all billing transactions
-                    </p>
-                </div>
+            <div className="space-y-2">
+                <Link
+                    href={backHref}
+                    className="inline-flex items-center gap-2 text-text-muted hover:text-text transition-colors font-semibold group text-sm min-h-11 sm:min-h-9"
+                >
+                    <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+                    Back to Ledger
+                </Link>
+                <PageHeader
+                    title="Invoice Directory"
+                    description="Full Invoice History and complete record of all billing transactions across centres."
+                />
             </div>
 
             {hasZeroAccessibleCentres ? (

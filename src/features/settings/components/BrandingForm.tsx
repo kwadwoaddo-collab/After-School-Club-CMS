@@ -82,17 +82,18 @@ export default function BrandingForm({ initialColor, logoUrl }: BrandingFormProp
                 already on, creating a confusing UX loop. */}
             <div className="flex items-start justify-between gap-4">
                 <div>
-                    <h2 className="text-xl font-bold text-foreground tracking-tight">
+                    <h2 className="text-xl font-bold text-text tracking-tight">
                         Branding &amp; Customisation
                     </h2>
-                    <p className="text-muted-foreground text-sm font-medium mt-1">
-                        Customise your organisation's logo and brand colours
+                    <p className="text-text-muted text-sm font-medium mt-1">
+                        Customise your organisation’s logo and brand colours
                     </p>
                 </div>
                 <button
+                    type="button"
                     onClick={handleSave}
                     disabled={saving}
-                    className="flex-shrink-0 flex items-center gap-2 px-6 py-3 bg-primary rounded-2xl text-sm font-bold text-primary-foreground hover:bg-primary/90 hover:scale-[1.01] active:scale-[0.99] transition-all shadow-lg shadow-primary/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-shrink-0 flex items-center gap-2 px-5 py-2.5 min-h-11 sm:min-h-10 bg-accent rounded-md text-sm font-semibold text-on-accent hover:bg-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     {saveSuccess ? (
                         <>
@@ -109,7 +110,7 @@ export default function BrandingForm({ initialColor, logoUrl }: BrandingFormProp
             </div>
 
             {saveSuccess && (
-                <div className="glass-card rounded-2xl p-4 bg-success/10 border border-success/20">
+                <div className="rounded-xl p-4 bg-success/10 border border-success/20">
                     <div className="flex items-center gap-3">
                         <CheckCircle2 className="w-5 h-5 text-success" />
                         <p className="text-sm font-semibold text-success">
@@ -120,40 +121,43 @@ export default function BrandingForm({ initialColor, logoUrl }: BrandingFormProp
             )}
 
             {saveError && (
-                <div className="glass-card rounded-2xl p-4 bg-red-500/10 border border-red-500/20">
+                <div className="rounded-xl p-4 bg-red-500/10 border border-red-500/20">
                     <p className="text-sm font-semibold text-red-600">{saveError}</p>
                 </div>
             )}
 
             <div className="grid grid-cols-1 max-w-2xl gap-8">
                 {/* Brand Colours Section */}
-                <div className="bg-card border border-border rounded-[32px] p-8 flex flex-col gap-6 shadow-sm">
+                <div className="bg-surface border border-border rounded-xl p-6 sm:p-8 flex flex-col gap-6 shadow-xs">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-accent-amber/10 rounded-2xl flex items-center justify-center">
+                        <div className="w-10 h-10 bg-accent-amber/10 rounded-lg flex items-center justify-center">
                             <Palette className="w-5 h-5 text-accent-amber" />
                         </div>
-                        <h2 className="text-xl font-bold text-foreground">Brand Colours</h2>
+                        <h2 className="text-xl font-bold text-text">Brand Colours</h2>
                     </div>
 
                     <div className="space-y-6">
                         {/* Current Color */}
                         <div>
-                            <label className="block text-sm font-semibold text-foreground mb-3">
-                                Primary Colour
+                            <label htmlFor="brand-color-picker" className="block text-sm font-semibold text-text mb-3">
+                                Primary colour
                             </label>
                             <div className="flex items-center gap-4">
                                 <input
+                                    id="brand-color-picker"
                                     type="color"
                                     value={primaryColor}
                                     onChange={(e) => setPrimaryColor(e.target.value)}
-                                    className="w-16 h-16 rounded-2xl cursor-pointer border-2 border-border bg-secondary/60"
+                                    className="w-14 h-14 rounded-lg cursor-pointer border-2 border-border bg-page"
                                 />
                                 <div className="flex-1">
+                                    <label htmlFor="brand-color-hex" className="sr-only">Brand colour hex code</label>
                                     <input
+                                        id="brand-color-hex"
                                         type="text"
                                         value={primaryColor}
                                         onChange={(e) => setPrimaryColor(e.target.value)}
-                                        className="w-full px-4 py-3 bg-secondary/60 border border-border rounded-2xl font-mono text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
+                                        className="w-full px-4 py-2.5 min-h-11 sm:min-h-10 bg-page border border-border rounded-md font-mono text-sm text-text outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all"
                                     />
                                 </div>
                             </div>
@@ -161,24 +165,25 @@ export default function BrandingForm({ initialColor, logoUrl }: BrandingFormProp
 
                         {/* Preset Colours */}
                         <div>
-                            <label className="block text-sm font-semibold text-foreground mb-3">
-                                Preset Colours
+                            <label className="block text-sm font-semibold text-text mb-3">
+                                Preset colours
                             </label>
                             <div className="grid grid-cols-3 gap-3">
                                 {presetColors.map((color) => (
                                     <button
                                         key={color.value}
+                                        type="button"
                                         onClick={() => setPrimaryColor(color.value)}
-                                        className={`p-4 rounded-2xl border-2 transition-all hover:scale-[1.02] active:scale-[0.98] ${primaryColor === color.value
-                                            ? 'border-primary bg-secondary/60 shadow-lg shadow-black/40'
-                                            : 'border-border hover:border-border bg-secondary/60 text-muted-foreground'
+                                        className={`p-3 min-h-11 rounded-lg border-2 transition-all ${primaryColor === color.value
+                                            ? 'border-accent bg-accent-soft shadow-xs'
+                                            : 'border-border hover:border-border-subtle bg-page text-text-muted'
                                             }`}
                                     >
                                         <div
-                                            className="w-full h-8 rounded-lg mb-2"
+                                            className="w-full h-6 rounded-md mb-2"
                                             style={{ backgroundColor: color.value }}
                                         />
-                                        <p className="text-xs font-semibold text-muted-foreground">
+                                        <p className="text-xs font-medium text-text-secondary truncate">
                                             {color.name}
                                         </p>
                                     </button>
@@ -187,17 +192,18 @@ export default function BrandingForm({ initialColor, logoUrl }: BrandingFormProp
                         </div>
 
                         {/* Preview */}
-                        <div className="mt-8 p-6 rounded-2xl bg-secondary/60 border border-border">
-                            <p className="text-sm font-semibold text-foreground mb-4">Preview</p>
+                        <div className="mt-6 p-5 rounded-xl bg-page border border-border">
+                            <p className="text-sm font-semibold text-text mb-3">Preview</p>
                             <div className="space-y-3">
                                 <button
-                                    className="w-full px-6 py-3 rounded-2xl text-sm font-bold text-primary-foreground transition-all hover:scale-[1.01] active:scale-[0.99]"
+                                    type="button"
+                                    className="w-full px-5 py-2.5 min-h-11 sm:min-h-10 rounded-md text-sm font-semibold text-white transition-colors"
                                     style={{ backgroundColor: primaryColor }}
                                 >
-                                    Primary Button
+                                    Primary button
                                 </button>
                                 <div
-                                    className="p-4 rounded-xl"
+                                    className="p-3.5 rounded-md"
                                     style={{ backgroundColor: `${primaryColor}15` }}
                                 >
                                     <p className="text-sm font-medium" style={{ color: primaryColor }}>
