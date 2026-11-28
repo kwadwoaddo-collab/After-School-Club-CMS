@@ -9,6 +9,7 @@ import { useForm, useFieldArray, Controller, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { Mail, Building2, Laptop } from 'lucide-react';
 import {
     bookingSchema,
     parentSchema,
@@ -533,9 +534,9 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                     </div>
                 </div>
 
-                <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 max-w-md mx-auto flex items-start gap-3 text-left">
-                    <span className="text-blue-500 text-xl mt-0.5">📧</span>
-                    <p className="text-sm text-blue-800 dark:text-blue-200 leading-relaxed">
+                <div className="bg-accent-soft border border-accent/25 rounded-lg p-4 max-w-md mx-auto flex items-start gap-3 text-left">
+                    <Mail className="w-5 h-5 text-accent shrink-0 mt-0.5" aria-hidden="true" />
+                    <p className="text-sm text-text leading-relaxed">
                         You&apos;ll receive a {rescheduleData ? 'updated ' : ''}confirmation email shortly with all the details.
                     </p>
                 </div>
@@ -545,7 +546,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                         backToCentresUrl ? (
                             <Link
                                 href={backToCentresUrl}
-                                className="brand-btn inline-block py-3 px-12 rounded-lg font-semibold transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                                className="brand-btn inline-block py-3 px-12 rounded-lg font-semibold transition-all shadow-lg hover:shadow-xl"
                             >
                                 Done
                             </Link>
@@ -560,7 +561,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                                     setSuccess(false);
                                     setStep(1);
                                 }}
-                                className="brand-btn inline-block py-3 px-12 rounded-lg font-semibold transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                                className="brand-btn inline-block py-3 px-12 rounded-lg font-semibold transition-all shadow-lg hover:shadow-xl"
                             >
                                 Book Another Assessment
                             </button>
@@ -569,11 +570,11 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                         <>
                             <Link
                                 href={backToCentresUrl || '/dashboard/bookings'}
-                                className="brand-btn inline-block py-3 px-12 rounded-lg font-semibold transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                                className="brand-btn inline-block py-3 px-12 rounded-lg font-semibold transition-all shadow-lg hover:shadow-xl"
                             >
                                 Done
                             </Link>
-                            <Link href="/dashboard/bookings" className="text-sm text-muted-foreground hover:text-primary underline">
+                            <Link href="/dashboard/bookings" className="text-sm text-muted-foreground hover:text-accent underline">
                                 View all bookings →
                             </Link>
                         </>
@@ -664,7 +665,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                                             setParentChildrenList([]);
                                             setValue('children', []);
                                         }}
-                                        className={`flex-1 py-3 px-4 rounded-xl border font-semibold text-sm transition-all ${bookingMode === 'new' ? 'bg-primary/20 border-primary/50 text-primary' : 'border-border text-muted-foreground bg-card hover:bg-secondary/40'}`}
+                                        className={`flex-1 py-3 px-4 rounded-xl border font-semibold text-sm transition-all ${bookingMode === 'new' ? 'bg-accent-soft border-accent/40 text-accent' : 'border-border text-muted-foreground bg-card hover:bg-secondary/40'}`}
                                     >
                                         New Family
                                     </button>
@@ -683,7 +684,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                                             setParentChildrenList([]);
                                             setValue('children', []);
                                         }}
-                                        className={`flex-1 py-3 px-4 rounded-xl border font-semibold text-sm transition-all ${bookingMode === 'existing' ? 'bg-primary/20 border-primary/50 text-primary' : 'border-border text-muted-foreground bg-card hover:bg-secondary/40'}`}
+                                        className={`flex-1 py-3 px-4 rounded-xl border font-semibold text-sm transition-all ${bookingMode === 'existing' ? 'bg-accent-soft border-accent/40 text-accent' : 'border-border text-muted-foreground bg-card hover:bg-secondary/40'}`}
                                     >
                                         Existing Family
                                     </button>
@@ -962,25 +963,31 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                                 <label className="block text-sm font-medium text-foreground/80 mb-2">Session Type</label>
                                 <div className="grid grid-cols-2 gap-4">
                                     {[
-                                        { value: 'in_person', label: '🏫 In-Person', desc: `At ${centreName}`, disabled: false },
+                                        { value: 'in_person', label: 'In-Person', icon: Building2, desc: `At ${centreName}`, disabled: false },
                                         // Task 3: Online is disabled — greyed out and not selectable
-                                        { value: 'online', label: '💻 Online', desc: 'Coming Soon', disabled: true },
-                                    ].map((opt) => (
-                                        <label
-                                            key={opt.value}
-                                            className={`p-4 border-2 rounded-lg text-center transition-all ${
-                                                opt.disabled
-                                                    ? 'border-border bg-secondary/40 opacity-50 pointer-events-none cursor-not-allowed'
-                                                    : modality === opt.value
-                                                        ? 'brand-border bg-card shadow-md cursor-pointer'
-                                                        : 'border-border hover:border-border cursor-pointer'
-                                            }`}
-                                        >
-                                            <input type="radio" {...register('appointment.modality')} value={opt.value} disabled={opt.disabled} className="sr-only" />
-                                            <div className={`text-lg font-medium ${opt.disabled ? 'text-muted-foreground' : modality === opt.value ? 'brand-text' : 'text-foreground'}`}>{opt.label}</div>
-                                            <div className="text-sm text-muted-foreground">{opt.desc}</div>
-                                        </label>
-                                    ))}
+                                        { value: 'online', label: 'Online', icon: Laptop, desc: 'Coming Soon', disabled: true },
+                                    ].map((opt) => {
+                                        const Icon = opt.icon;
+                                        return (
+                                            <label
+                                                key={opt.value}
+                                                className={`p-4 border-2 rounded-lg text-center transition-all ${
+                                                    opt.disabled
+                                                        ? 'border-border bg-secondary/40 opacity-50 pointer-events-none cursor-not-allowed'
+                                                        : modality === opt.value
+                                                            ? 'brand-border bg-card shadow-md cursor-pointer'
+                                                            : 'border-border hover:border-border cursor-pointer'
+                                                }`}
+                                            >
+                                                <input type="radio" {...register('appointment.modality')} value={opt.value} disabled={opt.disabled} className="sr-only" />
+                                                <div className={`text-lg font-medium inline-flex items-center justify-center ${opt.disabled ? 'text-muted-foreground' : modality === opt.value ? 'brand-text' : 'text-foreground'}`}>
+                                                    <Icon className="w-4 h-4 inline-block mr-1.5 -mt-0.5" aria-hidden="true" />
+                                                    {opt.label}
+                                                </div>
+                                                <div className="text-sm text-muted-foreground">{opt.desc}</div>
+                                            </label>
+                                        );
+                                    })}
                                 </div>
                             </div>
 
@@ -1033,7 +1040,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                                                                         ? 'border-border bg-secondary/40 text-muted-foreground opacity-50 cursor-not-allowed line-through'
                                                                         : isSelected
                                                                             ? 'brand-bg brand-border text-white shadow-sm'
-                                                                            : 'bg-card border-border text-foreground hover:border-primary/50 hover:bg-secondary/30'
+                                                                            : 'bg-card border-border text-foreground hover:border-accent/40 hover:bg-secondary/30'
                                                                 }`}
                                                             >
                                                                 {formatAmPm(slotTime)}
@@ -1072,8 +1079,8 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                             <h2 className="text-xl font-semibold text-foreground">Confirm Booking</h2>
                             <div className="bg-card rounded-lg border border-border divide-y divide-border/40">
                                 <div className="px-4 py-3 flex justify-between"><span className="text-muted-foreground">Centre</span><span className="font-medium text-foreground">{centreName}</span></div>
-                                <div className="px-4 py-3 flex justify-between"><span className="text-muted-foreground">Session Type</span><span className="font-medium text-foreground">{modality === 'in_person' ? '🏫 In-Person' : '💻 Online'}</span></div>
-                                <div className="px-4 py-3 flex justify-between"><span className="text-muted-foreground">Date & Time</span><span className="font-medium text-foreground">{watchedStartAt ? new Date(watchedStartAt.includes('T') ? watchedStartAt : `${selectedDate}T${watchedStartAt}:00`).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Not selected'}</span></div>
+                                <div className="px-4 py-3 flex justify-between"><span className="text-muted-foreground">Session Type</span><span className="font-medium text-foreground inline-flex items-center gap-1.5">{modality === 'in_person' ? <><Building2 className="w-4 h-4 text-accent" aria-hidden="true" />In-Person</> : <><Laptop className="w-4 h-4 text-accent" aria-hidden="true" />Online</>}</span></div>
+                                <div className="px-4 py-3 flex justify-between"><span className="text-muted-foreground">Date & Time</span><span className="font-medium text-foreground tabular-nums">{watchedStartAt ? new Date(watchedStartAt.includes('T') ? watchedStartAt : `${selectedDate}T${watchedStartAt}:00`).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Not selected'}</span></div>
 
                                 {watchedChildren.map((child, i) => (
                                     <div key={i} className="px-4 py-3">

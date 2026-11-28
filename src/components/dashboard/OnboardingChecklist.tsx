@@ -3,7 +3,8 @@
 import Link from 'next/link';
 import {
     CheckCircle2, Circle, ChevronRight, X,
-    User, Building2, Users, Globe, FileText, Share2, CalendarDays
+    User, Building2, Users, Globe, FileText, Share2, CalendarDays,
+    Rocket
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/Button';
@@ -98,7 +99,7 @@ export default function OnboardingChecklist({ steps, completedCount }: Onboardin
     if (celebrating) {
         return (
             <div className="rounded-lg border border-border bg-surface p-5 text-center animate-in fade-in duration-500">
-                <div className="text-3xl mb-2">🎉</div>
+                <CheckCircle2 className="size-8 mx-auto mb-2 text-emerald-700 dark:text-emerald-400" aria-hidden="true" />
                 <h2 className="text-section-title text-text">You&apos;re all set!</h2>
                 <p className="text-small-body text-text-secondary mt-1">Your club is live and ready to accept bookings.</p>
             </div>
@@ -109,9 +110,10 @@ export default function OnboardingChecklist({ steps, completedCount }: Onboardin
         <div className="rounded-lg border border-border bg-surface p-5 relative animate-in fade-in duration-500">
             {/* Dismiss */}
             <button
+                type="button"
                 onClick={handleDismiss}
                 id="checklist-dismiss-btn"
-                className="absolute top-3 right-3 p-1.5 rounded-md text-text-muted hover:text-text hover:bg-page transition-colors"
+                className="absolute top-3 right-3 min-h-11 min-w-11 sm:min-h-8 sm:min-w-8 inline-flex items-center justify-center p-1.5 rounded-md text-text-muted hover:text-text hover:bg-page transition-colors"
                 title="Dismiss setup guide"
                 aria-label="Dismiss setup guide"
             >
@@ -121,15 +123,15 @@ export default function OnboardingChecklist({ steps, completedCount }: Onboardin
             {/* Header + progress */}
             <div className="flex items-start gap-3 mb-4 pr-8">
                 <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-accent-soft">
-                    <span className="text-base">🚀</span>
+                    <Rocket className="size-4 text-accent" aria-hidden="true" />
                 </div>
                 <div className="flex-1 min-w-0">
                     <h2 className="text-text font-semibold text-sm">Set up your club</h2>
-                    <p className="text-text-muted text-xs mt-0.5">
+                    <p className="text-text-muted text-xs mt-0.5 tabular-nums">
                         {completedCount} of {total} steps complete
                     </p>
                 </div>
-                <span className="text-xs font-semibold text-accent flex-shrink-0">{pct}%</span>
+                <span className="text-xs font-semibold text-accent flex-shrink-0 tabular-nums">{pct}%</span>
             </div>
 
             {/* Progress bar */}

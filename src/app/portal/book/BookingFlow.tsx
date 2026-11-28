@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { useToast } from '@/components/ui/ToastProvider';
-import { CalendarDays, Clock, User, CheckCircle2, ChevronRight, ChevronLeft, Loader2, MapPin } from 'lucide-react';
+import { CalendarDays, Clock, User, CheckCircle2, ChevronRight, ChevronLeft, Loader2, MapPin, Calendar, ClipboardCheck } from 'lucide-react';
 import { formatSchoolYearLabel } from '@/lib/school-year';
 import { createPortalBooking, reschedulePortalBooking } from './actions';
 
@@ -340,7 +340,7 @@ export function BookingFlow({ registeredChildren: childList, centres, reschedule
                         ? 'Your old booking has been cancelled and a new one created. Check your email.'
                         : 'A confirmation email has been sent. Please save your code.'}
                 </p>
-                <div className="bg-accent-soft border-2 border-dashed border-primary/40 rounded-2xl px-8 py-6 mb-8">
+                <div className="bg-accent-soft border-2 border-dashed border-accent/40 rounded-2xl px-8 py-6 mb-8">
                     <p className="text-xs uppercase font-bold text-accent tracking-widest mb-2">Confirmation Code</p>
                     <p className="text-3xl font-black text-text tracking-widest font-mono">{success.confirmationCode}</p>
                 </div>
@@ -379,7 +379,7 @@ export function BookingFlow({ registeredChildren: childList, centres, reschedule
             {/* Reschedule context banner */}
             {isRescheduling && rescheduleBooking && (
                 <div className="mb-6 flex items-start gap-3 bg-amber-500/10 border border-amber-500/20 rounded-2xl px-4 py-3">
-                    <span className="text-warning text-lg mt-0.5" aria-hidden="true">📅</span>
+                    <Calendar className="w-5 h-5 text-amber-700 dark:text-amber-400 shrink-0 mt-0.5" aria-hidden="true" />
                     <div>
                         <p className="text-sm font-bold text-warning">Rescheduling Booking</p>
                         <p className="text-xs text-text-muted mt-0.5">
@@ -643,8 +643,9 @@ export function BookingFlow({ registeredChildren: childList, centres, reschedule
                         </div>
                     </div>
 
-                    <div className="bg-accent-soft border border-primary/20 rounded-xl p-4 text-sm text-text-muted">
-                        📋 No payment required now. An invoice will be issued by staff after your session.
+                    <div className="bg-accent-soft border border-accent/20 rounded-xl p-4 text-sm text-text-muted flex items-start gap-2.5">
+                        <ClipboardCheck className="w-4 h-4 text-accent shrink-0 mt-0.5" aria-hidden="true" />
+                        <span>No payment required now. An invoice will be issued by staff after your session.</span>
                     </div>
 
                     {error && (

@@ -108,6 +108,7 @@ export default function OnboardingForm() {
             }
 
             // 3. PM-1.3A F-01: Direct the new organisation owner to /pending-approval
+            // eslint-disable-next-line @next/next/no-location-assign-relative-destination
             window.location.assign('/pending-approval');
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Something went wrong');
@@ -145,6 +146,7 @@ export default function OnboardingForm() {
                                 onClick={() => {
                                     setSelectedLogoFile(null);
                                     setValue('logoUrl', '');
+                                    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
                                     window.location.assign('/pending-approval');
                                 }}
                                 className="text-xs font-semibold underline hover:opacity-80 block"
@@ -175,41 +177,44 @@ export default function OnboardingForm() {
                                     file:mr-4 file:py-2 file:px-4
                                     file:rounded-full file:border-0
                                     file:text-sm file:font-semibold
-                                    file:bg-primary/10 file:text-primary
-                                    hover:file:bg-primary/20
+                                    file:bg-accent-soft file:text-accent
+                                    hover:file:bg-accent-soft/80
                                     disabled:opacity-50"
                             />
                         </div>
-                        {isUploading && <p className="text-xs text-primary mt-1">Uploading...</p>}
+                        {isUploading && <p className="text-xs text-accent mt-1">Uploading...</p>}
                         <p className="text-xs text-muted-foreground mt-1">You can add this later.</p>
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-muted-foreground mb-1">Organisation Name</label>
+                        <label htmlFor="onboard-org-name" className="block text-sm font-medium text-muted-foreground mb-1">Organisation Name</label>
                         <input
+                            id="onboard-org-name"
                             {...register('organisationName')}
-                            className="w-full px-4 py-3 bg-secondary/60 text-foreground border border-outline-variant/20 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all placeholder:text-muted-foreground"
+                            className="w-full px-4 py-3 bg-secondary/60 text-foreground border border-outline-variant/20 rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition-all placeholder:text-muted-foreground"
                             placeholder="e.g. Bright Stars Academy"
                         />
-                        {errors.organisationName && <p className="text-red-400 text-sm mt-1" role="alert">{errors.organisationName.message}</p>}
+                        {errors.organisationName && <p className="text-danger text-sm mt-1" role="alert">{errors.organisationName.message}</p>}
 
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-muted-foreground mb-1">First Centre Name</label>
+                        <label htmlFor="onboard-centre-name" className="block text-sm font-medium text-muted-foreground mb-1">First Centre Name</label>
                         <input
+                            id="onboard-centre-name"
                             {...register('centreName')}
-                            className="w-full px-4 py-3 bg-secondary/60 text-foreground border border-outline-variant/20 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all placeholder:text-muted-foreground"
+                            className="w-full px-4 py-3 bg-secondary/60 text-foreground border border-outline-variant/20 rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition-all placeholder:text-muted-foreground"
                             placeholder="e.g. London Campus"
                         />
                         <p className="text-xs text-muted-foreground mt-1">You can add more centres later.</p>
-                        {errors.centreName && <p className="text-red-400 text-sm mt-1">{errors.centreName.message}</p>}
+                        {errors.centreName && <p className="text-danger text-sm mt-1" role="alert">{errors.centreName.message}</p>}
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-muted-foreground mb-2">Brand Color</label>
+                        <label htmlFor="onboard-brand-colour" className="block text-sm font-medium text-muted-foreground mb-2">Brand Colour</label>
                         <div className="flex items-center gap-4">
                             <input
+                                id="onboard-brand-colour"
                                 type="color"
                                 {...register('brandColor')}
                                 className="w-12 h-12 rounded-lg cursor-pointer border border-outline-variant/20 p-1 bg-secondary/60 shadow-sm"
@@ -223,8 +228,8 @@ export default function OnboardingForm() {
                                 </div>
                             </div>
                         </div>
-                        <p className="text-xs text-muted-foreground mt-2">This color will be used for buttons and highlights on your booking page.</p>
-                        {errors.brandColor && <p className="text-red-400 text-sm mt-1">{errors.brandColor.message}</p>}
+                        <p className="text-xs text-muted-foreground mt-2">This colour will be used for buttons and highlights on your booking page.</p>
+                        {errors.brandColor && <p className="text-danger text-sm mt-1" role="alert">{errors.brandColor.message}</p>}
                     </div>
                 </div>
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { X, BookOpen, Users, BarChart3, ArrowRight } from 'lucide-react';
+import { X, BookOpen, Users, BarChart3, ArrowRight, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useDialogFocusTrap } from '@/components/ui/useDialogFocusTrap';
 
@@ -63,9 +63,10 @@ export default function WelcomeModal({ orgName, ownerName }: WelcomeModalProps) 
 
                 {/* Close */}
                 <button
+                    type="button"
                     onClick={dismiss}
                     id="welcome-dismiss"
-                    className="absolute top-3 right-3 p-1.5 rounded-md text-text-muted hover:text-text hover:bg-page transition-colors"
+                    className="absolute top-3 right-3 min-h-11 min-w-11 sm:min-h-10 sm:min-w-10 inline-flex items-center justify-center p-1.5 rounded-md text-text-muted hover:text-text hover:bg-page transition-colors"
                     aria-label="Close welcome message"
                 >
                     <X className="size-4" />
@@ -75,7 +76,7 @@ export default function WelcomeModal({ orgName, ownerName }: WelcomeModalProps) 
                     {/* Emoji + greeting */}
                     <div className="flex flex-col items-center text-center mb-6">
                         <div className="flex size-12 shrink-0 items-center justify-center rounded-md bg-accent-soft mb-3">
-                            <span className="text-2xl">🎉</span>
+                            <Sparkles className="size-6 text-accent" aria-hidden="true" />
                         </div>
                         <h2 id="welcome-title" className="text-lg font-semibold text-text">
                             Welcome{ownerName ? `, ${ownerName}` : ''}!
@@ -102,7 +103,7 @@ export default function WelcomeModal({ orgName, ownerName }: WelcomeModalProps) 
                     </div>
 
                     {/* CTA */}
-                    <Button onClick={dismiss} id="welcome-start-btn" className="w-full">
+                    <Button type="button" onClick={dismiss} id="welcome-start-btn" className="w-full min-h-11 sm:min-h-10">
                         Start Setup
                         <ArrowRight className="size-4" />
                     </Button>

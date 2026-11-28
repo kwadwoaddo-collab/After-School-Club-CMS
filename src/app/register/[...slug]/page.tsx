@@ -6,6 +6,7 @@ import { logger } from '@/lib/logger';
 import React, { useState, useEffect, useRef, useId } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { ClipboardList, CreditCard, Calendar, AlertTriangle, RefreshCw, Ban, Wallet, Lock } from 'lucide-react';
 
 
 
@@ -67,7 +68,7 @@ const emptyParent = (): ParentEntry => ({
 });
 
 // ── Shared input styles — V-3: updated to CMS design-system tokens ──
-const inputCls = 'w-full px-4 py-3 min-h-[44px] rounded-xl bg-surface-dim border border-outline-variant/30 text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/60 text-base transition-colors';
+const inputCls = 'w-full px-4 py-3 min-h-[44px] rounded-xl bg-surface-dim border border-outline-variant/30 text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:ring-2 focus-visible:ring-accent/40 focus-visible:border-accent text-base transition-colors';
 const inputErrCls = 'w-full px-4 py-3 min-h-[44px] rounded-xl bg-surface-dim border border-error ring-2 ring-error/20 text-on-surface placeholder:text-on-surface-variant focus:outline-none text-base';
 const labelCls = 'block text-sm font-medium text-on-surface-variant mb-1';
 const sectionTitle = 'text-on-surface font-bold text-xl mb-5';
@@ -78,7 +79,7 @@ function ProgressBar({ current, total }: { current: number; total: number }) {
         <div className="mb-8">
             <div className="flex gap-1.5 mb-2">
                 {Array.from({ length: total }).map((_, i) => (
-                    <div key={i} className={`flex-1 h-1.5 rounded-full transition-all ${i < current ? 'bg-primary' : 'bg-outline-variant/30'}`} />
+                    <div key={i} className={`flex-1 h-1.5 rounded-full transition-all ${i < current ? 'bg-accent' : 'bg-outline-variant/30'}`} />
                 ))}
             </div>
             <p className="text-on-surface-variant text-xs text-center">Step {current} of {total}</p>
@@ -412,7 +413,7 @@ export default function RegisterPage() {
         return (
             <div className="min-h-screen bg-surface flex items-center justify-center">
                 <div className="flex flex-col items-center gap-4">
-                    <svg className="w-8 h-8 animate-spin text-primary" fill="none" viewBox="0 0 24 24">
+                    <svg className="w-8 h-8 animate-spin text-accent" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                     </svg>
@@ -450,15 +451,15 @@ export default function RegisterPage() {
                     <div className="max-w-2xl mx-auto flex items-center gap-3">
                         {orgInfo?.logoUrl && <img src={orgInfo.logoUrl} alt="" className="w-8 h-8 rounded-lg object-cover" />}
                         <button onClick={resetToStart} className="text-left group cursor-pointer">
-                            <p className="text-on-surface font-semibold text-sm group-hover:text-primary transition-colors">{orgInfo?.name}</p>
+                            <p className="text-on-surface font-semibold text-sm group-hover:text-accent transition-colors">{orgInfo?.name}</p>
                             <p className="text-on-surface-variant text-xs">Student Registration Form</p>
                         </button>
                     </div>
                 </div>
                 <div className="max-w-md mx-auto px-4 py-16">
                     <div className="text-center mb-8">
-                        <div className="w-16 h-16 bg-primary/10 border border-primary/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                            <svg className="w-8 h-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <div className="w-16 h-16 bg-accent-soft border border-accent/25 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                            <svg className="w-8 h-8 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                             </svg>
                         </div>
@@ -470,15 +471,15 @@ export default function RegisterPage() {
                             <button
                                 key={centre.id}
                                 onClick={() => setSelectedCentreId(centre.id)}
-                                className="w-full text-left p-5 rounded-2xl bg-card border border-outline-variant/20 hover:border-primary/30 hover:shadow-md transition-all group"
+                                className="w-full text-left p-5 rounded-2xl bg-card border border-outline-variant/20 hover:border-accent/30 hover:shadow-md transition-all group"
                             >
                                 <div className="flex justify-between items-center">
                                     <div>
                                         <p className="text-on-surface font-semibold mb-0.5">{centre.name}</p>
                                         <p className="text-on-surface-variant text-sm">{centre.address || 'After School provisions'}</p>
                                     </div>
-                                    <div className="w-8 h-8 rounded-full bg-surface-dim flex items-center justify-center group-hover:bg-primary/10 transition-colors flex-shrink-0">
-                                        <svg className="w-4 h-4 text-on-surface-variant group-hover:text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <div className="w-8 h-8 rounded-full bg-surface-dim flex items-center justify-center group-hover:bg-accent-soft transition-colors flex-shrink-0">
+                                        <svg className="w-4 h-4 text-on-surface-variant group-hover:text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
                                         </svg>
                                     </div>
@@ -507,7 +508,7 @@ export default function RegisterPage() {
                     <div className="max-w-2xl mx-auto flex items-center gap-3">
                         {orgInfo?.logoUrl && <img src={orgInfo.logoUrl} alt="" className="w-8 h-8 rounded-lg object-cover" />}
                         <button onClick={resetToStart} className="text-left group cursor-pointer">
-                            <p className="text-foreground font-semibold text-sm group-hover:text-primary transition-colors">{primaryClubName}</p>
+                            <p className="text-foreground font-semibold text-sm group-hover:text-accent transition-colors">{primaryClubName}</p>
                             <p className="text-muted-foreground text-xs">Student Registration Form</p>
                         </button>
                     </div>
@@ -516,53 +517,56 @@ export default function RegisterPage() {
                 <div className="max-w-2xl mx-auto px-4 py-10">
                     {/* Title */}
                     <div className="mb-8">
-                        <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-full px-4 py-1.5 mb-4">
-                            <svg className="w-4 h-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <div className="inline-flex items-center gap-2 bg-accent-soft border border-accent/25 rounded-full px-4 py-1.5 mb-4">
+                            <svg className="w-4 h-4 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
-                            <span className="text-primary text-xs font-medium">Please read before registering</span>
+                            <span className="text-accent text-xs font-medium">Please read before registering</span>
                         </div>
-                        <h1 className="text-2xl font-bold text-foreground mb-2">📋 Fees &amp; Payment Information</h1>
+                        <h1 className="text-2xl font-bold text-foreground mb-2"><ClipboardList className="w-6 h-6 inline-block mr-2 -mt-1 text-accent" aria-hidden="true" />Fees &amp; Payment Information</h1>
                         <p className="text-muted-foreground text-sm">Before you complete the registration form, please review our fees and payment terms.</p>
                     </div>
 
                     {/* Mode of Finance card */}
-                    <div className="bg-gradient-to-r from-blue-600 to-violet-600 rounded-2xl p-6 mb-5">
+                    <div className="bg-[#0F766E] rounded-xl p-6 mb-5">
                         <p className="text-white/80 text-xs uppercase tracking-widest mb-3">Mode of Finance</p>
                         <div className="space-y-3">
                             <div className="flex flex-col md:flex-row md:items-center justify-between gap-1 md:gap-0">
                                 <span className="text-white/90 text-sm">Self Finance</span>
-                                <span className="text-white font-bold text-xl">£{activeCentre?.feeSelfFinance ?? orgInfo?.pricing?.selfFinanceRate ?? 20} <span className="text-white/80 font-normal text-sm">per session</span></span>
+                                <span className="text-white font-bold text-xl tabular-nums">£{activeCentre?.feeSelfFinance ?? orgInfo?.pricing?.selfFinanceRate ?? 20} <span className="text-white/80 font-normal text-sm">per session</span></span>
                             </div>
                             <div className="border-t border-white/20" />
                             <div className="flex flex-col md:flex-row md:items-center justify-between gap-1 md:gap-0">
                                 <span className="text-white/90 text-sm">Tax Credit / Universal Credit / Student Finance</span>
-                                <span className="text-white font-bold text-xl">£{activeCentre?.feeAssistedFinance ?? orgInfo?.pricing?.taxCreditRate ?? 30} <span className="text-white/80 font-normal text-sm">per session</span></span>
+                                <span className="text-white font-bold text-xl tabular-nums">£{activeCentre?.feeAssistedFinance ?? orgInfo?.pricing?.taxCreditRate ?? 30} <span className="text-white/80 font-normal text-sm">per session</span></span>
                             </div>
                         </div>
                     </div>
 
                     {/* Payment terms */}
                     <div className="bg-card border border-border rounded-2xl p-6 mb-4">
-                        <h2 className="text-foreground font-semibold text-sm mb-4">💳 Payment Terms</h2>
+                        <h2 className="text-foreground font-semibold text-sm mb-4"><CreditCard className="w-4 h-4 inline-block mr-2 -mt-0.5 text-accent" aria-hidden="true" />Payment Terms</h2>
                         <div className="space-y-4">
                             {[
-                                { icon: '📅', text: 'All fees must be paid 1 month in advance.' },
-                                { icon: '⚠️', text: 'Fees are payable for all booked sessions, even if your child is absent, unless alternative arrangements have been agreed in advance with the manager.' },
-                                { icon: '🔄', text: 'If your child misses a session, please contact the manager to request a catch-up session.' },
-                                { icon: '🚫', text: "Persistent late or non-payment of fees may result in suspension or termination of your child's place at the club." },
-                            ].map((item, i) => (
-                                <div key={i} className="flex gap-3">
-                                    <span className="text-lg leading-tight">{item.icon}</span>
-                                    <p className="text-muted-foreground text-sm leading-relaxed">{item.text}</p>
-                                </div>
-                            ))}
+                                { icon: Calendar, text: 'All fees must be paid 1 month in advance.' },
+                                { icon: AlertTriangle, text: 'Fees are payable for all booked sessions, even if your child is absent, unless alternative arrangements have been agreed in advance with the manager.' },
+                                { icon: RefreshCw, text: 'If your child misses a session, please contact the manager to request a catch-up session.' },
+                                { icon: Ban, text: "Persistent late or non-payment of fees may result in suspension or termination of your child's place at the club." },
+                            ].map((item, i) => {
+                                const Icon = item.icon;
+                                return (
+                                    <div key={i} className="flex gap-3">
+                                        <Icon className="w-4 h-4 text-text-muted shrink-0 mt-0.5" aria-hidden="true" />
+                                        <p className="text-muted-foreground text-sm leading-relaxed">{item.text}</p>
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
 
                     {/* Funding options */}
                     <div className="bg-card border border-border rounded-2xl p-6 mb-4">
-                        <h2 className="text-foreground font-semibold text-sm mb-4">💰 Accepted Funding Methods</h2>
+                        <h2 className="text-foreground font-semibold text-sm mb-4"><Wallet className="w-4 h-4 inline-block mr-2 -mt-0.5 text-accent" aria-hidden="true" />Accepted Funding Methods</h2>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             {[
                                 { label: 'Tax-Free Childcare', desc: 'Via HMRC childcare account' },
@@ -581,7 +585,7 @@ export default function RegisterPage() {
                     {/* Safeguarding note */}
                     <div className="bg-secondary border border-border rounded-2xl p-5 mb-8">
                         <p className="text-muted-foreground text-xs leading-relaxed">
-                            🔒 All personal information provided on this form is handled securely and confidentially.
+                            <Lock className="w-3.5 h-3.5 inline-block mr-1.5 -mt-0.5 text-text-muted" aria-hidden="true" />All personal information provided on this form is handled securely and confidentially.
                             Information may be shared with relevant authorities if required under safeguarding or child protection procedures.
                         </p>
                     </div>
@@ -589,17 +593,17 @@ export default function RegisterPage() {
                     {/* CTA */}
                     <div className="flex justify-between items-center mt-8 gap-4">
                         {orgInfo?.centres && orgInfo.centres.length > 1 ? (
-                            <button onClick={() => setSelectedCentreId(null)} className="px-6 py-3 rounded-xl border border-border text-muted-foreground hover:border-border hover:text-foreground transition-colors text-sm whitespace-nowrap">
+                            <button type="button" onClick={() => setSelectedCentreId(null)} className="min-h-11 px-6 py-3 rounded-xl border border-border text-muted-foreground hover:border-border hover:text-foreground transition-colors text-sm whitespace-nowrap">
                                 ← Back
                             </button>
                         ) : (
-                            <Link href="/" className="px-6 py-3 rounded-xl border border-border text-muted-foreground hover:border-border hover:text-foreground transition-colors text-sm whitespace-nowrap">
+                            <Link href="/" className="min-h-11 inline-flex items-center px-6 py-3 rounded-xl border border-border text-muted-foreground hover:border-border hover:text-foreground transition-colors text-sm whitespace-nowrap">
                                 ← Back
                             </Link>
                         )}
                         <button
                             onClick={() => setShowFeesIntro(false)}
-                            className="flex-1 py-4 rounded-2xl font-semibold text-base transition-all bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/80 shadow-lg shadow-blue-600/25"
+                            className="flex-1 py-4 rounded-2xl font-semibold text-base transition-all bg-accent text-accent-foreground hover:bg-accent-hover shadow-sm"
                         >
                             I understand — Proceed to Registration →
                         </button>
@@ -680,7 +684,7 @@ export default function RegisterPage() {
                                         setIsDownloadingPdf(false);
                                     }
                                 }}
-                                className="w-full py-4 bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/80 font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-blue-600/25 disabled:opacity-60 disabled:cursor-not-allowed"
+                                className="w-full py-4 bg-accent text-accent-foreground hover:bg-accent-hover font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
                             >
                                 <svg className="w-5 h-5 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -735,25 +739,25 @@ export default function RegisterPage() {
                 )}
 
                 {isPrefilled && (
-                    <div className="mb-6 p-4 bg-primary/10 border border-primary/20 rounded-2xl flex items-start gap-3 shadow-sm animate-in fade-in slide-in-from-top-2 duration-300">
-                        <svg className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div className="mb-6 p-4 bg-accent-soft border border-accent/25 rounded-2xl flex items-start gap-3 shadow-sm animate-in fade-in slide-in-from-top-2 duration-300">
+                        <svg className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                         <div>
                             {childList.length > 1 ? (
                                 <>
-                                    <p className="text-sm font-bold text-primary">
+                                    <p className="text-sm font-bold text-accent">
                                         Registration pre-filled for {childList.length} children
                                     </p>
-                                    <p className="text-xs text-primary font-semibold mt-0.5">
+                                    <p className="text-xs text-accent font-semibold mt-0.5">
                                         This link covers: {childList.map(c => `${c.firstName} ${c.lastName}`.trim()).filter(Boolean).join(', ')}.
                                         Parent and shared details have been pre-filled — please review and complete any remaining fields.
                                     </p>
                                 </>
                             ) : (
                                 <>
-                                    <p className="text-sm font-bold text-primary">Registration details pre-filled</p>
-                                    <p className="text-xs text-primary font-semibold mt-0.5">We have pre-filled parent and student details from your assessment booking. Please review them and fill in any remaining fields.</p>
+                                    <p className="text-sm font-bold text-accent">Registration details pre-filled</p>
+                                    <p className="text-xs text-accent font-semibold mt-0.5">We have pre-filled parent and student details from your assessment booking. Please review them and fill in any remaining fields.</p>
                                 </>
                             )}
                         </div>
@@ -820,7 +824,7 @@ export default function RegisterPage() {
                                     </div>
                                 </div>
                             ))}
-                            <label className="flex items-center gap-3 cursor-pointer p-4 rounded-xl bg-card border border-border hover:border-primary/20 transition-colors shadow-sm mb-8">
+                            <label className="flex items-center gap-3 cursor-pointer p-4 rounded-xl bg-card border border-border hover:border-accent/20 transition-colors shadow-sm mb-8">
                                 <input id="secondParent" type="checkbox" checked={secondParent} onChange={e => setSecondParent(e.target.checked)} className="w-4 h-4 rounded accent-blue-600" />
                                 <span className="text-muted-foreground text-sm">Add a second parent / carer</span>
                             </label>
@@ -869,7 +873,7 @@ export default function RegisterPage() {
                                 </div>
                             ))}
                             {authorisedCollectors.length < 3 && (
-                                <button onClick={() => setAuthorisedCollectors(prev => [...prev, { name: '', relationship: '', phone: '' }])} className="w-full py-3 rounded-xl border border-dashed border-border text-muted-foreground hover:border-primary/20 hover:text-primary transition-colors text-sm font-medium">
+                                <button onClick={() => setAuthorisedCollectors(prev => [...prev, { name: '', relationship: '', phone: '' }])} className="w-full py-3 rounded-xl border border-dashed border-border text-muted-foreground hover:border-accent/20 hover:text-accent transition-colors text-sm font-medium">
                                     + Add Authorised Collector
                                 </button>
                             )}
@@ -929,7 +933,7 @@ export default function RegisterPage() {
                                                         {(c.allergies || []).map((allergy, aIdx) => (
                                                             <span key={aIdx} className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-50 text-red-700 text-sm font-medium border border-red-200">
                                                                 {allergy}
-                                                                <button onClick={() => updateChild(i, 'allergies', (c.allergies || []).filter((_, idx) => idx !== aIdx))} className="text-red-400 hover:text-red-700 font-bold ml-1">×</button>
+                                                                <button type="button" onClick={() => updateChild(i, 'allergies', (c.allergies || []).filter((_, idx) => idx !== aIdx))} className="text-danger hover:text-red-700 font-bold ml-1">×</button>
                                                             </span>
                                                         ))}
                                                     </div>
@@ -977,15 +981,15 @@ export default function RegisterPage() {
 
                                             <div className="pt-2">
                                                 <p className="text-sm font-medium text-muted-foreground mb-3">Consents</p>
-                                                <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl bg-card border border-border mb-2 hover:border-primary/20">
+                                                <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl bg-card border border-border mb-2 hover:border-accent/20">
                                                     <input type="checkbox" checked={c.photoConsent} onChange={e => updateChild(i, 'photoConsent', e.target.checked as any)} className="w-4 h-4 rounded accent-blue-600" />
                                                     <span className="text-muted-foreground text-sm">I consent to photos/videos being taken for marketing purposes</span>
                                                 </label>
-                                                <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl bg-card border border-border mb-2 hover:border-primary/20">
+                                                <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl bg-card border border-border mb-2 hover:border-accent/20">
                                                     <input type="checkbox" checked={c.sunCreamConsent} onChange={e => updateChild(i, 'sunCreamConsent', e.target.checked as any)} className="w-4 h-4 rounded accent-blue-600" />
                                                     <span className="text-muted-foreground text-sm">I consent to the application of sun cream if required</span>
                                                 </label>
-                                                <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl bg-card border border-border hover:border-primary/20">
+                                                <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl bg-card border border-border hover:border-accent/20">
                                                     <input type="checkbox" checked={c.firstAidConsent} onChange={e => updateChild(i, 'firstAidConsent', e.target.checked as any)} className="w-4 h-4 rounded accent-blue-600" />
                                                     <span className="text-muted-foreground text-sm">I consent to emergency first aid treatment</span>
                                                 </label>
@@ -995,7 +999,7 @@ export default function RegisterPage() {
                                 </div>
                             ))}
                             {childList.length < 5 && (
-                                <button onClick={addChild} className="w-full py-3 rounded-xl border border-dashed border-border text-muted-foreground hover:border-primary/20 hover:text-primary transition-colors text-sm font-medium">
+                                <button onClick={addChild} className="w-full py-3 rounded-xl border border-dashed border-border text-muted-foreground hover:border-accent/20 hover:text-accent transition-colors text-sm font-medium">
                                     + Add Another Child
                                 </button>
                             )}
@@ -1009,8 +1013,8 @@ export default function RegisterPage() {
                                     {[{ v: false, l: 'No' }, { v: true, l: 'Yes' }].map(opt => (
                                         <label key={String(opt.v)} className={`flex items-center gap-2 px-5 py-3 rounded-xl border cursor-pointer transition-all font-medium text-sm ${
                                             specialNeeds.has === opt.v
-                                                ? 'border-primary/30 bg-primary/15 text-primary font-semibold ring-1 ring-primary/30'
-                                                : 'border-border text-muted-foreground hover:border-primary/20'
+                                                ? 'border-accent/30 bg-accent-soft text-accent font-semibold ring-1 ring-accent/30'
+                                                : 'border-border text-muted-foreground hover:border-accent/20'
                                         }`}>
                                             <input type="radio" name="specialNeeds" checked={specialNeeds.has === opt.v} onChange={() => setSpecialNeeds(s => ({ ...s, has: opt.v }))} className="sr-only" />
                                             {opt.l}
@@ -1079,14 +1083,14 @@ export default function RegisterPage() {
                                                                 toggleSlot();
                                                             }
                                                         }}
-                                                        className={`relative p-4 rounded-xl border cursor-pointer transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 ${isSelected ? 'border-primary bg-primary/15 ring-1 ring-primary shadow-sm' : 'border-border bg-card hover:border-primary/40 hover:bg-secondary/50'}`}
+                                                        className={`relative p-4 rounded-xl border cursor-pointer transition-all focus:outline-none focus:ring-2 focus:ring-accent/50 ${isSelected ? 'border-accent bg-accent-soft ring-1 ring-accent shadow-sm' : 'border-border bg-card hover:border-accent/40 hover:bg-secondary/50'}`}
                                                     >
                                                         {isSelected && (
                                                             <div className="absolute top-2 right-2 animate-in zoom-in duration-200">
-                                                                <svg className="w-5 h-5 text-primary" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
+                                                                <svg className="w-5 h-5 text-accent" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
                                                             </div>
                                                         )}
-                                                        <p className={`font-bold ${isSelected ? 'text-primary' : 'text-foreground'}`}>{day || slot.split(' ')[0]}</p>
+                                                        <p className={`font-bold ${isSelected ? 'text-accent' : 'text-foreground'}`}>{day || slot.split(' ')[0]}</p>
                                                         <p className={`text-sm mt-1 ${isSelected ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>{slot.substring(day ? day.length + 1 : slot.split(' ')[0].length + 1)}</p>
                                                     </div>
                                                 );
@@ -1107,8 +1111,8 @@ export default function RegisterPage() {
                                         key={opt.value}
                                         className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all ${
                                             funding.type === opt.value
-                                                ? 'border-primary/20 bg-primary/10 ring-1 ring-blue-500/30'
-                                                : 'border-border bg-card hover:border-primary/20 hover:bg-primary/10 shadow-sm'
+                                                ? 'border-accent/20 bg-accent-soft ring-1 ring-accent/30'
+                                                : 'border-border bg-card hover:border-accent/20 hover:bg-accent-soft shadow-sm'
                                         }`}
                                     >
                                         <input
@@ -1185,7 +1189,7 @@ export default function RegisterPage() {
                             </div>
                         )}
 
-                        <label className={`flex items-start gap-3 p-4 rounded-xl bg-card border cursor-pointer mb-5 hover:border-primary/20 transition-colors shadow-sm ${
+                        <label className={`flex items-start gap-3 p-4 rounded-xl bg-card border cursor-pointer mb-5 hover:border-accent/20 transition-colors shadow-sm ${
                             invalidFields.has('terms-agree') ? 'border-destructive/20 ring-1 ring-red-400/30 bg-red-50/50' : 'border-border'
                         }`}>
                             <input
@@ -1195,7 +1199,7 @@ export default function RegisterPage() {
                                 onChange={e => { setTermsAgreed(e.target.checked); setInvalidFields(f => { const n = new Set(f); n.delete('terms-agree'); return n; }); }}
                                 className="w-4 h-4 mt-0.5 rounded flex-shrink-0 accent-blue-600"
                             />
-                            <span className="text-muted-foreground text-sm">I agree to the <Link href="/terms" target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="text-primary underline underline-offset-2 hover:text-primary/80 font-medium">Terms of Service</Link> and confirm the information provided is accurate.</span>
+                            <span className="text-muted-foreground text-sm">I agree to the <Link href="/terms" target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="text-accent underline underline-offset-2 hover:text-accent-hover font-medium">Terms of Service</Link> and confirm the information provided is accurate.</span>
                         </label>
 
                         <div className="mb-5 bg-card p-6 rounded-2xl border border-border shadow-sm">
@@ -1221,7 +1225,7 @@ export default function RegisterPage() {
                             id="submit-registration"
                             onClick={handleSubmit}
                             disabled={submitting}
-                            className="w-full py-4 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/80 font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-blue-600/25"
+                            className="w-full py-4 rounded-xl bg-accent text-accent-foreground hover:bg-accent-hover font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm"
                         >
                             {submitting ? (
                                 <><svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>Submitting...</>
@@ -1249,7 +1253,7 @@ export default function RegisterPage() {
                     {step < TOTAL_STEPS && (
                         <button
                             onClick={handleContinue}
-                            className="inline-flex items-center gap-2 px-8 py-3 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/80 font-semibold transition-all text-sm shadow-md shadow-blue-600/25"
+                            className="inline-flex items-center gap-2 px-8 py-3 rounded-xl bg-accent text-accent-foreground hover:bg-accent-hover font-semibold transition-all text-sm shadow-sm"
                         >
                             Continue →
                         </button>

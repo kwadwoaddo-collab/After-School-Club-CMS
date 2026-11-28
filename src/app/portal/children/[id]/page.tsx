@@ -263,10 +263,10 @@ export default async function ChildDetailsPage(props: { params: Promise<{ id: st
                                                 <p className="font-bold text-text text-sm">
                                                     {date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
                                                 </p>
-                                                <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full border ${cfg.className}`}>
+                                                <span className={`text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full border ${cfg.className}`}>
                                                     {cfg.label}
                                                 </span>
-                                                {attended && <span title="Attended"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /></span>}
+                                                {attended && <span title="Attended"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" /></span>}
                                                 {absent && <span title="Absent"><XCircle className="w-3.5 h-3.5 text-danger" /></span>}
                                             </div>
                                             <p className="text-xs text-text-muted flex items-center gap-1">

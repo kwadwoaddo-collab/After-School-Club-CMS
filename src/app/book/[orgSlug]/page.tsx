@@ -54,7 +54,7 @@ export default async function OrgBookingPage({
         redirect(`/book/${orgSlug}/${org.centres[0].slug}`);
     }
 
-    const brandColor = org.brandColor || '#4F46E5';
+    const brandColor = org.brandColor || '#0F766E';
 
     return (
         <div
@@ -63,7 +63,7 @@ export default async function OrgBookingPage({
         >
             {/* V-1 fix: replaced glass-card and legacy shadcn tokens with a clean
                 public-facing card that does not look like the internal dashboard. */}
-            <div className="max-w-md w-full bg-card rounded-3xl shadow-2xl border border-border/50 overflow-hidden transform transition-all hover:scale-[1.01] duration-300">
+            <div className="max-w-md w-full bg-card rounded-xl shadow-sm border border-border overflow-hidden">
                 {/* Brand header */}
                 <div
                     className="px-8 pt-8 pb-6 text-center"
@@ -77,7 +77,7 @@ export default async function OrgBookingPage({
                         />
                     ) : (
                         <div
-                            className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl font-black text-white shadow-lg"
+                            className="w-16 h-16 rounded-xl flex items-center justify-center mx-auto mb-4 text-2xl font-bold text-white shadow-lg"
                             style={{ backgroundColor: brandColor }}
                         >
                             {org.name.charAt(0)}
@@ -92,7 +92,7 @@ export default async function OrgBookingPage({
                 {/* Centre list */}
                 <div className="px-8 py-6 space-y-3">
                     {org.centres.length === 0 ? (
-                        <div className="text-center p-4 bg-amber-500/10 text-amber-600 rounded-xl border border-amber-500/20 text-sm">
+                        <div className="text-center p-4 bg-amber-500/10 text-amber-800 dark:text-amber-300 rounded-xl border border-amber-500/20 text-sm">
                             No centres available yet. Please check back soon.
                         </div>
                     ) : (
@@ -100,7 +100,7 @@ export default async function OrgBookingPage({
                             <Link
                                 key={centre.id}
                                 href={`/book/${orgSlug}/${centre.slug}`}
-                                className="group flex items-center gap-4 p-4 rounded-2xl border border-outline-variant/20 bg-surface-dim hover:border-[var(--brand-color)] hover:shadow-md transition-all duration-200"
+                                className="group flex items-center gap-4 p-4 rounded-xl border border-outline-variant/20 bg-surface-dim hover:border-[var(--brand-color)] hover:shadow-md transition-all duration-200"
                                 style={{ '--brand-color': brandColor } as React.CSSProperties}
                             >
                                 <div

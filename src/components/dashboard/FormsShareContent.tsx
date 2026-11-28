@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Building2, Check, Copy, ExternalLink, Code, Eye, Laptop, Smartphone, Share2, ClipboardList, Calendar, Link2, ChevronDown } from 'lucide-react';
+import { Building2, Check, Copy, ExternalLink, Code, Eye, Laptop, Smartphone, Share2, ClipboardList, Calendar, Link2, ChevronDown, FileCode2, LayoutGrid, Globe, ShoppingBag } from 'lucide-react';
 
 interface Organisation {
     id: string;
@@ -103,7 +103,7 @@ export default function FormsShareContent({ organisation, centres, initialCentre
     const platforms = [
         {
             platform: 'WordPress',
-            icon: '📝',
+            icon: FileCode2,
             steps: [
                 'Edit your target page in WordPress.',
                 'Click the "+" button to add a new block.',
@@ -114,7 +114,7 @@ export default function FormsShareContent({ organisation, centres, initialCentre
         },
         {
             platform: 'Squarespace',
-            icon: '⬛',
+            icon: LayoutGrid,
             steps: [
                 'Edit the page where the form should appear.',
                 'Click "+" or an insertion point to add a block.',
@@ -125,7 +125,7 @@ export default function FormsShareContent({ organisation, centres, initialCentre
         },
         {
             platform: 'Wix',
-            icon: '🔷',
+            icon: Globe,
             steps: [
                 'Click the Add (+) button in the editor.',
                 'Select "Embed Code" → "Embed HTML / IFrame".',
@@ -135,7 +135,7 @@ export default function FormsShareContent({ organisation, centres, initialCentre
         },
         {
             platform: 'Shopify',
-            icon: '🛍️',
+            icon: ShoppingBag,
             steps: [
                 'Navigate to Online Store → Pages.',
                 'Edit or create a new page.',
@@ -187,7 +187,7 @@ export default function FormsShareContent({ organisation, centres, initialCentre
 
             {/* ── Quick Copy: Direct Links per Centre ──────────────────── */}
             {centres.length > 0 && (
-                <div className="glassmorphic-card rounded-3xl p-6 shadow-sm space-y-4">
+                <div className="bg-surface border border-border rounded-xl p-6 shadow-sm space-y-4">
                     <div className="flex items-center justify-between flex-wrap gap-2 pb-4 border-b border-border">
                         <div className="flex items-center gap-2.5">
                             <div className="w-8 h-8 rounded-xl bg-accent-soft flex items-center justify-center">
@@ -265,7 +265,7 @@ export default function FormsShareContent({ organisation, centres, initialCentre
                 <div className="lg:col-span-2 space-y-5">
 
                     {/* Setup Card */}
-                    <div className="glassmorphic-card rounded-3xl p-6 shadow-sm space-y-6">
+                    <div className="bg-surface border border-border rounded-xl p-6 shadow-sm space-y-6">
 
                         {/* Card title */}
                         <div className="flex items-center gap-2.5 pb-5 border-b border-border">
@@ -411,21 +411,21 @@ export default function FormsShareContent({ organisation, centres, initialCentre
 
                     {/* Embed Preview Box */}
                     {showPreview && (
-                        <div className="bg-surface rounded-3xl border border-border shadow-sm overflow-hidden animate-in slide-in-from-top-4 duration-300">
+                        <div className="bg-surface border border-border rounded-xl shadow-sm overflow-hidden animate-in slide-in-from-top-4 duration-300">
                             <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-secondary/40">
                                 <div className="flex items-center gap-2 text-text-muted">
                                     <Laptop className="w-4 h-4" />
                                     <Smartphone className="w-4 h-4" />
                                     <span className="text-xs font-semibold uppercase tracking-wider">Embed Preview</span>
                                 </div>
-                                <span className="text-[10px] bg-page text-text-muted px-2 py-0.5 rounded-md font-mono">{iframeHeight}px</span>
+                                <span className="text-[10px] bg-page text-text-muted px-2 py-0.5 rounded-md font-mono tabular-nums">{iframeHeight}px</span>
                             </div>
                             <div className="p-4 bg-secondary/40 flex justify-center">
                                 <iframe
                                     src={shareLink}
                                     width="100%"
                                     height={iframeHeight}
-                                    className="border-0 bg-surface rounded-2xl w-full max-w-3xl shadow-sm"
+                                    className="border-0 bg-surface rounded-lg w-full max-w-3xl shadow-sm"
                                     title="Live embed preview"
                                 />
                             </div>
@@ -437,7 +437,7 @@ export default function FormsShareContent({ organisation, centres, initialCentre
                 <div className="space-y-5">
 
                     {/* How It Works Card */}
-                    <div className="glassmorphic-card rounded-3xl p-6 shadow-sm space-y-4">
+                    <div className="bg-surface border border-border rounded-xl p-6 shadow-sm space-y-4">
                         <h3 className="text-sm font-bold text-text tracking-tight border-b border-border pb-3">
                             How It Works
                         </h3>
@@ -454,7 +454,7 @@ export default function FormsShareContent({ organisation, centres, initialCentre
                     </div>
 
                     {/* Platform Embed Guides Card */}
-                    <div className="glassmorphic-card rounded-3xl p-6 shadow-sm space-y-4">
+                    <div className="bg-surface border border-border rounded-xl p-6 shadow-sm space-y-4">
                         <div className="flex items-center gap-2 border-b border-border pb-3">
                             <Code className="w-4 h-4 text-accent" />
                             <h3 className="text-sm font-bold text-text tracking-tight">
@@ -463,11 +463,13 @@ export default function FormsShareContent({ organisation, centres, initialCentre
                         </div>
 
                         <div className="space-y-2">
-                            {platforms.map(p => (
+                            {platforms.map(p => {
+                                const PlatformIcon = p.icon;
+                                return (
                                 <details key={p.platform} className="group rounded-xl overflow-hidden border border-border hover:border-border transition-colors">
                                     <summary className="px-4 py-3 cursor-pointer font-semibold text-sm text-text flex items-center justify-between outline-none hover:bg-page select-none">
                                         <span className="flex items-center gap-2">
-                                            <span>{p.icon}</span>
+                                            <PlatformIcon className="w-4 h-4 text-accent shrink-0" aria-hidden="true" />
                                             <span>{p.platform}</span>
                                         </span>
                                         <ChevronDown className="w-4 h-4 text-text-muted group-open:rotate-180 transition-transform duration-200" />
@@ -481,7 +483,7 @@ export default function FormsShareContent({ organisation, centres, initialCentre
                                         ))}
                                     </div>
                                 </details>
-                            ))}
+                            );})}
                         </div>
                     </div>
                 </div>
