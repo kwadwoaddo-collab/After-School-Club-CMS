@@ -16,13 +16,13 @@ import { resolveActiveCentreId } from '@/lib/centre-filter';
 import { getTrustedApplicationUrl } from '@/lib/base-url';
 import { isValidUuid } from '@/lib/uuid';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { Building2, Share2 } from 'lucide-react';
+import { ClipboardList, Building2, Share2 } from 'lucide-react';
 import HeaderPortal from '@/components/dashboard/HeaderPortal';
 
 const STATUS_BADGE: Record<string, string> = {
-    awaiting_confirmation: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 shadow-[0_0_10px_rgba(245,158,11,0.1)]',
-    signed_up: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.1)]',
-    not_interested: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20 shadow-[0_0_10px_rgba(244,63,94,0.1)]',
+    awaiting_confirmation: 'bg-amber-500/10 text-amber-800 dark:text-amber-300 border-amber-500/20',
+    signed_up: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20',
+    not_interested: 'bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/20',
 };
 
 const STATUS_LABEL: Record<string, string> = {
@@ -219,11 +219,11 @@ export default async function RegistrationsPage(props: {
             <HeaderPortal targetId="header-left">
                 <div className="flex items-center gap-2 flex-wrap">
                     <h1 className="text-page-title text-text">Registrations</h1>
-                    <span className="px-2 py-0.5 rounded-full bg-secondary border border-border text-muted-foreground text-[10px] font-bold">
+                    <span className="px-2 py-0.5 rounded-full bg-secondary border border-border text-muted-foreground text-[10px] font-semibold tabular-nums">
                         {isFiltered ? `${rows.length} of ${totalCount}` : totalCount}
                     </span>
                     {activeCentreName && (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-[11px] font-bold">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-accent-soft border border-accent/20 text-accent text-[11px] font-bold">
                             <Building2 className="w-3 h-3" />
                             {activeCentreName}
                         </span>
@@ -233,7 +233,7 @@ export default async function RegistrationsPage(props: {
 
             <HeaderPortal targetId="header-middle">
                 {/* Segmented Status Tabs */}
-                <div className="flex bg-secondary/60 p-1 rounded-2xl border border-border self-start overflow-x-auto max-w-full scrollbar-none gap-1">
+                <div className="flex bg-secondary/60 p-1 rounded-xl border border-border self-start overflow-x-auto max-w-full scrollbar-none gap-1">
                     {[
                         { value: 'all', label: 'All', count: totalCount },
                         { value: 'awaiting_confirmation', label: 'Awaiting Confirmation', count: awaitingConfirmationCount, color: 'text-warning bg-warning/10' },
@@ -259,7 +259,7 @@ export default async function RegistrationsPage(props: {
                                 }`}
                             >
                                 <span>{tab.label}</span>
-                                <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-black leading-none ${
+                                <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-semibold tabular-nums leading-none ${
                                     isActive ? 'bg-accent text-on-accent shadow-sm' : `${tab.color || 'bg-secondary text-muted-foreground'}`
                                 }`}>
                                     {tab.count}
@@ -311,7 +311,7 @@ export default async function RegistrationsPage(props: {
                     description="You are not currently assigned to any centres. Ask an organisation owner to assign you to a centre to view and triage registrations."
                 />
             ) : hasError && rows.length === 0 ? (
-                <div role="alert" className="flex flex-col items-center justify-center py-16 text-center bg-card border border-border rounded-2xl">
+                <div role="alert" className="flex flex-col items-center justify-center py-16 text-center bg-card border border-border rounded-xl">
                     <h3 className="text-foreground font-bold mb-2">
                         Temporary error loading registrations
                     </h3>
@@ -326,8 +326,8 @@ export default async function RegistrationsPage(props: {
                     </Link>
                 </div>
             ) : rows.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 text-center bg-card border border-border rounded-2xl animate-in fade-in duration-300">
-                    <div className="w-16 h-16 rounded-2xl bg-secondary flex items-center justify-center mb-4 text-3xl">📋</div>
+                <div className="flex flex-col items-center justify-center py-20 text-center bg-card border border-border rounded-xl animate-in fade-in duration-300">
+                    <div className="w-16 h-16 rounded-xl bg-secondary flex items-center justify-center mb-4 text-text-muted"><ClipboardList className="w-8 h-8 text-text-muted" aria-hidden="true" /></div>
                     <h3 className="text-foreground font-bold mb-2">
                         {isFiltered ? 'No matching registrations' : 'No registrations yet'}
                     </h3>
@@ -341,7 +341,7 @@ export default async function RegistrationsPage(props: {
                             href={fullRegistrationUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2 px-6 py-3 bg-secondary text-primary hover:bg-secondary/80 text-sm font-bold rounded-2xl transition-all border border-border"
+                            className="inline-flex items-center gap-2 px-6 py-3 bg-secondary text-accent hover:bg-secondary/80 text-sm font-bold rounded-xl transition-all border border-border"
                         >
                             Open Registration Form ↗
                         </Link>

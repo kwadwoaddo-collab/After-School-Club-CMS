@@ -309,7 +309,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                     href="/dashboard/finance"
                     className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors font-bold group"
                 >
-                    <div className="w-8 h-8 rounded-lg bg-secondary/60 flex items-center justify-center group-hover:bg-primary/20 group-hover:text-primary transition-all">
+                    <div className="w-8 h-8 rounded-lg bg-secondary/60 flex items-center justify-center group-hover:bg-accent-soft group-hover:text-accent transition-all">
                         <ArrowLeft className="w-4 h-4" />
                     </div>
                     Back to Ledger
@@ -333,7 +333,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                                         disabled={downloadingDoc === 'invoice'}
                                         className="flex items-center gap-2 px-3 py-2 bg-card text-xs font-bold text-foreground hover:bg-secondary/80 transition-all disabled:opacity-50"
                                     >
-                                        <Download className="w-3.5 h-3.5 text-primary" />
+                                        <Download className="w-3.5 h-3.5 text-accent" />
                                         {downloadingDoc === 'invoice' ? '...' : 'PDF'}
                                     </button>
                                 </div>
@@ -346,7 +346,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                                     <div className="flex items-center rounded-xl overflow-hidden border border-emerald-500/20">
                                         <button
                                             onClick={() => setPreviewType('receipt')}
-                                            className="flex items-center gap-2 px-3 py-2 bg-card text-xs font-bold text-emerald-600 hover:bg-emerald-500/10 transition-all border-r border-emerald-500/10"
+                                            className="flex items-center gap-2 px-3 py-2 bg-card text-xs font-bold text-emerald-700 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300 hover:bg-emerald-500/10 transition-all border-r border-emerald-500/10"
                                         >
                                             <Eye className="w-3.5 h-3.5" /> Receipt
                                         </button>
@@ -354,7 +354,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                                             type="button"
                                             onClick={() => handleDownloadPdf('receipt')}
                                             disabled={downloadingDoc === 'receipt'}
-                                            className="flex items-center gap-2 px-3 py-2 bg-card text-xs font-bold text-emerald-600 hover:bg-emerald-500/10 transition-all disabled:opacity-50"
+                                            className="flex items-center gap-2 px-3 py-2 bg-card text-xs font-bold text-emerald-700 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300 hover:bg-emerald-500/10 transition-all disabled:opacity-50"
                                         >
                                             <Download className="w-3.5 h-3.5" />
                                             {downloadingDoc === 'receipt' ? '...' : 'PDF'}
@@ -401,7 +401,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                                     disabled={isPending}
                                     type="button"
                                     onClick={() => setIsPaymentModalOpen(true)}
-                                    className="flex items-center gap-2 px-6 py-2.5 bg-accent text-on-accent hover:opacity-90 rounded-xl text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-all shadow-lg shadow-primary/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="flex items-center gap-2 px-6 py-2.5 bg-accent text-on-accent hover:bg-accent-hover rounded-xl text-sm font-bold transition-all shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     <CreditCard className="w-4 h-4" /> Record Payment
                                 </button>
@@ -470,9 +470,9 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
             {/* Zero-amount Draft Warning Banner */}
             {invoice.status === 'draft' && Number(invoice.amount) <= 0 && (
                 <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex items-start gap-3">
-                    <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                    <AlertCircle className="w-5 h-5 text-amber-800 dark:text-amber-300 flex-shrink-0 mt-0.5" />
                     <div className="text-sm">
-                        <p className="font-bold text-amber-600 dark:text-amber-400">Action Required: Draft Invoice Amount is £0.00</p>
+                        <p className="font-bold text-amber-800 dark:text-amber-300">Action Required: Draft Invoice Amount is £0.00</p>
                         <p className="text-muted-foreground mt-0.5">
                             This draft invoice cannot be issued with a zero amount. Click the edit icon next to the amount to specify the tuition fee.
                         </p>
@@ -484,8 +484,8 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                 {/* Main Details */}
                 <div className="min-w-0 lg:col-span-2 space-y-8">
                     {/* Invoice Card */}
-                    <div className="bg-card border border-border rounded-[40px] p-8 md:p-12 relative overflow-hidden">
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-[100px] -mr-32 -mt-32" />
+                    <div className="bg-card border border-border rounded-xl p-8 md:p-12 relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-accent/5 rounded-full blur-[100px] -mr-32 -mt-32" />
 
                         <div className="relative flex flex-col md:flex-row justify-between gap-8 mb-12">
                             <div>
@@ -504,7 +504,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                                         </span>
                                     )}
                                     {invoice.centre?.name && (
-                                        <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-bold ring-1 ring-primary/20">
+                                        <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-accent-soft text-accent rounded-full text-xs font-bold ring-1 ring-accent/20">
                                             {invoice.centre.name}
                                         </span>
                                     )}
@@ -523,7 +523,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                                             type="button"
                                             onClick={handleToggleServiceType}
                                             disabled={isUpdatingServiceType}
-                                            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-secondary/80 hover:bg-secondary text-primary border border-primary/25 transition-colors disabled:opacity-50"
+                                            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-secondary/80 hover:bg-secondary text-accent border border-accent/25 transition-colors disabled:opacity-50"
                                         >
                                             {isUpdatingServiceType && <Loader2 className="w-3 h-3 animate-spin" aria-hidden="true" />}
                                             Switch to {resolvedServiceType === 'tuition' ? 'Childcare' : 'Tuition'}
@@ -544,14 +544,14 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                                                 value={newAmountValue}
                                                 disabled={isUpdatingAmount}
                                                 onChange={(e) => setNewAmountValue(e.target.value)}
-                                                className="bg-secondary/40 border border-border rounded-xl pl-7 pr-3 py-1.5 text-lg text-foreground font-bold focus:outline-none focus:ring-1 focus:ring-primary w-32"
+                                                className="bg-secondary/40 border border-border rounded-xl pl-7 pr-3 py-1.5 text-lg text-foreground font-bold focus:outline-none focus:ring-1 focus:ring-accent w-32"
                                             />
                                         </div>
                                         <button
                                             onClick={handleSaveAmount}
                                             disabled={isUpdatingAmount}
                                             aria-label="Save amount"
-                                            className="p-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 rounded-lg transition-colors"
+                                            className="p-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 rounded-lg transition-colors"
                                         >
                                             <Check className="w-4 h-4" />
                                         </button>
@@ -587,7 +587,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
 
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12 border-y border-border py-10">
                             <div>
-                                <p className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-1 flex items-center gap-1">
+                                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1 flex items-center gap-1">
                                     Issue Date
                                 </p>
                                 {invoice.status === 'draft' && isEditingDate ? (
@@ -597,13 +597,13 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                                             value={newDateValue}
                                             disabled={isUpdatingDate}
                                             onChange={(e) => setNewDateValue(e.target.value)}
-                                            className="bg-secondary/40 border border-border rounded-xl px-3 py-1.5 text-xs text-foreground font-bold focus:outline-none focus:ring-1 focus:ring-primary w-32"
+                                            className="bg-secondary/40 border border-border rounded-xl px-3 py-1.5 text-xs text-foreground font-bold focus:outline-none focus:ring-1 focus:ring-accent w-32"
                                         />
                                         <button
                                             onClick={handleSaveDate}
                                             disabled={isUpdatingDate}
                                             aria-label="Save issue date"
-                                            className="p-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 rounded-lg transition-colors"
+                                            className="p-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 rounded-lg transition-colors"
                                         >
                                             <Check className="w-3.5 h-3.5" />
                                         </button>
@@ -638,7 +638,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                                 )}
                             </div>
                             <div>
-                                <p className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-1 flex items-center gap-1">Due Date</p>
+                                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1 flex items-center gap-1">Due Date</p>
                                 {invoice.status === 'draft' && isEditingDueDate ? (
                                     <div className="flex items-center gap-2 mt-1">
                                         <input
@@ -646,13 +646,13 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                                             value={newDueDateValue}
                                             disabled={isUpdatingDueDate}
                                             onChange={(e) => setNewDueDateValue(e.target.value)}
-                                            className="bg-secondary/40 border border-border rounded-xl px-3 py-1.5 text-xs text-foreground font-bold focus:outline-none focus:ring-1 focus:ring-primary w-32"
+                                            className="bg-secondary/40 border border-border rounded-xl px-3 py-1.5 text-xs text-foreground font-bold focus:outline-none focus:ring-1 focus:ring-accent w-32"
                                         />
                                         <button
                                             onClick={handleSaveDueDate}
                                             disabled={isUpdatingDueDate}
                                             aria-label="Save due date"
-                                            className="p-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 rounded-lg transition-colors"
+                                            className="p-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 rounded-lg transition-colors"
                                         >
                                             <Check className="w-3.5 h-3.5" />
                                         </button>
@@ -685,7 +685,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                                 )}
                             </div>
                             <div className="col-span-2">
-                                <p className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-1">Assessment Period</p>
+                                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Assessment Period</p>
                                 <p className="text-sm font-bold text-foreground">
                                     {invoice.billingPeriodStart && invoice.billingPeriodEnd
                                         ? formatInvoicePeriod(invoice.billingPeriodStart, invoice.billingPeriodEnd)
@@ -697,7 +697,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                         <div className="flex flex-col md:flex-row gap-8">
                                 <div className="flex-1 space-y-8">
                                 <div className="space-y-4">
-                                    <h3 className="text-xs font-black text-muted-foreground uppercase tracking-widest">Billed To</h3>
+                                    <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Billed To</h3>
                                     <div className="glassmorphic-card rounded-3xl p-6 space-y-2">
                                         {(() => {
                                             const activeParent = invoice.parent || (invoice.child && invoice.child.parent);
@@ -706,7 +706,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                                             return (
                                                 <>
                                                     {pId ? (
-                                                        <Link href={`/dashboard/parents/${pId}`} className="text-lg font-black text-primary hover:underline block">
+                                                        <Link href={`/dashboard/parents/${pId}`} className="text-lg font-black text-accent hover:underline block">
                                                             {activeParent?.firstName} {activeParent?.lastName}
                                                         </Link>
                                                     ) : (
@@ -750,7 +750,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                                     </div>
                                 </div>
                                 <div className="space-y-4">
-                                <h3 className="text-xs font-black text-muted-foreground uppercase tracking-widest">Student Information</h3>
+                                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Student Information</h3>
                                 <div className="bg-secondary/60 rounded-3xl p-6 border border-border space-y-2">
                                     {(() => {
                                         // Prefer coveredChildrenJson (multi-child support), fall back to single child
@@ -770,7 +770,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                                         return names.map((c, i) => (
                                             c.id ? (
                                                 <Link key={i} href={`/dashboard/students/${c.id}`} className="flex items-center gap-2 group/child">
-                                                    <div className="text-sm font-black text-foreground group-hover/child:text-primary transition-colors">{c.name}</div>
+                                                    <div className="text-sm font-black text-foreground group-hover/child:text-accent transition-colors">{c.name}</div>
                                                 </Link>
                                             ) : (
                                                 <div key={i} className="text-sm font-black text-foreground">{c.name}</div>
@@ -779,7 +779,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                                     })()}
                                     <div className="text-sm font-medium text-muted-foreground pt-1">{invoice.centre?.name}</div>
                                     {resolvedServiceType !== 'tuition' && invoice.centre?.ofstedId && (
-                                        <div className="text-[10px] font-black uppercase tracking-widest text-primary/80 mt-2">
+                                        <div className="text-[10px] font-semibold uppercase tracking-wider text-primary/80 mt-2">
                                             Ofsted Reg No: {invoice.centre.ofstedId}
                                         </div>
                                     )}
@@ -788,11 +788,11 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                                 </div>{/* end flex-1 space-y-8 (Billed To + Student Info column) */}
                             <div className="flex-1 space-y-4">
                                 <div className="flex items-center justify-between">
-                                    <h3 className="text-xs font-black text-muted-foreground uppercase tracking-widest">Notes</h3>
+                                    <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Notes</h3>
                                     {!isEditingNotes && (
                                         <button
                                             onClick={() => setIsEditingNotes(true)}
-                                            className="text-xs font-black text-primary hover:underline flex items-center gap-1"
+                                            className="text-xs font-semibold text-accent hover:underline flex items-center gap-1"
                                         >
                                             <Edit2 className="w-3 h-3" /> Edit Note
                                         </button>
@@ -806,7 +806,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                                                 disabled={isUpdatingNotes}
                                                 onChange={(e) => setNotesValue(e.target.value)}
                                                 rows={3}
-                                                className="w-full bg-secondary/40 border border-border rounded-2xl p-4 text-sm text-foreground font-medium focus:outline-none focus:ring-1 focus:ring-primary scrollbar-hide"
+                                                className="w-full bg-secondary/40 border border-border rounded-2xl p-4 text-sm text-foreground font-medium focus:outline-none focus:ring-1 focus:ring-accent scrollbar-hide"
                                                 placeholder="Add custom notes visible on the PDF..."
                                             />
                                             <div className="flex items-center justify-end gap-2">
@@ -823,7 +823,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                                                 <button
                                                     onClick={handleSaveNotes}
                                                     disabled={isUpdatingNotes}
-                                                    className="px-4 py-2 bg-primary rounded-xl text-xs font-bold hover:bg-primary/90 transition-all text-primary-foreground shadow-lg shadow-primary/20 flex items-center gap-1.5"
+                                                    className="px-4 py-2 bg-accent rounded-xl text-xs font-bold hover:bg-accent-hover transition-all text-on-accent shadow-xs flex items-center gap-1.5"
                                                 >
                                                     {isUpdatingNotes ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <><Check className="w-3.5 h-3.5" /> Save</>}
                                                 </button>
@@ -863,8 +863,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
 
                 {/* Sidebar Summary */}
                 <div className="space-y-6">
-                    <div className="bg-secondary/80 border border-border rounded-[40px] p-8 shadow-2xl relative overflow-hidden">
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-[60px]" />
+                    <div className="bg-secondary/80 border border-border rounded-xl p-6 sm:p-8 shadow-sm relative overflow-hidden">
 
                         <h3 className="text-xl font-black text-foreground mb-8">Summary</h3>
 
@@ -880,14 +879,14 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                             <div className="h-px bg-border/30 my-6" />
                             <div className="flex justify-between items-end">
                                 <div>
-                                    <p className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-1">Balance Remaining</p>
-                                    <h4 className={`text-3xl font-black ${remainingBalance <= 0 ? 'text-emerald-600' : 'text-foreground'}`}>
+                                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Balance Remaining</p>
+                                    <h4 className={`text-3xl font-black tabular-nums ${remainingBalance <= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-foreground'}`}>
                                         £{remainingBalance <= 0 ? '0.00' : remainingBalance.toFixed(2)}
                                     </h4>
                                 </div>
                                 {remainingBalance <= 0 && (
                                     <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center border border-emerald-500/30">
-                                        <CheckCircle2 className="w-6 h-6 text-emerald-600" />
+                                        <CheckCircle2 className="w-6 h-6 text-emerald-700 dark:text-emerald-400" />
                                     </div>
                                 )}
                             </div>
@@ -895,11 +894,11 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
 
                         {totalPaid > Number(invoice.amount) && (
                             <div className="mt-6 flex items-start gap-3 p-4 bg-amber-500/10 rounded-xl border border-amber-500/20">
-                                <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                                <AlertCircle className="w-5 h-5 text-amber-800 dark:text-amber-300 flex-shrink-0 mt-0.5" />
                                 <div>
-                                    <p className="text-sm font-bold text-amber-700">Overpayment Warning</p>
-                                    <p className="text-sm text-amber-600">
-                                        This invoice is overpaid by £{(totalPaid - Number(invoice.amount)).toFixed(2)}.
+                                    <p className="text-sm font-bold text-amber-800 dark:text-amber-300">Overpayment Warning</p>
+                                    <p className="text-sm text-amber-800 dark:text-amber-300">
+                                        This invoice is overpaid by <span className="tabular-nums">£{(totalPaid - Number(invoice.amount)).toFixed(2)}</span>.
                                         Review payment entries and reverse any mistaken payments.
                                     </p>
                                 </div>
@@ -911,7 +910,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                                 disabled={isPending}
                                 type="button"
                                 onClick={() => setIsPaymentModalOpen(true)}
-                                className="w-full mt-10 py-4 bg-accent rounded-2xl text-sm font-bold text-on-accent hover:opacity-90 transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                                className="w-full mt-10 py-3.5 bg-accent hover:bg-accent-hover rounded-xl text-sm font-bold text-on-accent transition-all shadow-xs disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                             >
                                 Record Received Payment
                             </button>
@@ -979,7 +978,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
             {isPending && (
                 <div className="fixed inset-0 bg-black/40 backdrop-blur-[1px] flex items-center justify-center z-[250] animate-in fade-in duration-150">
                     <div className="flex items-center gap-3 bg-card border border-border px-6 py-4 rounded-2xl text-base font-bold text-foreground shadow-2xl animate-in zoom-in-95 duration-150">
-                        <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                        <Loader2 className="w-5 h-5 animate-spin text-accent" />
                         Updating Invoice...
                     </div>
                 </div>

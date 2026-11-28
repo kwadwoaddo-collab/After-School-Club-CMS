@@ -200,14 +200,15 @@ export default function ReportsClient({ initialData = null, initialError = null 
         <div className="flex flex-col gap-6">
 
             {/* ── Tab Switcher ─────────────────────────────────────────────── */}
-            <div className="inline-flex bg-secondary/60 p-1 rounded-2xl gap-1" role="tablist" aria-label="Report sections">
+            <div className="inline-flex bg-secondary/60 p-1 rounded-xl gap-1" role="tablist" aria-label="Report sections">
                 <button
+                    type="button"
                     onClick={() => setActiveTab('exports')}
                     role="tab"
                     aria-selected={activeTab === 'exports'}
                     aria-controls="exports-panel"
                     className={cn(
-                        'flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200',
+                        'flex items-center gap-2 min-h-11 sm:min-h-10 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200',
                         activeTab === 'exports'
                             ? 'bg-card text-foreground shadow-sm'
                             : 'text-muted-foreground hover:text-foreground'
@@ -217,12 +218,13 @@ export default function ReportsClient({ initialData = null, initialError = null 
                     Data Exports
                 </button>
                 <button
+                    type="button"
                     onClick={() => setActiveTab('ceo')}
                     role="tab"
                     aria-selected={activeTab === 'ceo'}
                     aria-controls="ceo-panel"
                     className={cn(
-                        'flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200',
+                        'flex items-center gap-2 min-h-11 sm:min-h-10 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200',
                         activeTab === 'ceo'
                             ? 'bg-card text-foreground shadow-sm'
                             : 'text-muted-foreground hover:text-foreground'
@@ -246,10 +248,10 @@ export default function ReportsClient({ initialData = null, initialError = null 
                     <p className="md:col-span-2 text-sm text-muted-foreground">CSV exports keep their existing access scope and date options. The Activity Report centre selector does not filter these exports.</p>
 
                     {/* ── Booking Export Card ───────────────────────────────── */}
-                    <div className="bg-card border border-border rounded-3xl p-8 flex flex-col gap-6 shadow-sm hover:shadow-md transition-shadow duration-300">
+                    <div className="bg-card border border-border rounded-xl p-8 flex flex-col gap-6 shadow-sm hover:shadow-md transition-shadow duration-300">
                         <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center flex-shrink-0">
-                                <FileText className="w-6 h-6 text-primary" />
+                            <div className="w-12 h-12 bg-accent-soft rounded-xl flex items-center justify-center flex-shrink-0">
+                                <FileText className="w-6 h-6 text-accent" />
                             </div>
                             <div>
                                 <h2 className="font-bold text-foreground text-xl leading-tight">Export Bookings</h2>
@@ -263,7 +265,7 @@ export default function ReportsClient({ initialData = null, initialError = null 
                                     <ExportRow
                                         label="All History"
                                         icon={FileSpreadsheet}
-                                        iconColor="text-primary"
+                                        iconColor="text-accent"
                                         onExport={() => handleExportBookings('all')}
                                         isLoading={isExportingBookings}
                                         isSuccess={exportedBookings === 'all'}
@@ -271,7 +273,7 @@ export default function ReportsClient({ initialData = null, initialError = null 
                                     <ExportRow
                                         label="Last 30 Days"
                                         icon={FileSpreadsheet}
-                                        iconColor="text-primary"
+                                        iconColor="text-accent"
                                         onExport={() => handleExportBookings('month')}
                                         isLoading={isExportingBookings}
                                         isSuccess={exportedBookings === 'month'}
@@ -279,28 +281,29 @@ export default function ReportsClient({ initialData = null, initialError = null 
                                     <ExportRow
                                         label="Last 7 Days"
                                         icon={Calendar}
-                                        iconColor="text-primary"
+                                        iconColor="text-accent"
                                         onExport={() => handleExportBookings('week')}
                                         isLoading={isExportingBookings}
                                         isSuccess={exportedBookings === 'week'}
                                     />
                                     <button
+                                        type="button"
                                         onClick={() => setShowCustomRangeBooking(true)}
                                         disabled={isExportingBookings}
-                                        className="w-full flex items-center justify-between px-5 py-4 bg-card border border-border hover:bg-secondary/40 hover:border-border rounded-2xl text-sm font-semibold text-foreground transition-all shadow-sm group disabled:opacity-60"
+                                        className="w-full min-h-11 sm:min-h-10 flex items-center justify-between px-5 py-3 bg-card border border-border hover:bg-secondary/40 hover:border-border rounded-xl text-sm font-semibold text-foreground transition-all shadow-sm group disabled:opacity-60"
                                     >
                                         <span className="flex items-center gap-3">
-                                            <Calendar className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                                            <Calendar className="w-5 h-5 text-muted-foreground group-hover:text-accent transition-colors" />
                                             Custom Range
                                         </span>
                                         <span className="text-xs text-muted-foreground font-medium">Select dates →</span>
                                     </button>
                                 </>
                             ) : (
-                                <div className="p-5 bg-secondary/40 rounded-2xl border border-border animate-in fade-in zoom-in-95 duration-200 space-y-4">
+                                <div className="p-5 bg-secondary/40 rounded-xl border border-border animate-in fade-in zoom-in-95 duration-200 space-y-4">
                                     <div className="flex items-center justify-between">
                                         <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Custom Range</h4>
-                                        <button onClick={() => setShowCustomRangeBooking(false)} className="text-xs font-semibold text-primary hover:text-primary/90 transition-colors">Cancel</button>
+                                        <button type="button" onClick={() => setShowCustomRangeBooking(false)} className="min-h-11 sm:min-h-10 inline-flex items-center text-xs font-semibold text-accent hover:text-accent/80 transition-colors">Cancel</button>
                                     </div>
                                     <div>
                                         <label htmlFor="booking-start-date" className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Start Date</label>
@@ -309,7 +312,7 @@ export default function ReportsClient({ initialData = null, initialError = null 
                                             type="date"
                                             value={startDateBooking}
                                             onChange={(e) => setStartDateBooking(e.target.value)}
-                                            className="w-full px-4 py-3 bg-card border border-border rounded-2xl text-sm text-foreground font-mono outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all"
+                                            className="w-full px-4 py-2.5 bg-card border border-border rounded-md text-sm text-foreground font-mono outline-none focus:border-accent/50 focus:ring-2 focus:ring-accent/20 transition-all"
                                         />
                                     </div>
                                     <div>
@@ -319,14 +322,14 @@ export default function ReportsClient({ initialData = null, initialError = null 
                                             type="date"
                                             value={endDateBooking}
                                             onChange={(e) => setEndDateBooking(e.target.value)}
-                                            className="w-full px-4 py-3 bg-card border border-border rounded-2xl text-sm text-foreground font-mono outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all"
+                                            className="w-full px-4 py-2.5 bg-card border border-border rounded-md text-sm text-foreground font-mono outline-none focus:border-accent/50 focus:ring-2 focus:ring-accent/20 transition-all"
                                         />
                                     </div>
                                     <button
                                         type="button"
                                         onClick={() => handleExportBookings('custom')}
                                         disabled={isExportingBookings}
-                                        className="min-h-[44px] w-full py-3 bg-primary hover:bg-primary/90 active:bg-primary/80 text-primary-foreground font-bold rounded-2xl text-sm transition-all flex justify-center items-center gap-2 shadow-sm disabled:opacity-50"
+                                        className="min-h-11 w-full py-2.5 bg-accent hover:bg-accent-hover active:bg-accent-hover text-accent-foreground font-bold rounded-md text-sm transition-all flex justify-center items-center gap-2 shadow-xs disabled:opacity-50"
                                     >
                                         {isExportingBookings ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
                                         Export Selection
@@ -337,17 +340,17 @@ export default function ReportsClient({ initialData = null, initialError = null 
                                 <p className={`text-xs font-semibold px-4 py-3 rounded-xl ${
                                     bookingExportMsg.type === 'error'
                                         ? 'bg-destructive/10 text-destructive border border-destructive/20'
-                                        : 'bg-primary/10 text-primary border border-primary/20'
+                                        : 'bg-accent-soft text-accent border border-accent/20'
                                 }`}>{bookingExportMsg.text}</p>
                             )}
                         </div>
                     </div>
 
                     {/* ── Student Export Card ───────────────────────────────── */}
-                    <div className="bg-card border border-border rounded-3xl p-8 flex flex-col gap-6 shadow-sm hover:shadow-md transition-shadow duration-300">
+                    <div className="bg-card border border-border rounded-xl p-8 flex flex-col gap-6 shadow-sm hover:shadow-md transition-shadow duration-300">
                         <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center flex-shrink-0">
-                                <Users className="w-6 h-6 text-primary" />
+                            <div className="w-12 h-12 bg-accent-soft rounded-xl flex items-center justify-center flex-shrink-0">
+                                <Users className="w-6 h-6 text-accent" />
                             </div>
                             <div>
                                 <h2 className="font-bold text-foreground text-xl leading-tight">Export Student Data</h2>
@@ -361,7 +364,7 @@ export default function ReportsClient({ initialData = null, initialError = null 
                                     <ExportRow
                                         label="All Registered Students"
                                         icon={FileSpreadsheet}
-                                        iconColor="text-primary"
+                                        iconColor="text-accent"
                                         onExport={() => handleExportStudents('all')}
                                         isLoading={isExportingStudents}
                                         isSuccess={exportedStudents === 'all'}
@@ -369,28 +372,29 @@ export default function ReportsClient({ initialData = null, initialError = null 
                                     <ExportRow
                                         label="Registered Last 30 Days"
                                         icon={FileSpreadsheet}
-                                        iconColor="text-primary"
+                                        iconColor="text-accent"
                                         onExport={() => handleExportStudents('month')}
                                         isLoading={isExportingStudents}
                                         isSuccess={exportedStudents === 'month'}
                                     />
                                     <button
+                                        type="button"
                                         onClick={() => setShowCustomRangeStudent(true)}
                                         disabled={isExportingStudents}
-                                        className="w-full flex items-center justify-between px-5 py-4 bg-card border border-border hover:bg-secondary/40 hover:border-border rounded-2xl text-sm font-semibold text-foreground transition-all shadow-sm group disabled:opacity-60"
+                                        className="w-full min-h-11 sm:min-h-10 flex items-center justify-between px-5 py-3 bg-card border border-border hover:bg-secondary/40 hover:border-border rounded-xl text-sm font-semibold text-foreground transition-all shadow-sm group disabled:opacity-60"
                                     >
                                         <span className="flex items-center gap-3">
-                                            <Calendar className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                                            <Calendar className="w-5 h-5 text-muted-foreground group-hover:text-accent transition-colors" />
                                             Custom Reg. Date Range
                                         </span>
                                         <span className="text-xs text-muted-foreground font-medium">Select dates →</span>
                                     </button>
                                 </>
                             ) : (
-                                <div className="p-5 bg-secondary/40 rounded-2xl border border-border animate-in fade-in zoom-in-95 duration-200 space-y-4">
+                                <div className="p-5 bg-secondary/40 rounded-xl border border-border animate-in fade-in zoom-in-95 duration-200 space-y-4">
                                     <div className="flex items-center justify-between">
                                         <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Custom Range</h4>
-                                        <button onClick={() => setShowCustomRangeStudent(false)} className="text-xs font-semibold text-primary hover:text-primary/90 transition-colors">Cancel</button>
+                                        <button type="button" onClick={() => setShowCustomRangeStudent(false)} className="min-h-11 sm:min-h-10 inline-flex items-center text-xs font-semibold text-accent hover:text-accent/80 transition-colors">Cancel</button>
                                     </div>
                                     <div>
                                         <label htmlFor="student-start-date" className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Start Date</label>
@@ -399,7 +403,7 @@ export default function ReportsClient({ initialData = null, initialError = null 
                                             type="date"
                                             value={startDateStudent}
                                             onChange={(e) => setStartDateStudent(e.target.value)}
-                                            className="w-full px-4 py-3 bg-card border border-border rounded-2xl text-sm text-foreground font-mono outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all"
+                                            className="w-full px-4 py-2.5 bg-card border border-border rounded-md text-sm text-foreground font-mono outline-none focus:border-accent/50 focus:ring-2 focus:ring-accent/20 transition-all"
                                         />
                                     </div>
                                     <div>
@@ -409,14 +413,14 @@ export default function ReportsClient({ initialData = null, initialError = null 
                                             type="date"
                                             value={endDateStudent}
                                             onChange={(e) => setEndDateStudent(e.target.value)}
-                                            className="w-full px-4 py-3 bg-card border border-border rounded-2xl text-sm text-foreground font-mono outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all"
+                                            className="w-full px-4 py-2.5 bg-card border border-border rounded-md text-sm text-foreground font-mono outline-none focus:border-accent/50 focus:ring-2 focus:ring-accent/20 transition-all"
                                         />
                                     </div>
                                     <button
                                         type="button"
                                         onClick={() => handleExportStudents('custom')}
                                         disabled={isExportingStudents}
-                                        className="min-h-[44px] w-full py-3 bg-primary hover:bg-primary/90 active:bg-primary/80 text-primary-foreground font-bold rounded-2xl text-sm transition-all flex justify-center items-center gap-2 shadow-sm disabled:opacity-50"
+                                        className="min-h-11 w-full py-2.5 bg-accent hover:bg-accent-hover active:bg-accent-hover text-accent-foreground font-bold rounded-md text-sm transition-all flex justify-center items-center gap-2 shadow-xs disabled:opacity-50"
                                     >
                                         {isExportingStudents ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
                                         Export Selection
@@ -427,7 +431,7 @@ export default function ReportsClient({ initialData = null, initialError = null 
                                 <p className={`text-xs font-semibold px-4 py-3 rounded-xl ${
                                     studentExportMsg.type === 'error'
                                         ? 'bg-destructive/10 text-destructive border border-destructive/20'
-                                        : 'bg-primary/10 text-primary border border-primary/20'
+                                        : 'bg-accent-soft text-accent border border-accent/20'
                                 }`}>{studentExportMsg.text}</p>
                             )}
                         </div>
@@ -457,10 +461,11 @@ function ExportRow({
 }) {
     return (
         <button
+            type="button"
             onClick={onExport}
             disabled={isLoading}
             className={cn(
-                'w-full flex items-center justify-between px-5 py-4 rounded-2xl text-sm font-semibold transition-all border group disabled:opacity-60',
+                'w-full min-h-11 sm:min-h-10 flex items-center justify-between px-5 py-3 rounded-xl text-sm font-semibold transition-all border group disabled:opacity-60',
                 isSuccess
                     ? 'bg-success/10 border-success/20 text-success'
                     : 'bg-card border-border text-foreground hover:bg-secondary/40 hover:border-border shadow-sm'

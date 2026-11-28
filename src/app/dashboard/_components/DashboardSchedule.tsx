@@ -8,6 +8,27 @@ import { cn } from '@/components/ui/utils';
 import { Card } from '@/components/ui/Card';
 
 // Only the fields this component actually reads — not the full organisation row.
+
+const BOOKING_STATUS_LABELS: Record<string, string> = {
+    confirmed: "Confirmed",
+    signed_up: "Signed Up",
+    pending: "Pending",
+    in_progress: "In Progress",
+    completed: "Completed",
+    cancelled: "Cancelled",
+    rescheduled: "Rescheduled",
+    did_not_attend: "Did Not Attend",
+};
+
+function formatBookingStatus(status: string | null | undefined): string {
+    if (!status) return "Unknown";
+    if (BOOKING_STATUS_LABELS[status]) return BOOKING_STATUS_LABELS[status];
+    return status
+        .split("_")
+        .map((w) => (w ? w[0].toUpperCase() + w.slice(1).toLowerCase() : ""))
+        .join(" ");
+}
+
 export default async function DashboardSchedule({
     org,
     activeCentreId,
@@ -97,7 +118,7 @@ export default async function DashboardSchedule({
                         return (
                             <Link key={booking.id} href={rowHref}
                                 className="flex items-center gap-3 px-5 py-3 hover:bg-page transition-colors">
-                                <span className="text-xs font-mono text-text-muted w-10 flex-shrink-0">
+                                <span className="text-xs font-mono tabular-nums text-text-muted w-10 flex-shrink-0">
                                 {format(new Date(booking.startAt), 'HH:mm')}
                                 </span>
                                 <span className="flex-1 text-sm font-medium text-text truncate">
@@ -109,7 +130,7 @@ export default async function DashboardSchedule({
                                     booking.status === 'pending' || booking.status === 'did_not_attend' ? 'bg-warning-soft text-warning border-warning/20' :
                                     booking.status === 'cancelled' ? 'bg-danger-soft text-danger border-danger/20' :
                                     'bg-page text-text-muted border-border'
-                                )}>{booking.status === 'did_not_attend' ? 'Did Not Attend' : booking.status === 'completed' ? 'Attended' : booking.status === 'confirmed' ? 'Booked' : booking.status}</span>
+                                )}>{formatBookingStatus(booking.status)}</span>
                                 <ChevronRight className="size-4 text-text-muted flex-shrink-0" />
                             </Link>
                         );

@@ -64,8 +64,8 @@ export default function PaymentHistoryList({ payments, canReverse, canCorrect=ca
     const getMethodIcon = (method: string) => {
         switch (method) {
             case 'bank_transfer': return <Landmark className="w-4 h-4 text-accent" aria-hidden="true" />;
-            case 'voucher': return <Ticket className="w-4 h-4 text-amber-600" />;
-            case 'cash': return <CreditCard className="w-4 h-4 text-emerald-600" />;
+            case 'voucher': return <Ticket className="w-4 h-4 text-amber-800 dark:text-amber-300" />;
+            case 'cash': return <CreditCard className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />;
             default: return <HelpCircle className="w-4 h-4 text-muted-foreground" />;
         }
     };
@@ -164,7 +164,7 @@ export default function PaymentHistoryList({ payments, canReverse, canCorrect=ca
                             </dd></div>
                             <div className="min-w-0"><dt className="mb-2 text-xs font-semibold text-muted-foreground">Status</dt><dd className="min-w-0 break-words">
                                 {payment.status === 'pending' ? (
-                                    <span className="flex items-center gap-1.5 px-3 py-1 bg-amber-500/10 text-amber-600 rounded-full text-xs font-bold ring-1 ring-amber-500/20 w-fit">
+                                    <span className="flex items-center gap-1.5 px-3 py-1 bg-amber-500/10 text-amber-800 dark:text-amber-300 rounded-full text-xs font-bold ring-1 ring-amber-500/20 w-fit">
                                         <Clock className="w-3.5 h-3.5" /> Pending
                                     </span>
                                 ) : payment.status === 'failed' ? (
@@ -176,7 +176,7 @@ export default function PaymentHistoryList({ payments, canReverse, canCorrect=ca
                                         <RotateCcw className="w-3.5 h-3.5" /> Reversed
                                     </span>
                                 ) : (
-                                    <span className="flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 text-emerald-600 rounded-full text-xs font-bold ring-1 ring-emerald-500/20 w-fit">
+                                    <span className="flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 rounded-full text-xs font-bold ring-1 ring-emerald-500/20 w-fit">
                                         <Check className="w-3.5 h-3.5" /> Verified
                                     </span>
                                 )}
@@ -218,7 +218,7 @@ export default function PaymentHistoryList({ payments, canReverse, canCorrect=ca
                                             <button
                                                 type="button"
                                                 onClick={() => onPreviewReceipt(payment)}
-                                                className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-sm font-semibold text-emerald-600 hover:bg-emerald-500/20 transition-colors"
+                                                className="inline-flex min-h-11 sm:min-h-9 items-center gap-1.5 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-sm font-semibold text-emerald-700 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300 hover:bg-emerald-500/20 transition-colors"
                                             >
                                                 <Eye className="w-4 h-4" />
                                                 <span>View / Download Receipt</span>
@@ -226,9 +226,9 @@ export default function PaymentHistoryList({ payments, canReverse, canCorrect=ca
                                         )}
                                         <Link
                                             href={`/dashboard/finance/receipt?paymentId=${payment.id}`}
-                                            className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm font-semibold text-foreground hover:bg-secondary/60 transition-colors"
+                                            className="inline-flex min-h-11 sm:min-h-9 items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm font-semibold text-foreground hover:bg-secondary/60 transition-colors"
                                         >
-                                            <FileText className="w-4 h-4 text-emerald-600" />
+                                            <FileText className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
                                             <span>Printable Cash Receipt</span>
                                         </Link>
                                         {canSendReceipt && <SendReceiptButton paymentId={payment.id} recipient={receiptRecipient} recordedStatus={payment.receiptEmailStatus?.status} />}
