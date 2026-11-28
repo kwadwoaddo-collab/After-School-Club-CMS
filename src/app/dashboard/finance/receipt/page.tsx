@@ -14,7 +14,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { stableReceiptNumber } from '@/lib/finance/receipt-number';
 import { normaliseServiceType, type ServiceType } from '@/features/finance/service-type';
 
-export default async function ReceiptPage(props: { searchParams?: Promise<{ paymentId?: string; centre?: string }> } = {}) {
+export default async function ReceiptPage(props: { searchParams?: Promise<{ paymentId?: string; centre?: string; childId?: string }> } = {}) {
     const searchParams = (await props.searchParams) ?? {};
     const session = await requireTenantSession();
 
@@ -71,6 +71,9 @@ export default async function ReceiptPage(props: { searchParams?: Promise<{ paym
 
     const validPaymentId = isValidUuid(searchParams.paymentId)
         ? searchParams.paymentId
+        : undefined;
+    const preselectedChildId = isValidUuid(searchParams.childId)
+        ? searchParams.childId
         : undefined;
 
     const [orgRecord, allChildren, paymentRecord] = await Promise.all([
@@ -215,7 +218,7 @@ export default async function ReceiptPage(props: { searchParams?: Promise<{ paym
             </div>
 
             {/* Main Interactive Work Area */}
-            <div className="bg-secondary border border-border/40 rounded-[32px] p-6 sm:p-8 shadow-2xl relative">
+            <div className="bg-secondary/40 border border-border rounded-2xl p-6 sm:p-8 shadow-sm relative">
                 <ReceiptGeneratorClient
                     organisation={{
                         id: orgId,
@@ -229,6 +232,7 @@ export default async function ReceiptPage(props: { searchParams?: Promise<{ paym
                     stableReceiptNo={validPaymentId ? stableReceiptNumber(validPaymentId) : undefined}
                     initialPayment={initialPayment}
                     initialCentreId={isValidUuid(activeCentreId) ? activeCentreId : undefined}
+                    initialChildId={preselectedChildId}
                 />
             </div>
         </div>

@@ -22,7 +22,7 @@ import {
 } from '../expense-actions';
 
 const focusRing =
-  'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary';
+  'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
 
 const EXPENSE_CATEGORY_OPTIONS = [
   { value: 'general', label: 'General' },

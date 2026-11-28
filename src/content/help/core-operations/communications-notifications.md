@@ -114,3 +114,18 @@ SprintScale enforces communications preferences directly at the server level usi
 3. Click the bell to open the notifications dropdown.
 4. Review recent alerts (e.g. "New Booking Created", "Booking Cancelled", "Payment Recorded").
 5. Click **Mark all as read** to clear the unread counter.
+
+---
+
+### Procedure 3: Click-to-WhatsApp & GDPR Safe Dispatch
+
+**Who Can Do This:** Organisation Owners, Centre Managers, Front Desk
+
+**Overview:**
+SprintScale provides a copy-first Click-to-WhatsApp workflow that respects parent privacy and UK GDPR requirements. When contacting parents via WhatsApp:
+1. **Consent & Phone Number:** WhatsApp actions are only available for parents with a valid phone number and active status. Deleted parent accounts cannot be contacted.
+2. **GDPR-Safe Message Templates:** Pre-composed templates (e.g. overdue invoice reminders, payment receipts) only include parent surname/title, reference numbers, and payment details — never children's names or sensitive student data.
+3. **Copy & Launch Controls:**
+   - Click **Copy message** to copy the formatted text directly to your clipboard.
+   - Click **Open WhatsApp** (or **Chat on WhatsApp**) to open WhatsApp Web or Desktop with the parent's phone number and message pre-populated.
+   - Use the **Mark sent** button in the Communications queue to keep dispatch tracking accurate once manually sent.

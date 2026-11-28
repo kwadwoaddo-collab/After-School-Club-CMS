@@ -133,10 +133,10 @@ export function ReconciliationClient({
                     selectInvoice(inv);
                   }
                 }}
-                className={`p-4 border rounded-2xl transition-all cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${
+                className={`p-4 border rounded-2xl transition-all cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
                   isSelected
-                    ? 'border-primary bg-primary/5 ring-1 ring-primary'
-                    : 'border-border hover:border-primary/40 bg-card'
+                    ? 'border-accent bg-accent/5 ring-1 ring-accent'
+                    : 'border-border hover:border-accent/40 bg-card'
                 }`}
               >
                 <div className="flex justify-between items-start mb-2 gap-3">
@@ -146,7 +146,7 @@ export function ReconciliationClient({
                         <Link
                           href={`/dashboard/parents/${inv.parentId}`}
                           onClick={e => e.stopPropagation()}
-                          className="hover:text-primary hover:underline underline-offset-2 transition-colors"
+                          className="hover:text-accent hover:underline underline-offset-2 transition-colors"
                         >
                           {inv.parentFirstName} {inv.parentLastName}
                         </Link>
@@ -164,7 +164,7 @@ export function ReconciliationClient({
                               <Link
                                 href={`/dashboard/students/${s.id}`}
                                 onClick={e => e.stopPropagation()}
-                                className="hover:text-primary hover:underline underline-offset-2 transition-colors"
+                                className="hover:text-accent hover:underline underline-offset-2 transition-colors"
                               >
                                 {s.name}
                               </Link>
@@ -197,9 +197,9 @@ export function ReconciliationClient({
                         e.stopPropagation();
                         selectInvoice(inv);
                       }}
-                      className={`min-h-[44px] px-3.5 py-2 rounded-lg text-xs font-semibold border transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${
+                      className={`min-h-[44px] px-3.5 py-2 rounded-lg text-xs font-semibold border transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
                         isSelected
-                          ? 'bg-primary text-primary-foreground border-primary'
+                          ? 'bg-accent text-on-accent border-accent'
                           : 'bg-secondary/50 text-foreground border-border hover:bg-secondary'
                       }`}
                     >
@@ -209,7 +209,7 @@ export function ReconciliationClient({
                 </div>
 
                 {inv.childTfcRef && (
-                  <div className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-primary/10 text-primary border border-primary/20 tabular-nums">
+                  <div className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-accent/10 text-accent border border-accent/20 tabular-nums">
                     TFC Ref: {inv.childTfcRef}
                   </div>
                 )}
@@ -233,7 +233,7 @@ export function ReconciliationClient({
               <div className="pb-4 border-b border-border">
                 <div className="font-bold text-foreground text-lg">
                   {invoice?.parentId ? (
-                    <Link href={`/dashboard/parents/${invoice.parentId}`} className="hover:text-primary hover:underline underline-offset-2 transition-colors">
+                    <Link href={`/dashboard/parents/${invoice.parentId}`} className="hover:text-accent hover:underline underline-offset-2 transition-colors">
                       {invoice.parentFirstName} {invoice.parentLastName}
                     </Link>
                   ) : (
@@ -248,7 +248,7 @@ export function ReconciliationClient({
                       <React.Fragment key={s.id || s.name}>
                         {idx > 0 && ', '}
                         {s.id ? (
-                          <Link href={`/dashboard/students/${s.id}`} className="text-primary hover:underline underline-offset-2 transition-colors">
+                          <Link href={`/dashboard/students/${s.id}`} className="text-accent hover:underline underline-offset-2 transition-colors">
                             {s.name}
                           </Link>
                         ) : (
@@ -261,7 +261,7 @@ export function ReconciliationClient({
                   <p className="mt-1 text-sm text-muted-foreground">
                     Student:{' '}
                     {invoice.childId ? (
-                      <Link href={`/dashboard/students/${invoice.childId}`} className="text-primary hover:underline underline-offset-2 transition-colors">
+                      <Link href={`/dashboard/students/${invoice.childId}`} className="text-accent hover:underline underline-offset-2 transition-colors">
                         {invoice.childFirstName} {invoice.childLastName ?? ''}
                       </Link>
                     ) : (
@@ -283,13 +283,13 @@ export function ReconciliationClient({
                       disabled={isPending}
                       aria-pressed={method === m.id}
                       onClick={() => { setMethod(m.id); setConfirmed(false); }}
-                      className={`flex items-center gap-3 min-h-[44px] p-3 rounded-xl border transition-all text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${
+                      className={`flex items-center gap-3 min-h-[44px] p-3 rounded-xl border transition-all text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
                         method === m.id
-                          ? 'bg-primary/10 border-primary ring-1 ring-primary'
+                          ? 'bg-accent/10 border-accent ring-1 ring-accent'
                           : 'bg-secondary/40 border-border hover:bg-secondary/60'
                       }`}
                     >
-                      <m.icon className={`w-4 h-4 ${method === m.id ? 'text-primary' : 'text-muted-foreground'}`} />
+                      <m.icon className={`w-4 h-4 ${method === m.id ? 'text-accent' : 'text-muted-foreground'}`} />
                       <span className={`text-sm font-semibold ${method === m.id ? 'text-foreground' : 'text-muted-foreground'}`}>
                         {m.label}
                       </span>
@@ -309,7 +309,7 @@ export function ReconciliationClient({
                   value={amount}
                   onChange={e => { setAmount(e.target.value); setConfirmed(false); }}
                   placeholder={`Max: ${invoice?.remainingBalance.toFixed(2)}`}
-                  className="w-full p-3 rounded-xl border border-border bg-secondary/40 text-foreground font-semibold tabular-nums focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                  className="w-full p-3 rounded-xl border border-border bg-secondary/40 text-foreground font-semibold tabular-nums focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                 />
               </div>
 
@@ -327,7 +327,7 @@ export function ReconciliationClient({
                   value={reference}
                   onChange={e => { setReference(e.target.value); setConfirmed(false); }}
                   placeholder="e.g. JSMIT12345TFC"
-                  className="w-full p-3 rounded-xl border border-border bg-secondary/40 text-foreground font-medium focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                  className="w-full p-3 rounded-xl border border-border bg-secondary/40 text-foreground font-medium focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                 />
                 <p id="reconcile-reference-hint" className="text-xs text-muted-foreground">
                   Must be unique per invoice to prevent double-applying.

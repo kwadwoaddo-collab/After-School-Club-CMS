@@ -116,13 +116,13 @@ export default function RecordPaymentModal({
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4 animate-in fade-in duration-300">
-            <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="record-payment-title" className="bg-secondary/80 border border-border rounded-[32px] w-full max-w-lg max-h-[90dvh] shadow-2xl overflow-y-auto animate-in zoom-in-95 duration-300">
+            <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="record-payment-title" className="bg-secondary/80 border border-border rounded-2xl w-full max-w-lg max-h-[90dvh] shadow-2xl overflow-y-auto animate-in zoom-in-95 duration-300">
                 {/* Header */}
                 <div className="px-8 py-6 border-b border-border flex items-center justify-between bg-card/50">
                     <div>
                         <h2 id="record-payment-title" className="text-2xl font-black text-foreground tracking-tight">Record Payment</h2>
                         <p className="text-muted-foreground text-sm font-medium">Record money received for {invoiceNumber}</p>
-                        {billingContext && <p className="mt-2 text-sm text-foreground"><a href={`/dashboard/parents/${billingContext.parentId}`} className="text-primary underline">{billingContext.familyName}</a><br />{billingContext.period}</p>}
+                        {billingContext && <p className="mt-2 text-sm text-foreground"><a href={`/dashboard/parents/${billingContext.parentId}`} className="text-accent underline">{billingContext.familyName}</a><br />{billingContext.period}</p>}
                     </div>
                     <button 
                         onClick={onClose}
@@ -173,7 +173,7 @@ export default function RecordPaymentModal({
                     {/* Amount */}
                     <div className="space-y-2">
                         <label htmlFor={amountInputId} className="text-xs font-black text-muted-foreground uppercase tracking-widest flex items-center gap-2">
-                            Amount Received (£) <span className="text-primary">*</span>
+                            Amount Received (£) <span className="text-accent">*</span>
                         </label>
                         <input
                             id={amountInputId}
@@ -183,16 +183,16 @@ export default function RecordPaymentModal({
                             required
                             value={formData.amount}
                             onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                            className="w-full bg-secondary/40 border border-border rounded-2xl px-5 py-4 text-3xl font-black text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                            className="w-full bg-secondary/40 border border-border rounded-2xl px-5 py-4 text-3xl font-black text-foreground tabular-nums focus:outline-none focus:ring-2 focus:ring-accent/50 transition-all"
                         />
-                        {invoiceTotal !== undefined && <p className="text-xs text-muted-foreground font-medium">Invoice Total: £{invoiceTotal.toFixed(2)}</p>}
-                        <p className="text-xs text-muted-foreground font-medium">Remaining Balance: £{remainingBalance.toFixed(2)}</p>
+                        {invoiceTotal !== undefined && <p className="text-xs text-muted-foreground font-medium tabular-nums">Invoice Total: £{invoiceTotal.toFixed(2)}</p>}
+                        <p className="text-xs text-muted-foreground font-medium tabular-nums">Remaining Balance: £{remainingBalance.toFixed(2)}</p>
                     </div>
 
                     {/* Method Selection */}
                     <div className="space-y-3">
                         <label className="text-xs font-black text-muted-foreground uppercase tracking-widest">
-                            Payment Method <span className="text-primary">*</span>
+                            Payment Method <span className="text-accent">*</span>
                         </label>
                         <div className="grid grid-cols-2 gap-3">
                             {methods.map((m) => (
@@ -203,7 +203,7 @@ export default function RecordPaymentModal({
                                     onClick={() => setFormData({ ...formData, method: m.id as any })}
                                     className={`relative flex items-center gap-3 p-4 rounded-2xl border transition-all ${
                                         formData.method === m.id 
-                                        ? 'bg-primary/10 border-primary ring-1 ring-primary' 
+                                        ? 'bg-accent/10 border-accent ring-1 ring-accent' 
                                         : 'bg-secondary/40 border-border hover:bg-secondary/60'
                                     }`}
                                 >
@@ -212,7 +212,7 @@ export default function RecordPaymentModal({
                                         {m.label}
                                     </span>
                                     {formData.method === m.id && (
-                                        <Check className="absolute top-2 right-2 w-4 h-4 text-primary" />
+                                        <Check className="absolute top-2 right-2 w-4 h-4 text-accent" />
                                     )}
                                 </button>
                             ))}
@@ -230,7 +230,7 @@ export default function RecordPaymentModal({
                             required
                             value={formData.recordedAt}
                             onChange={(e) => setFormData({ ...formData, recordedAt: e.target.value })}
-                            className="w-full bg-secondary/40 border border-border rounded-2xl px-5 py-4 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-medium"
+                            className="w-full bg-secondary/40 border border-border rounded-2xl px-5 py-4 text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50 transition-all font-medium"
                         />
                     </div>
 
@@ -245,7 +245,7 @@ export default function RecordPaymentModal({
                             placeholder="e.g. Bank Ref, Receipt #"
                             value={formData.reference}
                             onChange={(e) => setFormData({ ...formData, reference: e.target.value })}
-                            className="w-full bg-secondary/40 border border-border rounded-2xl px-5 py-4 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-medium"
+                            className="w-full bg-secondary/40 border border-border rounded-2xl px-5 py-4 text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50 transition-all font-medium"
                         />
                     </div>
                 </form>
@@ -262,7 +262,7 @@ export default function RecordPaymentModal({
                     <button
                         onClick={handleSubmit}
                         disabled={isSubmitting || !formData.amount}
-                        className="px-8 py-3 bg-primary rounded-2xl text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-all shadow-lg shadow-primary/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                        className="px-8 py-3 bg-accent rounded-2xl text-sm font-bold text-on-accent hover:opacity-90 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                     >
                         {isSubmitting ? <><Loader2 className="w-4 h-4 animate-spin" /> Recording...</> : 'Record Payment'}
                     </button>

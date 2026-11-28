@@ -1,4 +1,6 @@
 'use client';
+import { WhatsAppCopyActions } from '@/components/whatsapp/WhatsAppCopyActions';
+import { buildInvoiceWhatsAppMessage } from '@/lib/whatsapp';
 
 import { Fragment, useMemo, useState } from 'react';
 import Link from 'next/link';
@@ -216,7 +218,7 @@ export default function FinanceWorkspace({ invoices, cycles, today, invoiceError
             {invoice.status === 'draft' && item.upcoming && <p className="text-sm text-muted-foreground">This period has not started. Draft preparation is not an instruction to issue today.</p>}
             <div className="flex flex-wrap items-end justify-between gap-3 border-t border-border pt-3">
                 <p className="max-w-lg text-sm text-muted-foreground">Check the period, fee and covered children. Issuing is separate from downloading or sending to a parent.</p>
-                <div className="flex items-center gap-3"><button className={`min-h-10 text-sm text-primary ${focus}`} onClick={() => closeReview(invoice.id)}>Close review</button><div><Link href={`/dashboard/finance/invoices/${invoice.id}`} className={`inline-flex min-h-10 items-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90 ${focus}`}>{invoice.status === 'draft' ? `Open draft to ${item.reasons.length ? 'check details' : 'issue'}` : 'Open invoice history'}</Link><p className="mt-1 text-xs text-muted-foreground">{invoice.status === 'draft' ? 'Separate confirmation before issuance' : 'Recorded payments and reversals remain available'}</p></div></div>
+                <div className="flex items-center gap-3"><button className={`min-h-10 text-sm text-primary ${focus}`} onClick={() => closeReview(invoice.id)}>Close review</button><div><Link href={`/dashboard/finance/invoices/${invoice.id}`} className={`inline-flex min-h-10 items-center rounded-lg bg-accent px-4 text-sm font-semibold text-on-accent hover:opacity-90 ${focus}`}>{invoice.status === 'draft' ? `Open draft to ${item.reasons.length ? 'check details' : 'issue'}` : 'Open invoice history'}</Link><p className="mt-1 text-xs text-muted-foreground">{invoice.status === 'draft' ? 'Separate confirmation before issuance' : 'Recorded payments and reversals remain available'}</p></div></div>
             </div>
         </section>;
     }
@@ -284,7 +286,14 @@ export default function FinanceWorkspace({ invoices, cycles, today, invoiceError
                 <article aria-label={`${invoice.invoiceNumber} billing card`} className="px-4 py-4 sm:px-5 lg:grid lg:grid-cols-[minmax(0,1fr)_auto] lg:gap-x-5 lg:[&>p]:col-start-1">
                     <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_auto] md:gap-5 lg:col-start-1">
                         <div className="min-w-0">{familyLink(invoice)}
-                            <p className="mt-1 text-sm text-muted-foreground">{invoice.centre?.name ?? 'Centre not recorded'}</p>
+                            <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                                {invoice.serviceType && (
+                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold tracking-wide uppercase bg-surface-alt border border-border text-text-muted">
+                                        {invoice.serviceType === 'tuition' ? 'Tuition' : 'Childcare'}
+                                    </span>
+                                )}
+                                <p className="text-sm text-muted-foreground">{invoice.centre?.name ?? 'Centre not recorded'}</p>
+                            </div>
                             {students.length > 0 && <p className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-sm">{students.map(student => <Link key={student.id} href={`/dashboard/students/${student.id}`} className={`text-primary hover:underline ${focus}`}>{student.name}</Link>)}</p>}
                         </div>
                         <div className="min-w-0"><p className="text-base font-semibold text-foreground">{formatInvoicePeriod(invoice.billingPeriodStart, invoice.billingPeriodEnd)}</p>
@@ -299,7 +308,30 @@ export default function FinanceWorkspace({ invoices, cycles, today, invoiceError
                     {(item.pending || needsCheck) && <p className="mt-2 text-sm font-medium text-amber-800 dark:text-amber-200">{needsCheck && item.reasons.join(' ')}{item.pending && `${needsCheck ? ' ' : ''}Payment awaiting verification — check it before recording the same money again.`}</p>}
                     <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-3 lg:col-start-2 lg:row-start-1 lg:row-span-4 lg:mt-0 lg:flex-col-reverse lg:justify-center lg:border-t-0 lg:pt-0">
                         <button id={`review-${invoice.id}`} aria-controls={`context-${invoice.id}`} aria-expanded={isExpanded} onClick={()=>setExpanded(isExpanded ? null : invoice.id)} aria-label={`${isExpanded ? 'Hide review for' : 'Billing details for'} ${invoice.invoiceNumber}`} className={`inline-flex min-h-11 items-center gap-2 text-sm font-medium text-primary ${focus}`}>Billing details<ChevronDown aria-hidden="true" className={`h-4 w-4 ${isExpanded ? 'rotate-180' : ''}`}/></button>
-                        {paymentMode ? <button onClick={()=>setPayment(item)} aria-label={`Record payment for ${invoice.invoiceNumber}`} className={`inline-flex min-h-11 items-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90 ${focus}`}>Record payment</button> : <button aria-controls={`context-${invoice.id}`} aria-expanded={isExpanded} aria-label={`${needsCheck ? 'Review problem' : 'Review invoice'} ${invoice.invoiceNumber}`} onClick={()=>setExpanded(isExpanded ? null : invoice.id)} className={`inline-flex min-h-11 items-center rounded-lg ${needsCheck ? 'border border-border text-primary hover:bg-secondary' : 'bg-primary text-primary-foreground hover:bg-primary/90'} px-4 text-sm font-semibold ${focus}`}>{needsCheck ? 'Review problem' : 'Review draft'}</button>}
+                        {paymentMode ? (
+                            <div className="flex items-center gap-2 flex-wrap">
+                                <button type="button" onClick={()=>setPayment(item)} aria-label={`Record payment for ${invoice.invoiceNumber}`} className={`inline-flex min-h-11 items-center rounded-lg bg-accent px-4 text-sm font-semibold text-on-accent hover:opacity-90 ${focus}`}>
+                                    Record payment
+                                </button>
+                                {item.collectionStage === 'overdue' && Boolean(invoice.parent?.phone) && !invoice.parent?.deletedAt && (
+                                    <WhatsAppCopyActions
+                                        phone={invoice.parent?.phone}
+                                        message={buildInvoiceWhatsAppMessage({
+                                            parentFirstName: invoice.parent?.firstName,
+                                            invoiceNumber: invoice.invoiceNumber,
+                                            amountFormatted: (item.remaining / 100).toFixed(2),
+                                            dueDateFormatted: formatInvoiceDate(invoice.dueDate),
+                                            periodFormatted: formatInvoicePeriod(invoice.billingPeriodStart, invoice.billingPeriodEnd),
+                                            serviceType: invoice.serviceType === 'tuition' ? 'tuition' : 'childcare',
+                                            isPaid: false,
+                                            organisationName: invoice.centre?.name || 'After-School Club',
+                                        })}
+                                        recipientName={`${invoice.parent?.firstName ?? ''} ${invoice.parent?.lastName ?? ''}`.trim() || 'Parent'}
+                                        variant="icon"
+                                    />
+                                )}
+                            </div>
+                        ) : <button aria-controls={`context-${invoice.id}`} aria-expanded={isExpanded} aria-label={`${needsCheck ? 'Review problem' : 'Review invoice'} ${invoice.invoiceNumber}`} onClick={()=>setExpanded(isExpanded ? null : invoice.id)} className={`inline-flex min-h-11 items-center rounded-lg ${needsCheck ? 'border border-border text-primary hover:bg-secondary' : 'bg-primary text-primary-foreground hover:bg-primary/90'} px-4 text-sm font-semibold ${focus}`}>{needsCheck ? 'Review problem' : 'Review draft'}</button>}
                     </div>
                 </article>
                 {isExpanded && <div id={`context-${invoice.id}`}>{review(item)}</div>}
@@ -325,13 +357,66 @@ export default function FinanceWorkspace({ invoices, cycles, today, invoiceError
                         const BadgeIcon = paymentMeta ? paymentMeta.Icon : null;
                         return <Fragment key={invoice.id}>
                             <tr role="row" className="grid grid-cols-2 items-center gap-x-3 gap-y-2 border-t border-border px-3 py-4 md:table-row md:p-0">
-                                <td role="cell" className={`${cell} min-w-0`}>{familyLink(invoice)}{invoice.centre && <span className="block truncate text-xs text-muted-foreground">{invoice.centre.name}</span>}</td>
+                                <td role="cell" className={`${cell} min-w-0`}>
+                                    {familyLink(invoice)}
+                                    <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                                        {invoice.serviceType && (
+                                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold tracking-wide uppercase bg-surface-alt border border-border text-text-muted">
+                                                {invoice.serviceType === 'tuition' ? 'Tuition' : 'Childcare'}
+                                            </span>
+                                        )}
+                                        {invoice.centre && <span className="block truncate text-xs text-muted-foreground">{invoice.centre.name}</span>}
+                                    </div>
+                                </td>
                                 <td role="cell" className={`${cell} col-start-1 row-start-2 md:whitespace-nowrap`}>{formatInvoicePeriod(invoice.billingPeriodStart,invoice.billingPeriodEnd)}<span className="block text-xs text-muted-foreground md:hidden">Due {formatInvoiceDate(invoice.dueDate)}</span></td>
                                 <td role="cell" className={`${cell} col-start-2 row-start-1 text-right md:text-left`}><Link className={`text-muted-foreground underline-offset-2 hover:text-primary hover:underline ${focus}`} href={`/dashboard/finance/invoices/${invoice.id}`}>{invoice.invoiceNumber}</Link></td>
                                 <td role="cell" className={`${cell} col-start-1 row-start-3 tabular-nums`}><span className={paymentMode ? 'block text-xs text-muted-foreground' : 'font-medium'}>{item.amountValid ? money(item.amount) : 'Check amount'}{paymentMode && <span className="md:sr-only"> total</span>}</span>{paymentMode && <strong className="block font-semibold">{money(item.remaining)} <span className="text-xs font-normal">remaining</span></strong>}</td>
                                 {paymentMode && <td role="cell" className={`${cell} hidden whitespace-nowrap md:table-cell`}>{formatInvoiceDate(invoice.dueDate)}</td>}
                                 <td role="cell" className={`${cell} col-start-2 row-start-2 text-right md:text-left`}><span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${badgeClass}`}>{BadgeIcon && <BadgeIcon aria-hidden="true" className="h-3.5 w-3.5 shrink-0"/>}{badgeLabel}</span>{item.pending && <span className="mt-1 block text-xs text-muted-foreground">Payment pending</span>}{item.reasons.length > 0 && badgeLabel !== 'Needs checking' && <span className="mt-1 block text-xs font-medium text-amber-800 dark:text-amber-200">Needs checking</span>}</td>
-                                <td role="cell" className={`${cell} col-start-2 row-start-3 text-right md:text-left`}>{paymentMode ? <button onClick={() => setPayment(item)} className={`inline-flex min-h-10 items-center rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/90 ${focus}`} aria-label={`Record payment for ${invoice.invoiceNumber}`}>Record payment</button> : <button id={`review-${invoice.id}`} aria-controls={`context-${invoice.id}`} aria-expanded={isExpanded} aria-label={`${isExpanded ? 'Hide review for' : 'Review invoice'} ${invoice.invoiceNumber}`} onClick={() => setExpanded(isExpanded ? null : invoice.id)} className={`inline-flex min-h-10 items-center gap-1 text-sm font-medium text-primary ${focus}`}>{isExpanded ? 'Hide review' : 'Review invoice'}<ChevronDown aria-hidden="true" className={`h-3.5 w-3.5 ${isExpanded ? 'rotate-180' : ''}`}/></button>}</td>
+                                <td role="cell" className={`${cell} col-start-2 row-start-3 text-right md:text-left`}>
+                                    {paymentMode ? (
+                                        <div className="flex items-center gap-2 justify-end md:justify-start flex-wrap">
+                                            <button
+                                                type="button"
+                                                onClick={() => setPayment(item)}
+                                                className={`inline-flex min-h-10 items-center rounded-lg bg-accent px-3 text-sm font-medium text-on-accent hover:opacity-90 ${focus}`}
+                                                aria-label={`Record payment for ${invoice.invoiceNumber}`}
+                                            >
+                                                Record payment
+                                            </button>
+                                            {item.collectionStage === 'overdue' && Boolean(invoice.parent?.phone) && !invoice.parent?.deletedAt && (
+                                                <WhatsAppCopyActions
+                                                    phone={invoice.parent?.phone}
+                                                    message={buildInvoiceWhatsAppMessage({
+                                                        parentFirstName: invoice.parent?.firstName,
+                                                        invoiceNumber: invoice.invoiceNumber,
+                                                        amountFormatted: (item.remaining / 100).toFixed(2),
+                                                        dueDateFormatted: formatInvoiceDate(invoice.dueDate),
+                                                        periodFormatted: formatInvoicePeriod(invoice.billingPeriodStart, invoice.billingPeriodEnd),
+                                                        serviceType: invoice.serviceType === 'tuition' ? 'tuition' : 'childcare',
+                                                        isPaid: false,
+                                                        organisationName: invoice.centre?.name || 'After-School Club',
+                                                    })}
+                                                    recipientName={`${invoice.parent?.firstName ?? ''} ${invoice.parent?.lastName ?? ''}`.trim() || 'Parent'}
+                                                    variant="icon"
+                                                />
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <button
+                                            type="button"
+                                            id={`review-${invoice.id}`}
+                                            aria-controls={`context-${invoice.id}`}
+                                            aria-expanded={isExpanded}
+                                            aria-label={`${isExpanded ? 'Hide review for' : 'Review invoice'} ${invoice.invoiceNumber}`}
+                                            onClick={() => setExpanded(isExpanded ? null : invoice.id)}
+                                            className={`inline-flex min-h-10 items-center gap-1 text-sm font-medium text-primary ${focus}`}
+                                        >
+                                            {isExpanded ? 'Hide review' : 'Review invoice'}
+                                            <ChevronDown aria-hidden="true" className={`h-3.5 w-3.5 ${isExpanded ? 'rotate-180' : ''}`}/>
+                                        </button>
+                                    )}
+                                </td>
                             </tr>
                             {!paymentMode && isExpanded && <tr className="block md:table-row"><td id={`context-${invoice.id}`} colSpan={columns} className="block p-0! md:table-cell">{review(item)}</td></tr>}
                         </Fragment>;

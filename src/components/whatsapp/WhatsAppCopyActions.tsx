@@ -38,24 +38,24 @@ function variantClasses(variant: CopyVariant, copied: boolean, solid: boolean): 
         case 'icon':
             return cn(
                 base,
-                'min-h-6 min-w-6 p-1.5 rounded-sm hover:bg-page',
-                copied ? 'text-emerald-700 dark:text-emerald-400' : 'text-text-muted hover:text-text',
+                'min-h-9 min-w-9 sm:min-h-6 sm:min-w-6 p-1.5 rounded-sm hover:bg-page',
+                copied ? 'text-accent' : 'text-text-muted hover:text-accent',
             );
         case 'text':
             return cn(
                 base,
-                'gap-1 min-h-6 px-1 py-0.5 rounded-sm text-xs font-semibold hover:underline',
-                'text-emerald-700 dark:text-emerald-400',
+                'gap-1 min-h-9 sm:min-h-6 px-1 py-0.5 rounded-sm text-xs font-semibold hover:underline',
+                'text-accent',
             );
         case 'pill':
         case 'button': {
             const size =
                 variant === 'button'
-                    ? 'gap-2 px-5 py-2.5 rounded-xl text-sm font-bold'
-                    : 'gap-1 px-2.5 py-1 rounded-sm text-xs font-semibold';
+                    ? 'gap-2 min-h-11 px-5 py-2.5 rounded-xl text-sm font-bold'
+                    : 'gap-1 min-h-9 sm:min-h-7 px-2.5 py-1 rounded-sm text-xs font-semibold';
             const tone = solid
-                ? 'bg-emerald-700 text-white hover:bg-emerald-800'
-                : 'border border-emerald-700/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/10';
+                ? 'bg-accent text-on-accent hover:opacity-90'
+                : 'border border-accent/40 text-accent hover:bg-accent-soft/20';
             return cn(base, size, tone);
         }
     }

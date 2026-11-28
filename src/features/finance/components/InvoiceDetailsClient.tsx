@@ -319,7 +319,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                         <div className="flex items-end gap-3">
                             {/* Invoice Buttons */}
                             <div className="flex flex-col items-center gap-1">
-                                <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">invoice</span>
+                                <span className="text-xs font-semibold text-muted-foreground">Invoice</span>
                                 <div className="flex items-center rounded-xl overflow-hidden border border-border">
                                     <button
                                         onClick={() => setPreviewType('invoice')}
@@ -342,7 +342,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                             {/* Receipt Buttons */}
                             {invoice.payments.length > 0 && (
                                 <div className="flex flex-col items-center gap-1">
-                                    <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">receipt</span>
+                                    <span className="text-xs font-semibold text-accent">Receipt</span>
                                     <div className="flex items-center rounded-xl overflow-hidden border border-emerald-500/20">
                                         <button
                                             onClick={() => setPreviewType('receipt')}
@@ -365,7 +365,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                         </div>
                     ) : (
                         <div className="flex flex-col items-center gap-1">
-                            <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">invoice</span>
+                            <span className="text-xs font-semibold text-muted-foreground">Invoice</span>
                             <div className="flex items-center gap-2 px-4 py-2 bg-card border border-border rounded-xl text-sm font-bold text-muted-foreground opacity-50">
                                 <Download className="w-4 h-4" /> Loading...
                             </div>
@@ -378,7 +378,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                                 type="button"
                                 disabled={isPending || isIssuingDraft || Number(invoice.amount) <= 0}
                                 onClick={() => setConfirmIssue(true)}
-                                className="flex items-center gap-2 px-6 py-2.5 bg-primary rounded-xl text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-all shadow-lg shadow-primary/30 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                                className="flex items-center gap-2 px-6 py-2.5 bg-accent rounded-xl text-sm font-semibold text-on-accent hover:opacity-90 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                                 title={Number(invoice.amount) <= 0 ? "Amount must be greater than £0.00 to issue" : "Issue invoice without emailing"}
                             >
                                 {isIssuingDraft ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
@@ -388,7 +388,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                                 type="button"
                                 disabled={isPending || isDiscardingDraft}
                                 onClick={() => setIsDiscardConfirmOpen(true)}
-                                className="flex items-center gap-2 px-5 py-2.5 bg-rose-500/10 border border-rose-500/20 rounded-xl text-sm font-bold text-rose-500 hover:bg-rose-500/20 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="flex items-center gap-2 px-5 py-2.5 bg-destructive/10 border border-destructive/20 rounded-xl text-sm font-semibold text-destructive hover:bg-destructive/20 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {isDiscardingDraft ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                                 Discard Draft
@@ -399,8 +399,9 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                             {canOfferRecordPayment({ status: invoice.status, remainingBalancePence: parseStoredDecimalToPence(remainingBalance), userRole }) && (
                                 <button
                                     disabled={isPending}
+                                    type="button"
                                     onClick={() => setIsPaymentModalOpen(true)}
-                                    className="flex items-center gap-2 px-6 py-2.5 bg-primary rounded-xl text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-all shadow-lg shadow-primary/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="flex items-center gap-2 px-6 py-2.5 bg-accent text-on-accent hover:opacity-90 rounded-xl text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-all shadow-lg shadow-primary/30 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     <CreditCard className="w-4 h-4" /> Record Payment
                                 </button>
@@ -428,7 +429,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                                             setIsSendingEmail(false);
                                         }
                                     }}
-                                    className="flex items-center gap-2 px-5 py-2.5 bg-blue-500/10 border border-blue-500/20 rounded-xl text-sm font-bold text-blue-600 hover:bg-blue-500/20 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="flex items-center gap-2 px-5 py-2.5 bg-secondary hover:bg-secondary/80 border border-border rounded-xl text-sm font-semibold text-foreground transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     {isSendingEmail ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                                     {isSendingEmail ? 'Sending…' : 'Send invoice by email'}
@@ -444,7 +445,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                                     onClick={() => {
                                         void recordInvoiceWhatsAppHandoff(invoice.id).catch(() => {});
                                     }}
-                                    className="flex items-center gap-2 px-5 py-2.5 bg-emerald-500/10 border border-emerald-500/25 rounded-xl text-sm font-bold text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/20 transition-all"
+                                    className="flex items-center gap-2 px-5 py-2.5 bg-accent-soft border border-accent/25 rounded-xl text-sm font-semibold text-accent hover:bg-accent-soft/80 transition-all"
                                 >
                                     <MessageCircle className="w-4 h-4" aria-hidden="true" />
                                     {collectionState.stage === 'paid' || invoice.status === 'paid' ? 'Send receipt via WhatsApp' : 'Send via WhatsApp'}
@@ -456,7 +457,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                                     type="button"
                                     disabled={isPending}
                                     onClick={() => setConfirmAction('void')}
-                                    className="flex items-center gap-2 px-5 py-2.5 bg-amber-500/10 border border-amber-500/20 rounded-xl text-sm font-bold text-amber-600 hover:bg-amber-500/20 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="flex items-center gap-2 px-5 py-2.5 bg-secondary hover:bg-secondary/80 border border-border rounded-xl text-sm font-semibold text-destructive hover:bg-destructive/10 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     <Ban className="w-4 h-4" /> Void
                                 </button>
@@ -488,7 +489,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
 
                         <div className="relative flex flex-col md:flex-row justify-between gap-8 mb-12">
                             <div>
-                                <div className="text-primary font-black tracking-widest text-xs uppercase mb-2">Invoice Details</div>
+                                <div className="text-accent font-semibold text-xs mb-1">Invoice Details</div>
                                 <h1 className="text-4xl font-black text-foreground tracking-tight mb-2">{invoice.invoiceNumber}</h1>
                                 <div className="flex flex-wrap items-center gap-2">
                                     {getStatusBadge()}
@@ -531,7 +532,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                                 </div>
                             </div>
                             <div className="text-right flex flex-col items-end">
-                                <div className="text-muted-foreground font-black tracking-widest text-xs uppercase mb-2">Total Amount</div>
+                                <div className="text-muted-foreground font-semibold text-xs mb-1">Total Amount</div>
                                 {invoice.status === 'draft' && isEditingAmount ? (
                                     <div className="flex items-center gap-2 mt-1">
                                         <div className="relative">
@@ -568,7 +569,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                                     </div>
                                 ) : (
                                     <div className="flex items-center gap-2 group/amt">
-                                        <div className="text-5xl font-black text-foreground">£{Number(invoice.amount).toFixed(2)}</div>
+                                        <div className="text-5xl font-black text-foreground tabular-nums">£{Number(invoice.amount).toFixed(2)}</div>
                                         {invoice.status === 'draft' && (
                                             <button
                                                 onClick={() => setIsEditingAmount(true)}
@@ -870,11 +871,11 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                         <div className="space-y-6">
                             <div className="flex justify-between items-center text-sm font-bold">
                                 <span className="text-muted-foreground">Total Billed</span>
-                                <span className="text-foreground">£{Number(invoice.amount).toFixed(2)}</span>
+                                <span className="text-foreground font-semibold tabular-nums">£{Number(invoice.amount).toFixed(2)}</span>
                             </div>
                             <div className="flex justify-between items-center text-sm font-bold">
                                 <span className="text-muted-foreground">Total Paid</span>
-                                <span className="text-emerald-600">£{totalPaid.toFixed(2)}</span>
+                                <span className="text-accent font-semibold tabular-nums">£{totalPaid.toFixed(2)}</span>
                             </div>
                             <div className="h-px bg-border/30 my-6" />
                             <div className="flex justify-between items-end">
@@ -908,8 +909,9 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                         {canOfferRecordPayment({ status: invoice.status, remainingBalancePence: parseStoredDecimalToPence(remainingBalance), userRole }) && (
                             <button
                                 disabled={isPending}
+                                type="button"
                                 onClick={() => setIsPaymentModalOpen(true)}
-                                className="w-full mt-10 py-4 bg-primary rounded-2xl text-sm font-black text-primary-foreground hover:bg-primary/90 transition-all shadow-xl shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="w-full mt-10 py-4 bg-accent rounded-2xl text-sm font-bold text-on-accent hover:opacity-90 transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                             >
                                 Record Received Payment
                             </button>

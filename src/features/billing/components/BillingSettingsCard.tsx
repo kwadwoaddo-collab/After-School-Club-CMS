@@ -137,9 +137,16 @@ function CollapsedView({
                 </div>
             )}
 
-            {config.serviceType === 'tuition' && (
-                <p className="text-metadata">Service type: Tuition</p>
-            )}
+            <div className="flex items-center gap-2">
+                <span className="text-metadata">Service type:</span>
+                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
+                    config.serviceType === 'tuition'
+                        ? 'bg-primary/10 text-primary border border-primary/20'
+                        : 'bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 border border-emerald-500/20'
+                }`}>
+                    {config.serviceType === 'tuition' ? 'Tuition' : 'Childcare'}
+                </span>
+            </div>
 
             {config.notes && (
                 <p className="text-metadata italic">{config.notes}</p>
@@ -583,7 +590,7 @@ function EditForm({
                         </label>
                     ))}
                 </div>
-                <p className="text-metadata mt-1">Sets the wording on new invoices and receipts for this family. Documents already issued do not change.</p>
+                <p className="text-metadata mt-1">Sets the wording on new invoices and receipts for this family. Documents already issued do not change automatically (unpaid issued invoices can be updated on their details page).</p>
             </fieldset>
 
             {/* Notes */}

@@ -313,7 +313,7 @@ export const HELP_GUIDES: HelpGuideMetadata[] = [
     contentPath: 'core-operations/communications-notifications.md',
     order: 16,
     readingTimeMinutes: 8,
-    keywords: ['communications', 'broadcast', 'notifications', 'email', 'announcements'],
+    keywords: ['communications', 'broadcast', 'notifications', 'email', 'announcements', 'whatsapp'],
     screenshots: ['SS-D6-S044', 'SS-D6-S053', 'SS-D6-S059'],
     videos: ['SS-D6-V027', 'SS-D6-V048'],
   },

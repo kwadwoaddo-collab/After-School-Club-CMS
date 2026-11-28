@@ -53,7 +53,7 @@ export default function PaymentHistoryList({ payments, canReverse, canCorrect=ca
 
     if (payments.length === 0) {
         return (
-            <div className="py-12 flex flex-col items-center justify-center text-center bg-secondary/60 rounded-[32px] border border-dashed border-border">
+            <div className="py-12 flex flex-col items-center justify-center text-center bg-secondary/60 rounded-2xl border border-dashed border-border">
                 <CreditCard className="w-12 h-12 text-muted-foreground/20 mb-4" />
                 <h4 className="text-lg font-bold text-foreground">No payments yet</h4>
                 <p className="text-sm text-muted-foreground">Payments recorded for this invoice will appear here.</p>
@@ -137,7 +137,7 @@ export default function PaymentHistoryList({ payments, canReverse, canCorrect=ca
     };
 
     return (
-        <div className="min-w-0 bg-card border border-border rounded-[32px]">
+        <div className="min-w-0 bg-card border border-border rounded-2xl">
             <div className="divide-y divide-border">
                     {payments.map((payment) => (
                         <article key={payment.id} aria-label={`Payment on ${format(new Date(payment.recordedAt), 'dd MMM yyyy')}`} className="min-w-0 space-y-4 p-4 sm:p-6">
@@ -184,7 +184,7 @@ export default function PaymentHistoryList({ payments, canReverse, canCorrect=ca
                             <div className="min-w-0"><dt className="mb-2 text-xs font-semibold text-muted-foreground">Amount</dt><dd className="min-w-0 break-words">
                                 <span className={`text-sm font-black ${payment.status === 'failed' || payment.status === 'reversed' ? 'text-muted-foreground line-through' : 'text-foreground'}`}>
                                     £{Number(payment.amount).toFixed(2)}
-                                </span>{!!payment.correctionHistory?.length&&<details className="mt-2 text-left text-sm"><summary className="min-h-11 cursor-pointer py-3 text-primary">Correction history</summary>{payment.correctionHistory.map(c=><p key={c.id} className="my-2 text-muted-foreground">{new Date(c.from).toLocaleDateString('en-GB',{timeZone:'Europe/London'})} → {new Date(c.to).toLocaleDateString('en-GB',{timeZone:'Europe/London'})}. {c.reason} · {new Date(c.at).toLocaleString('en-GB',{timeZone:'Europe/London'})}</p>)}</details>}
+                                </span>{!!payment.correctionHistory?.length&&<details className="mt-2 text-left text-sm"><summary className="min-h-11 cursor-pointer py-3 text-accent">Correction history</summary>{payment.correctionHistory.map(c=><p key={c.id} className="my-2 text-muted-foreground">{new Date(c.from).toLocaleDateString('en-GB',{timeZone:'Europe/London'})} → {new Date(c.to).toLocaleDateString('en-GB',{timeZone:'Europe/London'})}. {c.reason} · {new Date(c.at).toLocaleString('en-GB',{timeZone:'Europe/London'})}</p>)}</details>}
                             </dd></div>
                             </dl>
                             <div className="flex min-w-0 flex-wrap gap-2 border-t border-border pt-4" aria-label="Payment actions">
@@ -232,7 +232,7 @@ export default function PaymentHistoryList({ payments, canReverse, canCorrect=ca
                                             <span>Printable Cash Receipt</span>
                                         </Link>
                                         {canSendReceipt && <SendReceiptButton paymentId={payment.id} recipient={receiptRecipient} recordedStatus={payment.receiptEmailStatus?.status} />}
-                                        {canCorrect&&correctableMethods.includes(payment.method)&&<button type="button" onClick={()=>setCorrecting(payment)} className="min-h-11 rounded-lg border border-border px-3 py-2 text-sm font-semibold text-primary">Correct payment details</button>}
+                                        {canCorrect&&correctableMethods.includes(payment.method)&&<button type="button" onClick={()=>setCorrecting(payment)} className="min-h-11 rounded-lg border border-border px-3 py-2 text-sm font-semibold text-accent">Correct payment details</button>}
                                         {canReverse && (
                                             <button
                                                 type="button"
@@ -265,7 +265,7 @@ export default function PaymentHistoryList({ payments, canReverse, canCorrect=ca
                         aria-modal="true"
                         aria-labelledby="reverse-payment-title"
                         tabIndex={-1}
-                        className="bg-card border border-border rounded-[32px] p-8 max-w-md w-full shadow-2xl relative"
+                        className="bg-card border border-border rounded-2xl p-8 max-w-md w-full shadow-2xl relative"
                     >
                         <div className="absolute top-0 right-0 w-32 h-32 bg-slate-500/10 rounded-full blur-[40px]" />
 
@@ -276,7 +276,7 @@ export default function PaymentHistoryList({ payments, canReverse, canCorrect=ca
                             <div className="bg-secondary/40 rounded-xl p-4 mb-6 space-y-2 border border-border">
                                 <div className="flex justify-between text-sm">
                                     <span className="text-muted-foreground font-medium">Amount:</span>
-                                    <span className="font-bold text-foreground">£{Number(reversalModalPayment.amount).toFixed(2)}</span>
+                                    <span className="font-bold text-foreground tabular-nums">£{Number(reversalModalPayment.amount).toFixed(2)}</span>
                                 </div>
                                 <div className="flex justify-between text-sm">
                                     <span className="text-muted-foreground font-medium">Method:</span>
@@ -302,7 +302,7 @@ export default function PaymentHistoryList({ payments, canReverse, canCorrect=ca
                                     onChange={(e) => setReversalReason(e.target.value)}
                                     maxLength={500}
                                     rows={3}
-                                    className="w-full bg-secondary/40 border border-border rounded-xl p-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+                                    className="w-full bg-secondary/40 border border-border rounded-xl p-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-accent resize-none"
                                     placeholder="Explain why this payment is being reversed..."
                                 />
                             </div>

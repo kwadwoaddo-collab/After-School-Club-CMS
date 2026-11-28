@@ -175,12 +175,12 @@ export default async function FinancePage(props: {
                 // Fetch a thin full-centre set before deriving counts; pagination never changes queue totals.
                 const wsRows = await db.query.invoices.findMany({
                     where: and(eq(invoices.organisationId, organisationId), centreFilter),
-                    columns: { id:true, invoiceNumber:true, organisationId:true, centreId:true, parentId:true, childId:true, billingConfigId:true, amount:true, status:true, invoiceDate:true, dueDate:true, billingPeriodStart:true, billingPeriodEnd:true, createdAt:true, coveredChildrenJson:true },
+                    columns: { id:true, invoiceNumber:true, organisationId:true, centreId:true, parentId:true, childId:true, billingConfigId:true, amount:true, status:true, serviceType:true, invoiceDate:true, dueDate:true, billingPeriodStart:true, billingPeriodEnd:true, createdAt:true, coveredChildrenJson:true },
                     extras: { needsBillingReview: draftLifecycleReviewSql().as('needs_billing_review') },
                     with: {
                         centre: { columns: { id:true, name:true } },
                         child: { columns: { id:true, firstName:true, lastName:true } },
-                        parent: { columns: { id:true, firstName:true, lastName:true } },
+                        parent: { columns: { id:true, firstName:true, lastName:true, phone:true, deletedAt:true } },
                         payments: { columns: { id:true, amount:true, status:true, reversedAt:true, recordedAt:true } },
                     },
                 });
@@ -296,29 +296,61 @@ export default async function FinancePage(props: {
                     </p>
                 </div>
                 <div className="flex items-center gap-3 flex-wrap">
-                    <nav aria-label="Finance views" className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-                        {!workspaceView && <Link href={`/dashboard/finance?${new URLSearchParams({ ...activeCentreParam })}`} className="inline-flex min-h-10 items-center font-medium text-primary hover:underline">Daily tasks</Link>}
+                    <nav aria-label="Finance views" className="flex flex-wrap items-center gap-1.5 p-1 rounded-xl bg-surface-alt border border-border text-xs">
+                        {!workspaceView && (
+                            <Link
+                                href={`/dashboard/finance?${new URLSearchParams({ ...activeCentreParam })}`}
+                                className="inline-flex min-h-9 items-center px-3 py-1.5 rounded-lg font-semibold text-muted-foreground hover:text-foreground transition-colors"
+                            >
+                                Daily tasks
+                            </Link>
+                        )}
                         {isOwner && (
                             <>
                                 <Link
                                     href={`/dashboard/finance?${new URLSearchParams({ ...activeCentreParam, view: 'cashflow' })}`}
                                     aria-current={cashflowView ? 'page' : undefined}
-                                    className={`inline-flex min-h-10 items-center font-medium hover:underline ${cashflowView ? 'text-foreground underline underline-offset-4' : 'text-primary'}`}
+                                    className={`inline-flex min-h-9 items-center px-3 py-1.5 rounded-lg font-semibold transition-colors ${
+                                        cashflowView ? 'bg-surface text-foreground shadow-xs border border-border/80' : 'text-muted-foreground hover:text-foreground'
+                                    }`}
                                 >
                                     Cashflow & outgoings
                                 </Link>
                                 <Link
                                     href={`/dashboard/finance?${new URLSearchParams({ ...activeCentreParam, view: 'outgoings' })}#quick-add-outgoing-heading`}
                                     aria-current={outgoingsView ? 'page' : undefined}
-                                    className={`inline-flex min-h-10 items-center font-medium hover:underline ${outgoingsView ? 'text-foreground underline underline-offset-4' : 'text-primary'}`}
+                                    className={`inline-flex min-h-9 items-center px-3 py-1.5 rounded-lg font-semibold transition-colors ${
+                                        outgoingsView ? 'bg-surface text-foreground shadow-xs border border-border/80' : 'text-muted-foreground hover:text-foreground'
+                                    }`}
                                 >
                                     Outgoings
                                 </Link>
                             </>
                         )}
-                        {[['history', 'All invoices'], ['families', 'Family accounts']].map(([view,label]) => <Link key={view} href={`/dashboard/finance?${new URLSearchParams({ ...activeCentreParam, view })}`} aria-current={searchParams.view === view ? 'page' : undefined} className="inline-flex min-h-10 items-center font-medium text-primary hover:underline">{label}</Link>)}
-                        <Link href={isValidUuid(activeCentreId) ? `/dashboard/finance/receipt?${new URLSearchParams(activeCentreParam)}` : '/dashboard/finance/receipt'} className="inline-flex min-h-10 items-center font-medium text-primary hover:underline">Parent receipts</Link>
-                        <details className="relative"><summary className="flex min-h-10 cursor-pointer items-center text-muted-foreground">More</summary><div className="absolute right-0 top-10 z-20 w-64 rounded-lg border border-border bg-card p-3 shadow-lg"><Link href={`/dashboard/finance?${new URLSearchParams({ ...activeCentreParam, view:'former' })}`} className="block py-2 text-primary hover:underline">Paused / stopped balances</Link></div></details>
+                        {[['history', 'All invoices'], ['families', 'Family accounts']].map(([view,label]) => (
+                            <Link
+                                key={view}
+                                href={`/dashboard/finance?${new URLSearchParams({ ...activeCentreParam, view })}`}
+                                aria-current={searchParams.view === view ? 'page' : undefined}
+                                className={`inline-flex min-h-9 items-center px-3 py-1.5 rounded-lg font-semibold transition-colors ${
+                                    searchParams.view === view ? 'bg-surface text-foreground shadow-xs border border-border/80' : 'text-muted-foreground hover:text-foreground'
+                                }`}
+                            >
+                                {label}
+                            </Link>
+                        ))}
+                        <Link
+                            href={isValidUuid(activeCentreId) ? `/dashboard/finance/receipt?${new URLSearchParams(activeCentreParam)}` : '/dashboard/finance/receipt'}
+                            className="inline-flex min-h-9 items-center px-3 py-1.5 rounded-lg font-semibold text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                            Parent receipts
+                        </Link>
+                        <details className="relative">
+                            <summary className="flex min-h-9 cursor-pointer items-center px-2.5 py-1.5 rounded-lg font-semibold text-muted-foreground hover:text-foreground">More</summary>
+                            <div className="absolute right-0 top-10 z-20 w-64 rounded-xl border border-border bg-card p-3 shadow-lg">
+                                <Link href={`/dashboard/finance?${new URLSearchParams({ ...activeCentreParam, view:'former' })}`} className="block py-1.5 text-xs font-medium text-foreground hover:text-accent transition-colors">Paused / stopped balances</Link>
+                            </div>
+                        </details>
                     </nav>
                     <Suspense fallback={<div className="w-[180px] h-[44px] bg-secondary/60 rounded-2xl animate-pulse" />}>
                         <FinanceDashboardFilters centres={orgCentres} />
