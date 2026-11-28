@@ -263,16 +263,13 @@ export default async function ActivityTab({ searchParams, org, activeCentreId, a
         <div className="space-y-6 animate-in fade-in duration-500 slide-in-from-bottom-2 h-full">
             {!isFunnelOnly && !isFeedOnly && (
                 <div className="flex items-center justify-between">
-                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">
                         Activity — {dateLabel}
                     </p>
                     {pipelineCounts.new > 0 && (
-                        <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-[10px] font-black text-amber-700 dark:text-amber-400 uppercase tracking-widest">
-                            <span className="relative flex h-1.5 w-1.5">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-500 opacity-75" />
-                                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-500" />
-                            </span>
-                            {pipelineCounts.new} pending review
+                        <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-[10px] font-semibold text-amber-800 dark:text-amber-300 uppercase tracking-wider">
+                            <span className="inline-flex rounded-full h-1.5 w-1.5 bg-amber-600 dark:bg-amber-400" />
+                            <span className="tabular-nums font-bold">{pipelineCounts.new}</span> pending review
                         </span>
                     )}
                 </div>
@@ -289,19 +286,19 @@ export default async function ActivityTab({ searchParams, org, activeCentreId, a
                 )}>
                     <div className={cn(
                         "absolute -right-4 -top-4 w-32 h-32 rounded-full blur-3xl pointer-events-none transition-colors",
-                        pipelineCounts.new > 0 ? "bg-amber-500/[0.08]" : "bg-primary/5"
+                        pipelineCounts.new > 0 ? "bg-amber-500/[0.08]" : "bg-accent-soft/40"
                     )} />
 
                     <div className="flex items-center justify-between relative z-10">
                         <div>
-                            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+                            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">
                                 Registration Funnel
                             </p>
                             <p className="text-xs text-muted-foreground font-medium mt-0.5">
                                 Pipeline health
                             </p>
                         </div>
-                        <span className="px-2 py-0.5 rounded-full bg-secondary border border-border text-[10px] font-black text-muted-foreground tabular-nums">
+                        <span className="px-2 py-0.5 rounded-full bg-secondary border border-border text-[10px] font-semibold text-muted-foreground tabular-nums">
                             {totalRegistrations} total
                         </span>
                     </div>
@@ -311,10 +308,10 @@ export default async function ActivityTab({ searchParams, org, activeCentreId, a
                             <div className="w-full rounded-xl p-4 border bg-secondary border-border transition-all duration-300">
                                 <div className="flex items-end justify-between">
                                     <div>
-                                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+                                        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">
                                             Submitted
                                         </p>
-                                        <p className="text-3xl font-black text-foreground tabular-nums leading-none mt-1">
+                                        <p className="text-3xl font-bold text-foreground tabular-nums leading-none mt-1">
                                             {totalRegistrations}
                                         </p>
                                     </div>
@@ -325,7 +322,7 @@ export default async function ActivityTab({ searchParams, org, activeCentreId, a
 
                         <div className="flex flex-col items-center py-1.5 gap-1">
                             <div className="w-px h-2 bg-border" />
-                            <span className="px-2.5 py-0.5 rounded-full bg-secondary border border-border text-[10px] font-black text-muted-foreground tabular-nums">
+                            <span className="px-2.5 py-0.5 rounded-full bg-secondary border border-border text-[10px] font-semibold text-muted-foreground tabular-nums">
                                 ↓ {totalRegistrations > 0 ? Math.round(((pipelineCounts.new + pipelineCounts.approved) / totalRegistrations) * 100) : 0}% active
                             </span>
                             <div className="w-px h-2 bg-border" />
@@ -339,20 +336,17 @@ export default async function ActivityTab({ searchParams, org, activeCentreId, a
                                 <div className="flex items-end justify-between">
                                     <div>
                                         <p className={cn(
-                                            "text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5",
-                                            pipelineCounts.new > 0 ? "text-amber-700 dark:text-amber-400" : "text-muted-foreground"
+                                            "text-[10px] font-semibold uppercase tracking-wider flex items-center gap-1.5",
+                                            pipelineCounts.new > 0 ? "text-amber-800 dark:text-amber-300" : "text-muted-foreground"
                                         )}>
                                             Pending Review
                                             {pipelineCounts.new > 0 && (
-                                                <span className="relative flex h-1.5 w-1.5">
-                                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-500 opacity-75" />
-                                                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-500" />
-                                                </span>
+                                                <span className="inline-flex rounded-full h-1.5 w-1.5 bg-amber-600 dark:bg-amber-400" />
                                             )}
                                         </p>
                                         <p className={cn(
-                                            "text-3xl font-black tabular-nums leading-none mt-1",
-                                            pipelineCounts.new > 0 ? "text-amber-700 dark:text-amber-400" : "text-foreground"
+                                            "text-3xl font-bold tabular-nums leading-none mt-1",
+                                            pipelineCounts.new > 0 ? "text-amber-800 dark:text-amber-300" : "text-foreground"
                                         )}>
                                             {pipelineCounts.new}
                                         </p>
@@ -360,7 +354,7 @@ export default async function ActivityTab({ searchParams, org, activeCentreId, a
                                     {oldestPending && pipelineCounts.new > 0 && (
                                         <div className="text-right">
                                             <p className="text-[10px] text-muted-foreground font-medium">Oldest</p>
-                                            <p className="text-xs font-black text-amber-700 dark:text-amber-400 tabular-nums">
+                                            <p className="text-xs font-bold text-amber-800 dark:text-amber-300 tabular-nums">
                                                 {relativeTime(oldestPending.submittedAt)}
                                             </p>
                                         </div>
@@ -371,7 +365,7 @@ export default async function ActivityTab({ searchParams, org, activeCentreId, a
 
                         <div className="flex flex-col items-center py-1.5 gap-1">
                             <div className="w-px h-2 bg-border" />
-                            <span className="px-2.5 py-0.5 rounded-full bg-secondary border border-border text-[10px] font-black text-muted-foreground tabular-nums">
+                            <span className="px-2.5 py-0.5 rounded-full bg-secondary border border-border text-[10px] font-semibold text-muted-foreground tabular-nums">
                                 ↓ {approvalRate}% approved
                             </span>
                             <div className="w-px h-2 bg-border" />
@@ -381,10 +375,10 @@ export default async function ActivityTab({ searchParams, org, activeCentreId, a
                             <div className="w-full rounded-xl p-4 border bg-emerald-500/10 border-emerald-500/20 transition-all duration-300">
                                 <div className="flex items-end justify-between">
                                     <div>
-                                        <p className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-widest">
+                                        <p className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-widest">
                                             Approved
                                         </p>
-                                        <p className="text-3xl font-black text-emerald-700 dark:text-emerald-400 tabular-nums leading-none mt-1">
+                                        <p className="text-3xl font-bold text-emerald-700 dark:text-emerald-400 tabular-nums leading-none mt-1">
                                             {pipelineCounts.approved}
                                         </p>
                                     </div>
@@ -414,24 +408,24 @@ export default async function ActivityTab({ searchParams, org, activeCentreId, a
 
                     <div className="flex items-center justify-between relative z-10">
                         <div>
-                            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+                            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">
                                 Sessions &amp; Bookings
                             </p>
                             <p className="text-xs text-muted-foreground font-medium mt-0.5">
                                 {dateLabel}
                             </p>
                         </div>
-                        <span className="px-2 py-0.5 rounded-full bg-secondary border border-border text-[10px] font-black text-muted-foreground tabular-nums">
+                        <span className="px-2 py-0.5 rounded-full bg-secondary border border-border text-[10px] font-semibold text-muted-foreground tabular-nums">
                             {recentBookingsWithNotes.length} shown
                         </span>
                     </div>
 
                     <div className="flex items-end justify-between relative z-10 p-4 rounded-xl bg-secondary/40 border border-border">
                         <div>
-                            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+                            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">
                                 {currentView === 'weekly' ? 'This Week' : 'This Month'}
                             </p>
-                            <p className="text-3xl font-black text-foreground tabular-nums leading-none mt-1">
+                            <p className="text-3xl font-bold text-foreground tabular-nums leading-none mt-1">
                                 {currentView === 'weekly' ? bookingsThisWeek : bookingsThisMonth}
                             </p>
                             <p className="text-xs text-muted-foreground font-medium mt-1">bookings</p>
@@ -452,7 +446,7 @@ export default async function ActivityTab({ searchParams, org, activeCentreId, a
                     </div>
 
                     <div className="flex flex-col flex-1 relative z-10">
-                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-3">Bookings: {dateLabel}</p>
+                        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-3">Bookings: {dateLabel}</p>
                         {recentBookingsWithNotes.length > 0 ? (
                             <div className="space-y-2">
                                 {recentBookingsWithNotes.map((b: any) => (
@@ -488,11 +482,11 @@ export default async function ActivityTab({ searchParams, org, activeCentreId, a
                                                     )}
                                                     {b.hasSafeguardingNote && (
                                                         <div className="relative group/tooltip flex items-center outline-none">
-                                                            <div className="flex items-center justify-center w-5 h-5 rounded-full bg-primary/10 border border-primary/20 cursor-help">
-                                                                <Shield className="w-3 h-3 text-primary" />
+                                                            <div className="flex items-center justify-center w-5 h-5 rounded-full bg-accent-soft border border-accent/25 cursor-help">
+                                                                <Shield className="w-3 h-3 text-accent" />
                                                             </div>
                                                             <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover/tooltip:block w-56 p-2.5 bg-popover border border-border text-foreground text-xs rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-[60] whitespace-pre-wrap leading-relaxed font-medium">
-                                                                <div className="font-bold text-primary mb-1 border-b border-border pb-1 flex items-center gap-1.5"><Shield className="w-3 h-3"/>Safeguarding Alert</div>
+                                                                <div className="font-bold text-accent mb-1 border-b border-border pb-1 flex items-center gap-1.5"><Shield className="w-3 h-3"/>Safeguarding Alert</div>
                                                                 {b.safeguardingNotesContent}
                                                                 <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-popover"></div>
                                                             </div>
@@ -516,7 +510,7 @@ export default async function ActivityTab({ searchParams, org, activeCentreId, a
                                     <p className="text-sm font-medium text-muted-foreground">No bookings for this period</p>
                                     <p className="text-xs text-muted-foreground/60 mt-1">Schedule a session to see it here</p>
                                 </div>
-                                <Link href="/dashboard/bookings/new" className="mt-1 inline-flex items-center min-h-6 min-w-6 py-1 text-xs font-semibold text-primary hover:underline">Create a booking →</Link>
+                                <Link href="/dashboard/bookings/new" className="mt-1 inline-flex items-center min-h-6 min-w-6 py-1 text-xs font-semibold text-accent hover:underline">Create a booking →</Link>
                             </div>
                         )}
                     </div>
@@ -527,18 +521,18 @@ export default async function ActivityTab({ searchParams, org, activeCentreId, a
                 </div>
 
                 <div className={cn("bg-surface border border-border p-6 rounded-xl relative overflow-hidden", "hover:border-accent/30 transition-all duration-300 flex flex-col gap-6")}>
-                    <div className="absolute -right-4 -top-4 w-28 h-28 bg-primary/[0.04] rounded-full blur-3xl pointer-events-none" />
+                    <div className="absolute -right-4 -top-4 w-28 h-28 bg-accent/[0.04] rounded-full blur-3xl pointer-events-none" />
 
                     <div className="flex items-center justify-between relative z-10">
                         <div>
-                            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+                            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">
                                 Registrations
                             </p>
                             <p className="text-xs text-muted-foreground font-medium mt-0.5">
                                 {dateLabel}
                             </p>
                         </div>
-                        <span className={cn("px-2.5 py-1 rounded-full text-[10px] font-black tabular-nums border", pipelineCounts.new > 0 ? "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20" : "bg-secondary text-muted-foreground border-border")}>
+                        <span className={cn("px-2.5 py-1 rounded-full text-[10px] font-bold tabular-nums border", pipelineCounts.new > 0 ? "bg-amber-500/10 text-amber-800 dark:text-amber-300 border-amber-500/20" : "bg-secondary text-muted-foreground border-border")}>
                             {recentRegistrations.length} shown
                         </span>
                     </div>
@@ -549,13 +543,13 @@ export default async function ActivityTab({ searchParams, org, activeCentreId, a
                                 {recentRegistrations.map((r: any, i: any) => (
                                     <Link key={`${r.registrationId}-${i}`} href={`/dashboard/registrations/${r.registrationId}`} className="flex items-center justify-between p-3 rounded-xl bg-card hover:bg-secondary/60 border border-border transition-colors duration-150 active:scale-[0.99] cursor-pointer group">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-black text-xs shrink-0">
+                                            <div className="w-9 h-9 rounded-full bg-accent-soft flex items-center justify-center text-accent font-semibold text-xs shrink-0">
                                                 {(r.childFirst || '')[0] || ''}{(r.childLast || '')[0] || ''}
                                             </div>
                                             <div>
                                                 <div className="flex items-center gap-2 flex-wrap">
                                                     <p className="text-sm font-bold text-foreground">{r.childFirst} {r.childLast}</p>
-                                                    <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border", r.status === 'awaiting_confirmation' ? "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20" : r.status === 'signed_up' ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20" : "bg-secondary text-muted-foreground border-border")}>
+                                                    <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider border", r.status === 'awaiting_confirmation' ? "bg-amber-500/10 text-amber-800 dark:text-amber-300 border-amber-500/20" : r.status === 'signed_up' ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20" : "bg-secondary text-muted-foreground border-border")}>
                                                         {r.status === 'awaiting_confirmation' ? 'Pending' : r.status === 'signed_up' ? 'Approved' : 'Other'}
                                                     </span>
                                                 </div>
@@ -564,7 +558,7 @@ export default async function ActivityTab({ searchParams, org, activeCentreId, a
                                                 </p>
                                             </div>
                                         </div>
-                                        <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
+                                        <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-accent transition-colors shrink-0" />
                                     </Link>
                                 ))}
                             </div>
@@ -575,19 +569,19 @@ export default async function ActivityTab({ searchParams, org, activeCentreId, a
                                     <p className="text-sm font-medium text-muted-foreground">No registrations for this period</p>
                                     <p className="text-xs text-muted-foreground/60 mt-1">Share your registration link to get started</p>
                                 </div>
-                                <Link href={registrationLink} className="mt-1 inline-flex items-center min-h-6 min-w-6 py-1 text-xs font-semibold text-primary hover:underline">Open registration form →</Link>
+                                <Link href={registrationLink} className="mt-1 inline-flex items-center min-h-6 min-w-6 py-1 text-xs font-semibold text-accent hover:underline">Open registration form →</Link>
                             </div>
                         )}
                     </div>
 
                     <div className="flex flex-col gap-2 relative z-10">
-                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+                        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">
                             Public Registration Link
                         </p>
                         <CopyableLink link={registrationLink} />
                     </div>
 
-                    <Link href="/dashboard/registrations" className="mt-auto flex items-center justify-center gap-2 py-2.5 rounded-full bg-primary/10 text-primary text-sm font-semibold hover:bg-primary/20 transition-colors border border-primary/20 relative z-10 group/btn">
+                    <Link href="/dashboard/registrations" className="mt-auto flex items-center justify-center gap-2 py-2.5 rounded-full bg-accent-soft text-accent text-sm font-semibold hover:bg-accent-soft/80 transition-colors border border-accent/25 relative z-10 group/btn">
                         View All Registrations <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
                     </Link>
                 </div>

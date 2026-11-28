@@ -272,7 +272,7 @@ export default async function FinancePage(props: {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-semibold text-foreground tracking-tight">
+                    <h1 className="text-page-title text-text">
                         {outgoingsView
                             ? 'Outgoings & expenses'
                             : cashflowView
@@ -386,7 +386,7 @@ export default async function FinancePage(props: {
             {workspaceView && <FinanceWorkspace key={activeCentreId} invoices={serialize(workspaceInvoices)} cycles={serializedBillingCycles} today={todayStr} invoiceError={hasFetchError} cycleError={cycleFetchError}/>}
 
             {/* Main Finance Data Grid & KPI Summary */}
-            {!workspaceView && !familyView && !ledgerView && <Suspense fallback={<div className="h-[400px] bg-secondary/20 rounded-3xl animate-pulse border border-border/60" />}>
+            {!workspaceView && !familyView && !ledgerView && <Suspense fallback={<div className="h-[400px] bg-secondary/20 rounded-xl animate-pulse border border-border/60" />}>
                 <FinanceDataGridClient 
                     invoices={serializedInvoices}
                     totalCount={totalInvoices}
@@ -398,14 +398,14 @@ export default async function FinancePage(props: {
             </Suspense>}
 
             {/* Billing Cycles Section */}
-            {familyView && <div id="family-billing-overview" className="scroll-mt-24 bg-card/80 backdrop-blur-md border border-border/60 shadow-sm rounded-3xl p-6 sm:p-8 animate-in slide-in-from-bottom-4 duration-500 delay-150">
+            {familyView && <div id="family-billing-overview" className="scroll-mt-24 bg-surface border border-border shadow-xs rounded-xl p-6 sm:p-8 animate-in slide-in-from-bottom-4 duration-500 delay-150">
                 <div className="flex items-center justify-between mb-6">
                     <h2 className="text-xl font-bold text-foreground flex items-center gap-2.5 tracking-tight">
-                        <CreditCard className="w-5 h-5 text-primary" aria-hidden="true" />
+                        <CreditCard className="w-5 h-5 text-accent" aria-hidden="true" />
                         Family accounts
                     </h2>
                 </div>
-                <Link className="mb-4 inline-block text-sm text-primary underline" href={`/dashboard/finance?${new URLSearchParams({ ...activeCentreParam })}`}>Back to daily tasks</Link>
+                <Link className="mb-4 inline-block text-sm text-accent underline" href={`/dashboard/finance?${new URLSearchParams({ ...activeCentreParam })}`}>Back to daily tasks</Link>
                 {cycleFetchError ? <p role="alert" className="text-sm text-destructive">Couldn’t load billing schedules. Refresh to try again.</p> : <BillingCyclesTab
                     cycles={searchParams.family ? serializedBillingCycles.filter(cycle => cycle.config.parentId === searchParams.family) : serializedBillingCycles}
                     centreId={activeCentreId}

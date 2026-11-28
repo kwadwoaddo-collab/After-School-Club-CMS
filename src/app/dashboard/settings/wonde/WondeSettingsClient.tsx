@@ -33,10 +33,10 @@ export default function WondeSettingsClient({ orgName, lastSync }: { orgName: st
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
-                <div className="bg-card border border-border rounded-3xl p-6 md:p-8 shadow-sm">
+                <div className="bg-card border border-border rounded-xl p-6 md:p-8 shadow-sm">
                     <div className="flex items-center gap-4 mb-6">
-                        <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center">
-                            <Key className="w-6 h-6 text-primary" />
+                        <div className="w-12 h-12 bg-accent-soft rounded-xl flex items-center justify-center">
+                            <Key className="w-6 h-6 text-accent" />
                         </div>
                         <div>
                             <h2 className="text-xl font-bold text-foreground">API Configuration</h2>
@@ -48,7 +48,7 @@ export default function WondeSettingsClient({ orgName, lastSync }: { orgName: st
                         <div>
                             <div className="flex items-center justify-between mb-2">
                                 <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider">School ID / Access Token</label>
-                                <span className="px-2 py-0.5 bg-amber-500/10 text-amber-600 border border-amber-500/20 rounded-full text-[10px] font-bold uppercase tracking-wider">Coming Soon</span>
+                                <span className="px-2 py-0.5 bg-amber-500/10 text-amber-800 dark:text-amber-300 border border-amber-500/20 rounded-full text-[10px] font-bold uppercase tracking-wider">Coming Soon</span>
                             </div>
                             <input
                                 type="password"
@@ -59,20 +59,21 @@ export default function WondeSettingsClient({ orgName, lastSync }: { orgName: st
                             <p className="text-xs text-muted-foreground mt-2">Token storage and rotation will be available in a future update.</p>
                         </div>
                         <button
+                            type="button"
                             disabled
                             title="Token management coming soon"
-                            className="px-5 py-2.5 bg-secondary text-foreground font-bold rounded-xl text-sm border border-border opacity-50 cursor-not-allowed"
+                            className="min-h-11 sm:min-h-10 px-5 py-2.5 bg-secondary text-foreground font-bold rounded-lg text-sm border border-border opacity-50 cursor-not-allowed"
                         >
                             Update Token
                         </button>
                     </div>
                 </div>
 
-                <div className="bg-card border border-border rounded-3xl p-6 md:p-8 shadow-sm">
+                <div className="bg-card border border-border rounded-xl p-6 md:p-8 shadow-sm">
                     <div className="flex items-center justify-between mb-6">
                         <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center">
-                                <Database className="w-6 h-6 text-primary" />
+                            <div className="w-12 h-12 bg-accent-soft rounded-xl flex items-center justify-center">
+                                <Database className="w-6 h-6 text-accent" />
                             </div>
                             <div>
                                 <h2 className="text-xl font-bold text-foreground">Manual Sync</h2>
@@ -80,9 +81,10 @@ export default function WondeSettingsClient({ orgName, lastSync }: { orgName: st
                             </div>
                         </div>
                         <button
+                            type="button"
                             onClick={handleSync}
                             disabled={isSyncing}
-                            className="px-6 py-3 bg-primary text-primary-foreground font-bold rounded-xl hover:bg-primary/90 transition-colors flex items-center gap-2 shadow-sm disabled:opacity-50"
+                            className="min-h-11 sm:min-h-10 px-6 py-3 bg-accent text-accent-foreground font-bold rounded-lg hover:bg-accent-hover transition-colors flex items-center gap-2 shadow-xs disabled:opacity-50"
                         >
                             {isSyncing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
                             Sync Now
@@ -113,12 +115,12 @@ export default function WondeSettingsClient({ orgName, lastSync }: { orgName: st
             </div>
 
             <div className="space-y-6">
-                <div className="bg-card border border-border rounded-3xl p-6 shadow-sm">
+                <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
                     <h3 className="font-bold text-foreground mb-4">Integration Status</h3>
                     <div className="space-y-4">
                         <div className="flex justify-between items-center py-2 border-b border-border">
                             <span className="text-sm text-muted-foreground">Status</span>
-                            <span className="px-2.5 py-1 bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs font-bold rounded-full border border-amber-500/20">
+                            <span className="px-2.5 py-1 bg-amber-500/10 text-amber-800 dark:text-amber-300 text-xs font-bold rounded-full border border-amber-500/20">
                                 Not Connected (API Key Required)
                             </span>
                         </div>

@@ -24,7 +24,7 @@ export default async function DashboardKpisWidget({
         ]);
     } catch (e) {
         logger.error('Failed to load KPIs:', e);
-        return <div className="text-red-400 p-4 bg-red-400/10 rounded-xl">Failed to load statistics</div>;
+        return <div role="alert" className="text-red-700 dark:text-red-400 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-sm font-medium">Failed to load statistics</div>;
     }
 
     const [
