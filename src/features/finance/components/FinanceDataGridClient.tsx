@@ -378,15 +378,15 @@ export default function FinanceDataGridClient({ invoices = [], totalCount = 0, p
 
                 <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto justify-end">
                     {selectedInvoices.size > 0 && (
-                        <div className="flex items-center gap-3 bg-primary/10 border border-primary/20 px-3.5 py-1.5 rounded-2xl animate-in fade-in duration-200">
-                            <span className="text-xs font-bold text-primary">
+                        <div className="flex items-center gap-3 bg-accent-soft border border-accent/25 px-3.5 py-1.5 rounded-lg animate-in fade-in duration-200">
+                            <span className="text-xs font-bold text-accent">
                                 {selectedInvoices.size} selected ({eligibleBulkPayItems.length} payable)
                             </span>
                             <button 
                                 type="button"
                                 onClick={handleOpenBulkPayModal}
                                 disabled={eligibleBulkPayItems.length === 0}
-                                className="bg-primary text-primary-foreground px-3.5 py-1.5 rounded-xl text-xs font-bold shadow-sm hover:bg-primary/90 disabled:opacity-50 transition-all active:scale-95 flex items-center gap-1.5"
+                                className="bg-accent text-accent-foreground px-3.5 py-1.5 rounded-md text-xs font-bold shadow-xs hover:bg-accent-hover disabled:opacity-50 transition-all flex items-center gap-1.5"
                             >
                                 <CreditCard className="w-3.5 h-3.5" aria-hidden="true" />
                                 Lump Sum Payment
@@ -405,7 +405,7 @@ export default function FinanceDataGridClient({ invoices = [], totalCount = 0, p
                         <button
                             type="button"
                             onClick={() => setIsCreateModalOpen(true)}
-                            className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-primary text-primary-foreground text-xs font-bold shadow-sm shadow-primary/20 hover:bg-primary/90 transition-all active:scale-95"
+                            className="flex items-center gap-2 min-h-11 sm:min-h-10 px-5 py-2.5 rounded-md bg-accent text-accent-foreground text-xs font-bold shadow-xs hover:bg-accent-hover transition-all"
                         >
                             <Plus className="w-4 h-4" aria-hidden="true" />
                             Create Invoice
@@ -417,7 +417,7 @@ export default function FinanceDataGridClient({ invoices = [], totalCount = 0, p
             {/* Data Grid Table */}
             <div className="bg-card/90 backdrop-blur-md border border-border/60 rounded-2xl overflow-hidden shadow-sm transition-all duration-300">
                 <p className="px-4 py-2 text-xs text-muted-foreground border-b border-border">Each row is one invoice. Billing period is the service covered; Created is when the record was made. Scroll for actions.</p>
-                <div role="region" aria-label="Invoices table, scroll for more columns" tabIndex={0} className="overflow-x-auto focus-visible:outline-2 focus-visible:outline-primary">
+                <div role="region" aria-label="Invoices table, scroll for more columns" tabIndex={0} className="overflow-x-auto focus-visible:outline-2 focus-visible:outline-accent">
                     <table className="w-full min-w-[760px] text-left border-collapse">
                         <thead>
                             <tr className="border-b border-border/60 bg-secondary/30 text-muted-foreground text-[11px] font-bold uppercase tracking-wider">
@@ -425,7 +425,7 @@ export default function FinanceDataGridClient({ invoices = [], totalCount = 0, p
                                     <input 
                                         type="checkbox" 
                                         aria-label="Select all invoices on this page"
-                                        className="rounded border-border accent-primary w-4 h-4 cursor-pointer"
+                                        className="rounded border-border accent-accent w-4 h-4 cursor-pointer"
                                         checked={selectedInvoices.size === invoices.length && invoices.length > 0}
                                         onChange={toggleAll}
                                     />
@@ -459,33 +459,33 @@ export default function FinanceDataGridClient({ invoices = [], totalCount = 0, p
                                 return (
                                     <tr 
                                         key={invoice.id} 
-                                        className={`hover:bg-secondary/20 transition-all duration-150 cursor-pointer ${selectedInvoices.has(invoice.id) ? 'bg-primary/5' : ''}`}
+                                        className={`hover:bg-secondary/20 transition-all duration-150 cursor-pointer ${selectedInvoices.has(invoice.id) ? 'bg-accent-soft/50' : ''}`}
                                         onClick={() => toggleSelection(invoice.id)}
                                     >
                                         <td className="p-4 text-center" onClick={(e) => e.stopPropagation()}>
                                             <input 
                                                 type="checkbox" 
                                                 aria-label={`Select invoice ${invoice.invoiceNumber}`}
-                                                className="rounded border-border accent-primary w-4 h-4 cursor-pointer"
+                                                className="rounded border-border accent-accent w-4 h-4 cursor-pointer"
                                                 checked={selectedInvoices.has(invoice.id)}
                                                 onChange={() => toggleSelection(invoice.id)}
                                             />
                                         </td>
-                                        <td className="p-4 font-bold text-primary">
-                                            <Link href={`/dashboard/finance/invoices/${invoice.id}`} onClick={event => event.stopPropagation()} className="hover:underline hover:text-primary/80 transition-colors whitespace-nowrap">{invoice.invoiceNumber}</Link>
+                                        <td className="p-4 font-bold text-accent">
+                                            <Link href={`/dashboard/finance/invoices/${invoice.id}`} onClick={event => event.stopPropagation()} className="hover:underline hover:text-accent-hover transition-colors whitespace-nowrap">{invoice.invoiceNumber}</Link>
                                             <p className="text-xs font-normal text-muted-foreground whitespace-nowrap">{invoice.createdAt ? 'Created' : 'Invoice date'} {formatInvoiceDate(invoice.createdAt || invoice.invoiceDate)}</p>
                                         </td>
                                         <td className="p-4">
                                             <div className="font-bold text-foreground whitespace-nowrap">
                                                 {invoice.parent ? (
-                                                    <Link href={`/dashboard/parents/${invoice.parent.id}`} className="hover:underline hover:text-primary transition-colors" onClick={(e) => e.stopPropagation()}>
+                                                    <Link href={`/dashboard/parents/${invoice.parent.id}`} className="hover:underline hover:text-accent transition-colors" onClick={(e) => e.stopPropagation()}>
                                                         {invoice.parent.firstName} {invoice.parent.lastName}
                                                     </Link>
                                                 ) : null}
                                             </div>
                                             {invoice.child && (
                                                 <div className="text-xs text-muted-foreground font-medium whitespace-nowrap">
-                                                    <Link href={`/dashboard/students/${invoice.child.id}`} className="hover:underline hover:text-primary transition-colors" onClick={(e) => e.stopPropagation()}>
+                                                    <Link href={`/dashboard/students/${invoice.child.id}`} className="hover:underline hover:text-accent transition-colors" onClick={(e) => e.stopPropagation()}>
                                                         {invoice.child.firstName} {invoice.child.lastName}
                                                     </Link>
                                                 </div>
@@ -600,7 +600,7 @@ export default function FinanceDataGridClient({ invoices = [], totalCount = 0, p
                                 id="bulk-payment-method"
                                 value={bulkPaymentMethod}
                                 onChange={(e) => setBulkPaymentMethod(e.target.value as 'bank_transfer' | 'cash' | 'card' | 'tax_free_childcare')}
-                                className="w-full px-3.5 py-2.5 bg-background border border-border rounded-xl text-sm font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                className="w-full px-3.5 py-2.5 bg-background border border-border rounded-xl text-sm font-medium text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
                             >
                                 <option value="bank_transfer">Bank Transfer (BACS)</option>
                                 <option value="cash">Cash</option>
@@ -622,7 +622,7 @@ export default function FinanceDataGridClient({ invoices = [], totalCount = 0, p
                                 type="button"
                                 disabled={isSubmittingBulkPay || eligibleBulkPayItems.length === 0}
                                 onClick={handleBulkPay}
-                                className="px-5 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold shadow-sm hover:bg-primary/90 disabled:opacity-50 transition-all"
+                                className="px-5 py-2 rounded-md bg-accent text-accent-foreground text-xs font-bold shadow-xs hover:bg-accent-hover disabled:opacity-50 transition-all"
                             >
                                 {isSubmittingBulkPay ? 'Recording...' : `Confirm £${formatPenceToDecimal(totalBulkPayPence)} Payment`}
                             </button>

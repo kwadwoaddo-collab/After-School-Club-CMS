@@ -431,7 +431,7 @@ export default function CommunicationsClient({
 
             {activeTab === 'compose' && (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div className="lg:col-span-2 bg-card border border-border rounded-3xl p-6 md:p-8 shadow-sm">
+                    <div className="lg:col-span-2 bg-card border border-border rounded-xl p-6 md:p-8 shadow-sm">
                         <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
                             <div>
                                 <h2 className="text-xl font-bold text-foreground">Compose Message</h2>
@@ -441,7 +441,7 @@ export default function CommunicationsClient({
                             </div>
                             <div className="flex flex-wrap items-center gap-2">
                                 {centreName && (
-                                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
+                                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-accent-soft text-accent border border-accent/25">
                                         Sending for: {centreName}
                                     </span>
                                 )}
@@ -514,7 +514,7 @@ export default function CommunicationsClient({
                                     value={subject}
                                     onChange={(e) => setSubject(e.target.value)}
                                     placeholder="e.g. Important Update: Centre Closure Tomorrow"
-                                    className="w-full px-4 py-3 bg-card border border-border rounded-xl text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
+                                    className="w-full px-4 py-3 bg-card border border-border rounded-xl text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-accent/30 focus-visible:border-accent transition-all"
                                     required
                                 />
                             </div>
@@ -526,7 +526,7 @@ export default function CommunicationsClient({
                                     onChange={(e) => setMessage(e.target.value)}
                                     rows={8}
                                     placeholder="Type your message here..."
-                                    className="w-full px-4 py-3 bg-card border border-border rounded-xl text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all resize-y"
+                                    className="w-full px-4 py-3 bg-card border border-border rounded-xl text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-accent/30 focus-visible:border-accent transition-all resize-y"
                                     required
                                 />
                             </div>
@@ -563,7 +563,7 @@ export default function CommunicationsClient({
                                     <button
                                         type="submit"
                                         disabled={isSending || isLoading || loadError || sendUnknown || consentedCount === 0}
-                                        className="px-6 py-3 bg-primary text-primary-foreground font-bold rounded-xl hover:bg-primary/90 transition-all shadow-sm flex items-center gap-2 disabled:opacity-50"
+                                        className="min-h-11 sm:min-h-10 px-6 py-3 bg-accent text-accent-foreground font-bold rounded-lg hover:bg-accent-hover transition-all shadow-xs flex items-center gap-2 disabled:opacity-50"
                                     >
                                         {isSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                                         Send Broadcast
@@ -574,10 +574,10 @@ export default function CommunicationsClient({
                     </div>
 
                     <div className="space-y-6">
-                        <div className="bg-card border border-border rounded-3xl p-6 shadow-sm">
+                        <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
                             <div className="flex items-center gap-3 mb-6">
-                                <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
-                                    <Users className="w-5 h-5 text-primary" />
+                                <div className="w-10 h-10 bg-accent-soft rounded-xl flex items-center justify-center">
+                                    <Users className="w-5 h-5 text-accent" />
                                 </div>
                                 <div>
                                     <h3 className="font-bold text-foreground">Recipient Picker</h3>
@@ -591,7 +591,7 @@ export default function CommunicationsClient({
                                     id="broadcast-target-class"
                                     value={selectedClassId}
                                     onChange={(e) => setSelectedClassId(e.target.value)}
-                                    className="w-full px-4 py-3 bg-secondary/30 border border-border rounded-xl text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer"
+                                    className="w-full px-4 py-3 bg-secondary/30 border border-border rounded-xl text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-accent/30 transition-all cursor-pointer"
                                 >
                                     <option value="all">All Parents</option>
                                     {classes.map(c => (
@@ -628,7 +628,7 @@ export default function CommunicationsClient({
             )}
 
             {activeTab === 'history' && (
-                <div className="bg-card border border-border rounded-3xl overflow-hidden shadow-sm">
+                <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
                     <div className="overflow-x-auto">
                     <table className="w-full min-w-[640px] text-sm text-left">
                         <thead className="bg-secondary/40 border-b border-border">
@@ -652,14 +652,14 @@ export default function CommunicationsClient({
                                 <tr>
                                     <td colSpan={6} className="p-6">
                                         <div className="bg-surface border border-border rounded-xl p-12 text-center flex flex-col items-center gap-4">
-                                          <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
-                                            <MessageSquare className="w-8 h-8 text-primary" />
+                                          <div className="w-16 h-16 rounded-xl bg-accent-soft flex items-center justify-center">
+                                            <MessageSquare className="w-8 h-8 text-accent" />
                                           </div>
                                           <div>
                                             <p className="text-lg font-black text-foreground">No messages yet</p>
                                             <p className="text-sm text-muted-foreground mt-1">Send your first broadcast to parents and staff</p>
                                           </div>
-                                          <button onClick={() => setActiveTab('compose')} className="px-6 py-3 bg-primary text-primary-foreground font-bold rounded-2xl text-sm hover:opacity-90 transition-opacity">
+                                          <button type="button" onClick={() => setActiveTab('compose')} className="min-h-11 sm:min-h-10 px-6 py-3 bg-accent text-accent-foreground font-bold rounded-lg text-sm hover:bg-accent-hover transition-all shadow-xs">
                                             Compose Message
                                           </button>
                                         </div>
@@ -879,7 +879,7 @@ export default function CommunicationsClient({
                                                         {d.parentId ? (
                                                             <Link
                                                                 href={`/dashboard/parents/${d.parentId}`}
-                                                                className="font-semibold text-foreground hover:text-primary hover:underline transition-colors block truncate"
+                                                                className="font-semibold text-foreground hover:text-accent hover:underline transition-colors block truncate"
                                                             >
                                                                 {d.recipientName || 'Parent'}
                                                             </Link>

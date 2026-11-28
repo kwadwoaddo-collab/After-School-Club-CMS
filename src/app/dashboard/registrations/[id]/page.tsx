@@ -6,7 +6,7 @@ import { db } from '@/db';
 import { registrations, organisations, centres, children, authorisedCollectors } from '@/db/schema';
 import { eq, and, inArray } from 'drizzle-orm';
 import Link from 'next/link';
-import { Building2 } from 'lucide-react';
+import { Building2, Check } from 'lucide-react';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { isValidUuid } from '@/lib/uuid';
 import RegistrationStatusUpdater from './StatusUpdater';
@@ -15,7 +15,7 @@ import EditRegistrationForm from './EditRegistrationForm';
 import BackButton from './BackButton';
 
 const STATUS_BADGE: Record<string, string> = {
-    awaiting_confirmation: 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20',
+    awaiting_confirmation: 'bg-amber-500/10 text-amber-800 dark:text-amber-300 border border-amber-500/20',
     signed_up: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20',
     not_interested: 'bg-secondary text-muted-foreground border border-border',
 };
@@ -145,12 +145,12 @@ export default async function RegistrationDetailPage({ params }: { params: Promi
             <div className="flex items-start justify-between mb-8 flex-wrap gap-4">
                 <div>
                     <div className="flex items-center gap-2.5 flex-wrap">
-                        <h1 className="text-2xl font-black text-foreground">
+                        <h1 className="text-page-title text-text">
                             {primary ? (
                                 primary.parentId ? (
                                     <Link
                                         href={`/dashboard/parents/${primary.parentId}`}
-                                        className="hover:text-primary hover:underline underline-offset-4 transition-colors"
+                                        className="hover:text-accent hover:underline underline-offset-4 transition-colors"
                                     >
                                         {primary.submittedFirstName} {primary.submittedLastName}
                                     </Link>
@@ -160,17 +160,17 @@ export default async function RegistrationDetailPage({ params }: { params: Promi
                             ) : 'Registration'}
                         </h1>
                         {centreName && (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 text-xs font-bold">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-accent-soft text-accent border border-accent/25 text-xs font-bold">
                                 <Building2 className="w-3.5 h-3.5" />
                                 {centreName}
-                                {centreOfstedId && <span className="text-primary/70 font-normal">· Ofsted: {centreOfstedId}</span>}
+                                {centreOfstedId && <span className="text-text-secondary font-normal">· Ofsted: {centreOfstedId}</span>}
                             </span>
                         )}
                         {reg.bookingId ? (
                             <Link
                                 href={`/dashboard/bookings/${reg.bookingId}`}
                                 title="View linked assessment booking"
-                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors text-xs font-bold"
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-accent-soft text-accent border border-accent/25 hover:bg-accent-soft/80 transition-colors text-xs font-bold"
                             >
                                 Via Assessment
                             </Link>
@@ -301,7 +301,7 @@ export default async function RegistrationDetailPage({ params }: { params: Promi
                                                 {k.childId ? (
                                                     <Link
                                                         href={`/dashboard/students/${k.childId}`}
-                                                        className="text-foreground font-bold hover:text-primary hover:underline transition-colors"
+                                                        className="text-foreground font-bold hover:text-accent hover:underline transition-colors"
                                                     >
                                                         {k.submittedFirstName} {k.submittedLastName}
                                                     </Link>
@@ -315,7 +315,7 @@ export default async function RegistrationDetailPage({ params }: { params: Promi
                                             {k.childId && (
                                                 <Link
                                                     href={`/dashboard/students/${k.childId}#enrolment-follow-up`}
-                                                    className="text-xs font-medium text-primary hover:text-primary/80 hover:underline transition-colors"
+                                                    className="text-xs font-medium text-accent hover:text-accent-hover hover:underline transition-colors"
                                                 >
                                                     View Student Profile &amp; Enrolment →
                                                 </Link>
@@ -343,13 +343,13 @@ export default async function RegistrationDetailPage({ params }: { params: Promi
                                                     <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Consents</p>
                                                     <div className="flex flex-wrap gap-2">
                                                         <span className={`text-xs font-medium px-2.5 py-1 rounded-full border ${childRecord.photoConsent ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20' : 'bg-secondary text-muted-foreground border-border'}`}>
-                                                            Photo Consent: {childRecord.photoConsent ? 'Yes ✓' : 'No'}
+                                                            Photo Consent: {childRecord.photoConsent ? <>Yes <Check className="w-3 h-3 inline-block ml-1 -mt-0.5" aria-hidden="true" /></> : 'No'}
                                                         </span>
                                                         <span className={`text-xs font-medium px-2.5 py-1 rounded-full border ${childRecord.sunCreamConsent ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20' : 'bg-secondary text-muted-foreground border-border'}`}>
-                                                            Sun Cream: {childRecord.sunCreamConsent ? 'Yes ✓' : 'No'}
+                                                            Sun Cream: {childRecord.sunCreamConsent ? <>Yes <Check className="w-3 h-3 inline-block ml-1 -mt-0.5" aria-hidden="true" /></> : 'No'}
                                                         </span>
                                                         <span className={`text-xs font-medium px-2.5 py-1 rounded-full border ${childRecord.firstAidConsent ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20' : 'bg-secondary text-muted-foreground border-border'}`}>
-                                                            Emergency First Aid: {childRecord.firstAidConsent ? 'Yes ✓' : 'No'}
+                                                            Emergency First Aid: {childRecord.firstAidConsent ? <>Yes <Check className="w-3 h-3 inline-block ml-1 -mt-0.5" aria-hidden="true" /></> : 'No'}
                                                         </span>
                                                     </div>
                                                 </div>
@@ -357,7 +357,7 @@ export default async function RegistrationDetailPage({ params }: { params: Promi
                                                 {/* Authorised Collectors */}
                                                 <div className="pt-2 border-t border-border/50">
                                                     <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-                                                        Authorised Collectors ({collectors.length})
+                                                        Authorised Collectors (<span className="tabular-nums">{collectors.length}</span>)
                                                     </p>
                                                     {collectors.length === 0 ? (
                                                         <p className="text-xs text-muted-foreground">No additional authorised collectors listed.</p>

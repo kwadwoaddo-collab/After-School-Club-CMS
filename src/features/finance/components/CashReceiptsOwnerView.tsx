@@ -549,7 +549,7 @@ export default function CashReceiptsOwnerView({
             <button
               type="submit"
               disabled={isPending}
-              className={`inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50 ${focusRing}`}
+              className={`inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground transition-colors hover:bg-accent-hover disabled:opacity-50 ${focusRing}`}
             >
               <Plus aria-hidden="true" className="h-4 w-4" />
               <span>{isPending ? 'Saving...' : 'Add'}</span>
@@ -584,7 +584,7 @@ export default function CashReceiptsOwnerView({
             aria-current={ledger.activeCentreId === 'all' ? 'page' : undefined}
             className={`inline-flex min-h-10 items-center gap-2 rounded-xl border px-3.5 py-2 text-sm font-medium transition-colors ${focusRing} ${
               ledger.activeCentreId === 'all'
-                ? 'border-primary bg-primary text-primary-foreground'
+                ? 'border-accent bg-accent text-accent-foreground'
                 : 'border-border bg-card text-foreground hover:bg-secondary'
             }`}
           >
@@ -592,7 +592,7 @@ export default function CashReceiptsOwnerView({
             <span
               className={`rounded-md px-2 py-0.5 text-xs font-semibold tabular-nums ${
                 ledger.activeCentreId === 'all'
-                  ? 'bg-primary-foreground/20 text-primary-foreground'
+                  ? 'bg-accent-foreground/20 text-accent-foreground'
                   : 'bg-secondary text-muted-foreground'
               }`}
             >
@@ -610,7 +610,7 @@ export default function CashReceiptsOwnerView({
                 aria-current={isSelected ? 'page' : undefined}
                 className={`inline-flex min-h-10 items-center gap-2 rounded-xl border px-3.5 py-2 text-sm font-medium transition-colors ${focusRing} ${
                   isSelected
-                    ? 'border-primary bg-primary text-primary-foreground'
+                    ? 'border-accent bg-accent text-accent-foreground'
                     : 'border-border bg-card text-foreground hover:bg-secondary'
                 }`}
               >
@@ -618,7 +618,7 @@ export default function CashReceiptsOwnerView({
                 <span
                   className={`rounded-md px-2 py-0.5 text-xs font-semibold tabular-nums ${
                     isSelected
-                      ? 'bg-primary-foreground/20 text-primary-foreground'
+                      ? 'bg-accent-foreground/20 text-accent-foreground'
                       : 'bg-secondary text-muted-foreground'
                   }`}
                 >
@@ -716,7 +716,7 @@ export default function CashReceiptsOwnerView({
           {!ledger.isViewingCurrentMonth && (
             <Link
               href={buildCashflowHref({ month: ledger.currentMonth })}
-              className={`inline-flex min-h-10 items-center rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/15 ${focusRing}`}
+              className={`inline-flex min-h-10 items-center rounded-xl border border-accent/30 bg-accent-soft px-3 py-2 text-xs font-semibold text-accent hover:bg-accent-soft/80 ${focusRing}`}
             >
               Jump to current month
             </Link>
@@ -804,7 +804,7 @@ export default function CashReceiptsOwnerView({
                   <div
                     key={c.centreId}
                     style={{ width: `${c.incomeSharePercent}%` }}
-                    className={idx === 0 ? 'bg-primary' : 'bg-emerald-500'}
+                    className={idx === 0 ? 'bg-accent' : 'bg-emerald-500'}
                   />
                 ))}
               </div>
@@ -899,7 +899,7 @@ export default function CashReceiptsOwnerView({
               <dt className="text-sm font-medium text-muted-foreground">
                 {ytd.selectedYear} Yearly Running Total
               </dt>
-              <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary tabular-nums">
+              <span className="inline-flex items-center rounded-full bg-accent-soft px-2.5 py-0.5 text-xs font-semibold text-accent tabular-nums">
                 {ytd.rangeLabel}
               </span>
             </div>
@@ -1031,7 +1031,7 @@ export default function CashReceiptsOwnerView({
                     <tr
                       className={
                         week.state === 'current'
-                          ? 'bg-primary/5 transition-colors hover:bg-primary/10'
+                          ? 'bg-accent-soft/40 transition-colors hover:bg-accent-soft/70'
                           : week.state === 'upcoming'
                             ? 'bg-card/60 text-muted-foreground transition-colors hover:bg-secondary/30'
                             : 'bg-card transition-colors hover:bg-secondary/30'
@@ -1046,7 +1046,7 @@ export default function CashReceiptsOwnerView({
                             Week {week.weekNumber}: {week.weekRangeLabel}
                           </span>
                           {week.state === 'current' && (
-                            <span className="inline-flex items-center rounded-full bg-primary/15 px-2 py-0.5 text-xs font-semibold text-primary">
+                            <span className="inline-flex items-center rounded-full bg-accent-soft px-2 py-0.5 text-xs font-semibold text-accent">
                               Current week
                             </span>
                           )}
@@ -1199,7 +1199,7 @@ export default function CashReceiptsOwnerView({
                           aria-controls={`week-drilldown-${week.weekNumber}`}
                           className={`inline-flex min-h-9 items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium tabular-nums transition-colors ${focusRing} ${
                             hasAnyEntries
-                              ? 'border-border bg-card text-primary hover:bg-secondary'
+                              ? 'border-border bg-card text-accent hover:bg-secondary'
                               : 'border-border/60 bg-card/40 text-muted-foreground hover:bg-secondary/50'
                           }`}
                         >
@@ -1255,7 +1255,7 @@ export default function CashReceiptsOwnerView({
                                       }
                                       className={`rounded-md px-2.5 py-1 text-xs font-medium tabular-nums ${focusRing} ${
                                         scope === 'in_month'
-                                          ? 'bg-primary text-primary-foreground'
+                                          ? 'bg-accent text-accent-foreground'
                                           : 'text-muted-foreground hover:text-foreground'
                                       }`}
                                     >
@@ -1273,7 +1273,7 @@ export default function CashReceiptsOwnerView({
                                       }
                                       className={`rounded-md px-2.5 py-1 text-xs font-medium tabular-nums ${focusRing} ${
                                         scope === 'full_week'
-                                          ? 'bg-primary text-primary-foreground'
+                                          ? 'bg-accent text-accent-foreground'
                                           : 'text-muted-foreground hover:text-foreground'
                                       }`}
                                     >
@@ -1287,7 +1287,7 @@ export default function CashReceiptsOwnerView({
                                   <button
                                     type="button"
                                     onClick={() => openWeekInlineAdd(week)}
-                                    className={`inline-flex min-h-8 items-center gap-1 rounded-lg border border-primary/30 bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary hover:bg-primary/15 ${focusRing}`}
+                                    className={`inline-flex min-h-8 items-center gap-1 rounded-lg border border-accent/30 bg-accent-soft px-2.5 py-1 text-xs font-semibold text-accent hover:bg-accent-soft/80 ${focusRing}`}
                                   >
                                     <Plus aria-hidden="true" className="h-3.5 w-3.5" />
                                     <span>Add outgoing to Week {week.weekNumber}</span>
@@ -1425,7 +1425,7 @@ export default function CashReceiptsOwnerView({
                                       <button
                                         type="submit"
                                         disabled={isPending}
-                                        className={`min-h-9 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50 ${focusRing}`}
+                                        className={`min-h-9 rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-accent-foreground hover:bg-accent-hover disabled:opacity-50 ${focusRing}`}
                                       >
                                         Save
                                       </button>
@@ -1549,7 +1549,7 @@ export default function CashReceiptsOwnerView({
                                                     type="button"
                                                     disabled={isPending}
                                                     onClick={() => handleSaveExpenseEdit(exp.id)}
-                                                    className={`rounded-md bg-primary px-2.5 py-1 text-xs font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50 ${focusRing}`}
+                                                    className={`rounded-md bg-accent px-2.5 py-1 text-xs font-semibold text-accent-foreground hover:bg-accent-hover disabled:opacity-50 ${focusRing}`}
                                                   >
                                                     Save
                                                   </button>
@@ -1621,7 +1621,7 @@ export default function CashReceiptsOwnerView({
                                                   <button
                                                     type="button"
                                                     onClick={() => startEditingExpense(exp)}
-                                                    className={`text-xs font-medium text-primary hover:underline ${focusRing}`}
+                                                    className={`text-xs font-medium text-accent hover:underline ${focusRing}`}
                                                   >
                                                     Edit
                                                   </button>
@@ -1705,7 +1705,7 @@ export default function CashReceiptsOwnerView({
                                           <td className="px-3 py-2.5">
                                             <Link
                                               href={`/dashboard/parents/${payment.parentId}`}
-                                              className={`font-medium text-primary hover:underline ${focusRing}`}
+                                              className={`font-medium text-accent hover:underline ${focusRing}`}
                                             >
                                               {payment.parentName}
                                             </Link>
@@ -1722,7 +1722,7 @@ export default function CashReceiptsOwnerView({
                                                     )}
                                                     <Link
                                                       href={`/dashboard/students/${s.id}`}
-                                                      className={`text-primary hover:underline ${focusRing}`}
+                                                      className={`text-accent hover:underline ${focusRing}`}
                                                     >
                                                       {s.name}
                                                     </Link>
@@ -1741,7 +1741,7 @@ export default function CashReceiptsOwnerView({
                                           <td className="px-3 py-2.5 whitespace-nowrap">
                                             <Link
                                               href={`/dashboard/finance/invoices/${payment.invoiceId}`}
-                                              className={`font-medium text-primary hover:underline ${focusRing}`}
+                                              className={`font-medium text-accent hover:underline ${focusRing}`}
                                             >
                                               {payment.invoiceNumber}
                                             </Link>
@@ -1877,7 +1877,7 @@ export default function CashReceiptsOwnerView({
                   key={row.yearMonth}
                   className={
                     row.isSelectedMonth
-                      ? 'bg-primary/5 font-medium'
+                      ? 'bg-accent-soft/40 font-medium'
                       : 'bg-card transition-colors hover:bg-secondary/30'
                   }
                 >
@@ -1888,12 +1888,12 @@ export default function CashReceiptsOwnerView({
                     <div className="flex items-center gap-2">
                       <Link
                         href={buildCashflowHref({ month: row.yearMonth })}
-                        className={`text-primary hover:underline ${focusRing}`}
+                        className={`text-accent hover:underline ${focusRing}`}
                       >
                         {row.monthLabel}
                       </Link>
                       {row.isCurrentMonth && (
-                        <span className="inline-flex items-center rounded-full bg-primary/15 px-2 py-0.5 text-xs font-semibold text-primary">
+                        <span className="inline-flex items-center rounded-full bg-accent-soft px-2 py-0.5 text-xs font-semibold text-accent">
                           Current MTD
                         </span>
                       )}

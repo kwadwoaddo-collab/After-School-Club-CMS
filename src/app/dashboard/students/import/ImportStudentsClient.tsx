@@ -87,7 +87,7 @@ function StepIndicator({ current }: { current: number }) {
               {label}
             </div>
             {i < steps.length - 1 && (
-              <ArrowRight className={cn('w-3.5 h-3.5 mx-1', done ? 'text-emerald-500' : 'text-text-muted/40')} />
+              <ArrowRight className={cn('w-3.5 h-3.5 mx-1', done ? 'text-emerald-700 dark:text-emerald-400' : 'text-text-muted/40')} />
             )}
           </div>
         );
@@ -371,7 +371,7 @@ export default function ImportStudentsClient({ centres }: { centres: Centre[] })
                   <>
                     {hasDuplication && (
                       <div className="p-3.5 bg-amber-500/10 border border-amber-500/30 rounded-md flex items-start gap-2.5 text-xs text-amber-800 dark:text-amber-300">
-                        <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                        <AlertCircle className="w-4 h-4 text-amber-700 dark:text-amber-400 flex-shrink-0 mt-0.5" />
                         <div>
                           <strong className="font-semibold block mb-0.5">High Name Duplication Detected in Preview</strong>
                           <span>One or more rows have identical first and last names. Please ensure you have mapped distinct columns for first and last names.</span>
@@ -382,8 +382,8 @@ export default function ImportStudentsClient({ centres }: { centres: Centre[] })
                     <div className="p-4 bg-page rounded-md border border-border-subtle space-y-3">
                       <div className="flex items-center justify-between">
                         <p className="text-label text-text-muted flex items-center gap-1.5">
-                          <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                          Import Preview (First {previewRows.length} Rows)
+                          <Sparkles className="w-3.5 h-3.5 text-amber-700 dark:text-amber-400" />
+                          Import Preview (First <span className="tabular-nums">{previewRows.length}</span> Rows)
                         </p>
                         <span className="text-[11px] text-text-muted">Target Centre: <strong className="text-text">{selectedCentreName}</strong></span>
                       </div>

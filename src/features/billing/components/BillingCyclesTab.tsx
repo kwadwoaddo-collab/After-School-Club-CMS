@@ -23,19 +23,19 @@ function useOptionalToast() {
 
 function StatusPill({ status }: { status: BillingCycleRow['cycleStatus'] }) {
     const map = {
-        ready:    { label: 'Draft preparation due',        cls: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20' },
-        draft_due: { label: 'Draft preparation due', cls: 'bg-primary/10 text-primary border-primary/20' },
-        draft_review: { label: 'Draft awaiting review', cls: 'bg-primary/10 text-primary border-primary/20' },
+        ready:    { label: 'Draft preparation due',        cls: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20' },
+        draft_due: { label: 'Draft preparation due', cls: 'bg-accent-soft text-accent border-accent/25' },
+        draft_review: { label: 'Draft awaiting review', cls: 'bg-accent-soft text-accent border-accent/25' },
         scheduled: { label: 'Scheduled — no action yet', cls: 'bg-secondary/60 text-muted-foreground border-border/50' },
-        needs_setup:          { label: 'Needs Setup',          cls: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20' },
-        data_review_required: { label: 'Data Review Required', cls: 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30' },
-        invoice_sent:         { label: 'Invoice issued',         cls: 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20' },
+        needs_setup:          { label: 'Needs Setup',          cls: 'bg-amber-500/10 text-amber-800 dark:text-amber-300 border-amber-500/20' },
+        data_review_required: { label: 'Data Review Required', cls: 'bg-amber-500/10 text-amber-800 dark:text-amber-300 border-amber-500/30' },
+        invoice_sent:         { label: 'Invoice issued',         cls: 'bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/20' },
         paused:       { label: 'Paused',       cls: 'bg-secondary/60 text-muted-foreground border-border/50' },
         skipped:      { label: 'Skipped',      cls: 'bg-muted/60 text-muted-foreground border-border/50' },
     };
     const { label, cls } = map[status];
     return (
-        <span className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider border ${cls}`}>
+        <span className={`px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wider border ${cls}`}>
             {label}
         </span>
     );
@@ -114,7 +114,7 @@ function FamilyBillingCard({ cycle, onGenerated }: { cycle: BillingCycleRow; onG
                         <Link
                             key={c.childId}
                             href={`/dashboard/students/${c.childId}`}
-                            className="px-2.5 py-1 bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20 rounded-xl text-[10px] font-bold transition-colors"
+                            className="px-2.5 py-1 bg-accent-soft text-accent hover:bg-accent-soft/80 border border-accent/25 rounded-md text-[10px] font-bold transition-colors"
                         >
                             {c.childName}
                         </Link>
@@ -141,7 +141,7 @@ function FamilyBillingCard({ cycle, onGenerated }: { cycle: BillingCycleRow; onG
 
     return (
         <>
-            <div className={`bg-card/80 backdrop-blur-md rounded-3xl border shadow-sm overflow-hidden transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 flex flex-col justify-between ${
+            <div className={`bg-surface rounded-xl border shadow-xs overflow-hidden transition-all duration-200 flex flex-col justify-between ${
                 cycle.cycleStatus === 'paused' || cycle.cycleStatus === 'skipped' ? 'opacity-60 border-border/40' :
                 cycle.cycleStatus === 'data_review_required' ? 'border-amber-500/40 bg-amber-500/5' :
                 cycle.cycleStatus === 'needs_setup' ? 'border-amber-500/30 bg-amber-500/5' : 'border-border/60'
@@ -152,7 +152,7 @@ function FamilyBillingCard({ cycle, onGenerated }: { cycle: BillingCycleRow; onG
                         <div className="flex-1 min-w-0">
                             <Link
                                 href={`/dashboard/parents/${cycle.config.parentId}`}
-                                className="text-base font-bold text-foreground hover:text-primary hover:underline transition-colors block truncate tracking-tight"
+                                className="text-base font-bold text-foreground hover:text-accent hover:underline transition-colors block truncate tracking-tight"
                             >
                                 {cycle.familyName}
                             </Link>
@@ -167,7 +167,7 @@ function FamilyBillingCard({ cycle, onGenerated }: { cycle: BillingCycleRow; onG
 
                     {/* Card body */}
                     <div className="px-5 pb-2 space-y-2 text-sm">
-                        {!cycle.familySummary && <p className="text-sm text-muted-foreground">Monthly fee: {cycle.amountDisplay}</p>}
+                        {!cycle.familySummary && <p className="text-sm text-muted-foreground">Monthly fee: <span className="tabular-nums font-semibold">{cycle.amountDisplay}</span></p>}
                         {cycle.cycleStatus === 'data_review_required' && (
                             <p className="text-xs text-amber-700 dark:text-amber-400 font-medium flex items-start gap-1.5 pt-1">
                                 <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
@@ -175,7 +175,7 @@ function FamilyBillingCard({ cycle, onGenerated }: { cycle: BillingCycleRow; onG
                             </p>
                         )}
                         {cycle.cycleStatus === 'needs_setup' && (
-                            <p className="text-xs text-amber-600 dark:text-amber-400 font-bold flex items-center gap-1.5 pt-1">
+                            <p className="text-xs text-amber-800 dark:text-amber-300 font-bold flex items-center gap-1.5 pt-1">
                                 <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
                                 Set a monthly fee on student profile
                             </p>
@@ -194,7 +194,7 @@ function FamilyBillingCard({ cycle, onGenerated }: { cycle: BillingCycleRow; onG
                     </FamilyBillingSummary>
                 ) : (
                     <details className="mx-5 mb-3 text-sm">
-                        <summary className="cursor-pointer py-2 font-medium text-primary">Show billing details</summary>
+                        <summary className="cursor-pointer py-2 font-medium text-accent">Show billing details</summary>
                         {cycleDetails}
                     </details>
                 )}
@@ -202,8 +202,9 @@ function FamilyBillingCard({ cycle, onGenerated }: { cycle: BillingCycleRow; onG
                 {/* Actions */}
                 <div className="px-5 pb-4 pt-1 flex gap-2">
                     <button
+                        type="button"
                         onClick={() => router.push(`/dashboard/parents/${cycle.config.parentId}?billing=setup`)}
-                        className="flex-1 h-10 rounded-xl bg-secondary/80 text-foreground text-xs font-bold hover:bg-secondary border border-border/50 transition-all flex items-center justify-center gap-1.5 active:scale-95"
+                        className="flex-1 min-h-11 sm:min-h-10 rounded-lg bg-secondary/80 text-foreground text-xs font-bold hover:bg-secondary border border-border/50 transition-all flex items-center justify-center gap-1.5"
                     >
                         <Settings2 className="w-3.5 h-3.5" />
                         Family billing
@@ -212,7 +213,7 @@ function FamilyBillingCard({ cycle, onGenerated }: { cycle: BillingCycleRow; onG
                         <button
                             disabled={isSkipping}
                             onClick={handleUnskip}
-                            className="flex-1 h-10 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs font-bold hover:bg-amber-500/20 border border-amber-500/20 transition-all flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50"
+                            className="flex-1 min-h-11 sm:min-h-10 rounded-lg bg-amber-500/10 text-amber-800 dark:text-amber-300 text-xs font-bold hover:bg-amber-500/20 border border-amber-500/20 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
                         >
                             {isSkipping ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
                             Unskip
@@ -223,18 +224,19 @@ function FamilyBillingCard({ cycle, onGenerated }: { cycle: BillingCycleRow; onG
                                 <button
                                     disabled={isSkipping}
                                     onClick={() => setShowSkipModal(true)}
-                                    className="px-3 h-10 rounded-xl bg-secondary/80 text-muted-foreground hover:text-foreground text-xs font-bold hover:bg-secondary border border-border/50 transition-all active:scale-95"
+                                    className="px-3 min-h-11 sm:min-h-10 rounded-lg bg-secondary/80 text-muted-foreground hover:text-foreground text-xs font-bold hover:bg-secondary border border-border/50 transition-all"
                                     title="Skip this cycle"
                                 >
                                     Skip
                                 </button>
                             )}
-                            {cycle.cycleStatus === 'draft_review' && cycle.familySummary?.drafts[0] ? <Link href={`/dashboard/finance/invoices/${cycle.familySummary.drafts[0].id}`} className="flex-1 h-10 rounded-xl text-xs font-bold flex items-center justify-center bg-primary text-primary-foreground hover:bg-primary/90">Review draft</Link> : <button
+                            {cycle.cycleStatus === 'draft_review' && cycle.familySummary?.drafts[0] ? <Link href={`/dashboard/finance/invoices/${cycle.familySummary.drafts[0].id}`} className="flex-1 min-h-11 sm:min-h-10 rounded-lg text-xs font-bold flex items-center justify-center bg-accent text-accent-foreground hover:bg-accent-hover shadow-xs">Review draft</Link> : <button
+                                type="button"
                                 disabled={!canGenerate}
                                 onClick={() => setShowModal(true)}
-                                className={`flex-1 h-10 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 active:scale-95 ${
+                                className={`flex-1 min-h-11 sm:min-h-10 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
                                     canGenerate
-                                        ? 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm shadow-primary/20'
+                                        ? 'bg-accent text-accent-foreground hover:bg-accent-hover shadow-xs'
                                         : 'bg-secondary/60 text-muted-foreground cursor-not-allowed'
                                 }`}
                             >
@@ -276,7 +278,7 @@ function FamilyBillingCard({ cycle, onGenerated }: { cycle: BillingCycleRow; onG
                                 value={skipReason}
                                 onChange={e => setSkipReason(e.target.value)}
                                 placeholder="e.g., Extended family holiday"
-                                className="w-full px-3 py-2 text-sm rounded-xl border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
                             />
                         </div>
                         <div className="flex gap-2 justify-end pt-2">
@@ -289,7 +291,7 @@ function FamilyBillingCard({ cycle, onGenerated }: { cycle: BillingCycleRow; onG
                             <button
                                 disabled={isSkipping}
                                 onClick={handleSkip}
-                                className="px-4 py-2 rounded-xl text-xs font-bold bg-primary text-primary-foreground hover:bg-primary/90"
+                                className="min-h-11 sm:min-h-10 px-4 py-2 rounded-lg text-xs font-bold bg-accent text-accent-foreground hover:bg-accent-hover shadow-xs"
                             >
                                 {isSkipping ? 'Skipping...' : 'Confirm Skip'}
                             </button>
@@ -374,7 +376,7 @@ export default function BillingCyclesTab({ cycles, centreId }: Props) {
         <div className="space-y-5">
             <div className="rounded-2xl border border-border bg-card p-4 text-sm text-muted-foreground space-y-2">
                 <p>Billing includes confirmed signed-up students, or existing students explicitly confirmed by an Owner or Manager. Returning a registration form alone does not enable billing.</p>
-                <p>Prospective families stay in <Link href="/dashboard/registrations" className="text-primary underline">Registrations</Link> and <Link href="/dashboard/students" className="text-primary underline">Students</Link> for follow-up. Older or imported records without confirmation need review on the student profile. Existing invoices, payments and receipts remain available.</p>
+                <p>Prospective families stay in <Link href="/dashboard/registrations" className="text-accent underline">Registrations</Link> and <Link href="/dashboard/students" className="text-accent underline">Students</Link> for follow-up. Older or imported records without confirmation need review on the student profile. Existing invoices, payments and receipts remain available.</p>
             </div>
             <p className="text-sm text-muted-foreground">One card per family billing arrangement. Drafts are unissued invoices; outstanding totals include issued invoices only. Preparing drafts and issuing them are separate actions.</p>
             {/* Family filters and draft preparation */}
@@ -383,11 +385,12 @@ export default function BillingCyclesTab({ cycles, centreId }: Props) {
                     {(['all', 'draft_due', 'draft_review', 'scheduled', 'needs_setup', 'invoice_sent', 'skipped', 'data_review_required', 'paused'] as const).filter(f => !['data_review_required', 'paused'].includes(f) || counts[f] > 0).map(f => (
                         <button
                             key={f}
+                            type="button"
                             onClick={() => setFilter(f)}
-                            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                            className={`min-h-11 sm:min-h-10 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${
                                 filter === f
-                                    ? 'bg-primary text-primary-foreground border-primary shadow-sm'
-                                    : 'bg-card text-muted-foreground border-border hover:border-primary/30 hover:text-primary'
+                                    ? 'bg-accent text-accent-foreground border-accent shadow-xs'
+                                    : 'bg-card text-muted-foreground border-border hover:border-accent/30 hover:text-accent'
                             }`}
                         >
                             {{ all: 'All families', draft_due: 'Draft preparation due', draft_review: 'Drafts awaiting review', scheduled: 'Scheduled', needs_setup: 'Needs setup', invoice_sent: 'Invoice issued', skipped: 'Skipped', data_review_required: 'Needs review', paused: 'Paused' }[f]}
@@ -398,9 +401,10 @@ export default function BillingCyclesTab({ cycles, centreId }: Props) {
 
                 {counts.draft_due > 0 && (
                     <button 
+                        type="button"
                         disabled={isGeneratingAll}
                         onClick={() => setShowBulkConfirm(true)}
-                        className="flex items-center gap-2 h-10 px-4 rounded-xl bg-primary text-primary-foreground text-xs font-black hover:bg-primary/90 transition-all shadow-sm shadow-primary/20 active:scale-[0.97] disabled:opacity-50"
+                        className="flex items-center gap-2 min-h-11 sm:min-h-10 px-4 rounded-lg bg-accent text-accent-foreground text-xs font-bold hover:bg-accent-hover transition-all shadow-xs disabled:opacity-50"
                     >
                         {isGeneratingAll ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
                         Prepare eligible drafts ({counts.draft_due})

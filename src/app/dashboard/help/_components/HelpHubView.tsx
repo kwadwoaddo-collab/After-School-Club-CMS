@@ -83,15 +83,15 @@ export default function HelpHubView({
             </p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-accent-soft text-accent border border-accent/20">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-accent-soft text-accent border border-accent/20 tabular-nums">
               <Sparkles className="size-3.5" aria-hidden="true" />
               {totalGuideCount} Training Guides
             </span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-surface-elevated text-text-secondary border border-border">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-surface-elevated text-text-secondary border border-border tabular-nums">
               <Video className="size-3.5" aria-hidden="true" />
               {totalVideoCount} Training Videos
             </span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 tabular-nums">
               <Compass className="size-3.5" aria-hidden="true" />
               {totalPathCount} Learning Paths
             </span>
@@ -112,7 +112,7 @@ export default function HelpHubView({
       >
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-center">
           <div className="lg:col-span-2 space-y-3">
-            <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
+            <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-accent-soft text-accent border border-accent/25">
               <span>Operational Guidance</span>
             </div>
             <h2 className="text-xl sm:text-2xl font-bold text-text">
@@ -128,7 +128,7 @@ export default function HelpHubView({
           <div className="grid grid-cols-2 gap-3">
             <div className="p-3.5 rounded-lg border border-border bg-surface-elevated space-y-1">
               <div className="flex items-center gap-2 text-text font-semibold text-xs">
-                <CheckCircle2 className="size-4 text-emerald-500 shrink-0" />
+                <CheckCircle2 className="size-4 text-emerald-700 dark:text-emerald-400 shrink-0" />
                 <span>Standardised</span>
               </div>
               <p className="text-xs text-text-muted">Consistent staff operating procedures</p>
