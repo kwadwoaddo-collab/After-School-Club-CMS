@@ -49,7 +49,7 @@ function getStatusBadge(b: Broadcast) {
             );
         case 'QUEUED':
             return (
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/10 text-amber-800 dark:text-amber-300 border border-amber-500/20">
                     <Clock className="w-3 h-3" /> Queued
                 </span>
             );
@@ -61,7 +61,7 @@ function getStatusBadge(b: Broadcast) {
             );
         case 'COMPLETED':
             return (
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
                     <CheckCircle className="w-3 h-3" /> Sent
                 </span>
             );
@@ -113,6 +113,8 @@ export default function CommunicationsClient({
     const [classes, setClasses] = useState<ClubSession[]>(initialData?.classes ?? []);
     const [selectedClassId, setSelectedClassId] = useState<string>('all');
     const [selectedBroadcast, setSelectedBroadcast] = useState<Broadcast | null>(null);
+    const [queueFilter, setQueueFilter] = useState<"all" | "pending" | "sent">("all");
+    const [queueSearch, setQueueSearch] = useState("");
     const [deliveryDetails, setDeliveryDetails] = useState<DeliveryDetails | null>(null);
     const [isLoadingDetails, setIsLoadingDetails] = useState(false);
     const [isLoading, setIsLoading] = useState(!initialData);
@@ -134,7 +136,7 @@ export default function CommunicationsClient({
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [sendResult, setSendResult] = useState<{ success: boolean; count: number; sent: number; failed: number; status?: string; error?: string; channel?: 'email' | 'whatsapp' } | null>(null);
 
-    useDialogFocusTrap(Boolean(selectedBroadcast), broadcastDrawerRef, () => setSelectedBroadcast(null));
+    useDialogFocusTrap(Boolean(selectedBroadcast), broadcastDrawerRef, () => { setSelectedBroadcast(null); setQueueFilter("all"); setQueueSearch(""); });
 
     useEffect(() => {
         if (initialData && prevCentreIdRef.current === centreId) {
@@ -168,7 +170,7 @@ export default function CommunicationsClient({
     useEffect(() => {
         if (prevCentreIdRef.current !== centreId) {
             prevCentreIdRef.current = centreId;
-            setSelectedBroadcast(null);
+            { setSelectedBroadcast(null); setQueueFilter("all"); setQueueSearch(""); };
             setSendResult(null);
             setSendUnknown(false);
             setHandoffError(null);
@@ -609,7 +611,7 @@ export default function CommunicationsClient({
                                 </div>
                                 {composeChannel === 'whatsapp' && missingPhoneCount > 0 && (
                                     <p className="text-xs text-muted-foreground flex gap-1.5 mt-3 pt-3 border-t border-border/50">
-                                        <AlertCircle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
+                                        <AlertCircle className="w-3.5 h-3.5 text-amber-800 dark:text-amber-300 shrink-0" />
                                         <span>{missingPhoneCount} consented parent{missingPhoneCount > 1 ? 's' : ''} have no valid mobile number recorded.</span>
                                     </p>
                                 )}
@@ -697,7 +699,7 @@ export default function CommunicationsClient({
                 >
                     <div
                         className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity"
-                        onClick={() => setSelectedBroadcast(null)}
+                        onClick={() => { setSelectedBroadcast(null); setQueueFilter("all"); setQueueSearch(""); }}
                     />
                     <div ref={broadcastDrawerRef} tabIndex={-1} className="relative w-full max-w-lg bg-card shadow-2xl h-full flex flex-col animate-in slide-in-from-right duration-300 border-l border-border">
                         <div className="flex items-center justify-between p-6 border-b border-border">
@@ -707,13 +709,13 @@ export default function CommunicationsClient({
                                 </h2>
                                 <p className="text-xs text-muted-foreground mt-0.5">
                                     {selectedBroadcast.status === 'WHATSAPP_QUEUE'
-                                        ? 'Copy each message and paste it into WhatsApp Web, or use Open in WhatsApp (this can reload an open WhatsApp Web tab). Only Open in WhatsApp marks a parent as handled.'
+                                        ? 'Copy each message and paste it into WhatsApp Web, or use Open in WhatsApp (this can reload an open WhatsApp Web tab). Click Open in WhatsApp or Mark sent to mark a parent as handled.'
                                         : 'Delivery audit and recipient ledger'}
                                 </p>
                             </div>
                             <button
                                 type="button"
-                                onClick={() => setSelectedBroadcast(null)}
+                                onClick={() => { setSelectedBroadcast(null); setQueueFilter("all"); setQueueSearch(""); }}
                                 aria-label="Close broadcast details"
                                 className="min-h-[44px] min-w-[44px] flex items-center justify-center p-2 hover:bg-secondary/80 rounded-full transition-colors text-muted-foreground hover:text-foreground"
                             >
@@ -734,22 +736,22 @@ export default function CommunicationsClient({
 
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                                 <div className="bg-secondary/40 border border-border p-3 rounded-2xl text-center">
-                                    <div className="text-xl font-black text-foreground">{selectedBroadcast.recipientCount}</div>
+                                    <div className="text-xl font-black tabular-nums text-foreground">{selectedBroadcast.recipientCount}</div>
                                     <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mt-1">Total</div>
                                 </div>
                                 <div className="bg-success/10 border border-success/20 p-3 rounded-2xl text-center">
-                                    <div className="text-xl font-black text-success">{selectedBroadcast.successCount}</div>
+                                    <div className="text-xl font-black tabular-nums text-success">{selectedBroadcast.successCount}</div>
                                     <div className="text-[10px] font-bold text-success/80 uppercase tracking-wider mt-1">Sent</div>
                                 </div>
                                 <div className="bg-destructive/10 border border-destructive/20 p-3 rounded-2xl text-center">
-                                    <div className="text-xl font-black text-destructive">{selectedBroadcast.failureCount}</div>
+                                    <div className="text-xl font-black tabular-nums text-destructive">{selectedBroadcast.failureCount}</div>
                                     <div className="text-[10px] font-bold text-destructive/80 uppercase tracking-wider mt-1">Failed</div>
                                 </div>
                                 <div className="bg-amber-500/10 border border-amber-500/20 p-3 rounded-2xl text-center">
-                                    <div className="text-xl font-black text-amber-600 dark:text-amber-400">
+                                    <div className="text-xl font-black tabular-nums text-amber-800 dark:text-amber-300">
                                         {Math.max(0, (selectedBroadcast.recipientCount || 0) - (selectedBroadcast.successCount || 0) - (selectedBroadcast.failureCount || 0))}
                                     </div>
-                                    <div className="text-[10px] font-bold text-amber-600/80 dark:text-amber-400/80 uppercase tracking-wider mt-1">Pending</div>
+                                    <div className="text-[10px] font-bold text-amber-800/80 dark:text-amber-300/80 uppercase tracking-wider mt-1">Pending</div>
                                 </div>
                             </div>
 
@@ -776,9 +778,84 @@ export default function CommunicationsClient({
                                         <p>We couldn’t load delivery details. This does not mean the message failed to send.</p>
                                         <button type="button" onClick={() => void handleSelectBroadcast(selectedBroadcast)} className="mt-2 min-h-10 font-semibold underline">Try loading delivery details again</button>
                                     </div>
-                                ) : deliveryDetails && deliveryDetails.deliveries.length > 0 ? (
-                                    <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
-                                        {deliveryDetails.deliveries.map((d) => {
+                                ) : deliveryDetails && deliveryDetails.deliveries.length > 0 ? (() => {
+                                    const totalDeliveries = deliveryDetails.deliveries.length;
+                                    const sentDeliveries = deliveryDetails.deliveries.filter((d) => d.status === "SENT").length;
+                                    const pendingDeliveries = totalDeliveries - sentDeliveries;
+                                    const filteredDeliveries = deliveryDetails.deliveries.filter((d) => {
+                                        if (queueFilter === "sent" && d.status !== "SENT") return false;
+                                        if (queueFilter === "pending" && d.status === "SENT") return false;
+                                        if (queueSearch.trim()) {
+                                            const q = queueSearch.trim().toLowerCase();
+                                            const name = (d.recipientName || "").toLowerCase();
+                                            const contact = (d.recipientEmail || "").toLowerCase();
+                                            if (!name.includes(q) && !contact.includes(q)) return false;
+                                        }
+                                        return true;
+                                    });
+
+                                    return (
+                                        <div className="space-y-3">
+                                            {selectedBroadcast.status === "WHATSAPP_QUEUE" && (
+                                                <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
+                                                    <div className="flex bg-secondary/60 p-1 rounded-xl border border-border gap-1" role="group" aria-label="Filter queue deliveries">
+                                                        <button
+                                                            type="button"
+                                                            aria-pressed={queueFilter === "all"}
+                                                            onClick={() => setQueueFilter("all")}
+                                                            className={`min-h-11 sm:min-h-9 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                                                                queueFilter === "all"
+                                                                    ? "bg-card text-foreground shadow-xs border border-border/80"
+                                                                    : "text-muted-foreground hover:text-foreground"
+                                                            }`}
+                                                        >
+                                                            All <span className="tabular-nums">({totalDeliveries})</span>
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            aria-pressed={queueFilter === "pending"}
+                                                            onClick={() => setQueueFilter("pending")}
+                                                            className={`min-h-11 sm:min-h-9 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                                                                queueFilter === "pending"
+                                                                    ? "bg-card text-foreground shadow-xs border border-border/80"
+                                                                    : "text-muted-foreground hover:text-foreground"
+                                                            }`}
+                                                        >
+                                                            Pending <span className="tabular-nums">({pendingDeliveries})</span>
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            aria-pressed={queueFilter === "sent"}
+                                                            onClick={() => setQueueFilter("sent")}
+                                                            className={`min-h-11 sm:min-h-9 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                                                                queueFilter === "sent"
+                                                                    ? "bg-card text-foreground shadow-xs border border-border/80"
+                                                                    : "text-muted-foreground hover:text-foreground"
+                                                            }`}
+                                                        >
+                                                            Sent <span className="tabular-nums">({sentDeliveries})</span>
+                                                        </button>
+                                                    </div>
+                                                    <div className="relative flex-1 sm:max-w-xs">
+                                                        <input
+                                                            type="search"
+                                                            aria-label="Search recipients in queue"
+                                                            placeholder="Filter parent or phone…"
+                                                            value={queueSearch}
+                                                            onChange={(e) => setQueueSearch(e.target.value)}
+                                                            className="w-full min-h-11 sm:min-h-9 px-3 py-1.5 bg-secondary/40 border border-border rounded-md text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                                                {filteredDeliveries.length === 0 ? (
+                                                    <div className="text-center py-6 text-xs text-muted-foreground">
+                                                        No recipients match the selected filter.
+                                                    </div>
+                                                ) : (
+                                                    filteredDeliveries.map((d) => {
                                             const isWhatsAppRow = d.channel === 'whatsapp' || String(d.recipientEmail || '').startsWith('whatsapp:');
                                             const rawPhoneFromRecipient = String(d.recipientEmail || '').startsWith('whatsapp:')
                                                 ? String(d.recipientEmail).slice('whatsapp:'.length)
@@ -850,7 +927,7 @@ export default function CommunicationsClient({
                                                             <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
                                                                 d.status === 'SENT' ? 'bg-success/10 text-success' :
                                                                 d.status === 'FAILED' ? 'bg-destructive/10 text-destructive' :
-                                                                'bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                                                                'bg-amber-500/10 text-amber-800 dark:text-amber-300'
                                                             }`}>
                                                                 {d.status === 'AWAITING_HANDOFF' ? 'READY' : d.status}
                                                             </span>
@@ -861,9 +938,12 @@ export default function CommunicationsClient({
                                                     </div>
                                                 </div>
                                             );
-                                        })}
-                                    </div>
-                                ) : (
+                                                    })
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })() : (
                                     <div className="p-4 text-center text-xs text-muted-foreground border border-dashed border-border rounded-xl">
                                         No individual delivery records found.
                                     </div>

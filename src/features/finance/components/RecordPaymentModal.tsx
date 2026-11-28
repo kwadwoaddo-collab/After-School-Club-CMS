@@ -9,6 +9,43 @@ import { usePaymentIdempotency } from '../hooks/use-payment-idempotency';
 import { useToast } from '@/components/ui/ToastProvider';
 import { useDialogFocusTrap } from '@/components/ui/useDialogFocusTrap';
 
+
+const PAYMENT_METHOD_LABELS: Record<string, string> = {
+    cash: "Cash",
+    bank_transfer: "Bank Transfer",
+    card: "Card",
+    stripe: "Stripe Online",
+    tax_free_childcare: "Tax-Free Childcare",
+    childcare_voucher: "Childcare Voucher",
+    voucher: "Childcare Voucher",
+    other: "Other",
+};
+
+const PAYMENT_STATUS_LABELS: Record<string, string> = {
+    verified: "Verified",
+    pending: "Pending",
+    reversed: "Reversed",
+    failed: "Failed",
+};
+
+function formatPaymentMethod(method: string | null | undefined): string {
+    if (!method) return "Unknown";
+    if (PAYMENT_METHOD_LABELS[method]) return PAYMENT_METHOD_LABELS[method];
+    return method
+        .split("_")
+        .map((w) => (w ? w[0].toUpperCase() + w.slice(1).toLowerCase() : ""))
+        .join(" ");
+}
+
+function formatPaymentStatus(status: string | null | undefined): string {
+    if (!status) return "Unknown";
+    if (PAYMENT_STATUS_LABELS[status]) return PAYMENT_STATUS_LABELS[status];
+    return status
+        .split("_")
+        .map((w) => (w ? w[0].toUpperCase() + w.slice(1).toLowerCase() : ""))
+        .join(" ");
+}
+
 interface RecordPaymentModalProps {
     invoiceId: string;
     invoiceNumber: string;
@@ -108,8 +145,8 @@ export default function RecordPaymentModal({
 
     const methods = [
         { id: 'bank_transfer', label: 'Bank Transfer', icon: Landmark, color: 'text-blue-400' },
-        { id: 'cash', label: 'Cash', icon: CreditCard, color: 'text-emerald-600' },
-        { id: 'voucher', label: 'Voucher', icon: Ticket, color: 'text-amber-600' },
+        { id: 'cash', label: 'Cash', icon: CreditCard, color: 'text-emerald-700 dark:text-emerald-400' },
+        { id: 'voucher', label: 'Voucher', icon: Ticket, color: 'text-amber-800 dark:text-amber-300' },
         { id: 'tax_free_childcare', label: 'Tax-Free Childcare', icon: CreditCard, color: 'text-purple-400' },
         { id: 'other', label: 'Other', icon: CreditCard, color: 'text-muted-foreground' },
     ];
@@ -151,10 +188,10 @@ export default function RecordPaymentModal({
                                 <p className="font-bold text-amber-950 dark:text-amber-100">Payment Already Recorded With Different Parameters</p>
                                 <p>An existing payment was previously recorded under this key:</p>
                                 <ul className="list-disc list-inside space-y-0.5 text-amber-900/90 dark:text-amber-200/90">
-                                    <li>Amount: £{conflictPayment.amount}</li>
-                                    <li>Method: {conflictPayment.method}</li>
-                                    <li>Date: {conflictPayment.recordedAt ? new Date(conflictPayment.recordedAt).toLocaleDateString('en-GB') : 'N/A'}</li>
-                                    <li>Status: {conflictPayment.status}</li>
+                                    <li>Amount: £<span className="tabular-nums">{conflictPayment.amount}</span></li>
+                                    <li>Method: {formatPaymentMethod(conflictPayment.method)}</li>
+                                    <li>Date: <span className="tabular-nums">{conflictPayment.recordedAt ? new Date(conflictPayment.recordedAt).toLocaleDateString('en-GB') : 'N/A'}</span></li>
+                                    <li>Status: {formatPaymentStatus(conflictPayment.status)}</li>
                                     {conflictPayment.transactionReference && <li>Reference: {conflictPayment.transactionReference}</li>}
                                 </ul>
                             </div>
@@ -230,7 +267,7 @@ export default function RecordPaymentModal({
                             required
                             value={formData.recordedAt}
                             onChange={(e) => setFormData({ ...formData, recordedAt: e.target.value })}
-                            className="w-full bg-secondary/40 border border-border rounded-2xl px-5 py-4 text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50 transition-all font-medium"
+                            className="w-full bg-secondary/40 border border-border rounded-2xl px-5 py-4 text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50 transition-all font-medium tabular-nums"
                         />
                     </div>
 

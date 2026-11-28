@@ -33,10 +33,19 @@ const EXPENSE_CATEGORY_OPTIONS = [
   { value: 'admin_transport', label: 'Admin & transport' },
 ] as const;
 
+
+function toTitleCaseWords(val: string): string {
+  if (val === "tax_free_childcare") return "Tax-Free Childcare";
+  return val
+    .split("_")
+    .map((w) => (w ? w[0].toUpperCase() + w.slice(1).toLowerCase() : ""))
+    .join(" ");
+}
+
 function formatExpenseCategory(category: string): string {
   const match = EXPENSE_CATEGORY_OPTIONS.find((c) => c.value === category);
   if (match) return match.label;
-  return category.replace(/_/g, ' ');
+  return toTitleCaseWords(category);
 }
 
 function shortCentreName(fullName: string): string {
@@ -59,7 +68,7 @@ function formatPaymentMethod(method: string): string {
     case 'gocardless':
       return 'Direct Debit';
     default:
-      return method.replace(/_/g, ' ');
+      return toTitleCaseWords(method);
   }
 }
 

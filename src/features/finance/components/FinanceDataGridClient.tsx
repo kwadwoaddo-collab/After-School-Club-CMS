@@ -293,12 +293,12 @@ export default function FinanceDataGridClient({ invoices = [], totalCount = 0, p
                 <div className="bg-card/80 backdrop-blur-md border border-border/60 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between group">
                     <div className="flex items-center justify-between">
                         <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Invoiced (Page)</span>
-                        <div className="w-9 h-9 rounded-2xl bg-primary/10 text-primary flex items-center justify-center transition-colors duration-200">
+                        <div className="w-9 h-9 rounded-2xl bg-accent-soft text-accent flex items-center justify-center transition-colors duration-200">
                             <TrendingUp className="w-4 h-4" aria-hidden="true" />
                         </div>
                     </div>
                     <div className="mt-3">
-                        <div className="text-2xl sm:text-3xl font-black text-foreground tracking-tight tabular-nums">
+                        <div className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight tabular-nums">
                             £{metrics.totalInvoiced.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </div>
                         <p className="text-xs text-muted-foreground mt-1 font-medium">{invoices.length} Invoices on page</p>
@@ -314,7 +314,7 @@ export default function FinanceDataGridClient({ invoices = [], totalCount = 0, p
                         </div>
                     </div>
                     <div className="mt-3">
-                        <div className="text-2xl sm:text-3xl font-black text-emerald-700 dark:text-emerald-300 tracking-tight tabular-nums">
+                        <div className="text-2xl sm:text-3xl font-bold text-emerald-700 dark:text-emerald-300 tracking-tight tabular-nums">
                             £{metrics.totalPaid.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </div>
                         <p className="text-xs text-emerald-700 dark:text-emerald-300 mt-1 font-medium">Successfully processed</p>
@@ -330,7 +330,7 @@ export default function FinanceDataGridClient({ invoices = [], totalCount = 0, p
                         </div>
                     </div>
                     <div className="mt-3">
-                        <div className="text-2xl sm:text-3xl font-black text-amber-800 dark:text-amber-200 tracking-tight tabular-nums">
+                        <div className="text-2xl sm:text-3xl font-bold text-amber-800 dark:text-amber-200 tracking-tight tabular-nums">
                             £{metrics.totalOutstanding.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </div>
                         <p className="text-xs text-amber-800 dark:text-amber-200 mt-1 font-medium">
@@ -348,7 +348,7 @@ export default function FinanceDataGridClient({ invoices = [], totalCount = 0, p
                         </div>
                     </div>
                     <div className="mt-3">
-                        <div className="text-2xl sm:text-3xl font-black text-rose-700 dark:text-rose-300 tracking-tight tabular-nums">
+                        <div className="text-2xl sm:text-3xl font-bold text-rose-700 dark:text-rose-300 tracking-tight tabular-nums">
                             {metrics.overdueCount}
                         </div>
                         <p className="text-xs text-rose-700 dark:text-rose-300 mt-1 font-medium">Past assessment period</p>
@@ -580,7 +580,7 @@ export default function FinanceDataGridClient({ invoices = [], totalCount = 0, p
                                 <span className="font-bold text-foreground">{eligibleBulkPayItems.length}</span>
                             </div>
                             {selectedInvoices.size > eligibleBulkPayItems.length && (
-                                <p className="text-xs text-amber-600 dark:text-amber-400">
+                                <p className="text-xs text-amber-800 dark:text-amber-300">
                                     {selectedInvoices.size - eligibleBulkPayItems.length} non-payable invoice(s) (draft, paid, or void) were excluded.
                                 </p>
                             )}

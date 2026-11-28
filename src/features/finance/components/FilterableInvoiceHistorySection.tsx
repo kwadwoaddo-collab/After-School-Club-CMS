@@ -61,7 +61,7 @@ export default function FilterableInvoiceHistorySection({ initialInvoices, isOwn
     });
 
     return (
-        <div className="bg-card border border-border shadow-sm rounded-[32px] p-6">
+        <div className="bg-card border border-border shadow-sm rounded-xl p-6">
             {/* Filter bar */}
             <div className="flex items-center gap-3 mb-6 flex-wrap">
                 <div className="relative flex-1 min-w-[180px] max-w-[320px]">
@@ -72,7 +72,7 @@ export default function FilterableInvoiceHistorySection({ initialInvoices, isOwn
                         placeholder="Search by invoice #, parent, child, or centre…"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="h-10 pl-9 pr-4 w-full bg-secondary/40 border border-border rounded-2xl text-sm font-medium text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-transparent transition-all"
+                        className="min-h-11 sm:min-h-10 pl-9 pr-4 w-full bg-secondary/40 border border-border rounded-md text-sm font-medium text-foreground placeholder:text-muted-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 focus:border-transparent transition-all"
                     />
                 </div>
                 <div className="relative">
@@ -80,7 +80,7 @@ export default function FilterableInvoiceHistorySection({ initialInvoices, isOwn
                         aria-label="Filter invoices by collection status"
                         value={statusFilter}
                         onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-                        className="h-10 pl-4 pr-8 bg-secondary/40 border border-border rounded-2xl text-sm font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 appearance-none cursor-pointer hover:bg-secondary/80 transition-all"
+                        className="min-h-11 sm:min-h-10 pl-4 pr-8 bg-secondary/40 border border-border rounded-md text-sm font-bold text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 appearance-none cursor-pointer hover:bg-secondary/80 transition-all"
                     >
                         <option value="all">All Statuses</option>
                         <option value="draft">Draft</option>
@@ -93,13 +93,13 @@ export default function FilterableInvoiceHistorySection({ initialInvoices, isOwn
                     </select>
                     <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" aria-hidden="true" />
                 </div>
-                <span className="text-xs font-bold text-muted-foreground ml-auto">
+                <span className="text-xs font-bold text-muted-foreground ml-auto tabular-nums">
                     {filtered.length} of {initialInvoices.length} record{initialInvoices.length !== 1 ? 's' : ''}
                 </span>
                 {isOwner && (
                     <Link
                         href={createInvoiceHref}
-                        className="flex items-center gap-2 px-4 py-2.5 h-10 bg-primary rounded-2xl text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-all shadow-sm shadow-primary/20"
+                        className="flex items-center gap-2 px-4 py-2.5 min-h-11 sm:min-h-10 bg-accent rounded-md text-sm font-bold text-accent-foreground hover:bg-accent-hover transition-all shadow-xs"
                     >
                         <Plus className="w-4 h-4" aria-hidden="true" />
                         Create Invoice

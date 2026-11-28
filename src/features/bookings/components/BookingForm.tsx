@@ -729,7 +729,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                             </>
                         )}
 
-                        <h2 className="text-xl font-semibold text-foreground">Parent Details {selectedParentId && <span className="text-xs font-normal text-emerald-500 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/25">✓ Linked</span>}</h2>
+                        <h2 className="text-xl font-semibold text-foreground">Parent Details {selectedParentId && <span className="text-xs font-normal text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/25">✓ Linked</span>}</h2>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label htmlFor="parent-firstName" className="block text-sm font-medium text-foreground/80 mb-1">First Name <span className="text-destructive ml-0.5">*</span></label>
@@ -887,7 +887,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                                                     />
                                                     {uploadingImage[index] && <Spinner size="sm" />}
                                                     {watchedChildren?.[index]?.imageUrl && !uploadingImage[index] && (
-                                                        <span className="text-sm font-medium text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full border border-emerald-200 shrink-0">✓ Uploaded</span>
+                                                        <span className="text-sm font-medium text-emerald-800 dark:text-emerald-300 bg-emerald-500/10 px-2 py-1 rounded-full border border-emerald-500/25 shrink-0">✓ Uploaded</span>
                                                     )}
                                                 </div>
                                             </div>
